@@ -16,7 +16,7 @@ export function Header() {
         },
         {
             title: "Diễn đàn",
-            link: "diendan"
+            link: "/diendan"
         },
         {
             title: "Khoá học",
@@ -48,7 +48,7 @@ export function Header() {
                         src="/logo.png"
                         alt="Logo CNcode"
                         width={100}
-                        height={40}
+                        height={55}
                     />
                 </div>
                 <div className="flex">

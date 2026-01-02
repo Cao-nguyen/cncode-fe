@@ -21,7 +21,7 @@ export default function RootLayout({
       <head>
         <link rel="icon" href="./logo.png" />
       </head>
-      <body className={`${inter.className}`}>
+      <body className={`${inter.className} bg-white text-black dark:bg-black dark:text-white`}>
         <Providers>
           <Header />
           {children}

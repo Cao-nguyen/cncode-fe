@@ -7,6 +7,6 @@ export const metadata: Metadata = {
 
 export default function Login() {
     return (
-        <div className="pt-[100px] mx-[25px]">Diễn đàn</div>
+        <div className="dark: bg-black pt-[100px] mx-[25px]">Diễn đàn</div>
     )
 }
