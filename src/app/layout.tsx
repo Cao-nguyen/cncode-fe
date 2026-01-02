@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
-import { Header } from '../components/header/headerMain'
+import { Header } from '../components/layouts/header-main'
+import { Providers } from './helper/providers'
 import './globals.css'
 
 const inter = Inter({ subsets: ['vietnamese'] })
@@ -16,13 +17,15 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <link rel="icon" href="./logo.png" />
       </head>
-      <body className={`${inter.className} bg-black text-white`}>
-        <Header />
-        {children}
+      <body className={`${inter.className}`}>
+        <Providers>
+          <Header />
+          {children}
+        </Providers>
       </body>
     </html>
   )

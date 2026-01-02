@@ -3,7 +3,8 @@
 import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
-import { Bell, Sun } from "lucide-react"
+import { Bell } from "lucide-react"
+import { ThemeToggle } from "../toggle/theme-toggle"
 
 export function Header() {
     const pathname = usePathname()
@@ -40,7 +41,7 @@ export function Header() {
     ]
 
     return (
-        <div className="bg-black w-[100%] h-[60px] fixed top-0">
+        <div className="bg-white dark:bg-black w-[100%] h-[60px] fixed top-0">
             <div className="flex h-full justify-between items-center">
                 <div className="ml-[30px]">
                     <Image
@@ -61,8 +62,8 @@ export function Header() {
                                     rounded-[10px]
                                     font-bold
                                     ${isActive
-                                        ? "bg-[#424141] bg-opacity-[0.5]"
-                                        : "hover:bg-[#5F5F5F] hover:bg-opacity-[0.5]"
+                                        ? "bg-[#d1d1d1] dark:bg-[#424141] bg-opacity-[0.5]"
+                                        : "hover:bg-[#bababa] dark:hover:bg-[#5F5F5F] hover:bg-opacity-[0.5]"
                                     }
                                    
                                     transition-all
@@ -74,11 +75,11 @@ export function Header() {
                 </div>
                 <div className="mr-[30px] flex">
                     <div className="flex mr-[15px]">
-                        <Sun className="text-white mx-[8px] size-[20px] cursor-pointer" />
-                        <Bell className="text-white mx-[8px] size-[20px] cursor-pointer" />
+                        <ThemeToggle />
+                        <Bell className="text-black dark:text-white mx-[8px] size-[20px] cursor-pointer" />
                     </div>
                     <div>
-                        <Link className={"bg-white text-black px-[10px] py-[10px] rounded-[10px] font-bold"} href="/login">Đăng nhập</Link>
+                        <Link className={"bg-black text-white dark:bg-white dark:text-black px-[10px] py-[10px] rounded-[10px] font-bold"} href="/login">Đăng nhập</Link>
                     </div>
                 </div>
             </div>
