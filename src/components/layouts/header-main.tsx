@@ -3,11 +3,18 @@
 import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
-import { Bell } from "lucide-react"
-import { ThemeToggle } from "../toggle/theme-toggle"
+import { useTheme } from "next-themes";
+import { Bell, Sun, Moon } from "lucide-react";
+import { useEffect, useState } from "react";
 
 export function Header() {
     const pathname = usePathname()
+
+    const { theme, setTheme } = useTheme();
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => setMounted(true), []);
+    if (!mounted) return null;
 
     const menu = [
         {
@@ -75,7 +82,14 @@ export function Header() {
                 </div>
                 <div className="mr-[30px] flex">
                     <div className="flex mr-[15px]">
-                        <ThemeToggle />
+                        <div
+                            onClick={() => setTheme(theme === "dark" ? "light" : "dark")
+                            }
+                        >
+                            {theme === "dark" ?
+                                <Sun className="dark:text-white mx-[8px] size-[20px] cursor-pointer" />
+                                : <Moon className="dark:text-white mx-[8px] size-[20px] cursor-pointer" />}
+                        </div>
                         <Bell className="text-black dark:text-white mx-[8px] size-[20px] cursor-pointer" />
                     </div>
                     <div>
