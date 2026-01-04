@@ -4,7 +4,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { useTheme } from "next-themes";
-import { Bell, Sun, Moon } from "lucide-react";
+import { Bell, Sun, Moon, Search } from "lucide-react";
 import { useEffect, useState } from "react";
 
 export function Header() {
@@ -51,12 +51,14 @@ export function Header() {
         <div className="bg-white dark:bg-black w-[100%] h-[60px] fixed top-0">
             <div className="flex h-full justify-between items-center">
                 <div className="ml-[30px]">
-                    <Image
-                        src="/logo.png"
-                        alt="Logo CNcode"
-                        width={100}
-                        height={55}
-                    />
+                    <Link href={"/"} >
+                        <Image
+                            src="/logo.png"
+                            alt="Logo CNcode"
+                            width={100}
+                            height={55}
+                        />
+                    </Link>
                 </div>
                 <div className="flex">
                     {menu.map((m) => {
@@ -65,7 +67,7 @@ export function Header() {
                             <div key={m.link} className="pl-[15px] pr-[15px]" >
                                 <Link className={`
                                     px-[10px]
-                                    py-[10px]
+                                    py-[7px]
                                     rounded-[10px]
                                     font-bold
                                     ${isActive
@@ -93,7 +95,7 @@ export function Header() {
                         <Bell className="text-black dark:text-white mx-[8px] size-[20px] cursor-pointer" />
                     </div>
                     <div>
-                        <Link className={"bg-black text-white dark:bg-white dark:text-black px-[10px] py-[10px] rounded-[10px] font-bold"} href="/login">Đăng nhập</Link>
+                        <Link className={"bg-black text-white dark:bg-white dark:text-black px-[10px] py-[7px] rounded-[10px] font-bold"} href="/login">Đăng nhập</Link>
                     </div>
                 </div>
             </div>

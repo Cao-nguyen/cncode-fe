@@ -1,10 +1,11 @@
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
+import { Plus_Jakarta_Sans } from 'next/font/google'
 import { Header } from '../components/layouts/header-main'
+import { Footer } from '../components/layouts/footer'
 import { Providers } from './helper/providers'
 import './globals.css'
 
-const inter = Inter({ subsets: ['vietnamese'] })
+const inter = Plus_Jakarta_Sans({ subsets: ['vietnamese'] })
 
 export const metadata: Metadata = {
   title: 'CNcode',
@@ -25,6 +26,7 @@ export default function RootLayout({
         <Providers>
           <Header />
           {children}
+          <Footer />
         </Providers>
       </body>
     </html>
