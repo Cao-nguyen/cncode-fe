@@ -12,7 +12,7 @@ export function Footer() {
     ]
 
     return (
-        <div className="w-[100%] px-[20px] py-[30px] md:px-[30px] md:py-[35px] lg:px-[40px] lg:py-[40px] bg-[#f6f6f6] dark:bg-[#0e0e0e]">
+        <div className="w-[100%] px-[20px] py-[20px] mb-[20px] md:mb-[50px] lg:mb-[0px] md:px-[30px] md:py-[35px] lg:px-[40px] lg:py-[40px] 2xl:pb-[40px] pb-[60px] bg-[#f6f6f6] dark:bg-[#0e0e0e]">
 
             {/* Nơi chứa logo và text lớn */}
             <div className="flex flex-col md:flex-row items-center md:items-center">
@@ -50,6 +50,9 @@ export function Footer() {
                     ))}
                 </div>
             </div>
+
+            {/* Bản quyền */}
+            <p className="text-center mt-[20px] dark:text-white">Copyright © 2025 CNcode. All rights reserved.</p>
         </div>
     )
 }
