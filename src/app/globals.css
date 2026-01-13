@@ -2,12 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-.main {
-  padding-top: 60px;
-  padding-left: 40px;
-  padding-right: 40px;
-}
-
 @layer base {
   :root {
     --background: 0 0% 100%;

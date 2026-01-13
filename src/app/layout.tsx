@@ -1,7 +1,6 @@
 import type { Metadata } from 'next'
 import { Plus_Jakarta_Sans } from 'next/font/google'
-import { Header } from '../components/layouts/header-main'
-import { Footer } from '../components/layouts/footer'
+import { LayoutWrapper } from './layout-wrapper'
 import { Providers } from './helper/providers'
 import './globals.css'
 
@@ -24,9 +23,7 @@ export default function RootLayout({
       </head>
       <body className={`${inter.className} bg-white text-black dark:bg-black dark:text-white`}>
         <Providers>
-          <Header />
-          {children}
-          <Footer />
+          <LayoutWrapper>{children}</LayoutWrapper>
         </Providers>
       </body>
     </html>
