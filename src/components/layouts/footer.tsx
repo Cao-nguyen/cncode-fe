@@ -34,7 +34,7 @@ export function Footer() {
             <div className="flex items-center my-[20px] w-[100%] h-[0.5px] bg-black/10 dark:bg-white/10 mx-auto"></div>
 
             {/* Nội dung phụ bên dưới */}
-            <div className="flex flex-col md:flex-row md:justify-between gap-[20px] md:gap-0">
+            <div className="flex flex-col items-center md:flex-row md:justify-between gap-[20px] md:gap-0">
                 <div className="flex flex-row gap-[20px] items-center">
                     <Link className="dark:text-white" href="/dieu-khoan-su-dung">Điều khoản sử dụng</Link>
                     <div className="h-[30px] bg-black/10 dark:bg-white/10 w-[1px]"></div>
