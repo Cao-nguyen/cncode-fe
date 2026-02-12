@@ -3,8 +3,15 @@ import Image from "next/image"
 import Link from "next/link"
 import { IonIcon } from "@ionic/react"
 import { callSharp, logoFacebook, logoYoutube } from "ionicons/icons"
+import { useEffect, useState } from "react"
 
 export function Footer() {
+    const [mounted, setMounted] = useState(false)
+
+    useEffect(() => {
+        setMounted(true)
+    }, [])
+
     const mxh = [
         { icon: callSharp, link: "https:/zalo.me/0394217863" },
         { icon: logoFacebook, link: "https://www.facebook.com/cncode.edu.vn" },
@@ -22,6 +29,7 @@ export function Footer() {
                     width={120}
                     height={60}
                     className="md:w-[150px] md:h-[80px] lg:w-[150px] lg:h-[80px]"
+                    priority
                 />
                 <h1 className="font-bold mt-[15px] md:mt-0 md:ml-[20px] text-[16px] md:text-[18px] lg:text-[20px] text-center md:text-left">CNcode - Nền tảng dạy và học công nghệ thông tin trực tuyến</h1>
             </div>
@@ -43,7 +51,7 @@ export function Footer() {
                 <div className="flex flex-row gap-[20px] items-center">
                     <p className="dark:text-white uppercase">theo dõi chúng tôi</p>
                     <div className="h-[30px] bg-black/10 dark:bg-white/10 w-[1px]"></div>
-                    {mxh.map((item) => (
+                    {mounted && mxh.map((item) => (
                         <Link key={item.link} href={item.link} target="_blank">
                             <IonIcon className="text-[20px]" icon={item.icon} color="#FFF" />
                         </Link>

@@ -66,6 +66,7 @@ export function Header() {
                                 alt="Logo CNcode"
                                 width={100}
                                 height={55}
+                                priority
                             />
                         </Link>
                     </div>
@@ -119,6 +120,7 @@ export function Header() {
                             alt="Logo CNcode"
                             width={80}
                             height={40}
+                            priority
                         />
                     </Link>
                     <div className="flex gap-[15px] items-center">
