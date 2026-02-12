@@ -153,7 +153,7 @@ export function Header() {
                                     }`}
                             >
                                 {isActive && (
-                                    <div className="absolute inset-0 bg-gradient-to-br from-blue-400 to-blue-500 dark:from-blue-600 dark:to-blue-700 rounde-[20px] -z-10 shadow-lg shadow-blue-400/50 dark:shadow-blue-600/50"></div>
+                                    <div className="absolute inset-0 bg-gradient-to-br from-blue-400 to-blue-500 dark:from-blue-600 dark:to-blue-700 rounded-[7px] -z-10 shadow-lg shadow-blue-400/50 dark:shadow-blue-600/50"></div>
                                 )}
                                 <div className={`relative transition-all duration-300 ${isActive ? "text-white" : "text-black dark:text-white"}`}>
                                     <IconComponent className="size-[20px]" />
