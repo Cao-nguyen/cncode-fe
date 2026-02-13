@@ -7,8 +7,14 @@ import './globals.css'
 const inter = Plus_Jakarta_Sans({ subsets: ['vietnamese'] })
 
 export const metadata: Metadata = {
-  title: 'CNcode',
+  title: {
+    default: 'CNcode',
+    template: 'CNcode | %s',
+  },
   description: 'CNcode - Nền tảng dạy và học công nghệ thông tin trực tuyến',
+  icons: {
+    icon: '/logo.png',
+  },
 }
 
 export default function RootLayout({
@@ -18,9 +24,6 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>
-        <link rel="icon" href="./logo.png" />
-      </head>
       <body className={`${inter.className} bg-white text-black dark:bg-black dark:text-white`}>
         <Providers>
           <LayoutWrapper>{children}</LayoutWrapper>

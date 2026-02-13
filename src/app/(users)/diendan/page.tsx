@@ -2,7 +2,7 @@ import React from 'react'
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {
-    title: 'CNcode | Diễn đàn'
+    title: 'Diễn đàn'
 }
 
 export default function Login() {

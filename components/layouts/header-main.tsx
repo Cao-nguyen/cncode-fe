@@ -4,7 +4,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { useTheme } from "next-themes";
-import { Bell, Sun, Moon, Search, Home, MessageCircle, BookOpen, Code, Calendar, FileText, ShoppingBag } from "lucide-react";
+import { Bell, Sun, Moon, Home, MessageCircle, BookOpen, Code, Calendar, FileText, ShoppingBag } from "lucide-react";
 import { useEffect, useState } from "react";
 
 export function Header() {

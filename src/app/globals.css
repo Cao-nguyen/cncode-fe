@@ -65,3 +65,15 @@
     --ring: 224.3 76.3% 48%;
   }
 }
+
+.no-scrollbar::-webkit-scrollbar {
+  width: 0px !important;
+  height: 0px !important;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none !important;
+  /* IE, Edge */
+  scrollbar-width: none !important;
+  /* Firefox */
+}
