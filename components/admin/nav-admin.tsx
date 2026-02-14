@@ -36,7 +36,7 @@ export default function NavAdmin() {
                 </div>
                 <div className="mx-[15px] h-6 w-[0.5px] bg-black/20 dark:bg-white/30"></div>
                 <Link className="flex items-center" href="/">
-                    <p className="font-bold">Trang chủ</p>
+                    <p className="font-bold">Thoát</p>
                     <LogOut className="size-[18px] mx-[10px]" />
                 </Link>
             </div>

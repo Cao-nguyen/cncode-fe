@@ -1,20 +1,24 @@
 import { useScreen } from "@/src/context/screen-context";
-import { EllipsisVertical, LayoutDashboard, LogOut } from "lucide-react";
+import { EllipsisVertical, LayoutDashboard, LogOut, Settings } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuGroup,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
+import { usePathname } from "next/navigation";
 
 export default function Sidebar() {
     const { screen } = useScreen();
+
+    const menuItems = [
+        {
+            category: "Tổng quan", categoryId: "home", listLink: [
+                { title: "Trang tổng quan", link: "/admin/dashboard", icon: <LayoutDashboard /> },
+            ],
+        },
+    ]
+
+    const path = usePathname()
 
     return (
         <aside className={`fixed left-0 top-0 z-20 w-[18%] min-h-screen transition-transform duration-300 ${screen ? '-translate-x-full' : 'translate-x-0'}`}>
@@ -24,63 +28,27 @@ export default function Sidebar() {
                     <p className="">CNcode</p>
                 </div>
 
-                <nav className="flex-1 overflow-y-scroll no-scrollbar pt-[70px] pb-[10px] px-[10px] space-y-2">
-                    <Link href="/admin/dashboard" className="flex items-center gap-4 p-[10px] bg-[#E5E5E5] dark:bg-[#2C2C2C] rounded-[10px] cursor-pointer">
-                        <LayoutDashboard />
-                        <p className="font-bold">Trang tổng quan</p>
-                    </Link>
-                    <Link href="/admin/dashboard" className="flex items-center gap-4 p-[10px] bg-[#E5E5E5] dark:bg-[#2C2C2C] rounded-[10px] cursor-pointer">
-                        <LayoutDashboard />
-                        <p className="font-bold">Trang tổng quan</p>
-                    </Link>
-                    <Link href="/admin/dashboard" className="flex items-center gap-4 p-[10px] bg-[#E5E5E5] dark:bg-[#2C2C2C] rounded-[10px] cursor-pointer">
-                        <LayoutDashboard />
-                        <p className="font-bold">Trang tổng quan</p>
-                    </Link>
-                    <Link href="/admin/dashboard" className="flex items-center gap-4 p-[10px] bg-[#E5E5E5] dark:bg-[#2C2C2C] rounded-[10px] cursor-pointer">
-                        <LayoutDashboard />
-                        <p className="font-bold">Trang tổng quan</p>
-                    </Link>
-                    <Link href="/admin/dashboard" className="flex items-center gap-4 p-[10px] bg-[#E5E5E5] dark:bg-[#2C2C2C] rounded-[10px] cursor-pointer">
-                        <LayoutDashboard />
-                        <p className="font-bold">Trang tổng quan</p>
-                    </Link>
-                    <Link href="/admin/dashboard" className="flex items-center gap-4 p-[10px] bg-[#E5E5E5] dark:bg-[#2C2C2C] rounded-[10px] cursor-pointer">
-                        <LayoutDashboard />
-                        <p className="font-bold">Trang tổng quan</p>
-                    </Link>
-                    <Link href="/admin/dashboard" className="flex items-center gap-4 p-[10px] bg-[#E5E5E5] dark:bg-[#2C2C2C] rounded-[10px] cursor-pointer">
-                        <LayoutDashboard />
-                        <p className="font-bold">Trang tổng quan</p>
-                    </Link>
-                    <Link href="/admin/dashboard" className="flex items-center gap-4 p-[10px] bg-[#E5E5E5] dark:bg-[#2C2C2C] rounded-[10px] cursor-pointer">
-                        <LayoutDashboard />
-                        <p className="font-bold">Trang tổng quan</p>
-                    </Link>
-                    <Link href="/admin/dashboard" className="flex items-center gap-4 p-[10px] bg-[#E5E5E5] dark:bg-[#2C2C2C] rounded-[10px] cursor-pointer">
-                        <LayoutDashboard />
-                        <p className="font-bold">Trang tổng quan</p>
-                    </Link>
-                    <Link href="/admin/dashboard" className="flex items-center gap-4 p-[10px] bg-[#E5E5E5] dark:bg-[#2C2C2C] rounded-[10px] cursor-pointer">
-                        <LayoutDashboard />
-                        <p className="font-bold">Trang tổng quan</p>
-                    </Link>
-                    <Link href="/admin/dashboard" className="flex items-center gap-4 p-[10px] bg-[#E5E5E5] dark:bg-[#2C2C2C] rounded-[10px] cursor-pointer">
-                        <LayoutDashboard />
-                        <p className="font-bold">Trang tổng quan</p>
-                    </Link>
-                    <Link href="/admin/dashboard" className="flex items-center gap-4 p-[10px] bg-[#E5E5E5] dark:bg-[#2C2C2C] rounded-[10px] cursor-pointer">
-                        <LayoutDashboard />
-                        <p className="font-bold">Trang tổng quan</p>
-                    </Link>
-                    <Link href="/admin/dashboard" className="flex items-center gap-4 p-[10px] bg-[#E5E5E5] dark:bg-[#2C2C2C] rounded-[10px] cursor-pointer">
-                        <LayoutDashboard />
-                        <p className="font-bold">Trang tổng quan</p>
-                    </Link>
-                    <Link href="/admin/dashboard" className="flex items-center gap-4 p-[10px] bg-[#E5E5E5] dark:bg-[#2C2C2C] rounded-[10px] cursor-pointer">
-                        <LayoutDashboard />
-                        <p className="font-bold">Trang tổng quan</p>
-                    </Link>
+                <nav className="flex-1 overflow-y-scroll no-scrollbar pt-[70px] pb-[10px] px-[10px] space-y-0">
+                    <Accordion type="single" collapsible className="max-w-lg" defaultValue="home">
+                        {menuItems.map((item, index) => (
+                            <AccordionItem key={index} value={item.categoryId} className="py-0 px-1 border-b-0 last:border-0">
+                                <AccordionTrigger className="font-bold no-underline hover:no-underline py-1">{item.category}</AccordionTrigger>
+                                <div className="space-y-2 mb-[10px]">
+                                    {item.listLink.map((item, index) => (
+                                        <div className="mt-[5px]">
+                                            <AccordionContent key={index} className="p-0">
+                                                <Link href={item.link} className={`flex items-center gap-4 p-[10px] ${path === item.link ? "bg-[#E5E5E5] dark:bg-[#2C2C2C]" : ""} ${path === item.link ? "" : "hover:bg-[#ededed] hover:dark:bg-[#212121]"} rounded-[10px] cursor-pointer`}>
+                                                    {item.icon}
+                                                    <p className="font-bold">{item.title}</p>
+                                                </Link>
+                                            </AccordionContent>
+                                        </div>
+                                    ))}
+                                </div>
+                            </AccordionItem>
+                        ))}
+
+                    </Accordion>
                 </nav>
 
                 <div className="p-[10px] w-[100%] bg-white dark:bg-black flex items-center justify-between gap-4">
@@ -114,6 +82,6 @@ export default function Sidebar() {
                     </DropdownMenu>
                 </div>
             </div>
-        </aside>
+        </aside >
     )
 }
