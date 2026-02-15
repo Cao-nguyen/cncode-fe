@@ -1,11 +1,9 @@
-import { useScreen } from "@/context/screen-context";
 import { LogOut, Moon, PanelLeft, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
-export default function NavAdmin() {
-    const { setScreen } = useScreen();
+export default function NavAdmin({ setOpen, open }: { setOpen: (open: boolean) => void, open: boolean }) {
     const { theme, setTheme } = useTheme();
     const [mounted, setMounted] = useState(false);
 
@@ -19,7 +17,7 @@ export default function NavAdmin() {
                             transition-colors duration-200
                             hover:bg-black/10 dark:hover:bg-white/10 
                             rounded-[5px]"
-                    onClick={() => setScreen((s: boolean) => !s)}>
+                    onClick={() => setOpen(!open)}>
                     <PanelLeft className="size-[18px]" />
                 </div>
                 <div className="mx-[15px] h-6 w-[1px] bg-black/20 dark:bg-white/30"></div>

@@ -1,4 +1,3 @@
-import { useScreen } from "@/context/screen-context";
 import { CircleUser, EllipsisVertical, LayoutDashboard, LogOut } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -7,8 +6,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem,
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { usePathname } from "next/navigation";
 
-export default function Sidebar() {
-    const { screen } = useScreen();
+export default function Sidebar({ open }: { open: boolean }) {
 
     const menuItems = [
         {
@@ -29,7 +27,7 @@ export default function Sidebar() {
     const path = usePathname()
 
     return (
-        <aside className={`fixed left-0 top-0 z-20 w-[17%] min-h-screen transition-transform duration-300 ${screen ? '-translate-x-full' : 'translate-x-0'}`}>
+        <aside className={`fixed left-0 top-0 z-20 w-[17%] min-h-screen transition-transform duration-300 ${open ? '-translate-x-full' : 'translate-x-0'}`}>
             <div className="flex flex-col h-screen">
                 <div className="p-[16px_10px_10px_10px] w-[100%] bg-white dark:bg-black flex fixed items-center gap-4">
                     <Image src="/logo.png" alt="Logo CNCode" width={70} height={0} />
