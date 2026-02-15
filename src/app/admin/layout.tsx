@@ -1,8 +1,23 @@
 "use client"
 
-import Sidebar from '@/components/admin/sidebar'
-import NavAdmin from '@/components/admin/nav-admin'
-import { ScreenProvider, useScreen } from '@/src/context/screen-context'
+import { ScreenProvider, useScreen } from '@/context/screen-context'
+import Sidebar from '@/components/layouts/sidebar'
+import NavAdmin from '@/components/layouts/nav-admin'
+import { Providers } from '@/context/providers'
+
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
+    return (
+        <Providers>
+            <ScreenProvider>
+                <AdminLayoutUI>
+                    {children}
+                </AdminLayoutUI>
+            </ScreenProvider>
+        </Providers>
+    )
+}
+
+
 
 function AdminLayoutUI({ children }: { children: React.ReactNode }) {
     const { screen } = useScreen()
@@ -19,15 +34,5 @@ function AdminLayoutUI({ children }: { children: React.ReactNode }) {
                 </div>
             </div>
         </div>
-    )
-}
-
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
-    return (
-        <ScreenProvider>
-            <AdminLayoutUI>
-                {children}
-            </AdminLayoutUI>
-        </ScreenProvider>
     )
 }

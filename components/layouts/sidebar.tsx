@@ -1,4 +1,4 @@
-import { useScreen } from "@/src/context/screen-context";
+import { useScreen } from "@/context/screen-context";
 import { CircleUser, EllipsisVertical, LayoutDashboard, LogOut } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";

@@ -1,4 +1,4 @@
-import { useScreen } from "@/src/context/screen-context";
+import { useScreen } from "@/context/screen-context";
 import { LogOut, Moon, PanelLeft, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import Link from "next/link";

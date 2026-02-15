@@ -1,8 +1,6 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
 
 export default function NotFound() {
-    // Admin routes sẽ xử lý not-found riêng
     return (
         <div className="h-screen flex flex-col items-center justify-center">
             <h1
