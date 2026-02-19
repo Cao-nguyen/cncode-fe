@@ -1,12 +1,57 @@
-import React from 'react'
-import { Metadata } from 'next'
-
-export const metadata: Metadata = {
-    title: 'Đăng ký'
-}
+import Image from "next/image"
+import Link from "next/link"
+import InputAuth from "@/components/ui/input-auth"
+import ButtonAuth from "@/components/ui/button-auth"
+import ButtonSocial from "@/components/ui/button-social"
 
 export default function Register() {
     return (
-        <div>Register</div>
+        <div className="w-full h-screen bg-black flex justify-center items-center">
+            <div className="w-[80%] md:w-[50%] lg:w-[35%] xl:w-[30%] border border-[#e5e7eb]/20 rounded-xl">
+                <div className="p-[15px_20px]">
+                    <div className="flex flex-col items-center justify-center">
+                        <Image src="/logo.png" alt="Logo CNcode" width={140} height={100} />
+                        <h1 className="text-white font-bold mt-[10px] text-[20px]">Đăng ký tài khoản CNcode</h1>
+                    </div>
+                    <div className="mt-[20px]">
+                        <InputAuth
+                            label="Họ và tên"
+                            placeholder="Lý Văn A"
+                        />
+                        <InputAuth
+                            type="email"
+                            label="Email"
+                            placeholder="lyvana@gmail.com"
+                        />
+                        <InputAuth
+                            label="Tên đăng nhập"
+                            placeholder="lyvana"
+                        />
+                        <div className="grid grid-cols-2 gap-2">
+                            <InputAuth
+                                label="Mật khẩu"
+                                type="password"
+                                placeholder="••••••"
+                            />
+                            <InputAuth
+                                label="Xác nhận mật khẩu"
+                                type="password"
+                                placeholder="••••••"
+                            />
+                        </div>
+                        <ButtonAuth className="bg-[#3b82f6] text-white">Đăng ký</ButtonAuth>
+
+                        <div className="relative my-5 text-center text-xs text-zinc-500">
+                            <span className="bg-black px-2 relative z-10">Hoặc tiếp tục với</span>
+                            <div className="absolute inset-0 flex items-center">
+                                <div className="w-full border-t border-zinc-800"></div>
+                            </div>
+                        </div>
+
+                        <ButtonSocial />
+                    </div>
+                </div>
+            </div>
+        </div>
     )
 }
