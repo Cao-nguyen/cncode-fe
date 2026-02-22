@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import { Toaster } from 'sonner';
 import { Plus_Jakarta_Sans } from 'next/font/google'
 import '../app/globals.css'
 
@@ -24,6 +25,11 @@ export default function RootLayout({
         <html lang="en" suppressHydrationWarning>
             <body className={`${inter.className} bg-white text-black dark:bg-black dark:text-white`}>
                 {children}
+                <Toaster
+                    position="top-right"
+                    richColors
+                    closeButton
+                />
             </body>
         </html>
     )
