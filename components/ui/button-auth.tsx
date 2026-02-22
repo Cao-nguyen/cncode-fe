@@ -7,7 +7,7 @@ export default function ButtonAuth(
     return (
         <button
             {...props}
-            className={`w-full rounded-md text-[14px] p-[10px] ${className}`}
+            className={`transition-transform duration-150 hover:scale-[0.99] w-full rounded-md text-[14px] p-[10px] ${className}`}
         >
             {children}
         </button>

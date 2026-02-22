@@ -1,8 +1,13 @@
+import { Metadata } from "next"
 import Image from "next/image"
 import Link from "next/link"
 import InputAuth from "@/components/ui/input-auth"
 import ButtonAuth from "@/components/ui/button-auth"
 import ButtonSocial from "@/components/ui/button-social"
+
+export const metadata: Metadata = {
+    title: "Đăng ký"
+}
 
 export default function Register() {
     return (
@@ -49,6 +54,12 @@ export default function Register() {
                         </div>
 
                         <ButtonSocial />
+
+                        <div className="mt-[10px]">
+                            <Link href=" /login">
+                                <ButtonAuth className="bg-white/70 text-black">Trở về đăng nhập</ButtonAuth>
+                            </Link>
+                        </div>
                     </div>
                 </div>
             </div>

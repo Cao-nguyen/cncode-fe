@@ -1,10 +1,13 @@
-"use client"
-
 import ButtonAuth from "@/components/ui/button-auth";
 import ButtonSocial from "@/components/ui/button-social";
 import InputAuth from "@/components/ui/input-auth";
+import { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
+
+export const metadata: Metadata = {
+    title: 'Đăng nhập'
+}
 
 
 export default function Login() {
@@ -40,13 +43,17 @@ export default function Login() {
 
                         <ButtonSocial />
 
-                        <div className="mt-[10px] flex items-center justify-center gap-1">
+                        <div className="my-[10px] flex items-center justify-center gap-1">
                             <p className="text-[14px] text-white">Bạn chưa có tài khoản?</p>
                             <Link href="/register" className="text-[#3b82f6] text-[14px]">Đăng ký ngay</Link>
                         </div>
+
+                        <Link href=" /">
+                            <ButtonAuth className="bg-white/70 text-black">Trở về trang chủ</ButtonAuth>
+                        </Link>
                     </div>
                 </div>
             </div>
-        </div>
+        </div >
     )
 }
