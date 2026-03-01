@@ -6,11 +6,6 @@ import { callSharp, logoFacebook, logoYoutube } from "ionicons/icons"
 import { useEffect, useState } from "react"
 
 export function Footer() {
-    const [mounted, setMounted] = useState(false)
-
-    useEffect(() => {
-        setMounted(true)
-    }, [])
 
     const mxh = [
         { icon: callSharp, link: "https:/zalo.me/0394217863" },
