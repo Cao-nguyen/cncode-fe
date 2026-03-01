@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/input-otp"
 import { REGEXP_ONLY_DIGITS } from "input-otp"
 import ButtonAuth from "@/components/ui/button-auth"
-import { OtpService } from "@/src/services/otp-service"
+import { OtpService } from "@/hooks/otp-service"
 import { useSearchParams } from "next/navigation"
 import { Spinner } from "@/components/ui/spinner"
 
