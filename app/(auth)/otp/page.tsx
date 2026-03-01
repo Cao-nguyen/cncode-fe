@@ -12,7 +12,7 @@ import { OtpService } from "@/hooks/otp-service"
 import { useSearchParams } from "next/navigation"
 import { Spinner } from "@/components/ui/spinner"
 
-export default function Forgot() {
+export default function Otp() {
     const searchParams = useSearchParams();
     const email = searchParams.get("email");
 

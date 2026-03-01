@@ -3,7 +3,6 @@ import Image from "next/image"
 import Link from "next/link"
 import InputAuth from "@/components/ui/input-auth"
 import ButtonAuth from "@/components/ui/button-auth"
-import ButtonSocial from "@/components/ui/button-social"
 
 export const metadata: Metadata = {
     title: "Quên mật khẩu"
