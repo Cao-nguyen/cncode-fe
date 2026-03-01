@@ -10,15 +10,11 @@ import { REGEXP_ONLY_DIGITS } from "input-otp"
 import ButtonAuth from "@/components/ui/button-auth"
 import { OtpService } from "@/hooks/otp-service"
 import { Spinner } from "@/components/ui/spinner"
+import { useSearchParams } from "next/navigation"
 
-type PageProps = {
-    searchParams: {
-        email?: string
-    }
-}
-
-export default function OtpPage({ searchParams }: PageProps) {
-    const email = searchParams.email ?? ""
+export default function OtpPage() {
+    const searchParams = useSearchParams()
+    const email = searchParams.get("email") ?? ""
 
     const { otp, setOtp, loading, handleVerify } = OtpService(email)
 
