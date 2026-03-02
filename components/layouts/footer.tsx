@@ -1,15 +1,15 @@
 'use client'
+
 import Image from "next/image"
 import Link from "next/link"
-import { IonIcon } from "@ionic/react"
-import { callSharp, logoFacebook, logoYoutube } from "ionicons/icons"
 
 export function Footer() {
 
     const mxh = [
-        { icon: callSharp, link: "https:/zalo.me/0394217863" },
-        { icon: logoFacebook, link: "https://www.facebook.com/cncode.edu.vn" },
-        { icon: logoYoutube, link: "https://www.youtube.com/@CNcode-edu" }
+        { sizew: 34, sizeh: 34, iconDark: "/icons/pw.svg", iconWhite: "/icons/pb.svg", link: "https:/zalo.me/0394217863" },
+        { sizew: 34, sizeh: 34, iconDark: "/icons/ttw.svg", iconWhite: "/icons/ttb.svg", link: "/" },
+        { sizew: 30, sizeh: 30, iconDark: "/icons/fbw.svg", iconWhite: "/icons/fbb.svg", link: "https://www.facebook.com/cncode.edu.vn" },
+        { sizew: 30, sizeh: 30, iconDark: "/icons/ytbw.svg", iconWhite: "/icons/ytbb.svg", link: "https://www.youtube.com/@CNcode-edu" },
     ]
 
     return (
@@ -18,7 +18,7 @@ export function Footer() {
             {/* Nơi chứa logo và text lớn */}
             <div className="flex flex-col md:flex-row items-center md:items-center">
                 <Image
-                    src="/logo.png"
+                    src="/images/logo.png"
                     alt="Logo CNcode"
                     width={120}
                     height={60}
@@ -48,7 +48,8 @@ export function Footer() {
                     <div className="h-7.5 bg-black/10 dark:bg-white/10 w-px"></div>
                     {mxh.map((item) => (
                         <Link key={item.link} href={item.link} target="_blank">
-                            <IonIcon className="text-[20px]" icon={item.icon} color="#FFF" />
+                            <Image className="hidden dark:block" width={item.sizew} height={item.sizeh} src={item.iconDark} alt="icon" />
+                            <Image className="block dark:hidden" width={item.sizew} height={item.sizeh} src={item.iconWhite} alt="icon" />
                         </Link>
                     ))}
                 </div>

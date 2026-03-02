@@ -30,7 +30,7 @@ export default function Sidebar({ open }: { open: boolean }) {
         <aside className={`fixed left-0 top-0 z-20 w-[17%] min-h-screen transition-transform duration-300 ${open ? '-translate-x-full' : 'translate-x-0'}`}>
             <div className="flex flex-col h-screen">
                 <div className="p-[16px_10px_10px_10px] w-full bg-white dark:bg-black flex fixed items-center gap-4">
-                    <Image style={{ width: "auto", height: "auto" }} src="/logo.png" alt="Logo CNCode" width={70} height={0} />
+                    <Image style={{ width: "auto", height: "auto" }} src="/images/logo.png" alt="Logo CNCode" width={70} height={0} />
                     <p className="">CNcode</p>
                 </div>
 

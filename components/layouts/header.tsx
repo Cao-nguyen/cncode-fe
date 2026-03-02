@@ -40,7 +40,7 @@ export function Header() {
                     <div className="ml-7.5">
                         <Link href="/">
                             <Image
-                                src="/logo.png"
+                                src="/images/logo.png"
                                 alt="Logo CNcode"
                                 width={100}
                                 height={55}
@@ -109,7 +109,7 @@ export function Header() {
                 <div className="flex h-full justify-between items-center px-3.75">
                     <Link href="/">
                         <Image
-                            src="/logo.png"
+                            src="/images/logo.png"
                             alt="Logo CNcode"
                             width={80}
                             height={40}
