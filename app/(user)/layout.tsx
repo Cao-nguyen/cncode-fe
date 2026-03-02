@@ -1,3 +1,4 @@
+import { Footer } from "@/components/layouts/footer"
 import { Header } from "@/components/layouts/header"
 
 export default function UserLayout({
@@ -8,9 +9,10 @@ export default function UserLayout({
     return (
         <>
             <Header />
-            <div className="mt-0 2xl:mt-15">
+            <div className="h-screen mt-0 lg:mt-15">
                 {children}
             </div>
+            <Footer />
         </>
     )
 }
