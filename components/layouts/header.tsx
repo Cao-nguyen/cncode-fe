@@ -149,7 +149,8 @@ export function Header() {
 
             {/* ===== MOBILE BOTTOM ===== */}
             <div className="lg:hidden fixed bottom-0 w-full h-14 bg-white dark:bg-black z-50 border-t border-gray-200 dark:border-gray-800">
-                <div className="flex h-full justify-between items-center">
+
+                <div className="flex h-full items-center px-5">
 
                     {menu.map(m => {
 
@@ -162,36 +163,38 @@ export function Header() {
                                 href={m.link}
                                 title={m.title}
                                 className={`
-                                flex flex-col items-center justify-center
-                                w-[calc(100%/7)]
-                                gap-[10px]
-                                transition-all duration-200
-                                hover:scale-105
-                                ${isActive ? "scale-105" : ""}
-                                `}
+                    flex-1
+                    flex flex-col items-center justify-center
+                    gap-2.5
+                    transition-all duration-200
+                    hover:scale-105
+                    ${isActive ? "scale-105" : ""}
+                    `}
                             >
 
                                 <Icon
                                     className={`
-                                    transition-all duration-200
-                                    ${isActive
-                                            ? "text-blue-500 scale-105"
+                        transition-all duration-200
+                        ${isActive
+                                            ? "text-blue-500"
                                             : "text-black dark:text-white"
                                         }
-                                    `}
+                        `}
                                     size={20}
                                 />
 
                                 <span
                                     className={`
-                                    text-center leading-none
-                                    transition-all duration-200
-                                    text-[clamp(9px,2.5vw,11px)]
-                                    ${isActive
+                        text-center
+                        whitespace-nowrap
+                        leading-none
+                        transition-all duration-200
+                        text-[clamp(8px,2.3vw,11px)]
+                        ${isActive
                                             ? "text-blue-500 font-bold"
                                             : "text-gray-600 dark:text-gray-300"
                                         }
-                                    `}
+                        `}
                                 >
                                     {m.title}
                                 </span>
@@ -201,6 +204,7 @@ export function Header() {
                     })}
 
                 </div>
+
             </div>
 
             {/* spacer mobile */}
