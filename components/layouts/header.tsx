@@ -163,38 +163,38 @@ export function Header() {
                                 href={m.link}
                                 title={m.title}
                                 className={`
-                    flex-1
-                    flex flex-col items-center justify-center
-                    gap-2.5
-                    transition-all duration-200
-                    hover:scale-105
-                    ${isActive ? "scale-105" : ""}
-                    `}
+                                    flex-1
+                                    flex flex-col items-center justify-center
+                                    gap-1.5
+                                    transition-all duration-200
+                                    hover:scale-105
+                                    ${isActive ? "scale-105" : ""}
+                                `}
                             >
 
                                 <Icon
                                     className={`
-                        transition-all duration-200
-                        ${isActive
+                                        transition-all duration-200
+                                        ${isActive
                                             ? "text-blue-500"
                                             : "text-black dark:text-white"
                                         }
-                        `}
+                                    `}
                                     size={20}
                                 />
 
                                 <span
                                     className={`
-                        text-center
-                        whitespace-nowrap
-                        leading-none
-                        transition-all duration-200
-                        text-[clamp(8px,2.3vw,11px)]
-                        ${isActive
+                                        text-center
+                                        whitespace-nowrap
+                                        leading-none
+                                        transition-all duration-200
+                                        text-[clamp(8px,2.3vw,11px)]
+                                        ${isActive
                                             ? "text-blue-500 font-bold"
                                             : "text-gray-600 dark:text-gray-300"
                                         }
-                        `}
+                                    `}
                                 >
                                     {m.title}
                                 </span>
