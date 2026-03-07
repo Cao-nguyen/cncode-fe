@@ -36,6 +36,7 @@ export function Header() {
             {/* ===== DESKTOP ===== */}
             <div className="hidden lg:block bg-white dark:bg-black w-full h-15 fixed top-0 z-50">
                 <div className="flex h-full justify-between items-center">
+
                     <div className="ml-7.5">
                         <Link href="/">
                             <Image
@@ -56,9 +57,9 @@ export function Header() {
                                     <Link
                                         href={m.link}
                                         className={`
-                                            px-2.5 py-1.75 rounded-[9px] font-bold
-                                            transition-all duration-100 lg:text-[15px] xl:text-[16px]
-                                            ${isActive
+                                        px-2.5 py-1.75 rounded-[9px] font-bold
+                                        transition-all duration-100 lg:text-[15px] xl:text-[16px]
+                                        ${isActive
                                                 ? "bg-[#dedede] dark:bg-[#424141] bg-opacity-50"
                                                 : "hover:bg-[#d5d5d5] dark:hover:bg-[#5F5F5F] hover:bg-opacity-50"
                                             }
@@ -97,12 +98,14 @@ export function Header() {
                             Đăng nhập
                         </Link>
                     </div>
+
                 </div>
             </div>
 
             {/* ===== MOBILE TOP ===== */}
             <div className="lg:hidden fixed top-0 w-full h-10 bg-white dark:bg-black z-50 border-b border-gray-200 dark:border-gray-800">
                 <div className="flex h-full justify-between items-center px-3.75">
+
                     <Link href="/">
                         <Image
                             src="/images/logo.png"
@@ -114,6 +117,7 @@ export function Header() {
                     </Link>
 
                     <div className="flex gap-3.75 items-center">
+
                         <div className="mx-2">
                             <button
                                 onClick={() => setTheme("light")}
@@ -138,14 +142,17 @@ export function Header() {
                         >
                             Đăng nhập
                         </Link>
+
                     </div>
                 </div>
             </div>
 
             {/* ===== MOBILE BOTTOM ===== */}
             <div className="lg:hidden fixed bottom-0 w-full h-14 bg-white dark:bg-black z-50 border-t border-gray-200 dark:border-gray-800">
-                <div className="flex h-full justify-around items-center px-1">
+                <div className="flex h-full justify-between items-center">
+
                     {menu.map(m => {
+
                         const isActive = pathname === m.link
                         const Icon = m.icon
 
@@ -154,30 +161,49 @@ export function Header() {
                                 key={m.link}
                                 href={m.link}
                                 title={m.title}
-                                className={`flex flex-col items-center justify-center w-full h-full transition-all duration-200 hover:scale-105 ${isActive ? "scale-105" : ""
-                                    }`}
+                                className={`
+                                flex flex-col items-center justify-center
+                                w-[calc(100%/7)]
+                                gap-[10px]
+                                transition-all duration-200
+                                hover:scale-105
+                                ${isActive ? "scale-105" : ""}
+                                `}
                             >
+
                                 <Icon
-                                    className={`size-5 transition-all duration-200 ${isActive
-                                        ? "text-blue-500"
-                                        : "text-black dark:text-white"
-                                        }`}
+                                    className={`
+                                    transition-all duration-200
+                                    ${isActive
+                                            ? "text-blue-500 scale-105"
+                                            : "text-black dark:text-white"
+                                        }
+                                    `}
+                                    size={20}
                                 />
 
                                 <span
-                                    className={`text-[10px] mt-0.5 transition-all duration-200 ${isActive
-                                        ? "text-blue-500 font-bold"
-                                        : "text-gray-600 dark:text-gray-300"
-                                        }`}
+                                    className={`
+                                    text-center leading-none
+                                    transition-all duration-200
+                                    text-[clamp(9px,2.5vw,11px)]
+                                    ${isActive
+                                            ? "text-blue-500 font-bold"
+                                            : "text-gray-600 dark:text-gray-300"
+                                        }
+                                    `}
                                 >
                                     {m.title}
                                 </span>
+
                             </Link>
                         )
                     })}
+
                 </div>
             </div>
 
+            {/* spacer mobile */}
             <div className="lg:hidden h-10" />
         </>
     )
