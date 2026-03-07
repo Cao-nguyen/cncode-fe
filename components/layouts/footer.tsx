@@ -29,25 +29,68 @@ export function Footer() {
                 <h1 className="font-bold mt-3.75 md:mt-0 md:ml-5 text-[16px] md:text-[18px] lg:text-[20px] text-center md:text-left">CNcode - Nền tảng dạy và học công nghệ thông tin trực tuyến</h1>
             </div>
 
-            <div className="flex items-center my-5 w-[100%%] h-[0.5px] bg-black/10 dark:bg-white/10 mx-auto"></div>
+            <div className="flex items-center my-5 w-full h-[0.5px] bg-black/10 dark:bg-white/10 mx-auto"></div>
 
             {/* Nội dung chính của footer */}
-            <div>Nội dung đang trống</div>
+
+            <div className="grid grid-cols-1 md:grid-cols-[35%_15%_15%_35%] gap-10">
+
+                <div>
+                    <h3 className="font-semibold mb-2">Thông tin chung</h3>
+                    <p className="text-justify">
+                        CNcode - Nền tảng dạy và học công nghệ thông tin miễn phí với nhiều
+                        công nghệ hiện đại dành cho mọi đối tượng như học sinh, sinh viên,
+                        giáo viên, người làm văn phòng,... Với tính năng mới, phù hợp với
+                        nhu cầu thực tiễn của xã hội.
+                    </p>
+                </div>
+
+                <div>
+                    <h3 className="font-semibold mb-2">Chăm sóc khách hàng</h3>
+                    <div className="flex flex-col space-y-2">
+                        <Link className="transition-all duration-200 hover:pl-1" href="/huongdanthanhtoan">Hướng dẫn thanh toán</Link>
+                        <Link className="transition-all duration-200 hover:pl-1" href="/chinhsachbaohanh">Chính sách bảo hành</Link>
+                        <Link className="transition-all duration-200 hover:pl-1" href="/quytrinhsudungdichvu">Quy trình sử dụng dịch vụ</Link>
+                        <Link className="transition-all duration-200 hover:pl-1" href="/chatwithadmin">Liên hệ với admin</Link>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 className="font-semibold mb-2">Tính năng nổi bật</h3>
+                    <div className="flex flex-col space-y-2">
+                        <Link className="transition-all duration-200 hover:pl-1" href="/giasuai">Gia sư AI</Link>
+                        <Link className="transition-all duration-200 hover:pl-1" href="/cuahangso">Cửa hàng số</Link>
+                        <Link className="transition-all duration-200 hover:pl-1" href="/diendan">Diễn đàn</Link>
+                        <Link className="transition-all duration-200 hover:pl-1" href="/baiviet">Bài viết</Link>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 className="font-semibold mb-3">Theo dõi</h3>
+                    <ul className="space-y-2">
+                        <li>Facebook</li>
+                        <li>TikTok</li>
+                        <li>YouTube</li>
+                    </ul>
+                </div>
+
+            </div>
+
 
             <div className="flex items-center my-5 w-full h-[0.5px] bg-black/10 dark:bg-white/10 mx-auto"></div>
 
             {/* Nội dung phụ bên dưới */}
             <div className="flex flex-col items-center md:flex-row md:justify-between gap-5 md:gap-0">
                 <div className="flex flex-row gap-5 items-center">
-                    <Link className="dark:text-white" href="/dieu-khoan-su-dung">Điều khoản sử dụng</Link>
+                    <Link className="dark:text-white" href="/dieukhoansudung">Điều khoản sử dụng</Link>
                     <div className="h-7.5 bg-black/10 dark:bg-white/10 w-px"></div>
-                    <Link className="dark:text-white" href="/an-toan-bao-mat">An toàn & bảo mật</Link>
+                    <Link className="dark:text-white" href="/antoanbaomat">An toàn & bảo mật</Link>
                 </div>
                 <div className="flex flex-row gap-5 items-center">
-                    <p className="dark:text-white uppercase">theo dõi chúng tôi</p>
+                    <p className="dark:text-white uppercase">Theo dõi chúng tôi</p>
                     <div className="h-7.5 bg-black/10 dark:bg-white/10 w-px"></div>
                     {mxh.map((item) => (
-                        <Link key={item.link} href={item.link} target="_blank">
+                        <Link className="transition-all duration-150 hover:scale-105 hover:shadow-3xl" key={item.link} href={item.link} target="_blank">
                             <Image className="hidden dark:block" width={item.sizew} height={item.sizeh} src={item.iconDark} alt="icon" />
                             <Image className="block dark:hidden" width={item.sizew} height={item.sizeh} src={item.iconWhite} alt="icon" />
                         </Link>
