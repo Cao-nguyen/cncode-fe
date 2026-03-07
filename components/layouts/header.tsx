@@ -36,7 +36,6 @@ export function Header() {
             {/* ===== DESKTOP ===== */}
             <div className="hidden lg:block bg-white dark:bg-black w-full h-15 fixed top-0 z-50">
                 <div className="flex h-full justify-between items-center">
-                    {/* Logo */}
                     <div className="ml-7.5">
                         <Link href="/">
                             <Image
@@ -49,7 +48,6 @@ export function Header() {
                         </Link>
                     </div>
 
-                    {/* Menu */}
                     <div className="flex">
                         {menu.map(m => {
                             const isActive = pathname === m.link
@@ -61,8 +59,8 @@ export function Header() {
                                             px-2.5 py-1.75 rounded-[9px] font-bold
                                             transition-all duration-100 lg:text-[15px] xl:text-[16px]
                                             ${isActive
-                                                ? "bg-[#d1d1d1] dark:bg-[#424141] bg-opacity-50"
-                                                : "hover:bg-[#bababa] dark:hover:bg-[#5F5F5F] hover:bg-opacity-50"
+                                                ? "bg-[#dedede] dark:bg-[#424141] bg-opacity-50"
+                                                : "hover:bg-[#d5d5d5] dark:hover:bg-[#5F5F5F] hover:bg-opacity-50"
                                             }
                                         `}
                                     >
@@ -73,9 +71,7 @@ export function Header() {
                         })}
                     </div>
 
-                    {/* Actions */}
                     <div className="mr-7.5 flex gap-3.75 items-center">
-                        {/* Theme */}
                         <div className="mx-2">
                             <button
                                 onClick={() => setTheme("light")}
@@ -96,7 +92,7 @@ export function Header() {
 
                         <Link
                             href="/login"
-                            className="bg-black text-white dark:bg-white dark:text-black px-2.5 py-1.75 rounded-[10px] font-bold"
+                            className="lg:text-[13px] xl:text-[16px] bg-black text-white dark:bg-white dark:text-black px-2.5 py-1.75 rounded-[10px] font-bold"
                         >
                             Đăng nhập
                         </Link>
@@ -118,7 +114,6 @@ export function Header() {
                     </Link>
 
                     <div className="flex gap-3.75 items-center">
-                        {/* Theme */}
                         <div className="mx-2">
                             <button
                                 onClick={() => setTheme("light")}
@@ -148,8 +143,8 @@ export function Header() {
             </div>
 
             {/* ===== MOBILE BOTTOM ===== */}
-            <div className="lg:hidden fixed bottom-0 w-full h-12.5 bg-white dark:bg-black z-50 border-t border-gray-200 dark:border-gray-800">
-                <div className="flex h-full justify-around items-center gap-2 px-2">
+            <div className="lg:hidden fixed bottom-0 w-full h-14 bg-white dark:bg-black z-50 border-t border-gray-200 dark:border-gray-800">
+                <div className="flex h-full justify-around items-center px-1">
                     {menu.map(m => {
                         const isActive = pathname === m.link
                         const Icon = m.icon
@@ -159,25 +154,30 @@ export function Header() {
                                 key={m.link}
                                 href={m.link}
                                 title={m.title}
-                                className={`relative flex items-center justify-center w-10 h-10 rounded-4xl transition-all duration-300 ${isActive ? "scale-110" : ""
+                                className={`flex flex-col items-center justify-center w-full h-full transition-all duration-200 hover:scale-105 ${isActive ? "scale-105" : ""
                                     }`}
                             >
-                                {isActive && (
-                                    <div className="absolute inset-0 bg-linear-to-br from-blue-400 to-blue-500 dark:from-blue-600 dark:to-blue-700 rounded-[7px] -z-10 shadow-lg" />
-                                )}
                                 <Icon
-                                    className={`size-5 ${isActive
-                                        ? "text-white"
+                                    className={`size-5 transition-all duration-200 ${isActive
+                                        ? "text-blue-500"
                                         : "text-black dark:text-white"
                                         }`}
                                 />
+
+                                <span
+                                    className={`text-[10px] mt-0.5 transition-all duration-200 ${isActive
+                                        ? "text-blue-500 font-bold"
+                                        : "text-gray-600 dark:text-gray-300"
+                                        }`}
+                                >
+                                    {m.title}
+                                </span>
                             </Link>
                         )
                     })}
                 </div>
             </div>
 
-            {/* Spacer cho mobile */}
             <div className="lg:hidden h-10" />
         </>
     )
