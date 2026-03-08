@@ -154,6 +154,12 @@ export function Footer() {
                         >
                             Founder: Lý Cao Nguyên
                         </Link>
+                        <Link
+                            className="transition-all duration-200 hover:pl-1 whitespace-nowrap"
+                            href="/sanphamlienket"
+                        >
+                            Sản phẩm của chúng tôi
+                        </Link>
 
                     </div>
 
