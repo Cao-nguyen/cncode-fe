@@ -13,10 +13,10 @@ export function Footer() {
     ]
 
     return (
-        <div className="w-full px-5 py-5 mb-5 md:mb-12.5 lg:mb-0 md:px-7.5 md:8.75 lg:px-10 lg:py-10 2xl:pb-10 pb-15 bg-[#f6f6f6] dark:bg-[#0e0e0e] text-[clamp(13px,1.4vw,16px)]">
+        <div className="w-full px-5 py-5 mb-5 md:mb-12.5 lg:mb-0 md:px-7.5 lg:px-10 lg:py-10 pb-15 bg-[#f6f6f6] dark:bg-[#0e0e0e] text-[clamp(13px,1.4vw,16px)]">
 
             {/* Logo + slogan */}
-            <div className="flex flex-col md:flex-row items-center md:items-center">
+            <div className="flex flex-col md:flex-row items-center">
 
                 <Image
                     src="/images/logo.png"
@@ -24,25 +24,24 @@ export function Footer() {
                     width={120}
                     height={60}
                     style={{ width: "auto", height: "auto" }}
-                    className="md:w-37.5 md:h-20 lg:w-37.5 lg:h-20"
+                    className="md:w-37.5 md:h-20"
                     priority
                 />
 
-                <h1 className="font-bold mt-3.75 md:mt-0 md:ml-5 text-[clamp(12px,2.2vw,20px)] text-center md:text-left whitespace-nowrap">
+                <h1 className="font-bold mt-3.5 md:mt-0 md:ml-5 text-[clamp(12px,2.2vw,20px)] text-center md:text-left whitespace-nowrap">
                     CNcode - Nền tảng dạy và học công nghệ thông tin trực tuyến
                 </h1>
 
             </div>
 
-            <div className="flex items-center my-5 w-full h-[0.5px] bg-black/10 dark:bg-white/10 mx-auto"></div>
+            <div className="flex items-center my-5 w-full h-[0.5px] bg-black/10 dark:bg-white/10"></div>
 
-            {/* Nội dung chính */}
-            <div className="grid grid-cols-2 md:grid-cols-[35%_15%_10%_12%_18%] gap-x-10 gap-y-8">
+            <div className="grid grid-cols-2 lg:grid-cols-[35%_15%_15%_10%_15%] gap-x-8 gap-y-8">
 
                 {/* Thông tin chung */}
-                <div className="col-span-2 md:col-span-1">
+                <div className="col-span-2 lg:col-span-1 min-w-0">
 
-                    <h3 className="font-semibold mb-2 whitespace-nowrap">
+                    <h3 className="font-semibold mb-2">
                         Thông tin chung
                     </h3>
 
@@ -56,121 +55,76 @@ export function Footer() {
                 </div>
 
                 {/* Chăm sóc khách hàng */}
-                <div>
+                <div className="min-w-0">
 
-                    <h3 className="font-semibold mb-2 whitespace-nowrap">
+                    <h3 className="font-semibold mb-2">
                         Chăm sóc khách hàng
                     </h3>
 
                     <div className="flex flex-col space-y-2">
-
-                        <Link className="transition-all duration-200 hover:pl-1" href="/chatwithadmin">
-                            Liên hệ với admin
-                        </Link>
-
-                        <Link className="transition-all duration-200 hover:pl-1" href="/chinhsachbaohanh">
-                            Chính sách bảo hành
-                        </Link>
-
-                        <Link className="transition-all duration-200 hover:pl-1" href="/huongdanthanhtoan">
-                            Hướng dẫn thanh toán
-                        </Link>
-
-                        <Link className="transition-all duration-200 hover:pl-1" href="/quytrinhsudungdichvu">
-                            Quy trình sử dụng dịch vụ
-                        </Link>
-
+                        <Link className="hover:pl-1 transition-all" href="/chatwithadmin">Liên hệ admin</Link>
+                        <Link className="hover:pl-1 transition-all" href="/chinhsachbaohanh">Chính sách bảo hành</Link>
+                        <Link className="hover:pl-1 transition-all" href="/huongdanthanhtoan">Hướng dẫn thanh toán</Link>
+                        <Link className="hover:pl-1 transition-all" href="/quytrinhsudungdichvu">Quy trình sử dụng</Link>
                     </div>
 
                 </div>
 
                 {/* Tính năng */}
-                <div>
+                <div className="min-w-0">
 
-                    <h3 className="font-semibold mb-2 whitespace-nowrap">
-                        Tính năng nổi bật
+                    <h3 className="font-semibold mb-2">
+                        Tính năng
                     </h3>
 
                     <div className="flex flex-col space-y-2">
-
-                        <Link className="transition-all duration-200 hover:pl-1" href="/giasuai">
-                            Gia sư AI
-                        </Link>
-
-                        <Link className="transition-all duration-200 hover:pl-1" href="/cuahangso">
-                            Cửa hàng số
-                        </Link>
-
-                        <Link className="transition-all duration-200 hover:pl-1" href="/diendan">
-                            Diễn đàn
-                        </Link>
-
-                        <Link className="transition-all duration-200 hover:pl-1" href="/baiviet">
-                            Bài viết
-                        </Link>
-
+                        <Link className="hover:pl-1 transition-all" href="/giasuai">Gia sư AI</Link>
+                        <Link className="hover:pl-1 transition-all" href="/cuahangso">Cửa hàng số</Link>
+                        <Link className="hover:pl-1 transition-all" href="/diendan">Diễn đàn</Link>
+                        <Link className="hover:pl-1 transition-all" href="/baiviet">Bài viết</Link>
                     </div>
 
                 </div>
 
                 {/* Về chúng tôi */}
-                <div>
+                <div className="min-w-0">
 
-                    <h3 className="font-semibold mb-2 whitespace-nowrap">
+                    <h3 className="font-semibold mb-2">
                         Về chúng tôi
                     </h3>
 
                     <div className="flex flex-col space-y-2">
-
-                        <Link className="transition-all duration-200 hover:pl-1" href="/gioithieu">
-                            Giới thiệu
-                        </Link>
-
-                        <Link className="transition-all duration-200 hover:pl-1" href="/hotro">
-                            Trung tâm hỗ trợ
-                        </Link>
-
-                        <Link className="transition-all duration-200 hover:pl-1" href="/hanhtrinhiyeuthuong">
-                            Hành trình yêu thương
-                        </Link>
-
+                        <Link className="hover:pl-1 transition-all" href="/gioithieu">Giới thiệu</Link>
+                        <Link className="hover:pl-1 transition-all" href="/hotro">Trung tâm hỗ trợ</Link>
+                        <Link className="hover:pl-1 transition-all" href="/hanhtrinhiyeuthuong">Hành trình yêu thương</Link>
                     </div>
 
                 </div>
 
                 {/* Điều hành */}
-                <div>
+                <div className="min-w-0">
 
-                    <h3 className="font-semibold mb-2 whitespace-nowrap">
+                    <h3 className="font-semibold mb-2">
                         Điều hành
                     </h3>
 
                     <div className="flex flex-col space-y-2">
-
-                        <Link
-                            className="transition-all duration-200 hover:pl-1 whitespace-nowrap"
-                            target="_blank"
-                            href="https://zalo.me/0394217863"
-                        >
+                        <Link className="hover:pl-1 transition-all" target="_blank" href="https://zalo.me/0394217863">
                             Founder: Lý Cao Nguyên
                         </Link>
-                        <Link
-                            className="transition-all duration-200 hover:pl-1 whitespace-nowrap"
-                            href="/sanphamlienket"
-                        >
+                        <Link className="hover:pl-1 transition-all" href="/sanphamlienket">
                             Sản phẩm của chúng tôi
                         </Link>
-
                     </div>
 
                 </div>
 
             </div>
 
-            <div className="flex items-center my-5 w-full h-[0.5px] bg-black/10 dark:bg-white/10 mx-auto"></div>
+            <div className="flex items-center my-5 w-full h-[0.5px] bg-black/10 dark:bg-white/10"></div>
 
             {/* Footer dưới */}
-            <div className="flex flex-col items-center md:flex-row md:justify-between gap-5 md:gap-0">
+            <div className="flex flex-col items-center md:flex-row md:justify-between gap-5">
 
                 <div className="flex flex-row gap-5 items-center">
 
@@ -178,7 +132,7 @@ export function Footer() {
                         Điều khoản sử dụng
                     </Link>
 
-                    <div className="h-7.5 bg-black/10 dark:bg-white/10 w-px"></div>
+                    <div className="h-7 bg-black/10 dark:bg-white/10 w-px"></div>
 
                     <Link className="dark:text-white whitespace-nowrap" href="/antoanbaomat">
                         An toàn & bảo mật
@@ -192,7 +146,7 @@ export function Footer() {
                         Theo dõi chúng tôi
                     </p>
 
-                    <div className="h-7.5 bg-black/10 dark:bg-white/10 w-px"></div>
+                    <div className="h-7 bg-black/10 dark:bg-white/10 w-px"></div>
 
                     {mxh.map((item) => (
                         <Link
