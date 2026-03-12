@@ -18,6 +18,7 @@ import {
 } from "lucide-react"
 
 export function Header() {
+
     const pathname = usePathname()
     const { setTheme } = useTheme()
 
@@ -33,6 +34,7 @@ export function Header() {
 
     return (
         <>
+
             {/* ===== DESKTOP ===== */}
             <div className="hidden lg:block bg-white dark:bg-black w-full h-15 fixed top-0 z-50">
                 <div className="flex h-full justify-between items-center">
@@ -51,7 +53,9 @@ export function Header() {
 
                     <div className="flex">
                         {menu.map(m => {
+
                             const isActive = pathname === m.link
+
                             return (
                                 <div key={m.link} className="lg:px-1 xl:px-3.75">
                                     <Link
@@ -73,7 +77,9 @@ export function Header() {
                     </div>
 
                     <div className="mr-7.5 flex gap-3.75 items-center">
+
                         <div className="mx-2">
+
                             <button
                                 onClick={() => setTheme("light")}
                                 className="hidden dark:block"
@@ -87,6 +93,7 @@ export function Header() {
                             >
                                 <Moon className="size-5" />
                             </button>
+
                         </div>
 
                         <Bell className="size-4.5 cursor-pointer text-black dark:text-white" />
@@ -97,13 +104,16 @@ export function Header() {
                         >
                             Đăng nhập
                         </Link>
+
                     </div>
 
                 </div>
             </div>
 
+
             {/* ===== MOBILE TOP ===== */}
             <div className="lg:hidden fixed top-0 w-full h-10 bg-white dark:bg-black z-50 border-b border-gray-200 dark:border-gray-800">
+
                 <div className="flex h-full justify-between items-center px-3.75">
 
                     <Link href="/">
@@ -119,6 +129,7 @@ export function Header() {
                     <div className="flex gap-3.75 items-center">
 
                         <div className="mx-2">
+
                             <button
                                 onClick={() => setTheme("light")}
                                 className="hidden dark:block"
@@ -132,6 +143,7 @@ export function Header() {
                             >
                                 <Moon className="size-4.5" />
                             </button>
+
                         </div>
 
                         <Bell className="size-4.5 cursor-pointer text-black dark:text-white" />
@@ -144,13 +156,26 @@ export function Header() {
                         </Link>
 
                     </div>
+
                 </div>
+
             </div>
 
-            {/* ===== MOBILE BOTTOM ===== */}
-            <div className="lg:hidden fixed bottom-0 w-full h-14 bg-white dark:bg-black z-50 border-t border-gray-200 dark:border-gray-800">
 
-                <div className="flex h-full items-center px-5">
+            {/* ===== MOBILE BOTTOM ===== */}
+            <div className="lg:hidden fixed bottom-0 left-0 w-full z-50">
+
+                <div className="
+                    w-full
+                    h-15
+                    bg-white dark:bg-black
+                    border-t border-gray-200 dark:border-gray-800
+                    rounded-t-2xl
+                    shadow-[0_-4px_20px_rgba(0,0,0,0.15)]
+                    flex
+                    items-center
+                    px-5
+                ">
 
                     {menu.map(m => {
 
@@ -158,6 +183,7 @@ export function Header() {
                         const Icon = m.icon
 
                         return (
+
                             <Link
                                 key={m.link}
                                 href={m.link}
@@ -165,33 +191,31 @@ export function Header() {
                                 className={`
                                     flex-1
                                     flex flex-col items-center justify-center
-                                    gap-1.5
+                                    gap-0.5
                                     transition-all duration-200
-                                    hover:scale-105
                                     ${isActive ? "scale-105" : ""}
                                 `}
                             >
 
                                 <Icon
                                     className={`
-                                        transition-all duration-200
+                                        transition-all
                                         ${isActive
                                             ? "text-blue-500"
                                             : "text-black dark:text-white"
                                         }
                                     `}
-                                    size={20}
+                                    size={18}
                                 />
 
                                 <span
                                     className={`
+                                        text-[clamp(7px,2vw,10px)]
+                                        leading-none
                                         text-center
                                         whitespace-nowrap
-                                        leading-none
-                                        transition-all duration-200
-                                        text-[clamp(8px,2.3vw,11px)]
                                         ${isActive
-                                            ? "text-blue-500 font-bold"
+                                            ? "text-blue-500 font-semibold"
                                             : "text-gray-600 dark:text-gray-300"
                                         }
                                     `}
@@ -200,6 +224,7 @@ export function Header() {
                                 </span>
 
                             </Link>
+
                         )
                     })}
 
@@ -207,8 +232,10 @@ export function Header() {
 
             </div>
 
+
             {/* spacer mobile */}
             <div className="lg:hidden h-10" />
+
         </>
     )
 }
