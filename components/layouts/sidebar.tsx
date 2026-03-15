@@ -1,4 +1,4 @@
-import { CircleUser, EllipsisVertical, LayoutDashboard, LogOut } from "lucide-react";
+import { CircleUser, EllipsisVertical, LayoutDashboard, LogOut, History, UserCircle, Key, ShieldX, Coins } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -10,19 +10,27 @@ export default function Sidebar({ open }: { open: boolean }) {
 
     const menuItems = [
         {
-            category: "Tổng quan", categoryId: "home", listLink: [
+            category: "Tổng quan", categoryId: "home",
+            listLink: [
                 { title: "Trang tổng quan", link: "/admin/dashboard", icon: <LayoutDashboard /> },
-                { title: "Trang học tập", link: "/admin/dasnhboard", icon: <LayoutDashboard /> },
+                { title: "Hoạt động gần đây", link: "/admin/activity", icon: <History /> },
             ],
-
         },
         {
-            category: "Tổng quan", categoryId: "test", listLink: [
-                { title: "Trang tổng quan", link: "/admin/d", icon: <LayoutDashboard /> },
-                { title: "Trang học tập", link: "/admin/daeshboard", icon: <LayoutDashboard /> },
+            category: "Quản lí người dùng", categoryId: "user", listLink: [
+                { title: "Người dùng", link: "/admin/users", icon: <UserCircle /> },
+                { title: "Phân quyền", link: "/admin/roles", icon: <Key /> },
+                { title: "Vi phạm", link: "/admin/violate", icon: <ShieldX /> },
+                { title: "Quản lí xu", link: "/admin/coins", icon: <Coins /> },
             ],
         }
     ]
+
+    // Phân quyền người dùng
+    // Người dùng vi phạm
+    //     Khoá / mở khoá tài khoản
+    // Lịch sử hoạt động
+    // Quản lí xu người dùng
 
     const path = usePathname()
 
@@ -34,7 +42,7 @@ export default function Sidebar({ open }: { open: boolean }) {
                     <p className="">CNcode</p>
                 </div>
 
-                <nav className="flex-1 overflow-y-scroll no-scrollbar pt-17.5 pb-2.5 px-2.5 space-y-0">
+                <nav className="flex-1 overflow-y-scroll no-scrollbar pt-23.5 pb-2.5 px-2.5 space-y-0">
                     <Accordion type="single" collapsible className="max-w-lg" defaultValue="home">
                         {menuItems.map((item, index) => (
                             <AccordionItem key={index} value={item.categoryId} className="py-0 px-1 border-b-0 last:border-0">

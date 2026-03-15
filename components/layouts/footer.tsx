@@ -74,7 +74,7 @@ export function Footer() {
                 <div className="min-w-0">
 
                     <h3 className="font-semibold mb-2">
-                        Tính năng
+                        Tính năng nổi bật
                     </h3>
 
                     <div className="flex flex-col space-y-2">
