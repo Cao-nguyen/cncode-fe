@@ -29,7 +29,7 @@ export function Header() {
         { title: "Luyện tập", link: "/luyentap", icon: Code1 },
         { title: "Sự kiện", link: "/sukien", icon: Calendar2 },
         { title: "Bài viết", link: "/baiviet", icon: Document },
-        { title: "Cửa hàng số", link: "/cuahangso", icon: Shop },
+        { title: "Cửa hàng", link: "/cuahangso", icon: Shop },
     ]
 
     return (
