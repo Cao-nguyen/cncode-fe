@@ -36,7 +36,7 @@ export function Footer() {
 
             <div className="flex items-center my-5 w-full h-[0.5px] bg-black/10 dark:bg-white/10"></div>
 
-            <div className="grid grid-cols-2 lg:grid-cols-[35%_15%_15%_10%_15%] gap-x-8 gap-y-8">
+            <div className="grid grid-cols-2 lg:grid-cols-[35%_15%_13%_12%_15%] gap-x-8 gap-y-8">
 
                 {/* Thông tin chung */}
                 <div className="col-span-2 lg:col-span-1 min-w-0">

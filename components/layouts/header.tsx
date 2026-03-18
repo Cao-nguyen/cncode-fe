@@ -5,17 +5,17 @@ import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { useTheme } from "next-themes"
 import {
-    Bell,
-    Sun,
+    Sun1,
     Moon,
-    Home,
-    MessageCircle,
-    BookOpen,
-    Code,
-    Calendar,
-    FileText,
-    ShoppingBag,
-} from "lucide-react"
+    Notification,
+    Home2,
+    Message2,
+    Book1,
+    Code1,
+    Calendar2,
+    Document,
+    Shop,
+} from "iconsax-react"
 
 export function Header() {
 
@@ -23,13 +23,13 @@ export function Header() {
     const { setTheme } = useTheme()
 
     const menu = [
-        { title: "Trang chủ", link: "/", icon: Home },
-        { title: "Diễn đàn", link: "/diendan", icon: MessageCircle },
-        { title: "Khoá học", link: "/khoahoc", icon: BookOpen },
-        { title: "Luyện tập", link: "/luyentap", icon: Code },
-        { title: "Sự kiện", link: "/sukien", icon: Calendar },
-        { title: "Bài viết", link: "/baiviet", icon: FileText },
-        { title: "Cửa hàng số", link: "/cuahangso", icon: ShoppingBag },
+        { title: "Trang chủ", link: "/", icon: Home2 },
+        { title: "Diễn đàn", link: "/diendan", icon: Message2 },
+        { title: "Khoá học", link: "/khoahoc", icon: Book1 },
+        { title: "Luyện tập", link: "/luyentap", icon: Code1 },
+        { title: "Sự kiện", link: "/sukien", icon: Calendar2 },
+        { title: "Bài viết", link: "/baiviet", icon: Document },
+        { title: "Cửa hàng số", link: "/cuahangso", icon: Shop },
     ]
 
     return (
@@ -61,13 +61,13 @@ export function Header() {
                                     <Link
                                         href={m.link}
                                         className={`
-                                        px-2.5 py-1.75 rounded-[9px] font-bold
-                                        transition-all duration-100 lg:text-[15px] xl:text-[16px]
-                                        ${isActive
+                      px-2.5 py-1.75 rounded-[9px] font-bold
+                      transition-all duration-100 lg:text-[15px] xl:text-[16px]
+                      ${isActive
                                                 ? "bg-[#dedede] dark:bg-[#424141] bg-opacity-50"
                                                 : "hover:bg-[#d5d5d5] dark:hover:bg-[#5F5F5F] hover:bg-opacity-50"
                                             }
-                                        `}
+                    `}
                                     >
                                         {m.title}
                                     </Link>
@@ -84,19 +84,23 @@ export function Header() {
                                 onClick={() => setTheme("light")}
                                 className="hidden dark:block"
                             >
-                                <Sun className="size-5 dark:text-white" />
+                                <Sun1 size={20} color="currentColor" className="dark:text-white" />
                             </button>
 
                             <button
                                 onClick={() => setTheme("dark")}
                                 className="block dark:hidden"
                             >
-                                <Moon className="size-5" />
+                                <Moon size={20} color="currentColor" />
                             </button>
 
                         </div>
 
-                        <Bell className="size-4.5 cursor-pointer text-black dark:text-white" />
+                        <Notification
+                            size={20}
+                            color="currentColor"
+                            className="cursor-pointer text-black dark:text-white"
+                        />
 
                         <Link
                             href="/login"
@@ -134,19 +138,23 @@ export function Header() {
                                 onClick={() => setTheme("light")}
                                 className="hidden dark:block"
                             >
-                                <Sun className="size-4.5 dark:text-white" />
+                                <Sun1 size={18} color="currentColor" className="dark:text-white" />
                             </button>
 
                             <button
                                 onClick={() => setTheme("dark")}
                                 className="block dark:hidden"
                             >
-                                <Moon className="size-4.5" />
+                                <Moon size={18} color="currentColor" />
                             </button>
 
                         </div>
 
-                        <Bell className="size-4.5 cursor-pointer text-black dark:text-white" />
+                        <Notification
+                            size={20}
+                            color="currentColor"
+                            className="cursor-pointer text-black dark:text-white"
+                        />
 
                         <Link
                             href="/login"
@@ -164,72 +172,67 @@ export function Header() {
 
             {/* ===== MOBILE BOTTOM ===== */}
             <div className="lg:hidden fixed bottom-0 left-0 w-full z-50">
-
                 <div className="
-                    w-full
-                    h-15
-                    bg-white dark:bg-black
-                    border-t border-gray-200 dark:border-gray-800
-                    rounded-t-2xl
-                    shadow-[0_-4px_20px_rgba(0,0,0,0.15)]
-                    flex
-                    items-center
-                    px-5
-                ">
+          w-full h-15
+          bg-white dark:bg-black
+          border-t border-gray-200 dark:border-gray-800
+          rounded-t-2xl
+          shadow-[0_-4px_20px_rgba(0,0,0,0.15)]
+          flex items-center px-2
+        ">
 
                     {menu.map(m => {
-
                         const isActive = pathname === m.link
                         const Icon = m.icon
 
                         return (
-
                             <Link
                                 key={m.link}
                                 href={m.link}
                                 title={m.title}
-                                className={`
-                                    flex-1
-                                    flex flex-col items-center justify-center
-                                    gap-0.5
-                                    transition-all duration-200
-                                    ${isActive ? "scale-105" : ""}
-                                `}
+                                className="
+                  flex-1 flex flex-col items-center justify-center
+                  gap-1
+                  active:scale-95 active:opacity-90
+                  transition-all duration-150
+                "
                             >
 
                                 <Icon
+                                    size={22}
+                                    color="currentColor"
+                                    variant={isActive ? "Bold" : "Linear"}
                                     className={`
-                                        transition-all
-                                        ${isActive
+                    transition-all duration-200
+                    ${isActive
                                             ? "text-blue-500"
-                                            : "text-black dark:text-white"
+                                            : "text-black dark:text-white opacity-70"
                                         }
-                                    `}
-                                    size={18}
+                  `}
                                 />
 
                                 <span
                                     className={`
-                                        text-[clamp(7px,2vw,10px)]
-                                        leading-none
-                                        text-center
-                                        whitespace-nowrap
-                                        ${isActive
-                                            ? "text-blue-500 font-semibold"
-                                            : "text-gray-600 dark:text-gray-300"
+                    text-[clamp(8px,2vw,11px)]
+                    font-bold
+                    leading-none
+                    text-center
+                    whitespace-nowrap
+                    transition-all
+                    ${isActive
+                                            ? "text-blue-500"
+                                            : "text-gray-500 dark:text-gray-400"
                                         }
-                                    `}
+                  `}
                                 >
                                     {m.title}
                                 </span>
 
                             </Link>
-
                         )
                     })}
 
                 </div>
-
             </div>
 
 
