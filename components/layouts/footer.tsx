@@ -15,7 +15,7 @@ export function Footer() {
     return (
         <div className="w-full px-5 py-5 mb-5 md:mb-12.5 lg:mb-0 md:px-7.5 lg:px-10 lg:py-10 pb-15 bg-[#f6f6f6] dark:bg-[#0e0e0e] text-[clamp(13px,1.4vw,16px)]">
 
-            {/* Logo + slogan */}
+            {/* Logo */}
             <div className="flex flex-col items-center md:flex-row md:items-center">
 
                 <Image
@@ -38,76 +38,52 @@ export function Footer() {
 
             <div className="grid grid-cols-2 lg:grid-cols-[35%_15%_13%_12%_15%] gap-x-8 gap-y-8">
 
-                {/* Thông tin chung */}
+                {/* Thông tin */}
                 <div className="col-span-2 lg:col-span-1 min-w-0">
-
-                    <h3 className="font-semibold mb-2">
-                        Thông tin chung
-                    </h3>
-
+                    <h3 className="font-semibold mb-2">Thông tin chung</h3>
                     <p className="text-justify">
                         CNcode - Nền tảng dạy và học công nghệ thông tin miễn phí với nhiều
                         công nghệ hiện đại dành cho mọi đối tượng như học sinh, sinh viên,
                         giáo viên, người làm văn phòng,... Với tính năng mới, phù hợp với
                         nhu cầu thực tiễn của xã hội.
                     </p>
-
                 </div>
 
-                {/* Chăm sóc khách hàng */}
-                <div className="min-w-0">
-
-                    <h3 className="font-semibold mb-2">
-                        Chăm sóc khách hàng
-                    </h3>
-
+                {/* CSKH */}
+                <div>
+                    <h3 className="font-semibold mb-2">Chăm sóc khách hàng</h3>
                     <div className="flex flex-col space-y-2">
                         <Link className="hover:pl-1 transition-all" href="/chatwithadmin">Liên hệ admin</Link>
                         <Link className="hover:pl-1 transition-all" href="/chinhsachbaohanh">Chính sách bảo hành</Link>
                         <Link className="hover:pl-1 transition-all" href="/huongdanthanhtoan">Hướng dẫn thanh toán</Link>
                         <Link className="hover:pl-1 transition-all" href="/quytrinhsudungdichvu">Quy trình sử dụng</Link>
                     </div>
-
                 </div>
 
                 {/* Tính năng */}
-                <div className="min-w-0">
-
-                    <h3 className="font-semibold mb-2">
-                        Tính năng nổi bật
-                    </h3>
-
+                <div>
+                    <h3 className="font-semibold mb-2">Tính năng nổi bật</h3>
                     <div className="flex flex-col space-y-2">
                         <Link className="hover:pl-1 transition-all" href="/giasuai">Gia sư AI</Link>
                         <Link className="hover:pl-1 transition-all" href="/cuahangso">Cửa hàng số</Link>
                         <Link className="hover:pl-1 transition-all" href="/diendan">Diễn đàn</Link>
                         <Link className="hover:pl-1 transition-all" href="/baiviet">Bài viết</Link>
                     </div>
-
                 </div>
 
                 {/* Về chúng tôi */}
-                <div className="min-w-0">
-
-                    <h3 className="font-semibold mb-2">
-                        Về chúng tôi
-                    </h3>
-
+                <div>
+                    <h3 className="font-semibold mb-2">Về chúng tôi</h3>
                     <div className="flex flex-col space-y-2">
                         <Link className="hover:pl-1 transition-all" href="/gioithieu">Giới thiệu</Link>
                         <Link className="hover:pl-1 transition-all" href="/hotro">Trung tâm hỗ trợ</Link>
                         <Link className="hover:pl-1 transition-all" href="/hanhtrinhiyeuthuong">Hành trình yêu thương</Link>
                     </div>
-
                 </div>
 
                 {/* Điều hành */}
-                <div className="min-w-0">
-
-                    <h3 className="font-semibold mb-2">
-                        Điều hành
-                    </h3>
-
+                <div>
+                    <h3 className="font-semibold mb-2">Điều hành</h3>
                     <div className="flex flex-col space-y-2">
                         <Link className="hover:pl-1 transition-all" target="_blank" href="https://zalo.me/0394217863">
                             Founder: Lý Cao Nguyên
@@ -116,33 +92,24 @@ export function Footer() {
                             Sản phẩm của chúng tôi
                         </Link>
                     </div>
-
                 </div>
 
             </div>
 
             <div className="flex items-center my-5 w-full h-[0.5px] bg-black/10 dark:bg-white/10"></div>
 
-            {/* Footer dưới */}
+            {/* Bottom */}
             <div className="flex flex-col items-center md:flex-row md:justify-between gap-5">
 
                 <div className="flex flex-row gap-5 items-center">
-
-                    <Link className="dark:text-white whitespace-nowrap" href="/dieukhoansudung">
-                        Điều khoản sử dụng
-                    </Link>
-
+                    <Link href="/dieukhoansudung">Điều khoản sử dụng</Link>
                     <div className="h-7 bg-black/10 dark:bg-white/10 w-px"></div>
-
-                    <Link className="dark:text-white whitespace-nowrap" href="/antoanbaomat">
-                        An toàn & bảo mật
-                    </Link>
-
+                    <Link href="/antoanbaomat">An toàn & bảo mật</Link>
                 </div>
 
-                <div className="flex flex-row gap-5 items-center">
+                <div className="flex flex-row gap-5 items-center flex-nowrap">
 
-                    <p className="dark:text-white uppercase whitespace-nowrap">
+                    <p className="uppercase whitespace-nowrap">
                         Theo dõi chúng tôi
                     </p>
 
@@ -150,15 +117,15 @@ export function Footer() {
 
                     {mxh.map((item) => (
                         <Link
-                            className="transition-all duration-150 hover:scale-105 hover:shadow-3xl flex items-center justify-center"
                             key={item.link}
                             href={item.link}
                             target="_blank"
+                            className="flex items-center justify-center shrink-0 transition-all duration-150 hover:scale-110"
                         >
                             <Image
-                                className={`hidden dark:block object-contain 
-                                    ${item.big ? "w-8.75 h-8.75" : "w-8 h-8"} 
-                                    md:w-8.5 md:h-8.5
+                                className={`hidden dark:block object-contain shrink-0 
+                                    ${item.big ? "w-[36px] h-[36px]" : "w-[32px] h-[32px]"} 
+                                    md:w-[34px] md:h-[34px]
                                 `}
                                 src={item.iconDark}
                                 alt="icon"
@@ -166,9 +133,9 @@ export function Footer() {
                                 height={item.sizeh}
                             />
                             <Image
-                                className={`block dark:hidden object-contain 
-                                    ${item.big ? "w-8.75 h-8.75" : "w-8 h-8"} 
-                                    md:w-8.5 md:h-8.5
+                                className={`block dark:hidden object-contain shrink-0 
+                                    ${item.big ? "w-[36px] h-[36px]" : "w-[32px] h-[32px]"} 
+                                    md:w-[34px] md:h-[34px]
                                 `}
                                 src={item.iconWhite}
                                 alt="icon"
@@ -182,7 +149,7 @@ export function Footer() {
 
             </div>
 
-            <p className="text-center mt-5 dark:text-white whitespace-nowrap">
+            <p className="text-center mt-5 whitespace-nowrap">
                 Copyright © 2026 CNcode. All rights reserved.
             </p>
 
