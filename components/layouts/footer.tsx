@@ -124,8 +124,8 @@ export function Footer() {
                         >
                             <Image
                                 className={`hidden dark:block object-contain shrink-0 
-                                    ${item.big ? "w-[36px] h-[36px]" : "w-[32px] h-[32px]"} 
-                                    md:w-[34px] md:h-[34px]
+                                    ${item.big ? "w-9 h-9" : "w-8 h-8"} 
+                                    md:w-8.5 md:h-8.5
                                 `}
                                 src={item.iconDark}
                                 alt="icon"
@@ -134,8 +134,8 @@ export function Footer() {
                             />
                             <Image
                                 className={`block dark:hidden object-contain shrink-0 
-                                    ${item.big ? "w-[36px] h-[36px]" : "w-[32px] h-[32px]"} 
-                                    md:w-[34px] md:h-[34px]
+                                    ${item.big ? "w-9 h-9" : "w-8 h-8"} 
+                                    md:w-8.5 md:h-8.5
                                 `}
                                 src={item.iconWhite}
                                 alt="icon"
