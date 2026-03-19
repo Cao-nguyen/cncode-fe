@@ -101,31 +101,36 @@ export function Footer() {
             {/* Bottom */}
             <div className="flex flex-col items-center md:flex-row md:justify-between gap-5">
 
-                <div className="flex flex-row gap-5 items-center">
+                {/* Left */}
+                <div className="flex flex-row gap-3 md:gap-5 items-center">
                     <Link href="/dieukhoansudung">Điều khoản sử dụng</Link>
-                    <div className="h-7 bg-black/10 dark:bg-white/10 w-px"></div>
+                    <div className="h-5 md:h-7 bg-black/10 dark:bg-white/10 w-px"></div>
                     <Link href="/antoanbaomat">An toàn & bảo mật</Link>
                 </div>
 
-                <div className="flex flex-row gap-5 items-center flex-nowrap">
+                {/* Right */}
+                <div className="flex flex-row gap-3 md:gap-5 items-center flex-nowrap">
 
                     <p className="uppercase whitespace-nowrap">
                         Theo dõi chúng tôi
                     </p>
 
-                    <div className="h-7 bg-black/10 dark:bg-white/10 w-px"></div>
+                    <div className="h-5 md:h-7 bg-black/10 dark:bg-white/10 w-px"></div>
 
                     {mxh.map((item) => (
                         <Link
                             key={item.link}
                             href={item.link}
                             target="_blank"
-                            className="flex items-center justify-center shrink-0 transition-all duration-150 hover:scale-110"
+                            className="flex items-center justify-center shrink-0 
+                            transition-all duration-150 active:scale-95 hover:scale-110"
                         >
                             <Image
                                 className={`hidden dark:block object-contain shrink-0 
-                                    ${item.big ? "w-9 h-9" : "w-8 h-8"} 
-                                    md:w-8.5 md:h-8.5
+                                    ${item.big
+                                        ? "w-7 h-7 md:w-9 md:h-9"
+                                        : "w-6 h-6 md:w-8 md:h-8"
+                                    }
                                 `}
                                 src={item.iconDark}
                                 alt="icon"
@@ -134,8 +139,10 @@ export function Footer() {
                             />
                             <Image
                                 className={`block dark:hidden object-contain shrink-0 
-                                    ${item.big ? "w-9 h-9" : "w-8 h-8"} 
-                                    md:w-8.5 md:h-8.5
+                                    ${item.big
+                                        ? "w-7 h-7 md:w-9 md:h-9"
+                                        : "w-6 h-6 md:w-8 md:h-8"
+                                    }
                                 `}
                                 src={item.iconWhite}
                                 alt="icon"
