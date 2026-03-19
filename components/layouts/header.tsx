@@ -124,8 +124,9 @@ export function Header() {
                         <Image
                             src="/images/logo.png"
                             alt="Logo CNcode"
-                            width={80}
-                            height={40}
+                            width={60}
+                            height={30}
+                            className="object-contain"
                             priority
                         />
                     </Link>
