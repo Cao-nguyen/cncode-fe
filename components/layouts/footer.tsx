@@ -6,8 +6,8 @@ import Link from "next/link"
 export function Footer() {
 
     const mxh = [
-        { sizew: 34, sizeh: 34, iconDark: "/icons/pw.svg", iconWhite: "/icons/pb.svg", link: "https://zalo.me/0394217863" },
-        { sizew: 34, sizeh: 34, iconDark: "/icons/ttw.svg", iconWhite: "/icons/ttb.svg", link: "/" },
+        { sizew: 34, sizeh: 34, iconDark: "/icons/pw.svg", iconWhite: "/icons/pb.svg", link: "https://zalo.me/0394217863", big: true },
+        { sizew: 34, sizeh: 34, iconDark: "/icons/ttw.svg", iconWhite: "/icons/ttb.svg", link: "/", big: true },
         { sizew: 30, sizeh: 30, iconDark: "/icons/fbw.svg", iconWhite: "/icons/fbb.svg", link: "https://www.facebook.com/cncode.edu.vn" },
         { sizew: 30, sizeh: 30, iconDark: "/icons/ytbw.svg", iconWhite: "/icons/ytbb.svg", link: "https://www.youtube.com/@CNcode-edu" },
     ]
@@ -16,7 +16,7 @@ export function Footer() {
         <div className="w-full px-5 py-5 mb-5 md:mb-12.5 lg:mb-0 md:px-7.5 lg:px-10 lg:py-10 pb-15 bg-[#f6f6f6] dark:bg-[#0e0e0e] text-[clamp(13px,1.4vw,16px)]">
 
             {/* Logo + slogan */}
-            <div className="flex flex-col md:flex-row items-center">
+            <div className="flex flex-col items-center md:flex-row md:items-center">
 
                 <Image
                     src="/images/logo.png"
@@ -28,7 +28,7 @@ export function Footer() {
                     priority
                 />
 
-                <h1 className="font-bold mt-3.5 md:mt-0 md:ml-5 text-[clamp(12px,2.2vw,20px)] text-center md:text-left whitespace-nowrap">
+                <h1 className="hidden md:block font-bold md:ml-5 text-[clamp(12px,2.2vw,20px)] whitespace-nowrap">
                     CNcode - Nền tảng dạy và học công nghệ thông tin trực tuyến
                 </h1>
 
@@ -150,13 +150,31 @@ export function Footer() {
 
                     {mxh.map((item) => (
                         <Link
-                            className="transition-all duration-150 hover:scale-105 hover:shadow-3xl"
+                            className="transition-all duration-150 hover:scale-105 hover:shadow-3xl flex items-center justify-center"
                             key={item.link}
                             href={item.link}
                             target="_blank"
                         >
-                            <Image className="hidden dark:block" width={item.sizew} height={item.sizeh} src={item.iconDark} alt="icon" />
-                            <Image className="block dark:hidden" width={item.sizew} height={item.sizeh} src={item.iconWhite} alt="icon" />
+                            <Image
+                                className={`hidden dark:block object-contain 
+                                    ${item.big ? "w-8.75 h-8.75" : "w-8 h-8"} 
+                                    md:w-8.5 md:h-8.5
+                                `}
+                                src={item.iconDark}
+                                alt="icon"
+                                width={item.sizew}
+                                height={item.sizeh}
+                            />
+                            <Image
+                                className={`block dark:hidden object-contain 
+                                    ${item.big ? "w-8.75 h-8.75" : "w-8 h-8"} 
+                                    md:w-8.5 md:h-8.5
+                                `}
+                                src={item.iconWhite}
+                                alt="icon"
+                                width={item.sizew}
+                                height={item.sizeh}
+                            />
                         </Link>
                     ))}
 
