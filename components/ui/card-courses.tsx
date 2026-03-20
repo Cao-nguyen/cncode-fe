@@ -6,12 +6,34 @@ import { Clock, SecurityUser } from "iconsax-react"
 import { Badge } from "@/components/ui/badge"
 import { useTheme } from "next-themes"
 
-export default function CourseCard() {
+interface Props {
+    title: string
+    description: string
+    image: string
+    duration: string
+    students: string
+    price?: string
+    oldPrice?: string
+    discount?: number
+    isFree?: boolean
+    link: string
+}
 
-    const isFree = false
+export default function CardCourses({
+    title,
+    description,
+    image,
+    duration,
+    students,
+    price,
+    oldPrice,
+    discount,
+    isFree = false,
+    link
+}: Props) {
 
-    const { theme } = useTheme()
-    const colorTheme = theme === "dark" ? "#fff" : "#111"
+    const { resolvedTheme } = useTheme()
+    const colorTheme = resolvedTheme === "dark" ? "#fff" : "#111"
 
     return (
         <div className="
@@ -27,74 +49,61 @@ export default function CourseCard() {
         ">
 
             {/* Image */}
-            <Link href="/course" className="block relative w-full h-[160px]">
-                <Image
-                    src="/images/images1.jpg"
-                    alt="course"
-                    fill
-                    className="object-cover"
-                />
+            <Link href={link} className="block relative w-full h-60 md:h-40 lg:h-55">
+                <Image src={image} alt={title} fill className="object-cover" />
 
                 {/* Discount */}
-                <div className="absolute top-2 left-2">
-                    <Badge className="bg-red-500 text-white">
-                        -40%
-                    </Badge>
-                </div>
+                {discount && (
+                    <div className="absolute top-2 left-2">
+                        <Badge className="bg-red-500 text-white">
+                            -{discount}%
+                        </Badge>
+                    </div>
+                )}
 
                 {/* Free / Pro */}
                 <div className="absolute top-2 right-2">
-                    {isFree ? (
-                        <Badge className="bg-green-500 text-white">
-                            Free
-                        </Badge>
-                    ) : (
-                        <Badge className="bg-purple-600 text-white">
-                            Pro
-                        </Badge>
-                    )}
+                    <Badge className={isFree ? "bg-green-500 text-white" : "bg-purple-600 text-white"}>
+                        {isFree ? "Free" : "Pro"}
+                    </Badge>
                 </div>
             </Link>
 
             {/* Content */}
             <div className="p-4 flex flex-col gap-2">
 
-                {/* Title */}
                 <h3 className="text-sm md:text-base font-semibold line-clamp-2">
-                    Khóa học Fullstack từ A-Z (React, NodeJS, MongoDB)
+                    {title}
                 </h3>
 
-                {/* Description */}
                 <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400 line-clamp-3">
-                    Học từ cơ bản đến nâng cao, xây dựng dự án thực tế với React, NodeJS,
-                    MongoDB và triển khai production. Phù hợp cho người mới bắt đầu và
-                    muốn đi làm fullstack developer.
+                    {description}
                 </p>
 
-                {/* Info */}
-                <div className="p-[10px_0px] flex justify-between text-xs text-gray-500 dark:text-gray-400">
+                <div className="py-2 flex justify-between text-xs text-gray-500 dark:text-gray-400">
 
                     <div className="flex items-center gap-1">
-                        <Clock size="25" color={colorTheme} variant="Bold" />
-                        <span className="text-[14px]">12h</span>
+                        <Clock size={25} color={colorTheme} variant="Bold" />
+                        <span className="text-[14px]">{duration}</span>
                     </div>
 
                     <div className="flex items-center gap-1">
-                        <SecurityUser size="25" color={colorTheme} variant="Bold" />
-                        <span className="text-[14px]">1.2K</span>
+                        <SecurityUser size={25} color={colorTheme} variant="Bold" />
+                        <span className="text-[14px]">{students}</span>
                     </div>
 
                 </div>
 
-                {/* Price */}
-                {!isFree && (
+                {!isFree && price && (
                     <div className="flex items-center gap-2">
-                        <span className="text-red-500 font-semibold text-base">
-                            299.000đ
+                        <span className="text-red-500 font-semibold">
+                            {price}
                         </span>
-                        <span className="text-gray-400 line-through text-sm">
-                            499.000đ
-                        </span>
+                        {oldPrice && (
+                            <span className="text-gray-400 line-through">
+                                {oldPrice}
+                            </span>
+                        )}
                     </div>
                 )}
 

@@ -51,10 +51,62 @@ export default function Home() {
                         data-aos="fade-up"
                         data-aos-delay="100"
                     >
-                        <div data-aos="zoom-in" data-aos-delay="100"><CardCourses /></div>
-                        <div data-aos="zoom-in" data-aos-delay="200"><CardCourses /></div>
-                        <div data-aos="zoom-in" data-aos-delay="300"><CardCourses /></div>
-                        <div data-aos="zoom-in" data-aos-delay="400"><CardCourses /></div>
+                        <div data-aos="zoom-in" data-aos-delay="100">
+                            <CardCourses
+                                title="Khóa học Fullstack từ A-Z"
+                                description="Học từ cơ bản đến nâng cao, build dự án thực tế."
+                                image="/images/images1.jpg"
+                                duration="12h"
+                                students="1.2K"
+                                price="299.000đ"
+                                oldPrice="499.000đ"
+                                discount={40}
+                                isFree={false}
+                                link="/course"
+                            />
+                        </div>
+                        <div data-aos="zoom-in" data-aos-delay="100">
+                            <CardCourses
+                                title="Khóa học Fullstack từ A-Z"
+                                description="Học từ cơ bản đến nâng cao, build dự án thực tế."
+                                image="/images/images1.jpg"
+                                duration="12h"
+                                students="1.2K"
+                                price="299.000đ"
+                                oldPrice="499.000đ"
+                                discount={40}
+                                isFree={false}
+                                link="/course"
+                            />
+                        </div>
+                        <div data-aos="zoom-in" data-aos-delay="100">
+                            <CardCourses
+                                title="Khóa học Fullstack từ A-Z"
+                                description="Học từ cơ bản đến nâng cao, build dự án thực tế."
+                                image="/images/images1.jpg"
+                                duration="12h"
+                                students="1.2K"
+                                price="299.000đ"
+                                oldPrice="499.000đ"
+                                discount={40}
+                                isFree={false}
+                                link="/course"
+                            />
+                        </div>
+                        <div data-aos="zoom-in" data-aos-delay="100">
+                            <CardCourses
+                                title="Khóa học Fullstack từ A-Z"
+                                description="Học từ cơ bản đến nâng cao, build dự án thực tế."
+                                image="/images/images1.jpg"
+                                duration="12h"
+                                students="1.2K"
+                                price="299.000đ"
+                                oldPrice="499.000đ"
+                                discount={40}
+                                isFree={false}
+                                link="/course"
+                            />
+                        </div>
                     </div>
                 </div>
             </div>
