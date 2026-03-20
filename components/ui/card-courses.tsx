@@ -4,10 +4,14 @@ import Image from "next/image"
 import Link from "next/link"
 import { Clock, SecurityUser } from "iconsax-react"
 import { Badge } from "@/components/ui/badge"
+import { useTheme } from "next-themes"
 
 export default function CourseCard() {
 
     const isFree = false
+
+    const { theme } = useTheme()
+    const colorTheme = theme === "dark" ? "#fff" : "#111"
 
     return (
         <div className="
@@ -71,12 +75,12 @@ export default function CourseCard() {
                 <div className="p-[10px_0px] flex justify-between text-xs text-gray-500 dark:text-gray-400">
 
                     <div className="flex items-center gap-1">
-                        <Clock size="25" color="white" variant="Bold" />
+                        <Clock size="25" color={colorTheme} variant="Bold" />
                         <span className="text-[14px]">12h</span>
                     </div>
 
                     <div className="flex items-center gap-1">
-                        <SecurityUser size="25" color="white" variant="Bold" />
+                        <SecurityUser size="25" color={colorTheme} variant="Bold" />
                         <span className="text-[14px]">1.2K</span>
                     </div>
 

@@ -33,12 +33,29 @@ export default function Home() {
                 </div>
 
                 {/* Khoá học nổi bật */}
-                <h1>Khoá học nổi bật</h1>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                    <CardCourses />
-                    <CardCourses />
-                    <CardCourses />
-                    <CardCourses />
+                <div className="mt-8">
+                    <div className="mb-5" data-aos="fade-up">
+                        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-black dark:text-white">
+                            Khoá học nổi bật
+                        </h1>
+
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                            Khám phá các khoá học chất lượng cao dành cho bạn
+                        </p>
+
+                        <div className="w-16 h-0.75 bg-black dark:bg-white mt-2 rounded-full" />
+                    </div>
+
+                    <div
+                        className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
+                        data-aos="fade-up"
+                        data-aos-delay="100"
+                    >
+                        <div data-aos="zoom-in" data-aos-delay="100"><CardCourses /></div>
+                        <div data-aos="zoom-in" data-aos-delay="200"><CardCourses /></div>
+                        <div data-aos="zoom-in" data-aos-delay="300"><CardCourses /></div>
+                        <div data-aos="zoom-in" data-aos-delay="400"><CardCourses /></div>
+                    </div>
                 </div>
             </div>
         </div>
