@@ -9,6 +9,7 @@ import Roadmap from "@/components/ui/roadmap"
 import Stats from "@/components/ui/stats"
 import { User, Book, TaskSquare, Award } from "iconsax-react"
 import { useTheme } from "next-themes"
+import BlogCard from "@/components/ui/blog"
 
 export default function Home() {
     const { theme } = useTheme()
@@ -192,6 +193,72 @@ export default function Home() {
 
                     <div className="mx-auto">
                         <Stats data={statsData} />
+                    </div>
+                </div>
+
+                {/* Bài viết */}
+                <div className="mt-8">
+                    <div className="mb-5" data-aos="fade-up">
+                        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-black dark:text-white">
+                            Bài viết nổi bật
+                        </h1>
+
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                            Hãy xem mọi người đang bàn luận về những vấn đề nào
+                        </p>
+
+                        <div className="w-16 h-0.75 bg-black dark:bg-white mt-2 rounded-full" />
+                    </div>
+
+                    <div
+                        className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
+                        data-aos="fade-up"
+                        data-aos-delay="100"
+                    >
+                        <div data-aos="zoom-in" data-aos-delay="100">
+                            <BlogCard
+                                title="Cách học lập trình hiệu quả cho người mới bắt đầu"
+                                description="Bài viết này sẽ giúp bạn hiểu rõ lộ trình học lập trình từ con số 0 đến khi có thể đi làm thực tế..."
+                                image="/images/image2.jpg"
+                                time="5 phút đọc"
+                                author="Nguyễn Văn A"
+                                avatar="/images/avatar.jpg"
+                                link="/blog/1"
+                            />
+                        </div>
+                        <div data-aos="zoom-in" data-aos-delay="100">
+                            <BlogCard
+                                title="Cách học lập trình hiệu quả cho người mới bắt đầu"
+                                description="Bài viết này sẽ giúp bạn hiểu rõ lộ trình học lập trình từ con số 0 đến khi có thể đi làm thực tế..."
+                                image="/images/image2.jpg"
+                                time="5 phút đọc"
+                                author="Nguyễn Văn A"
+                                avatar="/images/avatar.jpg"
+                                link="/blog/1"
+                            />
+                        </div>
+                        <div data-aos="zoom-in" data-aos-delay="100">
+                            <BlogCard
+                                title="Cách học lập trình hiệu quả cho người mới bắt đầu"
+                                description="Bài viết này sẽ giúp bạn hiểu rõ lộ trình học lập trình từ con số 0 đến khi có thể đi làm thực tế..."
+                                image="/images/image2.jpg"
+                                time="5 phút đọc"
+                                author="Nguyễn Văn A"
+                                avatar="/images/avatar.jpg"
+                                link="/blog/1"
+                            />
+                        </div>
+                        <div data-aos="zoom-in" data-aos-delay="100">
+                            <BlogCard
+                                title="Cách học lập trình hiệu quả cho người mới bắt đầu"
+                                description="Bài viết này sẽ giúp bạn hiểu rõ lộ trình học lập trình từ con số 0 đến khi có thể đi làm thực tế..."
+                                image="/images/image2.jpg"
+                                time="5 phút đọc"
+                                author="Nguyễn Văn A"
+                                avatar="/images/avatar.jpg"
+                                link="/blog/1"
+                            />
+                        </div>
                     </div>
                 </div>
             </div>
