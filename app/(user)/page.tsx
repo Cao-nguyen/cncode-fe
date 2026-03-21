@@ -6,8 +6,13 @@ import Image from "next/image"
 import Link from "next/link"
 import CardCourses from "@/components/ui/card-courses"
 import Roadmap from "@/components/ui/roadmap"
+import Stats from "@/components/ui/stats"
+import { User, Book, TaskSquare, Award } from "iconsax-react"
+import { useTheme } from "next-themes"
 
 export default function Home() {
+    const { theme } = useTheme()
+    const colorTheme = theme === "dark" ? "#111" : "#fff"
     const roadmapData = [
         {
             title: "Web Dev",
@@ -30,6 +35,29 @@ export default function Home() {
         { linkImg: "/images/banner_giasuai.png", alt: "Gia sư AI", link: "/giasuai" },
         { linkImg: "/images/banner_cnbooks.png", alt: "CNbooks", link: "/ebook" },
         { linkImg: "/images/banner_cnjobs.png", alt: "CNjobs", link: "/timviec" }
+    ]
+
+    const statsData = [
+        {
+            label: "Người học",
+            value: 12000,
+            icon: <User size={20} color={colorTheme} variant="Bold" />
+        },
+        {
+            label: "Khoá học",
+            value: 120,
+            icon: <Book size={20} color={colorTheme} variant="Bold" />
+        },
+        {
+            label: "Bài tập",
+            value: 3500,
+            icon: <TaskSquare size={20} color={colorTheme} variant="Bold" />
+        },
+        {
+            label: "Thành tựu",
+            value: 980,
+            icon: <Award size={20} color={colorTheme} variant="Bold" />
+        }
     ]
 
     return (
@@ -163,7 +191,7 @@ export default function Home() {
                     </div>
 
                     <div className="mx-auto">
-                        <Roadmap data={roadmapData} />
+                        <Stats data={statsData} />
                     </div>
                 </div>
             </div>

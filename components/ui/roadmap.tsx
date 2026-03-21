@@ -11,12 +11,19 @@ interface RoadmapItem {
 export default function Roadmap({ data }: { data: RoadmapItem[] }) {
     return (
         <div className="mt-10">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+            {/* Grid */}
+            <div
+                className="grid grid-cols-1 md:grid-cols-3 gap-4"
+                data-aos="fade-up"
+            >
 
                 {data.map((item, index) => (
                     <Link
                         key={index}
                         href={item.link}
+                        data-aos="zoom-in"
+                        data-aos-delay={index * 100}
                         className="
                             group
                             p-4 rounded-2xl 
