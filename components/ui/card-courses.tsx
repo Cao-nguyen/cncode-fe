@@ -32,8 +32,8 @@ export default function CardCourses({
     link
 }: Props) {
 
-    const { resolvedTheme } = useTheme()
-    const colorTheme = resolvedTheme === "dark" ? "#fff" : "#111"
+    const { theme } = useTheme()
+    const colorTheme = theme === "dark" ? "#fff" : "#111"
 
     return (
         <div className="

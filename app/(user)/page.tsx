@@ -5,8 +5,27 @@ import Slideshow from "@/components/ui/slideshow"
 import Image from "next/image"
 import Link from "next/link"
 import CardCourses from "@/components/ui/card-courses"
+import Roadmap from "@/components/ui/roadmap"
 
 export default function Home() {
+    const roadmapData = [
+        {
+            title: "Web Dev",
+            steps: ["HTML/CSS", "JavaScript", "React/Next"],
+            link: "/roadmap/web"
+        },
+        {
+            title: "AI Engineer",
+            steps: ["Python", "Machine Learning", "Deep Learning"],
+            link: "/roadmap/ai"
+        },
+        {
+            title: "Game Dev",
+            steps: ["C#/C++", "Unity", "Publish Game"],
+            link: "/roadmap/game"
+        }
+    ]
+
     const banner = [
         { linkImg: "/images/banner_giasuai.png", alt: "Gia sư AI", link: "/giasuai" },
         { linkImg: "/images/banner_cnbooks.png", alt: "CNbooks", link: "/ebook" },
@@ -96,7 +115,7 @@ export default function Home() {
                         <div data-aos="zoom-in" data-aos-delay="100">
                             <CardCourses
                                 title="Khóa học Fullstack từ A-Z"
-                                description="Học từ cơ bản đến nâng cao, build dự án thực tế."
+                                description="Học từ cơ bản đến nâng cao, build dự án thực tế. Học từ cơ bản đến nâng cao, build dự án thực tế. Học từ cơ bản đến nâng cao, build dự án thực tế."
                                 image="/images/images1.jpg"
                                 duration="12h"
                                 students="1.2K"
@@ -107,6 +126,44 @@ export default function Home() {
                                 link="/course"
                             />
                         </div>
+                    </div>
+                </div>
+
+                {/* Lộ trình học tập */}
+                <div className="mt-8">
+                    <div className="mb-5" data-aos="fade-up">
+                        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-black dark:text-white">
+                            Lộ trình cơ bản
+                        </h1>
+
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                            Khám phá hành trình học tập chúng tôi đã nghiên cứu sáng tạo ra
+                        </p>
+
+                        <div className="w-16 h-0.75 bg-black dark:bg-white mt-2 rounded-full" />
+                    </div>
+
+                    <div className="mx-auto">
+                        <Roadmap data={roadmapData} />
+                    </div>
+                </div>
+
+                {/* Thành tựu */}
+                <div className="mt-8">
+                    <div className="mb-5" data-aos="fade-up">
+                        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-black dark:text-white">
+                            Thành tựu của chúng tôi
+                        </h1>
+
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                            Hãy xem những giá trị của chúng tôi tạo ra
+                        </p>
+
+                        <div className="w-16 h-0.75 bg-black dark:bg-white mt-2 rounded-full" />
+                    </div>
+
+                    <div className="mx-auto">
+                        <Roadmap data={roadmapData} />
                     </div>
                 </div>
             </div>
