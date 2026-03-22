@@ -9,6 +9,7 @@ import {
     AvatarFallback
 } from "@/components/ui/avatar"
 import { useTheme } from "next-themes"
+import { Badge } from "@/components/ui/badge"
 
 interface BlogCard {
     title: string
@@ -17,6 +18,7 @@ interface BlogCard {
     time: string
     author: string
     avatar: string
+    category: string
     link?: string
 }
 
@@ -27,6 +29,7 @@ export default function BlogCard({
     time,
     author,
     avatar,
+    category,
     link = "/blog"
 }: BlogCard) {
 
@@ -52,6 +55,13 @@ export default function BlogCard({
                     fill
                     className="object-cover group-hover:scale-105 transition duration-300"
                 />
+
+                {/* Badge */}
+                <div className="absolute top-2 left-2">
+                    <Badge className="bg-black text-white dark:bg-white dark:text-black">
+                        {category}
+                    </Badge>
+                </div>
             </div>
 
             {/* Content */}

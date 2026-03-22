@@ -10,6 +10,7 @@ import Stats from "@/components/ui/stats"
 import { User, Book, TaskSquare, Award } from "iconsax-react"
 import { useTheme } from "next-themes"
 import BlogCard from "@/components/ui/blog"
+import Analytics from "@/components/ui/analytic"
 
 export default function Home() {
     const { theme } = useTheme()
@@ -66,18 +67,33 @@ export default function Home() {
             <Slideshow />
             <div className="m-5 xl:m-10">
                 {/* Banner giới thiệu */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {banner.map((item, index) => (
-                        <Link key={index} href={item.link}>
-                            <Image
-                                width={450}
-                                height={100}
-                                src={item.linkImg}
-                                alt={item.alt}
-                                className="rounded-2xl w-full"
-                            />
-                        </Link>
-                    ))}
+                {/* Lộ trình học tập */}
+                <div className="mt-8">
+                    <div className="mb-5" data-aos="fade-up">
+                        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-black dark:text-white">
+                            Tính năng nổi bật
+                        </h1>
+
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                            Khám phá những tính năng nổi bật của chúng tôi
+                        </p>
+
+                        <div className="w-16 h-0.75 bg-black dark:bg-white mt-2 rounded-full" />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {banner.map((item, index) => (
+                            <Link key={index} href={item.link}>
+                                <Image
+                                    width={450}
+                                    height={100}
+                                    src={item.linkImg}
+                                    alt={item.alt}
+                                    className="rounded-2xl w-full"
+                                />
+                            </Link>
+                        ))}
+                    </div>
                 </div>
 
                 {/* Khoá học nổi bật */}
@@ -223,6 +239,7 @@ export default function Home() {
                                 time="5 phút đọc"
                                 author="Nguyễn Văn A"
                                 avatar="/images/avatar.jpg"
+                                category="Frontend"
                                 link="/blog/1"
                             />
                         </div>
@@ -234,6 +251,7 @@ export default function Home() {
                                 time="5 phút đọc"
                                 author="Nguyễn Văn A"
                                 avatar="/images/avatar.jpg"
+                                category="Frontend"
                                 link="/blog/1"
                             />
                         </div>
@@ -245,6 +263,7 @@ export default function Home() {
                                 time="5 phút đọc"
                                 author="Nguyễn Văn A"
                                 avatar="/images/avatar.jpg"
+                                category="Frontend"
                                 link="/blog/1"
                             />
                         </div>
@@ -256,9 +275,30 @@ export default function Home() {
                                 time="5 phút đọc"
                                 author="Nguyễn Văn A"
                                 avatar="/images/avatar.jpg"
+                                category="Frontend"
                                 link="/blog/1"
                             />
                         </div>
+                    </div>
+                </div>
+
+                {/* Thống kê truy cập */}
+                <div className="mt-8">
+                    <div className="mb-5" data-aos="fade-up">
+                        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-black dark:text-white">
+                            Thống kê truy cập
+                        </h1>
+
+                        <div className="w-16 h-0.75 bg-black dark:bg-white mt-2 rounded-full" />
+                    </div>
+
+                    <div className="mx-auto">
+                        <Analytics
+                            today={1200}
+                            guest={320}
+                            online={180}
+                            total={420000}
+                        />
                     </div>
                 </div>
             </div>
