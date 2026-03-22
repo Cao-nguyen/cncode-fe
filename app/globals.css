@@ -47,6 +47,10 @@
   --radius-4xl: calc(var(--radius) + 16px);
 }
 
+svg {
+  fill: currentColor !important;
+}
+
 .no-scrollbar::-webkit-scrollbar {
   width: 0px !important;
   height: 0px !important;

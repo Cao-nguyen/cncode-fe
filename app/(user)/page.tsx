@@ -4,17 +4,15 @@ import "swiper/css/pagination"
 import Slideshow from "@/components/ui/slideshow"
 import Image from "next/image"
 import Link from "next/link"
-import CardCourses from "@/components/ui/card-courses"
+import CardCourses from "@/components/ui/cardcourses"
 import Roadmap from "@/components/ui/roadmap"
 import Stats from "@/components/ui/stats"
 import { User, Book, TaskSquare, Award } from "iconsax-react"
-import { useTheme } from "next-themes"
 import BlogCard from "@/components/ui/blog"
 import Analytics from "@/components/ui/analytic"
+import WhyChoose from "@/components/ui/whychoose"
 
 export default function Home() {
-    const { theme } = useTheme()
-    const colorTheme = theme === "dark" ? "#111" : "#fff"
     const roadmapData = [
         {
             title: "Web Dev",
@@ -43,22 +41,22 @@ export default function Home() {
         {
             label: "Người học",
             value: 12000,
-            icon: <User size={20} color={colorTheme} variant="Bold" />
+            icon: <User size={20} className="text-white dark:text-black" variant="Bold" />
         },
         {
             label: "Khoá học",
             value: 120,
-            icon: <Book size={20} color={colorTheme} variant="Bold" />
+            icon: <Book size={20} className="text-white dark:text-black" variant="Bold" />
         },
         {
             label: "Bài tập",
             value: 3500,
-            icon: <TaskSquare size={20} color={colorTheme} variant="Bold" />
+            icon: <TaskSquare size={20} className="text-white dark:text-black" variant="Bold" />
         },
         {
             label: "Thành tựu",
             value: 980,
-            icon: <Award size={20} color={colorTheme} variant="Bold" />
+            icon: <Award size={20} className="text-white dark:text-black" variant="Bold" />
         }
     ]
 
@@ -190,6 +188,21 @@ export default function Home() {
 
                     <div className="mx-auto">
                         <Roadmap data={roadmapData} />
+                    </div>
+                </div>
+
+                {/* Tại sao lựa chọn chúng tôi */}
+                <div className="mt-8">
+                    <div className="mb-5" data-aos="fade-up">
+                        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-black dark:text-white">
+                            Tại sao nên lựa chọn CNcode
+                        </h1>
+
+                        <div className="w-16 h-0.75 bg-black dark:bg-white mt-2 rounded-full" />
+                    </div>
+
+                    <div className="mx-auto">
+                        <WhyChoose />
                     </div>
                 </div>
 

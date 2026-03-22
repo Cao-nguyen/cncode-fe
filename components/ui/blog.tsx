@@ -33,8 +33,6 @@ export default function BlogCard({
     link = "/blog"
 }: BlogCard) {
 
-    const { theme } = useTheme()
-
     return (
         <Link
             href={link}
@@ -79,7 +77,7 @@ export default function BlogCard({
 
                 {/* Time */}
                 <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    <Clock size={20} color={theme === "dark" ? "#fff" : "#111"} variant="Bold" />
+                    <Clock size={25} className="text-black dark:text-white" variant="Bold" />
                     <span>{time}</span>
                 </div>
 

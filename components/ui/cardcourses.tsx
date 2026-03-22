@@ -32,9 +32,6 @@ export default function CardCourses({
     link
 }: Props) {
 
-    const { theme } = useTheme()
-    const colorTheme = theme === "dark" ? "#fff" : "#111"
-
     return (
         <div className="
             w-full 
@@ -83,12 +80,12 @@ export default function CardCourses({
                 <div className="py-2 flex justify-between text-xs text-gray-500 dark:text-gray-400">
 
                     <div className="flex items-center gap-1">
-                        <Clock size={25} color={colorTheme} variant="Bold" />
+                        <Clock size={25} className="text-black dark:text-white" variant="Bold" />
                         <span className="text-[14px]">{duration}</span>
                     </div>
 
                     <div className="flex items-center gap-1">
-                        <SecurityUser size={25} color={colorTheme} variant="Bold" />
+                        <SecurityUser size={25} className="text-black dark:text-white" variant="Bold" />
                         <span className="text-[14px]">{students}</span>
                     </div>
 

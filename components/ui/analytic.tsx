@@ -17,8 +17,8 @@ export default function Analytics({
     total
 }: AnalyticsProps) {
 
-    const { theme } = useTheme()
-    const color = theme === "dark" ? "#fff" : "#111"
+    // const { theme } = useTheme()
+    // const colorAnalytic = theme === "dark" ? "#fff" : "#111"
 
     const format = (n: number) =>
         new Intl.NumberFormat("vi-VN").format(n)
@@ -42,7 +42,7 @@ export default function Analytics({
                         {format(total)}
                     </h4>
                 </div>
-                <Chart size={24} color={color} variant="Bold" />
+                <Chart size={24} className="text-black dark:text-white" variant="Bold" />
             </div>
 
             {/* Today */}
@@ -60,7 +60,7 @@ export default function Analytics({
                         {format(today)}
                     </h4>
                 </div>
-                <Chart size={24} color={color} variant="Bold" />
+                <Chart size={24} className="text-black dark:text-white" variant="Bold" />
             </div>
 
             {/* Guest */}
@@ -78,7 +78,7 @@ export default function Analytics({
                         {format(guest)}
                     </h4>
                 </div>
-                <User size={24} color={color} variant="Bold" />
+                <User size={24} className="text-black dark:text-white" variant="Bold" />
             </div>
 
             {/* User */}
@@ -96,7 +96,7 @@ export default function Analytics({
                         {format(online)}
                     </h4>
                 </div>
-                <UserTick size={24} color={color} variant="Bold" />
+                <UserTick size={24} className="text-black dark:text-white" variant="Bold" />
             </div>
 
         </div>
