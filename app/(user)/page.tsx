@@ -11,6 +11,7 @@ import { User, Book, TaskSquare, Award } from "iconsax-react"
 import BlogCard from "@/components/ui/blog"
 import Analytics from "@/components/ui/analytic"
 import WhyChoose from "@/components/ui/whychoose"
+import Testimonial from "@/components/ui/testimoninal"
 
 export default function Home() {
     const roadmapData = [
@@ -312,6 +313,21 @@ export default function Home() {
                             online={180}
                             total={420000}
                         />
+                    </div>
+                </div>
+
+                {/* Người dùng nói gì về chúng tôi */}
+                <div className="mt-8">
+                    <div className="mb-5" data-aos="fade-up">
+                        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-black dark:text-white">
+                            Người dùng nói gì về CNcode
+                        </h1>
+
+                        <div className="w-16 h-0.75 bg-black dark:bg-white mt-2 rounded-full" />
+                    </div>
+
+                    <div className="mx-auto">
+                        <Testimonial />
                     </div>
                 </div>
             </div>
