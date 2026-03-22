@@ -43,10 +43,9 @@ export default function WhyChoose() {
                 {/* LEFT - IMAGE */}
                 <div className="relative w-full h-65 md:h-87.5 lg:h-105 rounded-2xl overflow-hidden">
                     <Image
-                        src="/images/images1.jpg"
+                        src="/images/whychoose.png"
                         alt="why choose"
                         fill
-                        className="object-cover"
                     />
                 </div>
 

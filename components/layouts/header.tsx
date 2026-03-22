@@ -84,14 +84,14 @@ export function Header() {
                                 onClick={() => setTheme("light")}
                                 className="hidden dark:block"
                             >
-                                <Sun1 size={20} color="currentColor" className="dark:text-white" />
+                                <Sun1 size={20} color="currentColor" variant="Outline" className="dark:text-white" />
                             </button>
 
                             <button
                                 onClick={() => setTheme("dark")}
                                 className="block dark:hidden"
                             >
-                                <Moon size={20} color="currentColor" />
+                                <Moon size={20} color="currentColor" variant="Outline" />
                             </button>
 
                         </div>
@@ -99,6 +99,7 @@ export function Header() {
                         <Notification
                             size={20}
                             color="currentColor"
+                            variant="Outline"
                             className="cursor-pointer text-black dark:text-white"
                         />
 
@@ -139,14 +140,14 @@ export function Header() {
                                 onClick={() => setTheme("light")}
                                 className="hidden dark:block"
                             >
-                                <Sun1 size={18} color="currentColor" className="dark:text-white" />
+                                <Sun1 size={18} color="currentColor" variant="Outline" className="dark:text-white" />
                             </button>
 
                             <button
                                 onClick={() => setTheme("dark")}
                                 className="block dark:hidden"
                             >
-                                <Moon size={18} color="currentColor" />
+                                <Moon size={18} variant="Outline" color="currentColor" />
                             </button>
 
                         </div>
@@ -154,6 +155,7 @@ export function Header() {
                         <Notification
                             size={20}
                             color="currentColor"
+                            variant="Outline"
                             className="cursor-pointer text-black dark:text-white"
                         />
 
@@ -174,13 +176,13 @@ export function Header() {
             {/* ===== MOBILE BOTTOM ===== */}
             <div className="lg:hidden fixed bottom-0 left-0 w-full z-50">
                 <div className="
-          w-full h-15
-          bg-white dark:bg-black
-          border-t border-gray-200 dark:border-gray-800
-          rounded-t-2xl
-          shadow-[0_-4px_20px_rgba(0,0,0,0.15)]
-          flex items-center px-2
-        ">
+                    w-full h-15
+                    bg-white dark:bg-black
+                    border-t border-gray-200 dark:border-gray-800
+                    rounded-t-2xl
+                    shadow-[0_-4px_20px_rgba(0,0,0,0.15)]
+                    flex items-center px-2
+                ">
 
                     {menu.map(m => {
                         const isActive = pathname === m.link
@@ -192,24 +194,24 @@ export function Header() {
                                 href={m.link}
                                 title={m.title}
                                 className="
-                  flex-1 flex flex-col items-center justify-center
-                  gap-1
-                  active:scale-95 active:opacity-90
-                  transition-all duration-150
-                "
+                                    flex-1 flex flex-col items-center justify-center
+                                    gap-1
+                                    active:scale-95 active:opacity-90
+                                    transition-all duration-150
+                                "
                             >
 
                                 <Icon
                                     size={22}
                                     color="currentColor"
-                                    variant={isActive ? "Bold" : "Linear"}
+                                    variant={isActive ? "Bold" : "Outline"}
                                     className={`
-                    transition-all duration-200
-                    ${isActive
+                                        transition-all duration-200
+                                        ${isActive
                                             ? "text-blue-500"
                                             : "text-black dark:text-white opacity-70"
                                         }
-                  `}
+                                    `}
                                 />
 
                                 <span
