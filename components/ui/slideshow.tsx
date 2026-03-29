@@ -75,7 +75,7 @@ export default function Slideshow() {
                     w-8 h-8 md:w-10 md:h-10 flex items-center justify-center 
                     rounded-full bg-white/80 shadow hover:bg-white"
                 >
-                    <ArrowLeft2 size="18" color="#111" />
+                    <ArrowLeft2 size="18" color="#111" variant="Outline" />
                 </button>
 
                 {/* Next */}
@@ -85,7 +85,7 @@ export default function Slideshow() {
                     w-8 h-8 md:w-10 md:h-10 flex items-center justify-center 
                     rounded-full bg-white/80 shadow hover:bg-white"
                 >
-                    <ArrowRight2 size="18" color="#111" />
+                    <ArrowRight2 size="18" color="#111" variant="Outline" />
                 </button>
 
                 {/* dots */}
