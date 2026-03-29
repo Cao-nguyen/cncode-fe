@@ -132,8 +132,15 @@ export default function BlogPage() {
 
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
                 {filteredPosts.length > 0 ? (
-                    filteredPosts.map((post) => (
-                        <BlogCard key={post.link} {...post} />
+                    filteredPosts.map((post, index) => (
+                        <div
+                            key={post.link}
+                            data-aos="fade-up"
+                            data-aos-delay={index * 80}
+                            data-aos-anchor-placement="top-bottom"
+                        >
+                            <BlogCard {...post} />
+                        </div>
                     ))
                 ) : (
                     <div className="col-span-full rounded-[28px] border border-slate-200 bg-slate-50 p-8 text-center text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400">
