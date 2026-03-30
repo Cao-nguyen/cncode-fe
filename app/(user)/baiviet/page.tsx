@@ -80,6 +80,28 @@ const blogPosts = [
         avatar: "/images/avatar.jpg",
         category: "Backend",
         link: "/blog/5"
+    },
+    {
+        title: "Lập trình backend với Node.js cho người mới",
+        description:
+            "Khái quát các bước xây dựng API, làm việc với database và bảo mật cơ bản.",
+        image: "/images/image2.jpg",
+        time: "8 phút đọc",
+        author: "Phạm Thị D",
+        avatar: "/images/avatar.jpg",
+        category: "Backend",
+        link: "/blog/12"
+    },
+    {
+        title: "Lập trình backend với Node.js cho người mới",
+        description:
+            "Khái quát các bước xây dựng API, làm việc với database và bảo mật cơ bản.",
+        image: "/images/image2.jpg",
+        time: "8 phút đọc",
+        author: "Phạm Thị D",
+        avatar: "/images/avatar.jpg",
+        category: "Backend",
+        link: "/blog/18"
     }
 ]
 
@@ -132,11 +154,11 @@ export default function BlogPage() {
 
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
                 {filteredPosts.length > 0 ? (
-                    filteredPosts.map((post, index) => (
+                    filteredPosts.map((post) => (
                         <div
                             key={post.link}
                             data-aos="fade-up"
-                            data-aos-delay={index * 80}
+                            data-aos-delay="120"
                             data-aos-anchor-placement="top-bottom"
                         >
                             <BlogCard {...post} />
