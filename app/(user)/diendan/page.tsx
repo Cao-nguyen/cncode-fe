@@ -1,5 +1,4 @@
 import Link from "next/link"
-import { useSearchParams } from "next/navigation"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import {
     Heart,
@@ -49,12 +48,12 @@ const messages = [
     { type: "me", text: "Tốt. Nhớ check luôn phần gửi file nhé." },
 ]
 
-export default function Forum() {
-    const searchParams = useSearchParams()
-    const activeTab = searchParams?.get("id") || "discover"
+export default function Forum({ searchParams }: { searchParams?: { id?: string } }) {
+    const activeTab = searchParams?.id || "discover"
 
     return (
         <main>
+            {/* Tabs */}
             <div className="flex flex-wrap justify-center gap-3 border-b border-slate-200">
                 {tabs.map((tab) => (
                     <Link
@@ -70,183 +69,83 @@ export default function Forum() {
                 ))}
             </div>
 
+            {/* DISCOVER */}
             {activeTab === "discover" && (
-                <section className="w-100 h-160 m-5 flex items-center justify-center">
+                <section className="h-screen overflow-hidden flex items-center justify-center">
                     <Feed />
                 </section>
             )}
 
+            {/* INFO */}
             {activeTab === "info" && (
                 <section className="mt-5">
                     <div className="mx-auto w-full max-w-[1200px] space-y-5">
-                        <div className="rounded-[20px] border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md">
-                            <div className="flex flex-wrap items-center gap-3">
+                        <div className="rounded-[20px] border border-slate-200 bg-white p-4 shadow-sm">
+                            <div className="flex items-center gap-3">
                                 <Avatar className="h-11 w-11 bg-slate-950 text-white">
                                     <AvatarFallback>👤</AvatarFallback>
                                 </Avatar>
-                                <button
-                                    type="button"
-                                    className="flex-1 rounded-[16px] border border-slate-200 bg-slate-100 px-4 py-3 text-left text-sm text-slate-500 hover:bg-slate-50"
-                                >
+                                <button className="flex-1 rounded-[16px] border bg-slate-100 px-4 py-3 text-left text-sm text-slate-500">
                                     Bạn đang nghĩ gì?
                                 </button>
                             </div>
 
-                            <div className="mt-4 space-y-3">
-                                <textarea
-                                    placeholder="Viết gì đó..."
-                                    className="min-h-[120px] w-full rounded-[20px] border border-slate-200 bg-slate-50 p-4 text-sm text-slate-800 outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
-                                />
+                            <textarea
+                                placeholder="Viết gì đó..."
+                                className="mt-4 w-full min-h-[120px] rounded-[16px] border bg-slate-50 p-4 text-sm"
+                            />
 
-                                <div className="flex flex-wrap items-center justify-between gap-3">
-                                    <div className="flex flex-wrap gap-2">
-                                        <button className="inline-flex items-center gap-2 rounded-[12px] border border-slate-200 bg-slate-100 px-3 py-2 text-sm text-slate-600">
-                                            <Gallery size="16" variant="Bulk" /> Ảnh
-                                        </button>
-                                        <button className="inline-flex items-center gap-2 rounded-[12px] border border-slate-200 bg-slate-100 px-3 py-2 text-sm text-slate-600">
-                                            <Document size="16" variant="Bulk" /> File
-                                        </button>
-                                        <button className="inline-flex items-center gap-2 rounded-[12px] border border-slate-200 bg-slate-100 px-3 py-2 text-sm text-slate-600">
-                                            <Sticker size="16" variant="Bulk" /> Sticker
-                                        </button>
-                                        <button className="inline-flex items-center gap-2 rounded-[12px] border border-slate-200 bg-slate-100 px-3 py-2 text-sm text-slate-600">
-                                            <EmojiHappy size="16" variant="Bulk" /> Biểu tượng
-                                        </button>
-                                    </div>
-
-                                    <button className="rounded-[16px] bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 inline-flex items-center gap-2">
-                                        <Send size="16" variant="Bulk" /> Đăng
-                                    </button>
+                            <div className="mt-4 flex justify-between">
+                                <div className="flex gap-2">
+                                    <button className="btn">Ảnh</button>
+                                    <button className="btn">File</button>
                                 </div>
+                                <button className="bg-black text-white px-4 py-2 rounded">
+                                    Đăng
+                                </button>
                             </div>
-                        </div>
-
-                        <div className="grid gap-5 lg:grid-cols-2">
-                            <article className="rounded-[20px] border border-slate-200 bg-white p-5 shadow-sm">
-                                <div className="flex items-center gap-3">
-                                    <Avatar className="h-11 w-11 bg-slate-950 text-white">
-                                        <AvatarFallback>👤</AvatarFallback>
-                                    </Avatar>
-                                    <div>
-                                        <div className="text-sm font-semibold text-slate-900">Nguyễn Văn A</div>
-                                        <div className="text-xs text-slate-500">1 giờ trước</div>
-                                    </div>
-                                </div>
-
-                                <p className="mt-4 text-sm leading-6 text-slate-700">
-                                    Chia sẻ nhanh về buổi workshop hôm nay. Mọi người nhớ check lại tài liệu và file đính kèm nhé.
-                                </p>
-
-                                <div className="mt-4 h-52 rounded-[16px] bg-slate-100" />
-
-                                <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm text-slate-500">
-                                    <span>👍 24</span>
-                                    <span>💬 8 bình luận</span>
-                                </div>
-                            </article>
-
-                            <article className="rounded-[20px] border border-slate-200 bg-white p-5 shadow-sm">
-                                <div className="flex items-center gap-3">
-                                    <Avatar className="h-11 w-11 bg-slate-950 text-white">
-                                        <AvatarFallback>👩‍💻</AvatarFallback>
-                                    </Avatar>
-                                    <div>
-                                        <div className="text-sm font-semibold text-slate-900">Hà Linh</div>
-                                        <div className="text-xs text-slate-500">2 giờ trước</div>
-                                    </div>
-                                </div>
-
-                                <p className="mt-4 text-sm leading-6 text-slate-700">
-                                    Ai đã thử công cụ mới chưa? Mình cảm thấy layout của nó khá ổn và dễ dùng, đặc biệt khi soạn bài đăng.
-                                </p>
-
-                                <div className="mt-4 h-52 rounded-[16px] bg-slate-100" />
-
-                                <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm text-slate-500">
-                                    <span>👍 18</span>
-                                    <span>💬 5 bình luận</span>
-                                </div>
-                            </article>
                         </div>
                     </div>
                 </section>
             )}
 
+            {/* COMMUNITY */}
             {activeTab === "community" && (
                 <section className="grid gap-5 mt-5">
                     <div className="grid gap-4 xl:grid-cols-[320px_1fr]">
-                        <div className="grid gap-3 rounded-[20px] bg-slate-950 p-4">
-                            <div className="text-base font-semibold text-white">Tin nhắn</div>
+                        <div className="grid gap-3 bg-slate-950 p-4 rounded-[20px]">
+                            <div className="text-white font-semibold">Tin nhắn</div>
+
                             {chats.map((chat) => (
                                 <div
                                     key={chat.name}
-                                    className="flex cursor-pointer items-center gap-3 rounded-[16px] bg-slate-900 p-3"
+                                    className="flex items-center gap-3 bg-slate-900 p-3 rounded"
                                 >
-                                    <Avatar className="h-11 w-11 bg-slate-800 text-lg">
+                                    <Avatar>
                                         <AvatarFallback>{chat.avatar}</AvatarFallback>
                                     </Avatar>
-                                    <div className="grid gap-1">
-                                        <span className="font-semibold text-white">{chat.name}</span>
-                                        <span className="text-sm text-slate-500">{chat.lastMessage}</span>
+                                    <div>
+                                        <div className="text-white">{chat.name}</div>
+                                        <div className="text-slate-400 text-sm">
+                                            {chat.lastMessage}
+                                        </div>
                                     </div>
                                 </div>
                             ))}
                         </div>
 
-                        <div className="grid gap-4 rounded-[20px] bg-slate-950 p-4">
-                            <div className="flex flex-wrap items-center justify-between gap-4">
-                                <div className="flex items-center gap-3">
-                                    <Avatar className="h-11 w-11 bg-slate-800 text-lg">
-                                        <AvatarFallback>👤</AvatarFallback>
-                                    </Avatar>
-                                    <div className="grid gap-1">
-                                        <span className="font-semibold text-white">Minh Anh</span>
-                                        <span className="text-sm text-emerald-400">Đang hoạt động</span>
-                                    </div>
+                        <div className="bg-slate-950 p-4 rounded-[20px] text-white">
+                            {messages.map((m, i) => (
+                                <div
+                                    key={i}
+                                    className={`p-3 rounded mb-2 ${m.type === "me"
+                                        ? "bg-slate-800 text-right"
+                                        : "bg-slate-700"
+                                        }`}
+                                >
+                                    {m.text}
                                 </div>
-                                <div className="rounded-full bg-slate-800 px-3 py-1 text-xs text-white">Online</div>
-                            </div>
-
-                            <div className="grid gap-3 max-h-[420px] overflow-y-auto pr-1">
-                                {messages.map((message, index) => (
-                                    <div
-                                        key={index}
-                                        className={`max-w-[85%] rounded-[18px] px-4 py-3 text-sm ${message.type === "me"
-                                            ? "self-end bg-slate-900 text-white"
-                                            : "self-start bg-slate-800 text-slate-100"
-                                            }`}
-                                    >
-                                        {message.text}
-                                    </div>
-                                ))}
-                            </div>
-
-                            <div className="grid gap-3">
-                                <textarea
-                                    placeholder="Nhập tin nhắn..."
-                                    className="h-32 w-full resize-y rounded-[16px] border border-slate-800 bg-slate-900 px-4 py-3 text-sm text-white outline-none placeholder:text-slate-500"
-                                />
-                                <div className="flex flex-wrap gap-3">
-                                    <button className="flex-1 min-w-[100px] rounded-[12px] bg-slate-800 px-4 py-3 text-sm text-white inline-flex items-center justify-center gap-2">
-                                        <Send size="16" variant="Bulk" /> Gửi
-                                    </button>
-                                    <button className="min-w-[100px] rounded-[12px] bg-slate-800 px-4 py-3 text-sm text-white inline-flex items-center justify-center gap-2">
-                                        <Document size="16" variant="Bulk" /> File
-                                    </button>
-                                    <button className="min-w-[100px] rounded-[12px] bg-slate-800 px-4 py-3 text-sm text-white inline-flex items-center justify-center gap-2">
-                                        <Gallery size="16" variant="Bulk" /> Ảnh
-                                    </button>
-                                    <button className="min-w-[100px] rounded-[12px] bg-slate-800 px-4 py-3 text-sm text-white inline-flex items-center justify-center gap-2">
-                                        <Sticker size="16" variant="Bulk" /> Sticker
-                                    </button>
-                                    <button className="min-w-[100px] rounded-[12px] bg-slate-800 px-4 py-3 text-sm text-white inline-flex items-center justify-center gap-2">
-                                        <EmojiHappy size="16" variant="Bulk" /> Biểu tượng
-                                    </button>
-                                    <button className="min-w-[100px] rounded-[12px] bg-slate-800 px-4 py-3 text-sm text-white inline-flex items-center justify-center gap-2">
-                                        <Heart size="16" variant="Bulk" /> Bình chọn
-                                    </button>
-                                </div>
-                            </div>
+                            ))}
                         </div>
                     </div>
                 </section>
