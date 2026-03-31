@@ -15,7 +15,7 @@ export const metadata: Metadata = {
     default: 'CNcode',
     template: 'CNcode | %s',
   },
-  description: 'CNcode - Nền tảng dạy và học công nghệ thông tin trực tuyến',
+  description: 'CNcode - Nền tảng học công nghệ và sáng tạo đổi mới',
   icons: {
     icon: '/images/logo.png',
   },

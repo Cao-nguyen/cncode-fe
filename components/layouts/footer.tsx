@@ -29,7 +29,7 @@ export function Footer() {
                 />
 
                 <h1 className="hidden md:block font-bold md:ml-5 text-[clamp(12px,2.2vw,20px)] whitespace-nowrap">
-                    CNcode - Nền tảng dạy và học công nghệ thông tin trực tuyến
+                    CNcode - Nền tảng học công nghệ và sáng tạo đổi mới
                 </h1>
 
             </div>
