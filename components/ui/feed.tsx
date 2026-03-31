@@ -23,9 +23,15 @@ type Post = {
 
 const posts: Post[] = [
     { id: "1", src: "/video/video_one.mp4", caption: "Video 1" },
-    { id: "2", src: "/video/video_one.mp4", caption: "Video 2" },
-    { id: "3", src: "/video/video_one.mp4", caption: "Video 3" },
-    { id: "4", src: "/video/video_one.mp4", caption: "Video 4" },
+    { id: "2", src: "/video/video_two.mp4", caption: "Video 2" },
+    { id: "3", src: "/video/video_three.mp4", caption: "Video 3" },
+    { id: "4", src: "/video/video_four.mp4", caption: "Video 4" },
+    { id: "5", src: "/video/video_five.mp4", caption: "Video 5" },
+    { id: "6", src: "/video/video_one.mp4", caption: "Video 6" },
+    { id: "7", src: "/video/video_two.mp4", caption: "Video 7" },
+    { id: "8", src: "/video/video_three.mp4", caption: "Video 8" },
+    { id: "9", src: "/video/video_four.mp4", caption: "Video 9" },
+    { id: "10", src: "/video/video_five.mp4", caption: "Video 10" },
 ]
 
 type PlaybackHint = { index: number; type: "play" | "pause" } | null
@@ -41,16 +47,23 @@ export default function Feed() {
     const [playbackHint, setPlaybackHint] = useState<PlaybackHint>(null)
 
     useEffect(() => {
+        if (!containerRef.current) return
+
         const observer = new IntersectionObserver(
             (entries) => {
-                entries.forEach((entry) => {
-                    if (entry.isIntersecting) {
-                        const index = Number(entry.target.getAttribute("data-index"))
-                        setActive(index)
-                    }
-                })
+                const best = entries
+                    .filter((entry) => entry.intersectionRatio >= 0.6)
+                    .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0]
+
+                if (!best) return
+
+                const index = Number(best.target.getAttribute("data-index"))
+                setActive(index)
             },
-            { threshold: 0.6 }
+            {
+                root: containerRef.current,
+                threshold: [0.25, 0.5, 0.6, 0.75, 1],
+            }
         )
 
         videoRefs.current.forEach((el) => {
@@ -64,6 +77,7 @@ export default function Feed() {
         videoRefs.current.forEach((v, i) => {
             if (!v) return
             if (i === active) {
+                v.currentTime = 0
                 v.play().catch(() => { })
             } else {
                 v.pause()
