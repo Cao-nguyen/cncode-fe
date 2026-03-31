@@ -13,6 +13,7 @@ import {
     EmojiHappy,
     Send,
 } from "iconsax-react"
+import Feed from "@/components/ui/feed"
 
 const tabs = [
     { id: "discover", label: "Khám phá" },
@@ -55,8 +56,8 @@ export default function Forum() {
     const activeTab = searchParams?.get("id") || "discover"
 
     return (
-        <main className="px-10 py-5 box-border">
-            <div className="flex flex-wrap gap-3 border-b border-slate-200">
+        <main>
+            <div className="flex flex-wrap justify-center gap-3 border-b border-slate-200">
                 {tabs.map((tab) => (
                     <Link
                         href={`/diendan?id=${tab.id}`}
@@ -72,69 +73,8 @@ export default function Forum() {
             </div>
 
             {activeTab === "discover" && (
-                <section className="grid gap-5 mt-5">
-                    <div className="grid gap-4 md:grid-cols-2">
-                        <article className="relative overflow-hidden rounded-[20px] bg-slate-950 text-white min-h-[520px]">
-                            <div className="relative w-full pb-[177%] bg-slate-900">
-                                <div className="absolute inset-0 flex flex-col justify-between bg-gradient-to-b from-black/5 to-black/70">
-                                    <div className="flex items-center justify-between p-4">
-                                        <span className="rounded-full bg-black/40 px-3 py-1 text-[12px] text-slate-100">
-                                            LIVE
-                                        </span>
-                                        <span className="text-[12px] text-slate-100">00:32</span>
-                                    </div>
-                                    <div className="absolute right-3 bottom-20 grid gap-3">
-                                        <button className="h-11 w-11 rounded-full bg-white/10 text-white">
-                                            <Heart size="18" variant="Bulk" />
-                                        </button>
-                                        <button className="h-11 w-11 rounded-full bg-white/10 text-white">
-                                            <Message size="18" variant="Bulk" />
-                                        </button>
-                                        <button className="h-11 w-11 rounded-full bg-white/10 text-white">
-                                            <Share size="18" variant="Bulk" />
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="flex items-center gap-3 bg-slate-950 px-4 py-4">
-                                <Avatar className="h-11 w-11 bg-slate-800 text-xl">
-                                    <AvatarFallback>👤</AvatarFallback>
-                                </Avatar>
-                                <div className="grid gap-1">
-                                    <span className="font-semibold text-sm">@nguoisangtao</span>
-                                    <span className="text-xs text-slate-400">#sáng tạo #video #tiktok</span>
-                                </div>
-                            </div>
-                        </article>
-
-                        <article className="grid gap-4 rounded-[20px] bg-slate-900 p-4 text-white min-h-[520px]">
-                            <div className="grid gap-3">
-                                <h3 className="text-lg font-semibold">Luồng video</h3>
-                                <p className="text-sm leading-6 text-slate-400">
-                                    Cuộn video, xem nhanh và tương tác ngay như TikTok.
-                                </p>
-                            </div>
-
-                            <div className="grid gap-3">
-                                <div className="grid h-32 place-items-center rounded-[16px] bg-slate-800 text-sm text-slate-500">
-                                    Video mẫu
-                                </div>
-
-                                <div className="grid gap-2">
-                                    <button className="h-11 rounded-[12px] bg-slate-800 text-white inline-flex items-center justify-center gap-2">
-                                        <Heart size="16" variant="Bulk" /> Thích
-                                    </button>
-                                    <button className="h-11 rounded-[12px] bg-slate-800 text-white inline-flex items-center justify-center gap-2">
-                                        <Message size="16" variant="Bulk" /> Bình luận
-                                    </button>
-                                    <button className="h-11 rounded-[12px] bg-slate-800 text-white inline-flex items-center justify-center gap-2">
-                                        <Share size="16" variant="Bulk" /> Chia sẻ
-                                    </button>
-                                </div>
-                            </div>
-                        </article>
-                    </div>
+                <section className="w-100 h-160 m-5 flex items-center justify-center">
+                    <Feed />
                 </section>
             )}
 
