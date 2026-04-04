@@ -71,7 +71,7 @@ export default function Forum({ searchParams }: { searchParams?: { id?: string }
 
             {/* DISCOVER */}
             {activeTab === "discover" && (
-                <section className="h-screen overflow-hidden flex items-center justify-center">
+                <section className="h-160 flex items-center justify-center">
                     <Feed />
                 </section>
             )}

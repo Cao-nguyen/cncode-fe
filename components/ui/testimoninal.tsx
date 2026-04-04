@@ -27,6 +27,786 @@ const initialComments: Comment[] = [
         content: "Giảng viên hỗ trợ rất nhiệt tình!",
         rating: 4,
         avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #1023",
+        content: "Khoá học rất hay, dễ hiểu và thực tế 🔥",
+        rating: 5,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
+    },
+    {
+        name: "User #8472",
+        content: "Giảng viên hỗ trợ rất nhiệt tình!",
+        rating: 4,
+        avatar: ""
     }
 ]
 
@@ -227,19 +1007,21 @@ export default function Testimonial() {
                     )}
                 </div>
 
-                <div className="mt-6 flex items-center justify-center gap-2">
-                    {comments.map((_, i) => (
-                        <button
-                            key={i}
-                            type="button"
-                            onClick={() => setIndex(i)}
-                            className={`h-2.5 w-2.5 rounded-full transition ${i === normalizedIndex
-                                ? "bg-black dark:bg-white"
-                                : "bg-gray-300 dark:bg-gray-600"
-                                }`}
-                            aria-label={`Chọn đánh giá ${i + 1}`}
-                        />
-                    ))}
+                <div className="mt-6 flex justify-center">
+                    <div className="flex gap-2 overflow-x-auto px-1 py-1">
+                        {comments.map((_, i) => (
+                            <button
+                                key={i}
+                                type="button"
+                                onClick={() => setIndex(i)}
+                                className={`h-2.5 w-2.5 rounded-full transition ${i === normalizedIndex
+                                    ? "bg-black dark:bg-white"
+                                    : "bg-gray-300 dark:bg-gray-600"
+                                    }`}
+                                aria-label={`Chọn đánh giá ${i + 1}`}
+                            />
+                        ))}
+                    </div>
                 </div>
             </section>
         </div>
