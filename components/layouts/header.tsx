@@ -24,8 +24,8 @@ export function Header() {
     const { setTheme } = useTheme()
 
     // Cập nhật logic user - thay đổi theo state thực tế của bạn
-    const user = null // Thay bằng user state của bạn
-    // const user = { fullname: "Lý Cao Nguyên", avatar: "/images/avatar.png", role: "admin" }
+   // const user = null // Thay bằng user state của bạn
+    const user = { fullname: "Lý Cao Nguyên", avatar: "/images/avatar.png", role: "admin" }
 
     const menu = [
         { title: "Trang chủ", link: "/", icon: Home2 },
