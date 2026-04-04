@@ -4,6 +4,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { useTheme } from "next-themes"
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import {
     Sun1,
     Moon,
@@ -11,7 +12,7 @@ import {
     Home2,
     Message2,
     Book1,
-    Code1,
+    DocumentCode,
     Calendar2,
     Document,
     Shop,
@@ -22,11 +23,15 @@ export function Header() {
     const pathname = usePathname()
     const { setTheme } = useTheme()
 
+    // Cập nhật logic user - thay đổi theo state thực tế của bạn
+    const user = null // Thay bằng user state của bạn
+    // const user = { fullname: "Lý Cao Nguyên", avatar: "/images/avatar.png", role: "admin" }
+
     const menu = [
         { title: "Trang chủ", link: "/", icon: Home2 },
         { title: "Diễn đàn", link: "/diendan", icon: Message2 },
         { title: "Khoá học", link: "/khoahoc", icon: Book1 },
-        { title: "Luyện tập", link: "/luyentap", icon: Code1 },
+        { title: "Luyện tập", link: "/luyentap", icon: DocumentCode },
         { title: "Sự kiện", link: "/sukien", icon: Calendar2 },
         { title: "Bài viết", link: "/baiviet", icon: Document },
         { title: "Cửa hàng", link: "/cuahangso", icon: Shop },
@@ -103,12 +108,21 @@ export function Header() {
                             className="cursor-pointer text-black dark:text-white"
                         />
 
-                        <Link
-                            href="/login"
-                            className="lg:text-[13px] xl:text-[16px] bg-black text-white dark:bg-white dark:text-black px-2.5 py-1.75 rounded-[10px] font-bold"
-                        >
-                            Đăng nhập
-                        </Link>
+                        {user != null ? (
+                            <div className="p-0.5 rounded-full">
+                                <Avatar className="cursor-pointer w-8 h-8 shadow-[0_0_0_1px_rgba(59,130,246,0.6)] dark:shadow-[0_0_0_1px_rgba(96,165,250,0.7)]">
+                                    <AvatarImage src={user?.avatar} alt={user?.fullname} />
+                                    <AvatarFallback>{user?.fullname?.charAt(0)}</AvatarFallback>
+                                </Avatar>
+                            </div>
+                        ) : (
+                            <Link
+                                href="/login"
+                                className="bg-black text-white dark:bg-white dark:text-black px-2 py-1 rounded-[10px] font-bold text-[14px]"
+                            >
+                                Đăng nhập
+                            </Link>
+                        )}
 
                     </div>
 
@@ -159,12 +173,19 @@ export function Header() {
                             className="cursor-pointer text-black dark:text-white"
                         />
 
-                        <Link
-                            href="/login"
-                            className="bg-black text-white dark:bg-white dark:text-black px-2 py-1 rounded-[10px] font-bold text-[12px]"
-                        >
-                            Đăng nhập
-                        </Link>
+                        {user != null ? (
+                            <Avatar className="cursor-pointer w-6.5 h-6.5 shadow-[0_0_0_1px_rgba(59,130,246,0.6)] dark:shadow-[0_0_0_1px_rgba(96,165,250,0.7)]">
+                                <AvatarImage src={user.avatar} alt={user.fullname} />
+                                <AvatarFallback>{user.fullname.charAt(0)}</AvatarFallback>
+                            </Avatar>
+                        ) : (
+                            <Link
+                                href="/login"
+                                className="bg-black text-white dark:bg-white dark:text-black px-2 py-1 rounded-[10px] font-bold text-[12px]"
+                            >
+                                Đăng nhập
+                            </Link>
+                        )}
 
                     </div>
 
@@ -216,17 +237,17 @@ export function Header() {
 
                                 <span
                                     className={`
-                    text-[clamp(8px,2vw,11px)]
-                    font-bold
-                    leading-none
-                    text-center
-                    whitespace-nowrap
-                    transition-all
-                    ${isActive
+                                        text-[clamp(8px,2vw,11px)]
+                                        font-bold
+                                        leading-none
+                                        text-center
+                                        whitespace-nowrap
+                                        transition-all
+                                        ${isActive
                                             ? "text-blue-500"
                                             : "text-gray-500 dark:text-gray-400"
                                         }
-                  `}
+                                    `}
                                 >
                                     {m.title}
                                 </span>
