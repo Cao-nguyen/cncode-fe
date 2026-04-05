@@ -4,7 +4,7 @@ export default function UserLayout({
     children: React.ReactNode;
 }>) {
     return (
-        <div>
+        <div className="custom-scroll">
             {children}
         </div>
     );
