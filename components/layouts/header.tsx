@@ -269,11 +269,11 @@ export function Header() {
                     </div>
 
                 </div>
-            </div>
+            </div >
 
 
             {/* ===== MOBILE TOP ===== */}
-            <div className="lg:hidden fixed top-0 w-full h-10 bg-white dark:bg-black z-50 border-b border-gray-200 dark:border-gray-800">
+            <div className="lg:hidden fixed top-0 w-full h-10 bg-white dark:bg-black z-50 border-b border-gray-200 dark:border-gray-800" >
 
                 <div className="flex h-full justify-between items-center px-1.5 lg:px-4">
 
@@ -378,7 +378,7 @@ export function Header() {
 
 
             {/* ===== MOBILE BOTTOM ===== */}
-            <div className="lg:hidden fixed bottom-0 left-0 w-full z-50">
+            <div className="lg:hidden fixed bottom-0 left-0 w-full z-50" >
                 <div className="
                     w-full h-15
                     bg-white dark:bg-black
@@ -441,7 +441,6 @@ export function Header() {
 
                 </div>
             </div>
-
 
             {/* spacer mobile */}
             <div className="lg:hidden h-10" />
