@@ -3,18 +3,16 @@
 import { useEffect } from "react"
 import AOS from "aos"
 
-export default function AOSProvider({
-    children
-}: {
-    children: React.ReactNode
-}) {
-
+export default function AOSProvider({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         AOS.init({
-            duration: 800,
             once: true,
-            easing: "ease-out-cubic",
+            duration: 600,
         })
+
+        setTimeout(() => {
+            AOS.refresh()
+        }, 100)
     }, [])
 
     return <>{children}</>
