@@ -1,6 +1,8 @@
 "use client"
 
 import { useMemo, useState } from "react"
+import Link from "next/link"
+import { Add } from "iconsax-react"
 import BlogCard from "@/components/ui/blog"
 
 const blogPosts = [
@@ -47,61 +49,6 @@ const blogPosts = [
         avatar: "/images/avatar.jpg",
         category: "Backend",
         link: "/blog/4"
-    },
-    {
-        title: "Lập trình backend với Node.js cho người mới",
-        description:
-            "Khái quát các bước xây dựng API, làm việc với database và bảo mật cơ bản.",
-        image: "/images/image2.jpg",
-        time: "8 phút đọc",
-        author: "Phạm Thị D",
-        avatar: "/images/avatar.jpg",
-        category: "Backend",
-        link: "/blog/8"
-    },
-    {
-        title: "Lập trình backend với Node.js cho người mới",
-        description:
-            "Khái quát các bước xây dựng API, làm việc với database và bảo mật cơ bản.",
-        image: "/images/image2.jpg",
-        time: "8 phút đọc",
-        author: "Phạm Thị D",
-        avatar: "/images/avatar.jpg",
-        category: "Backend",
-        link: "/blog/7"
-    },
-    {
-        title: "Lập trình backend với Node.js cho người mới",
-        description:
-            "Khái quát các bước xây dựng API, làm việc với database và bảo mật cơ bản.",
-        image: "/images/image2.jpg",
-        time: "8 phút đọc",
-        author: "Phạm Thị D",
-        avatar: "/images/avatar.jpg",
-        category: "Backend",
-        link: "/blog/5"
-    },
-    {
-        title: "Lập trình backend với Node.js cho người mới",
-        description:
-            "Khái quát các bước xây dựng API, làm việc với database và bảo mật cơ bản.",
-        image: "/images/image2.jpg",
-        time: "8 phút đọc",
-        author: "Phạm Thị D",
-        avatar: "/images/avatar.jpg",
-        category: "Backend",
-        link: "/blog/12"
-    },
-    {
-        title: "Lập trình backend với Node.js cho người mới",
-        description:
-            "Khái quát các bước xây dựng API, làm việc với database và bảo mật cơ bản.",
-        image: "/images/image2.jpg",
-        time: "8 phút đọc",
-        author: "Phạm Thị D",
-        avatar: "/images/avatar.jpg",
-        category: "Backend",
-        link: "/blog/18"
     }
 ]
 
@@ -122,8 +69,11 @@ export default function BlogPage() {
 
     return (
         <main className="px-4 py-8 sm:px-6 lg:px-8">
+            {/* Header */}
             <div className="mb-8 space-y-6">
                 <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+
+                    {/* Title */}
                     <div className="max-w-2xl">
                         <h1 className="text-3xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">
                             Tất cả bài viết
@@ -133,34 +83,37 @@ export default function BlogPage() {
                         </p>
                     </div>
 
-                    <div className="w-full max-w-md">
-                        <label className="relative block">
-                            <span className="sr-only">Tìm kiếm bài viết</span>
-                            <input
-                                type="search"
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                                placeholder="Tìm kiếm bài viết..."
-                                className="w-full rounded-3xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-900 focus:ring-2 focus:ring-slate-200 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:border-slate-100 dark:focus:ring-slate-800"
-                            />
-                        </label>
+                    {/* Search + Button */}
+                    <div className="flex w-full max-w-lg gap-3">
+                        <input
+                            type="search"
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            placeholder="Tìm kiếm bài viết..."
+                            className="w-[60%] lg:w-[74%] rounded-3xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-slate-900 focus:ring-2 focus:ring-slate-200 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:border-slate-100 dark:focus:ring-slate-800"
+                        />
+
+                        <Link
+                            href="/blog/create"
+                            className="flex items-center gap-2 rounded-3xl bg-black dark:bg-white px-3 py-2 text-sm text-white dark:text-black shadow hover:opacity-90 transition"
+                        >
+                            <Add variant="Outline" size={28} />
+                            <span>Tạo blog</span>
+                        </Link>
                     </div>
                 </div>
             </div>
 
+            {/* Count */}
             <div className="mb-6 text-sm text-slate-500 dark:text-slate-400">
                 {filteredPosts.length} bài viết
             </div>
 
+            {/* Grid */}
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
                 {filteredPosts.length > 0 ? (
                     filteredPosts.map((post) => (
-                        <div
-                            key={post.link}
-                            data-aos="fade-up"
-                            data-aos-delay="120"
-                            data-aos-anchor-placement="top-bottom"
-                        >
+                        <div key={post.link}>
                             <BlogCard {...post} />
                         </div>
                     ))
