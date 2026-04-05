@@ -204,13 +204,6 @@ export function Header() {
                             </button>
                         </div>
 
-                        <Notification
-                            size={20}
-                            color="currentColor"
-                            variant="Outline"
-                            className="cursor-pointer text-black dark:text-white"
-                        />
-
                         {/* ===== COINS AND STREAK ===== */}
                         <div className="flex items-center gap-5 mr-1">
                             <div className="relative flex items-center">
@@ -243,6 +236,13 @@ export function Header() {
                                 />
                             </div>
                         </div>
+
+                        <Notification
+                            size={20}
+                            color="currentColor"
+                            variant="Outline"
+                            className="cursor-pointer text-black dark:text-white"
+                        />
 
                         {user ? (
                             <DropdownMenu modal={false}>
@@ -308,13 +308,6 @@ export function Header() {
 
                         </div>
 
-                        <Notification
-                            size={20}
-                            color="currentColor"
-                            variant="Outline"
-                            className="cursor-pointer text-black dark:text-white"
-                        />
-
                         {/* ===== COINS AND STREAK ===== */}
                         <div className="flex items-center gap-5 mr-1">
                             <div className="relative flex items-center">
@@ -347,6 +340,13 @@ export function Header() {
                                 />
                             </div>
                         </div>
+
+                        <Notification
+                            size={20}
+                            color="currentColor"
+                            variant="Outline"
+                            className="cursor-pointer text-black dark:text-white"
+                        />
 
                         {user ? (
                             <DropdownMenu modal={false}>
