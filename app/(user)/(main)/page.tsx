@@ -12,6 +12,7 @@ import BlogCard from "@/components/ui/blog"
 import Analytics from "@/components/ui/analytic"
 import WhyChoose from "@/components/ui/whychoose"
 import Testimonial from "@/components/ui/testimoninal"
+import FloatingButtons from "@/components/ui/floatingicon"
 
 export default function Home() {
     const roadmapData = [
@@ -63,6 +64,7 @@ export default function Home() {
 
     return (
         <div>
+            <FloatingButtons />
             <Slideshow />
             <div className="m-5 xl:m-10">
                 {/* Banner giới thiệu */}
