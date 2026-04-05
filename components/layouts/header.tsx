@@ -6,6 +6,13 @@ import { usePathname } from "next/navigation"
 import { useTheme } from "next-themes"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import {
+    DropdownMenu,
+    DropdownMenuTrigger,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu"
+import {
     Sun1,
     Moon,
     Notification,
@@ -16,16 +23,116 @@ import {
     Calendar2,
     Document,
     Shop,
+    User,
+    Setting2,
+    Logout,
+    Book,
+    DocumentText,
+    Home,
 } from "iconsax-react"
+
+// ===== TYPES =====
+type UserType = {
+    fullname: string
+    avatar: string
+    role: "admin" | "user" | "teacher"
+}
+
+// ===== DROPDOWN COMPONENT =====
+function UserDropdown({ user }: { user: UserType }) {
+    return (
+        <DropdownMenuContent align="end" className="w-50">
+
+            {/* Header */}
+            <div className="flex items-center gap-3 px-2 py-2">
+                <Avatar className="w-8 h-8">
+                    <AvatarImage src={user.avatar} />
+                    <AvatarFallback>{user.fullname.charAt(0)}</AvatarFallback>
+                </Avatar>
+                <div>
+                    <p className="text-sm font-bold">{user.fullname}</p>
+                    <p className="text-xs text-gray-500">Tài khoản: {user.role}</p>
+                </div>
+            </div>
+
+            <DropdownMenuSeparator />
+
+            <DropdownMenuItem>
+                <User size={20} variant="Outline" className="mr-1 w-4.5! h-4.5!" />
+                <Link href="/p/:id">
+                    Trang cá nhân
+                </Link>
+            </DropdownMenuItem>
+
+            {user.role === "admin" && (
+                <DropdownMenuItem>
+                    <Setting2 size={20} variant="Outline" className="mr-1 w-4.5! h-4.5!" />
+                    <Link href="/admin/dashboard">
+                        Trang quản trị
+                    </Link>
+                </DropdownMenuItem>
+            )}
+
+            <DropdownMenuSeparator />
+
+            <DropdownMenuItem>
+                <Book size={20} variant="Outline" className="mr-1 w-4.5! h-4.5!" />
+                <Link href="/me/khoahoc">
+                    Khoá học của tôi
+                </Link>
+            </DropdownMenuItem>
+
+            <DropdownMenuItem>
+                <DocumentText size={20} variant="Outline" className="mr-1 w-4.5! h-4.5!" />
+                <Link href="/me/baiviet">
+                    Bài viết của tôi
+                </Link>
+            </DropdownMenuItem>
+
+            <DropdownMenuItem>
+                <Home size={20} variant="Outline" className="mr-1 w-4.5! h-4.5!" />
+                <Link href="khuvuonhoctap">
+                    Khu vườn học tập
+                </Link>
+            </DropdownMenuItem>
+
+            <DropdownMenuItem>
+                <Shop size={20} variant="Outline" className="mr-1 w-4.5! h-4.5!" />
+                <Link href="/nhahangcongnghe">
+                    Nhà hàng công nghệ
+                </Link>
+            </DropdownMenuItem>
+
+            <DropdownMenuSeparator />
+
+            <DropdownMenuItem>
+                <Setting2 size={20} variant="Outline" className="mr-1 w-4.5! h-4.5!" />
+                <Link href="/settings">
+                    Cài đặt
+                </Link>
+            </DropdownMenuItem>
+
+            <DropdownMenuItem className="text-red-500">
+                <Logout size={20} variant="Outline" className="mr-1 w-4.5! h-4.5!" />
+                <Link href="/logout">
+                    Đăng xuất
+                </Link>
+            </DropdownMenuItem>
+
+        </DropdownMenuContent>
+    )
+}
 
 export function Header() {
 
     const pathname = usePathname()
     const { setTheme } = useTheme()
 
-    // Cập nhật logic user - thay đổi theo state thực tế của bạn
-    const user = null // Thay bằng user state của bạn
-    // const user = { fullname: "Lý Cao Nguyên", avatar: "/images/avatar.png", role: "admin" }
+    const user: UserType | null = {
+        fullname: "Lý Cao Nguyên",
+        avatar: "/images/avatar.png",
+        role: "admin"
+    }
 
     const menu = [
         { title: "Trang chủ", link: "/", icon: Home2 },
@@ -43,8 +150,7 @@ export function Header() {
             {/* ===== DESKTOP ===== */}
             <div className="hidden lg:block bg-white dark:bg-black w-full h-15 fixed top-0 z-50">
                 <div className="flex h-full justify-between items-center">
-
-                    <div className="ml-7.5">
+                    <div className="ml-1.5 lg:ml-4">
                         <Link href="/">
                             <Image
                                 src="/images/logo.png"
@@ -62,17 +168,17 @@ export function Header() {
                             const isActive = pathname === m.link
 
                             return (
-                                <div key={m.link} className="lg:px-1 xl:px-3.75">
+                                <div key={m.link} className="lg:px-1 xl:px-3">
                                     <Link
                                         href={m.link}
                                         className={`
-                      px-2.5 py-1.75 rounded-[9px] font-bold
-                      transition-all duration-100 lg:text-[15px] xl:text-[16px]
-                      ${isActive
+                                            px-2.5 py-1.75 rounded-[9px] font-bold
+                                            transition-all duration-100 lg:text-[15px] xl:text-[16px]
+                                            ${isActive
                                                 ? "bg-[#dedede] dark:bg-[#424141] bg-opacity-50"
                                                 : "hover:bg-[#d5d5d5] dark:hover:bg-[#5F5F5F] hover:bg-opacity-50"
                                             }
-                    `}
+                                        `}
                                     >
                                         {m.title}
                                     </Link>
@@ -81,24 +187,21 @@ export function Header() {
                         })}
                     </div>
 
-                    <div className="mr-7.5 flex gap-3.75 items-center">
 
-                        <div className="mx-2">
-
+                    <div className="mr-1.5 lg:mr-4 flex gap-3 items-center">
+                        <div>
                             <button
                                 onClick={() => setTheme("light")}
                                 className="hidden dark:block"
                             >
                                 <Sun1 size={20} color="currentColor" variant="Outline" className="dark:text-white" />
                             </button>
-
                             <button
                                 onClick={() => setTheme("dark")}
                                 className="block dark:hidden"
                             >
                                 <Moon size={20} color="currentColor" variant="Outline" />
                             </button>
-
                         </div>
 
                         <Notification
@@ -108,13 +211,52 @@ export function Header() {
                             className="cursor-pointer text-black dark:text-white"
                         />
 
-                        {user != null ? (
-                            <div className="p-0.5 rounded-full">
-                                <Avatar className="cursor-pointer w-8 h-8 shadow-[0_0_0_1px_rgba(59,130,246,0.6)] dark:shadow-[0_0_0_1px_rgba(96,165,250,0.7)]">
-                                    <AvatarImage src={user?.avatar} alt={user?.fullname} />
-                                    <AvatarFallback>{user?.fullname?.charAt(0)}</AvatarFallback>
-                                </Avatar>
+                        {/* ===== COINS AND STREAK ===== */}
+                        <div className="flex items-center gap-5 mr-1">
+                            <div className="relative flex items-center">
+                                <div className="border border-gray-400 dark:border-gray-600 rounded-2xl pl-2 pr-4 py-0.5">
+                                    <p className="text-blue-500 dark:text-blue-300 text-[12px] font-medium">
+                                        0,85
+                                    </p>
+                                </div>
+                                <Image
+                                    src="/icons/coins.svg"
+                                    alt="Coins"
+                                    width={25}
+                                    height={25}
+                                    className="absolute -right-3"
+                                />
                             </div>
+
+                            <div className="relative flex items-center">
+                                <div className="border border-gray-400 dark:border-gray-600 rounded-2xl pl-2 pr-5 py-0.5">
+                                    <p className="text-blue-500 dark:text-blue-300 text-[12px] font-medium">
+                                        0
+                                    </p>
+                                </div>
+                                <Image
+                                    src="/icons/streak.svg"
+                                    alt="Streak"
+                                    width={27}
+                                    height={27}
+                                    className="absolute -right-3"
+                                />
+                            </div>
+                        </div>
+
+                        {user ? (
+                            <DropdownMenu modal={false}>
+                                <DropdownMenuTrigger asChild>
+                                    <div className="p-0.5 rounded-full">
+                                        <Avatar className="cursor-pointer w-8 h-8 shadow-[0_0_0_1px_rgba(59,130,246,0.6)] dark:shadow-[0_0_0_1px_rgba(96,165,250,0.7)]">
+                                            <AvatarImage src={user?.avatar} alt={user?.fullname} />
+                                            <AvatarFallback>{user?.fullname?.charAt(0)}</AvatarFallback>
+                                        </Avatar>
+                                    </div>
+                                </DropdownMenuTrigger>
+
+                                <UserDropdown user={user} />
+                            </DropdownMenu>
                         ) : (
                             <Link
                                 href="/login"
@@ -133,7 +275,7 @@ export function Header() {
             {/* ===== MOBILE TOP ===== */}
             <div className="lg:hidden fixed top-0 w-full h-10 bg-white dark:bg-black z-50 border-b border-gray-200 dark:border-gray-800">
 
-                <div className="flex h-full justify-between items-center px-3.75">
+                <div className="flex h-full justify-between items-center px-1.5 lg:px-4">
 
                     <Link href="/">
                         <Image
@@ -146,9 +288,9 @@ export function Header() {
                         />
                     </Link>
 
-                    <div className="flex gap-3.75 items-center">
+                    <div className="flex gap-3 items-center">
 
-                        <div className="mx-2">
+                        <div>
 
                             <button
                                 onClick={() => setTheme("light")}
@@ -173,11 +315,52 @@ export function Header() {
                             className="cursor-pointer text-black dark:text-white"
                         />
 
-                        {user != null ? (
-                            <Avatar className="cursor-pointer w-6.5 h-6.5 shadow-[0_0_0_1px_rgba(59,130,246,0.6)] dark:shadow-[0_0_0_1px_rgba(96,165,250,0.7)]">
-                                <AvatarImage src={user.avatar} alt={user.fullname} />
-                                <AvatarFallback>{user.fullname.charAt(0)}</AvatarFallback>
-                            </Avatar>
+                        {/* ===== COINS AND STREAK ===== */}
+                        <div className="flex items-center gap-5 mr-1">
+                            <div className="relative flex items-center">
+                                <div className="border border-gray-400 dark:border-gray-600 rounded-2xl pl-2 pr-4 py-0.5">
+                                    <p className="text-blue-500 dark:text-blue-300 text-[12px] font-medium">
+                                        0,85
+                                    </p>
+                                </div>
+                                <Image
+                                    src="/icons/coins.svg"
+                                    alt="Coins"
+                                    width={25}
+                                    height={25}
+                                    className="absolute -right-3"
+                                />
+                            </div>
+
+                            <div className="relative flex items-center">
+                                <div className="border border-gray-400 dark:border-gray-600 rounded-2xl pl-2 pr-5 py-0.5">
+                                    <p className="text-blue-500 dark:text-blue-300 text-[12px] font-medium">
+                                        0
+                                    </p>
+                                </div>
+                                <Image
+                                    src="/icons/streak.svg"
+                                    alt="Streak"
+                                    width={27}
+                                    height={27}
+                                    className="absolute -right-3"
+                                />
+                            </div>
+                        </div>
+
+                        {user ? (
+                            <DropdownMenu modal={false}>
+                                <DropdownMenuTrigger asChild>
+                                    <div className="p-0.5 rounded-full">
+                                        <Avatar className="cursor-pointer w-6.5 h-6.5 shadow-[0_0_0_1px_rgba(59,130,246,0.6)] dark:shadow-[0_0_0_1px_rgba(96,165,250,0.7)]">
+                                            <AvatarImage src={user?.avatar} alt={user?.fullname} />
+                                            <AvatarFallback>{user?.fullname?.charAt(0)}</AvatarFallback>
+                                        </Avatar>
+                                    </div>
+                                </DropdownMenuTrigger>
+
+                                <UserDropdown user={user} />
+                            </DropdownMenu>
                         ) : (
                             <Link
                                 href="/login"
