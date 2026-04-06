@@ -1,6 +1,0 @@
-{
-  "version": 3,
-  "sources": [],
-  "sections": [
-    {"offset": {"line": 4, "column": 0}, "map": {"version":3,"sources":["file:///D:/cncode/cncode-fe/app/%28user%29/layout.tsx"],"sourcesContent":["export default function UserLayout({\r\n    children,\r\n}: Readonly<{\r\n    children: React.ReactNode;\r\n}>) {\r\n    return (\r\n        <div className=\"custom-scroll\">\r\n            {children}\r\n        </div>\r\n    );\r\n}"],"names":[],"mappings":";;;;;;AAAe,SAAS,WAAW,EAC/B,QAAQ,EAGV;IACE,qBACI,8OAAC;QAAI,WAAU;kBACV;;;;;;AAGb"}}]
-}

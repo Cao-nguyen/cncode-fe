@@ -1,6 +1,0 @@
-{
-  "version": 3,
-  "sources": [],
-  "sections": [
-    {"offset": {"line": 4, "column": 0}, "map": {"version":3,"sources":["file:///D:/cncode/cncode-fe/app/%28auth%29/login/layout.tsx"],"sourcesContent":["import { ReactNode } from \"react\";\r\nimport { Metadata } from \"next\";\r\n\r\nexport const metadata: Metadata = {\r\n    title: \"Đăng nhập\"\r\n}\r\n\r\nexport default function LoginLayout({ children }: { children: ReactNode }) {\r\n    return children;\r\n}"],"names":[],"mappings":";;;;;;AAGO,MAAM,WAAqB;IAC9B,OAAO;AACX;AAEe,SAAS,YAAY,EAAE,QAAQ,EAA2B;IACrE,OAAO;AACX"}}]
-}
