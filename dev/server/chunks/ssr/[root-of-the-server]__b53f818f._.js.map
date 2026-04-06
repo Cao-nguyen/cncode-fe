@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 30, "column": 0}, "map": {"version":3,"sources":["file:///D:/cncode/cncode-fe/app/%28user%29/%28main%29/luyentap/page.tsx"],"sourcesContent":["export default function Contest() {\r\n    return (\r\n        <h1>Bài viết</h1>\r\n    )\r\n}"],"names":[],"mappings":";;;;;;AAAe,SAAS;IACpB,qBACI,8OAAC;kBAAG;;;;;;AAEZ"}}]
+}

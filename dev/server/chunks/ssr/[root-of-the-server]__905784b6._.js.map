@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 26, "column": 0}, "map": {"version":3,"sources":["file:///D:/cncode/cncode-fe/app/admin/dashboard/page.tsx"],"sourcesContent":["export default function DashboardPage() {\r\n    return (\r\n        <div>\r\n            Dashboard\r\n        </div>\r\n    )\r\n}"],"names":[],"mappings":";;;;;;AAAe,SAAS;IACpB,qBACI,8OAAC;kBAAI;;;;;;AAIb"}}]
+}

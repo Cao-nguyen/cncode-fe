@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 26, "column": 0}, "map": {"version":3,"sources":["file:///D:/cncode/cncode-fe/app/%28user%29/baiviet/page.tsx"],"sourcesContent":["export default function Blog() {\r\n    return (\r\n        <main className=\"min-h-screen bg-white dark:bg-slate-950\">\r\n            <Blog />\r\n        </main>\r\n    )\r\n}"],"names":[],"mappings":";;;;;;AAAe,SAAS;IACpB,qBACI,8OAAC;QAAK,WAAU;kBACZ,cAAA,8OAAC;;;;;;;;;;AAGb"}}]
+}

@@ -1,0 +1,1816 @@
+[00:00:01.774] Server  LOG     ✓ Ready in 1335ms
+[00:00:03.357] Browser WARN    Image with src "/images/logo.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[00:00:03.357] Browser WARN    Image with src "/images/images1.jpg" has "fill" but is missing "sizes" prop. Please add it to improve page performance. Read more: https://nextjs.org/docs/api-reference/next/image#sizes
+[00:00:03.357] Browser WARN    Image with src "/images/whychoose.png" has "fill" but is missing "sizes" prop. Please add it to improve page performance. Read more: https://nextjs.org/docs/api-reference/next/image#sizes
+[00:00:06.969] Browser WARN    Image with src "/images/image2.jpg" was detected as the Largest Contentful Paint (LCP). Please add the `loading="eager"` property if this image is above the fold.
+Read more: https://nextjs.org/docs/app/api-reference/components/image#loading
+[00:00:13.071] Server  LOG     ✓ Compiled in 884ms
+[00:00:14.012] Browser ERROR   A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+%s%s https://react.dev/link/hydration-mismatch 
+
+  ...
+    <UserLayoutMain>
+      <Header>
+        ...
+          <MenuProvider scope={{Menu:[...], ...}} onClose={function Menu.useCallback} ...>
+            <DropdownMenuTrigger asChild={true}>
+              <DropdownMenuTrigger data-slot="dropdown-m..." asChild={true}>
+                <MenuAnchor asChild={true} __scopeMenu={{Menu:[...], ...}}>
+                  <PopperAnchor __scopePopper={{Menu:[...], ...}} asChild={true} ref={null}>
+                    <Primitive.div asChild={true} ref={function}>
+                      <Primitive.div.Slot ref={function}>
+                        <Primitive.div.SlotClone ref={function}>
+                          <Primitive.button type="button" id="radix-_R_j..." aria-haspopup="menu" aria-expanded={false} ...>
+                            <Primitive.button.Slot type="button" id="radix-_R_j..." aria-haspopup="menu" ...>
+                              <Primitive.button.SlotClone type="button" id="radix-_R_j..." aria-haspopup="menu" ...>
+                                <div
+                                  className="p-0.5 rounded-full"
+                                  type="button"
++                                 id="radix-_R_j6itmitmlb_"
+-                                 id="radix-_R_2cmitmitmlb_"
+                                  aria-haspopup="menu"
+                                  aria-expanded={false}
+                                  aria-controls={undefined}
+                                  data-state="closed"
+                                  data-disabled={undefined}
+                                  disabled={false}
+                                  data-slot="dropdown-menu-trigger"
+                                  onPointerDown={function handleEvent}
+                                  onKeyDown={function handleEvent}
+                                  ref={function}
+                                >
+            ...
+        ...
+          <MenuProvider scope={{Menu:[...], ...}} onClose={function Menu.useCallback} ...>
+            <DropdownMenuTrigger asChild={true}>
+              <DropdownMenuTrigger data-slot="dropdown-m..." asChild={true}>
+                <MenuAnchor asChild={true} __scopeMenu={{Menu:[...], ...}}>
+                  <PopperAnchor __scopePopper={{Menu:[...], ...}} asChild={true} ref={null}>
+                    <Primitive.div asChild={true} ref={function}>
+                      <Primitive.div.Slot ref={function}>
+                        <Primitive.div.SlotClone ref={function}>
+                          <Primitive.button type="button" id="radix-_R_i..." aria-haspopup="menu" aria-expanded={false} ...>
+                            <Primitive.button.Slot type="button" id="radix-_R_i..." aria-haspopup="menu" ...>
+                              <Primitive.button.SlotClone type="button" id="radix-_R_i..." aria-haspopup="menu" ...>
+                                <div
+                                  className="p-0.5 rounded-full"
+                                  type="button"
++                                 id="radix-_R_iaitmitmlb_"
+-                                 id="radix-_R_296itmitmlb_"
+                                  aria-haspopup="menu"
+                                  aria-expanded={false}
+                                  aria-controls={undefined}
+                                  data-state="closed"
+                                  data-disabled={undefined}
+                                  disabled={false}
+                                  data-slot="dropdown-menu-trigger"
+                                  onPointerDown={function handleEvent}
+                                  onKeyDown={function handleEvent}
+                                  ref={function}
+                                >
+            ...
+        ...
+
+[00:00:14.012] Browser WARN    Image with src "/images/logo.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[00:00:14.012] Browser WARN    Image with src "/images/images1.jpg" has "fill" but is missing "sizes" prop. Please add it to improve page performance. Read more: https://nextjs.org/docs/api-reference/next/image#sizes
+[00:00:14.012] Browser WARN    Image with src "/images/whychoose.png" has "fill" but is missing "sizes" prop. Please add it to improve page performance. Read more: https://nextjs.org/docs/api-reference/next/image#sizes
+[00:00:17.647] Browser WARN    Image with src "/images/image2.jpg" was detected as the Largest Contentful Paint (LCP). Please add the `loading="eager"` property if this image is above the fold.
+Read more: https://nextjs.org/docs/app/api-reference/components/image#loading
+[00:00:36.422] Server  LOG     ✓ Compiled in 808ms
+[00:00:37.343] Browser WARN    Image with src "/images/logo.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[00:00:37.343] Browser WARN    Image with src "/images/images1.jpg" has "fill" but is missing "sizes" prop. Please add it to improve page performance. Read more: https://nextjs.org/docs/api-reference/next/image#sizes
+[00:00:37.343] Browser WARN    Image with src "/images/whychoose.png" has "fill" but is missing "sizes" prop. Please add it to improve page performance. Read more: https://nextjs.org/docs/api-reference/next/image#sizes
+[00:00:41.028] Browser WARN    Image with src "/images/image2.jpg" was detected as the Largest Contentful Paint (LCP). Please add the `loading="eager"` property if this image is above the fold.
+Read more: https://nextjs.org/docs/app/api-reference/components/image#loading
+[00:00:47.882] Server  LOG     ✓ Compiled in 67ms
+[00:00:47.960] Browser ERROR   uncaughtError: ReferenceError: Link is not defined
+[00:01:14.113] Server  WARN    ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+[00:01:14.589] Server  ERROR   ⨯ ReferenceError: Link is not defined
+[00:01:14.604] Server  LOG     ✓ Compiled in 60ms
+[00:01:14.608] Browser ERROR   uncaughtError: ReferenceError: Link is not defined
+[00:01:15.493] Browser ERROR   uncaughtError: ReferenceError: Link is not defined
+[00:01:20.488] Server  WARN    ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+[00:01:20.501] Server  WARN    ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+[00:01:20.797] Server  LOG     ✓ Compiled in 299ms
+[00:01:20.806] Server  WARN    ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+[00:01:21.722] Browser WARN    Image with src "/images/logo.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[00:01:21.722] Browser WARN    Image with src "/images/images1.jpg" has "fill" but is missing "sizes" prop. Please add it to improve page performance. Read more: https://nextjs.org/docs/api-reference/next/image#sizes
+[00:01:21.722] Browser WARN    Image with src "/images/whychoose.png" has "fill" but is missing "sizes" prop. Please add it to improve page performance. Read more: https://nextjs.org/docs/api-reference/next/image#sizes
+[00:01:25.406] Browser WARN    Image with src "/images/image2.jpg" was detected as the Largest Contentful Paint (LCP). Please add the `loading="eager"` property if this image is above the fold.
+Read more: https://nextjs.org/docs/app/api-reference/components/image#loading
+[00:01:49.505] Server  LOG     ✓ Compiled in 49ms
+[00:01:55.703] Server  LOG     ✓ Compiled in 53ms
+[00:01:55.796] Browser ERROR   uncaughtError: Error: Element type is invalid: expected a string (for built-in components) or a class/function (for composite components) but got: <SmsTracking />. Did you accidentally export a JSX literal instead of a component?
+
+Check the render method of `FloatingButtons`.
+[00:02:43.786] Server  WARN    ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+[00:02:44.468] Server  ERROR   ⨯ Error: Element type is invalid: expected a string (for built-in components) or a class/function (for composite components) but got: object.
+[00:02:44.487] Server  LOG     ✓ Compiled in 46ms
+[00:02:44.489] Browser ERROR   uncaughtError: Error: Element type is invalid: expected a string (for built-in components) or a class/function (for composite components) but got: <SmsTracking />. Did you accidentally export a JSX literal instead of a component?
+
+Check the render method of `FloatingButtons`.
+[00:02:45.344] Browser ERROR   uncaughtError: Error: Element type is invalid: expected a string (for built-in components) or a class/function (for composite components) but got: <SmsTracking />. Did you accidentally export a JSX literal instead of a component?
+
+Check the render method of `FloatingButtons`.
+[00:02:48.211] Server  WARN    ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+[00:02:48.247] Server  LOG     ✓ Compiled in 140ms
+[00:02:49.348] Browser WARN    Image with src "/images/logo.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[00:02:49.348] Browser WARN    Image with src "/images/images1.jpg" has "fill" but is missing "sizes" prop. Please add it to improve page performance. Read more: https://nextjs.org/docs/api-reference/next/image#sizes
+[00:02:49.349] Browser WARN    Image with src "/images/whychoose.png" has "fill" but is missing "sizes" prop. Please add it to improve page performance. Read more: https://nextjs.org/docs/api-reference/next/image#sizes
+[00:02:52.948] Browser WARN    Image with src "/images/image2.jpg" was detected as the Largest Contentful Paint (LCP). Please add the `loading="eager"` property if this image is above the fold.
+Read more: https://nextjs.org/docs/app/api-reference/components/image#loading
+[00:03:18.192] Server  LOG     ✓ Compiled in 276ms
+[00:03:19.163] Browser WARN    Image with src "/images/logo.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[00:03:19.163] Browser WARN    Image with src "/images/images1.jpg" has "fill" but is missing "sizes" prop. Please add it to improve page performance. Read more: https://nextjs.org/docs/api-reference/next/image#sizes
+[00:03:19.163] Browser WARN    Image with src "/images/whychoose.png" has "fill" but is missing "sizes" prop. Please add it to improve page performance. Read more: https://nextjs.org/docs/api-reference/next/image#sizes
+[00:03:22.814] Browser WARN    Image with src "/images/image2.jpg" was detected as the Largest Contentful Paint (LCP). Please add the `loading="eager"` property if this image is above the fold.
+Read more: https://nextjs.org/docs/app/api-reference/components/image#loading
+[00:03:37.923] Server  LOG     ✓ Compiled in 684ms
+[00:03:39.015] Browser WARN    Image with src "/images/logo.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[00:03:39.015] Browser WARN    Image with src "/images/images1.jpg" has "fill" but is missing "sizes" prop. Please add it to improve page performance. Read more: https://nextjs.org/docs/api-reference/next/image#sizes
+[00:03:39.015] Browser WARN    Image with src "/images/whychoose.png" has "fill" but is missing "sizes" prop. Please add it to improve page performance. Read more: https://nextjs.org/docs/api-reference/next/image#sizes
+[00:03:42.648] Browser WARN    Image with src "/images/image2.jpg" was detected as the Largest Contentful Paint (LCP). Please add the `loading="eager"` property if this image is above the fold.
+Read more: https://nextjs.org/docs/app/api-reference/components/image#loading
+[00:03:47.900] Server  LOG     ✓ Compiled in 44ms
+[00:04:05.362] Server  LOG     ✓ Compiled in 85ms
+[00:04:38.277] Server  LOG     ✓ Compiled in 213ms
+[00:04:39.729] Browser WARN    Image with src "/images/logo.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[00:04:39.729] Browser WARN    Image with src "/images/images1.jpg" has "fill" but is missing "sizes" prop. Please add it to improve page performance. Read more: https://nextjs.org/docs/api-reference/next/image#sizes
+[00:04:39.729] Browser WARN    Image with src "/images/whychoose.png" has "fill" but is missing "sizes" prop. Please add it to improve page performance. Read more: https://nextjs.org/docs/api-reference/next/image#sizes
+[00:04:41.542] Server  LOG     ✓ Compiled in 61ms
+[00:04:43.306] Browser WARN    Image with src "/images/image2.jpg" was detected as the Largest Contentful Paint (LCP). Please add the `loading="eager"` property if this image is above the fold.
+Read more: https://nextjs.org/docs/app/api-reference/components/image#loading
+[00:05:22.138] Server  LOG     ✓ Compiled in 121ms
+[00:05:22.245] Browser ERROR   ./components/ui/floatingicon.tsx:34:14
+Parsing ecmascript source code failed
+  32 |                     </div>
+  33 |                 )
+> 34 |             }}
+     |              ^
+  35 |         </div>
+  36 |     )
+  37 | }
+
+Expected '</', got '}'
+
+Import trace:
+  Server Component:
+    ./components/ui/floatingicon.tsx
+    ./app/(user)/layout.tsx
+[00:06:15.942] Server  LOG     ✓ Compiled in 45ms
+[00:06:16.048] Browser ERROR   ./components/ui/floatingicon.tsx:34:13
+Parsing ecmascript source code failed
+  32 |                     </div>
+  33 |                 )
+> 34 |             )}
+     |             ^
+  35 |         </div>
+  36 |     )
+  37 | }
+
+Expected '</', got ')'
+
+Import trace:
+  Server Component:
+    ./components/ui/floatingicon.tsx
+    ./app/(user)/layout.tsx
+[00:06:28.742] Browser ERROR   Each child in a list should have a unique "key" prop.%s%s See https://react.dev/link/warning-keys for more information. 
+
+Check the render method of `FloatingButtons`. 
+[00:06:45.193] Server  LOG     ✓ Compiled in 49ms
+[00:06:49.854] Server  LOG     ✓ Compiled in 57ms
+[00:06:54.662] Server  LOG     ✓ Compiled in 53ms
+[00:07:25.062] Server  LOG     ✓ Compiled in 49ms
+[00:07:36.652] Server  LOG     ✓ Compiled in 41ms
+[00:08:26.861] Server  LOG     ✓ Compiled in 152ms
+[00:08:27.959] Browser WARN    Image with src "/images/logo.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[00:08:27.959] Browser WARN    Image with src "/images/images1.jpg" has "fill" but is missing "sizes" prop. Please add it to improve page performance. Read more: https://nextjs.org/docs/api-reference/next/image#sizes
+[00:08:27.959] Browser WARN    Image with src "/images/whychoose.png" has "fill" but is missing "sizes" prop. Please add it to improve page performance. Read more: https://nextjs.org/docs/api-reference/next/image#sizes
+[00:08:31.612] Browser WARN    Image with src "/images/image2.jpg" was detected as the Largest Contentful Paint (LCP). Please add the `loading="eager"` property if this image is above the fold.
+Read more: https://nextjs.org/docs/app/api-reference/components/image#loading
+[00:09:15.986] Server  WARN    Error: Route "/diendan" used `searchParams.id`. `searchParams` is a Promise and must be unwrapped with `await` or `React.use()` before accessing its properties. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+[00:09:16.341] Server  WARN    ⚠ Cross origin request detected from 192.168.1.8 to /_next/* resource. In a future major version of Next.js, you will need to explicitly configure "allowedDevOrigins" in next.config to allow this.
+Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
+[00:09:16.397] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:09:16.721] Browser WARN    Image with src "/images/logo.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[00:09:28.591] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:09:29.282] Server  WARN    Error: Route "/diendan" used `searchParams.id`. `searchParams` is a Promise and must be unwrapped with `await` or `React.use()` before accessing its properties. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+[00:09:29.773] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:09:30.071] Browser WARN    Image with src "/images/logo.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[00:09:50.122] Browser WARN    Image with src "/images/images1.jpg" has "fill" but is missing "sizes" prop. Please add it to improve page performance. Read more: https://nextjs.org/docs/api-reference/next/image#sizes
+[00:12:15.859] Server  LOG     ✓ Compiled in 718ms
+[00:12:17.009] Browser WARN    Image with src "/images/logo.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[00:12:17.009] Browser WARN    Image with src "/images/images1.jpg" has "fill" but is missing "sizes" prop. Please add it to improve page performance. Read more: https://nextjs.org/docs/api-reference/next/image#sizes
+[00:12:17.009] Browser WARN    Image with src "/images/whychoose.png" has "fill" but is missing "sizes" prop. Please add it to improve page performance. Read more: https://nextjs.org/docs/api-reference/next/image#sizes
+[00:12:20.550] Browser WARN    Image with src "/images/image2.jpg" was detected as the Largest Contentful Paint (LCP). Please add the `loading="eager"` property if this image is above the fold.
+Read more: https://nextjs.org/docs/app/api-reference/components/image#loading
+[00:12:24.484] Server  LOG     ✓ Compiled in 152ms
+[00:12:25.538] Browser WARN    Image with src "/images/logo.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[00:12:25.538] Browser WARN    Image with src "/images/images1.jpg" has "fill" but is missing "sizes" prop. Please add it to improve page performance. Read more: https://nextjs.org/docs/api-reference/next/image#sizes
+[00:12:25.538] Browser WARN    Image with src "/images/whychoose.png" has "fill" but is missing "sizes" prop. Please add it to improve page performance. Read more: https://nextjs.org/docs/api-reference/next/image#sizes
+[00:12:28.229] Server  WARN    Error: Route "/diendan" used `searchParams.id`. `searchParams` is a Promise and must be unwrapped with `await` or `React.use()` before accessing its properties. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+[00:12:28.682] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:12:29.018] Browser WARN    Image with src "/images/logo.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[00:12:29.137] Browser WARN    Image with src "/images/image2.jpg" was detected as the Largest Contentful Paint (LCP). Please add the `loading="eager"` property if this image is above the fold.
+Read more: https://nextjs.org/docs/app/api-reference/components/image#loading
+[00:13:05.823] Server  LOG     ✓ Compiled in 88ms
+[00:13:17.601] Server  LOG     ✓ Compiled in 95ms
+[00:13:21.677] Server  LOG     ✓ Compiled in 75ms
+[00:13:28.736] Server  LOG     ✓ Compiled in 58ms
+[00:13:43.994] Browser WARN    Image with src "/images/images1.jpg" has "fill" but is missing "sizes" prop. Please add it to improve page performance. Read more: https://nextjs.org/docs/api-reference/next/image#sizes
+[00:13:50.152] Server  LOG     ✓ Compiled in 76ms
+[00:13:58.142] Server  LOG     ✓ Compiled in 137ms
+[00:14:01.302] Server  LOG     ✓ Compiled in 149ms
+[00:14:10.468] Server  LOG     ✓ Compiled in 47ms
+[00:14:48.881] Server  LOG     ✓ Compiled in 1559ms
+[00:14:50.142] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:14:50.818] Browser ERROR   A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+%s%s https://react.dev/link/hydration-mismatch 
+
+  ...
+    <UserLayoutMain>
+      <Header>
+        ...
+          <MenuProvider scope={{Menu:[...], ...}} onClose={function Menu.useCallback} ...>
+            <DropdownMenuTrigger asChild={true}>
+              <DropdownMenuTrigger data-slot="dropdown-m..." asChild={true}>
+                <MenuAnchor asChild={true} __scopeMenu={{Menu:[...], ...}}>
+                  <PopperAnchor __scopePopper={{Menu:[...], ...}} asChild={true} ref={null}>
+                    <Primitive.div asChild={true} ref={function}>
+                      <Primitive.div.Slot ref={function}>
+                        <Primitive.div.SlotClone ref={function}>
+                          <Primitive.button type="button" id="radix-_R_4..." aria-haspopup="menu" aria-expanded={false} ...>
+                            <Primitive.button.Slot type="button" id="radix-_R_4..." aria-haspopup="menu" ...>
+                              <Primitive.button.SlotClone type="button" id="radix-_R_4..." aria-haspopup="menu" ...>
+                                <div
+                                  className="p-0.5 rounded-full"
+                                  type="button"
++                                 id="radix-_R_4pkneitmlb_"
+-                                 id="radix-_R_j5kneitmlb_"
+                                  aria-haspopup="menu"
+                                  aria-expanded={false}
+                                  aria-controls={undefined}
+                                  data-state="closed"
+                                  data-disabled={undefined}
+                                  disabled={false}
+                                  data-slot="dropdown-menu-trigger"
+                                  onPointerDown={function handleEvent}
+                                  onKeyDown={function handleEvent}
+                                  ref={function}
+                                >
+            ...
+        ...
+          <MenuProvider scope={{Menu:[...], ...}} onClose={function Menu.useCallback} ...>
+            <DropdownMenuTrigger asChild={true}>
+              <DropdownMenuTrigger data-slot="dropdown-m..." asChild={true}>
+                <MenuAnchor asChild={true} __scopeMenu={{Menu:[...], ...}}>
+                  <PopperAnchor __scopePopper={{Menu:[...], ...}} asChild={true} ref={null}>
+                    <Primitive.div asChild={true} ref={function}>
+                      <Primitive.div.Slot ref={function}>
+                        <Primitive.div.SlotClone ref={function}>
+                          <Primitive.button type="button" id="radix-_R_4..." aria-haspopup="menu" aria-expanded={false} ...>
+                            <Primitive.button.Slot type="button" id="radix-_R_4..." aria-haspopup="menu" ...>
+                              <Primitive.button.SlotClone type="button" id="radix-_R_4..." aria-haspopup="menu" ...>
+                                <div
+                                  className="p-0.5 rounded-full"
+                                  type="button"
++                                 id="radix-_R_4ikneitmlb_"
+-                                 id="radix-_R_i9kneitmlb_"
+                                  aria-haspopup="menu"
+                                  aria-expanded={false}
+                                  aria-controls={undefined}
+                                  data-state="closed"
+                                  data-disabled={undefined}
+                                  disabled={false}
+                                  data-slot="dropdown-menu-trigger"
+                                  onPointerDown={function handleEvent}
+                                  onKeyDown={function handleEvent}
+                                  ref={function}
+                                >
+            ...
+        ...
+
+[00:14:50.818] Browser WARN    Image with src "/images/logo.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[00:14:50.818] Browser WARN    Image with src "/images/images1.jpg" has "fill" but is missing "sizes" prop. Please add it to improve page performance. Read more: https://nextjs.org/docs/api-reference/next/image#sizes
+[00:14:50.818] Browser WARN    Image with src "/images/whychoose.png" has "fill" but is missing "sizes" prop. Please add it to improve page performance. Read more: https://nextjs.org/docs/api-reference/next/image#sizes
+[00:14:50.818] Browser WARN    Image with src "/images/logo.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[00:14:50.818] Browser WARN    Image with src "/images/images1.jpg" has "fill" but is missing "sizes" prop. Please add it to improve page performance. Read more: https://nextjs.org/docs/api-reference/next/image#sizes
+[00:14:54.307] Browser WARN    Image with src "/images/image2.jpg" was detected as the Largest Contentful Paint (LCP). Please add the `loading="eager"` property if this image is above the fold.
+Read more: https://nextjs.org/docs/app/api-reference/components/image#loading
+[00:15:17.465] Server  LOG     ✓ Compiled in 89ms
+[00:15:17.628] Browser WARN    Image with src "/images/image2.jpg" has "fill" but is missing "sizes" prop. Please add it to improve page performance. Read more: https://nextjs.org/docs/api-reference/next/image#sizes
+[00:15:17.732] Browser WARN    Image with src "/images/image2.jpg" has "fill" but is missing "sizes" prop. Please add it to improve page performance. Read more: https://nextjs.org/docs/api-reference/next/image#sizes
+[00:15:21.789] Server  WARN    Error: Route "/diendan" used `searchParams.id`. `searchParams` is a Promise and must be unwrapped with `await` or `React.use()` before accessing its properties. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+[00:15:36.881] Server  WARN    Error: Route "/diendan" used `searchParams.id`. `searchParams` is a Promise and must be unwrapped with `await` or `React.use()` before accessing its properties. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+[00:22:29.957] Server  WARN    Error: Route "/diendan" used `searchParams.id`. `searchParams` is a Promise and must be unwrapped with `await` or `React.use()` before accessing its properties. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+[00:22:34.508] Server  WARN    Error: Route "/diendan" used `searchParams.id`. `searchParams` is a Promise and must be unwrapped with `await` or `React.use()` before accessing its properties. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+[00:26:17.866] Server  LOG     ✓ Compiled in 97ms
+[00:26:29.994] Browser WARN    Image with src "/images/logo.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[00:26:29.994] Browser WARN    Image with src "/images/images1.jpg" has "fill" but is missing "sizes" prop. Please add it to improve page performance. Read more: https://nextjs.org/docs/api-reference/next/image#sizes
+[00:26:29.994] Browser WARN    Image with src "/images/whychoose.png" has "fill" but is missing "sizes" prop. Please add it to improve page performance. Read more: https://nextjs.org/docs/api-reference/next/image#sizes
+[00:26:31.921] Browser WARN    Image with src "/images/image2.jpg" has "fill" but is missing "sizes" prop. Please add it to improve page performance. Read more: https://nextjs.org/docs/api-reference/next/image#sizes
+[00:28:12.714] Server  LOG     ✓ Compiled in 13.3s
+[00:29:01.747] Server  LOG     ✓ Compiled in 49s
+[00:29:27.266] Server  LOG     ✓ Compiled in 25.5s
+[00:30:10.653] Server  LOG     ✓ Compiled in 43.4s
+[00:30:49.353] Server  LOG     ✓ Compiled in 1555ms
+[00:31:11.622] Server  LOG     ✓ Compiled in 22.3s
+[00:31:21.083] Server  LOG     ✓ Compiled in 1738ms
+[00:31:36.510] Server  LOG     ✓ Compiled in 8.5s
+[00:32:00.557] Server  LOG     ✓ Compiled in 22.3s
+[00:32:14.163] Server  LOG     ✓ Compiled in 13.8s
+[00:32:35.744] Server  LOG     ✓ Compiled in 21.6s
+[00:32:41.126] Server  LOG     ✓ Compiled in 5.4s
+[00:33:01.031] Server  LOG     ✓ Compiled in 19.9s
+[00:33:07.651] Server  LOG     ✓ Compiled in 2.8s
+[00:33:53.167] Server  LOG     ✓ Compiled in 4.2s
+[00:34:05.642] Server  LOG     ✓ Compiled in 12.5s
+[00:34:08.942] Server  LOG     ✓ Compiled in 3.3s
+[00:34:20.247] Server  LOG     ✓ Compiled in 11.3s
+[00:34:42.384] Server  LOG     ✓ Compiled in 22.1s
+[00:34:47.683] Server  LOG     ✓ Compiled in 5.3s
+[00:34:53.808] Server  LOG     ✓ Compiled in 6.1s
+[00:34:56.453] Server  LOG     ✓ Compiled in 2.6s
+[00:35:18.061] Server  LOG     ✓ Compiled in 21.6s
+[00:35:19.533] Server  LOG     ✓ Compiled in 1463ms
+[00:35:41.827] Server  LOG     ✓ Compiled in 19.6s
+[00:35:45.197] Server  LOG     ✓ Compiled in 3.4s
+[00:35:53.085] Server  LOG     ✓ Compiled in 7.9s
+[00:35:56.060] Server  LOG     ✓ Compiled in 2.9s
+[00:36:05.200] Server  LOG     ✓ Compiled in 9.2s
+[00:36:12.140] Server  LOG     ✓ Compiled in 7s
+[00:36:18.587] Server  LOG     ✓ Compiled in 6.4s
+[00:36:35.360] Server  LOG     ✓ Compiled in 16.8s
+[00:36:43.176] Server  LOG     ✓ Compiled in 7.8s
+[00:37:02.489] Server  WARN    Error: Route "/diendan" used `searchParams.id`. `searchParams` is a Promise and must be unwrapped with `await` or `React.use()` before accessing its properties. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+[00:37:03.313] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:37:08.381] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:37:08.381] Browser ERROR   uncaughtError: SyntaxError: Invalid or unexpected token
+[00:37:14.291] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:37:14.966] Browser ERROR   A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+%s%s https://react.dev/link/hydration-mismatch 
+
+  ...
+    <UserLayoutMain>
+      <Header>
+        ...
+          <MenuProvider scope={{Menu:[...], ...}} onClose={function Menu.useCallback} ...>
+            <DropdownMenuTrigger asChild={true}>
+              <DropdownMenuTrigger data-slot="dropdown-m..." asChild={true}>
+                <MenuAnchor asChild={true} __scopeMenu={{Menu:[...], ...}}>
+                  <PopperAnchor __scopePopper={{Menu:[...], ...}} asChild={true} ref={null}>
+                    <Primitive.div asChild={true} ref={function}>
+                      <Primitive.div.Slot ref={function}>
+                        <Primitive.div.SlotClone ref={function}>
+                          <Primitive.button type="button" id="radix-_R_4..." aria-haspopup="menu" aria-expanded={false} ...>
+                            <Primitive.button.Slot type="button" id="radix-_R_4..." aria-haspopup="menu" ...>
+                              <Primitive.button.SlotClone type="button" id="radix-_R_4..." aria-haspopup="menu" ...>
+                                <div
+                                  className="p-0.5 rounded-full"
+                                  type="button"
++                                 id="radix-_R_4pkneitmlb_"
+-                                 id="radix-_R_j5kneitmlb_"
+                                  aria-haspopup="menu"
+                                  aria-expanded={false}
+                                  aria-controls={undefined}
+                                  data-state="closed"
+                                  data-disabled={undefined}
+                                  disabled={false}
+                                  data-slot="dropdown-menu-trigger"
+                                  onPointerDown={function handleEvent}
+                                  onKeyDown={function handleEvent}
+                                  ref={function}
+                                >
+            ...
+        ...
+          <MenuProvider scope={{Menu:[...], ...}} onClose={function Menu.useCallback} ...>
+            <DropdownMenuTrigger asChild={true}>
+              <DropdownMenuTrigger data-slot="dropdown-m..." asChild={true}>
+                <MenuAnchor asChild={true} __scopeMenu={{Menu:[...], ...}}>
+                  <PopperAnchor __scopePopper={{Menu:[...], ...}} asChild={true} ref={null}>
+                    <Primitive.div asChild={true} ref={function}>
+                      <Primitive.div.Slot ref={function}>
+                        <Primitive.div.SlotClone ref={function}>
+                          <Primitive.button type="button" id="radix-_R_4..." aria-haspopup="menu" aria-expanded={false} ...>
+                            <Primitive.button.Slot type="button" id="radix-_R_4..." aria-haspopup="menu" ...>
+                              <Primitive.button.SlotClone type="button" id="radix-_R_4..." aria-haspopup="menu" ...>
+                                <div
+                                  className="p-0.5 rounded-full"
+                                  type="button"
++                                 id="radix-_R_4ikneitmlb_"
+-                                 id="radix-_R_i9kneitmlb_"
+                                  aria-haspopup="menu"
+                                  aria-expanded={false}
+                                  aria-controls={undefined}
+                                  data-state="closed"
+                                  data-disabled={undefined}
+                                  disabled={false}
+                                  data-slot="dropdown-menu-trigger"
+                                  onPointerDown={function handleEvent}
+                                  onKeyDown={function handleEvent}
+                                  ref={function}
+                                >
+            ...
+        ...
+
+[00:37:14.966] Browser WARN    Image with src "/images/logo.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[00:37:14.966] Browser WARN    Image with src "/images/images1.jpg" has "fill" but is missing "sizes" prop. Please add it to improve page performance. Read more: https://nextjs.org/docs/api-reference/next/image#sizes
+[00:37:46.696] Server  LOG     ✓ Compiled in 58.1s
+[00:38:04.406] Browser WARN    Image with src "/images/image2.jpg" has "fill" but is missing "sizes" prop. Please add it to improve page performance. Read more: https://nextjs.org/docs/api-reference/next/image#sizes
+[00:38:11.726] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:38:13.079] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:39:51.114] Server  ERROR   ⨯ ./app/(auth)/login/page.tsx:1:1
+Module not found: Can't resolve '@/components/ui/button-auth'
+> 1 | import ButtonAuth from "@/components/ui/button-auth";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  2 | import ButtonSocial from "@/components/ui/button-social";
+  3 | import InputAuth from "@/components/ui/input-auth";
+  4 | import { Metadata } from "next";
+
+Import map: aliased to relative './components/ui/button-auth' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+
+./app/(auth)/login/page.tsx:2:1
+Module not found: Can't resolve '@/components/ui/button-social'
+  1 | import ButtonAuth from "@/components/ui/button-auth";
+> 2 | import ButtonSocial from "@/components/ui/button-social";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  3 | import InputAuth from "@/components/ui/input-auth";
+  4 | import { Metadata } from "next";
+  5 | import Image from "next/image";
+
+Import map: aliased to relative './components/ui/button-social' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+
+./app/(auth)/login/page.tsx:3:1
+Module not found: Can't resolve '@/components/ui/input-auth'
+  1 | import ButtonAuth from "@/components/ui/button-auth";
+  2 | import ButtonSocial from "@/components/ui/button-social";
+> 3 | import InputAuth from "@/components/ui/input-auth";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  4 | import { Metadata } from "next";
+  5 | import Image from "next/image";
+  6 | import Link from "next/link";
+
+Import map: aliased to relative './components/ui/input-auth' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+[00:39:51.703] Server  ERROR   ⨯ ./app/(auth)/login/page.tsx:1:1
+Module not found: Can't resolve '@/components/ui/button-auth'
+> 1 | import ButtonAuth from "@/components/ui/button-auth";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  2 | import ButtonSocial from "@/components/ui/button-social";
+  3 | import InputAuth from "@/components/ui/input-auth";
+  4 | import { Metadata } from "next";
+
+Import map: aliased to relative './components/ui/button-auth' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+
+./app/(auth)/login/page.tsx:2:1
+Module not found: Can't resolve '@/components/ui/button-social'
+  1 | import ButtonAuth from "@/components/ui/button-auth";
+> 2 | import ButtonSocial from "@/components/ui/button-social";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  3 | import InputAuth from "@/components/ui/input-auth";
+  4 | import { Metadata } from "next";
+  5 | import Image from "next/image";
+
+Import map: aliased to relative './components/ui/button-social' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+
+./app/(auth)/login/page.tsx:3:1
+Module not found: Can't resolve '@/components/ui/input-auth'
+  1 | import ButtonAuth from "@/components/ui/button-auth";
+  2 | import ButtonSocial from "@/components/ui/button-social";
+> 3 | import InputAuth from "@/components/ui/input-auth";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  4 | import { Metadata } from "next";
+  5 | import Image from "next/image";
+  6 | import Link from "next/link";
+
+Import map: aliased to relative './components/ui/input-auth' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+[00:39:51.755] Server  ERROR   ⨯ ./app/(auth)/login/page.tsx:1:1
+Module not found: Can't resolve '@/components/ui/button-auth'
+> 1 | import ButtonAuth from "@/components/ui/button-auth";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  2 | import ButtonSocial from "@/components/ui/button-social";
+  3 | import InputAuth from "@/components/ui/input-auth";
+  4 | import { Metadata } from "next";
+
+Import map: aliased to relative './components/ui/button-auth' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+
+./app/(auth)/login/page.tsx:2:1
+Module not found: Can't resolve '@/components/ui/button-social'
+  1 | import ButtonAuth from "@/components/ui/button-auth";
+> 2 | import ButtonSocial from "@/components/ui/button-social";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  3 | import InputAuth from "@/components/ui/input-auth";
+  4 | import { Metadata } from "next";
+  5 | import Image from "next/image";
+
+Import map: aliased to relative './components/ui/button-social' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+
+./app/(auth)/login/page.tsx:3:1
+Module not found: Can't resolve '@/components/ui/input-auth'
+  1 | import ButtonAuth from "@/components/ui/button-auth";
+  2 | import ButtonSocial from "@/components/ui/button-social";
+> 3 | import InputAuth from "@/components/ui/input-auth";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  4 | import { Metadata } from "next";
+  5 | import Image from "next/image";
+  6 | import Link from "next/link";
+
+Import map: aliased to relative './components/ui/input-auth' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+[00:39:51.779] Server  ERROR   ⨯ ./app/(auth)/login/page.tsx:1:1
+Module not found: Can't resolve '@/components/ui/button-auth'
+> 1 | import ButtonAuth from "@/components/ui/button-auth";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  2 | import ButtonSocial from "@/components/ui/button-social";
+  3 | import InputAuth from "@/components/ui/input-auth";
+  4 | import { Metadata } from "next";
+
+Import map: aliased to relative './components/ui/button-auth' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+
+./app/(auth)/login/page.tsx:2:1
+Module not found: Can't resolve '@/components/ui/button-social'
+  1 | import ButtonAuth from "@/components/ui/button-auth";
+> 2 | import ButtonSocial from "@/components/ui/button-social";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  3 | import InputAuth from "@/components/ui/input-auth";
+  4 | import { Metadata } from "next";
+  5 | import Image from "next/image";
+
+Import map: aliased to relative './components/ui/button-social' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+
+./app/(auth)/login/page.tsx:3:1
+Module not found: Can't resolve '@/components/ui/input-auth'
+  1 | import ButtonAuth from "@/components/ui/button-auth";
+  2 | import ButtonSocial from "@/components/ui/button-social";
+> 3 | import InputAuth from "@/components/ui/input-auth";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  4 | import { Metadata } from "next";
+  5 | import Image from "next/image";
+  6 | import Link from "next/link";
+
+Import map: aliased to relative './components/ui/input-auth' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+[00:39:51.838] Server  ERROR   ⨯ ./app/(auth)/login/page.tsx:1:1
+Module not found: Can't resolve '@/components/ui/button-auth'
+> 1 | import ButtonAuth from "@/components/ui/button-auth";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  2 | import ButtonSocial from "@/components/ui/button-social";
+  3 | import InputAuth from "@/components/ui/input-auth";
+  4 | import { Metadata } from "next";
+
+Import map: aliased to relative './components/ui/button-auth' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+
+./app/(auth)/login/page.tsx:2:1
+Module not found: Can't resolve '@/components/ui/button-social'
+  1 | import ButtonAuth from "@/components/ui/button-auth";
+> 2 | import ButtonSocial from "@/components/ui/button-social";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  3 | import InputAuth from "@/components/ui/input-auth";
+  4 | import { Metadata } from "next";
+  5 | import Image from "next/image";
+
+Import map: aliased to relative './components/ui/button-social' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+
+./app/(auth)/login/page.tsx:3:1
+Module not found: Can't resolve '@/components/ui/input-auth'
+  1 | import ButtonAuth from "@/components/ui/button-auth";
+  2 | import ButtonSocial from "@/components/ui/button-social";
+> 3 | import InputAuth from "@/components/ui/input-auth";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  4 | import { Metadata } from "next";
+  5 | import Image from "next/image";
+  6 | import Link from "next/link";
+
+Import map: aliased to relative './components/ui/input-auth' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+[00:39:52.236] Browser ERROR   uncaughtError: Error: ./app/(auth)/login/page.tsx:1:1
+Module not found: Can't resolve '@/components/ui/button-auth'
+> 1 | import ButtonAuth from "@/components/ui/button-auth";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  2 | import ButtonSocial from "@/components/ui/button-social";
+  3 | import InputAuth from "@/components/ui/input-auth";
+  4 | import { Metadata } from "next";
+
+Import map: aliased to relative './components/ui/button-auth' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+[00:39:52.885] Browser ERROR   ./app/(auth)/login/page.tsx:1:1
+Module not found: Can't resolve '@/components/ui/button-auth'
+> 1 | import ButtonAuth from "@/components/ui/button-auth";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  2 | import ButtonSocial from "@/components/ui/button-social";
+  3 | import InputAuth from "@/components/ui/input-auth";
+  4 | import { Metadata } from "next";
+
+Import map: aliased to relative './components/ui/button-auth' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found
+[00:39:52.886] Browser ERROR   ./app/(auth)/login/page.tsx:2:1
+Module not found: Can't resolve '@/components/ui/button-social'
+  1 | import ButtonAuth from "@/components/ui/button-auth";
+> 2 | import ButtonSocial from "@/components/ui/button-social";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  3 | import InputAuth from "@/components/ui/input-auth";
+  4 | import { Metadata } from "next";
+  5 | import Image from "next/image";
+
+Import map: aliased to relative './components/ui/button-social' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found
+[00:39:52.886] Browser ERROR   ./app/(auth)/login/page.tsx:3:1
+Module not found: Can't resolve '@/components/ui/input-auth'
+  1 | import ButtonAuth from "@/components/ui/button-auth";
+  2 | import ButtonSocial from "@/components/ui/button-social";
+> 3 | import InputAuth from "@/components/ui/input-auth";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  4 | import { Metadata } from "next";
+  5 | import Image from "next/image";
+  6 | import Link from "next/link";
+
+Import map: aliased to relative './components/ui/input-auth' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found
+[00:39:52.886] Browser ERROR   ./app/(auth)/login/page.tsx:1:1
+Module not found: Can't resolve '@/components/ui/button-auth'
+> 1 | import ButtonAuth from "@/components/ui/button-auth";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  2 | import ButtonSocial from "@/components/ui/button-social";
+  3 | import InputAuth from "@/components/ui/input-auth";
+  4 | import { Metadata } from "next";
+
+Import map: aliased to relative './components/ui/button-auth' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found
+[00:39:52.886] Browser ERROR   ./app/(auth)/login/page.tsx:2:1
+Module not found: Can't resolve '@/components/ui/button-social'
+  1 | import ButtonAuth from "@/components/ui/button-auth";
+> 2 | import ButtonSocial from "@/components/ui/button-social";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  3 | import InputAuth from "@/components/ui/input-auth";
+  4 | import { Metadata } from "next";
+  5 | import Image from "next/image";
+
+Import map: aliased to relative './components/ui/button-social' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found
+[00:39:52.886] Browser ERROR   ./app/(auth)/login/page.tsx:3:1
+Module not found: Can't resolve '@/components/ui/input-auth'
+  1 | import ButtonAuth from "@/components/ui/button-auth";
+  2 | import ButtonSocial from "@/components/ui/button-social";
+> 3 | import InputAuth from "@/components/ui/input-auth";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  4 | import { Metadata } from "next";
+  5 | import Image from "next/image";
+  6 | import Link from "next/link";
+
+Import map: aliased to relative './components/ui/input-auth' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found
+[00:40:28.888] Browser ERROR   ./app/(auth)/login/page.tsx:1:1
+Module not found: Can't resolve '@/components/ui/button-auth'
+> 1 | import ButtonAuth from "@/components/ui/button-auth";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  2 | import ButtonSocial from "@/components/ui/button-social";
+  3 | import InputAuth from "@/components/ui/input-auth";
+  4 | import { Metadata } from "next";
+
+Import map: aliased to relative './components/ui/button-auth' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found
+[00:40:28.888] Browser ERROR   ./app/(auth)/login/page.tsx:2:1
+Module not found: Can't resolve '@/components/ui/button-social'
+  1 | import ButtonAuth from "@/components/ui/button-auth";
+> 2 | import ButtonSocial from "@/components/ui/button-social";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  3 | import InputAuth from "@/components/ui/input-auth";
+  4 | import { Metadata } from "next";
+  5 | import Image from "next/image";
+
+Import map: aliased to relative './components/ui/button-social' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found
+[00:40:28.888] Browser ERROR   ./app/(auth)/login/page.tsx:3:1
+Module not found: Can't resolve '@/components/ui/input-auth'
+  1 | import ButtonAuth from "@/components/ui/button-auth";
+  2 | import ButtonSocial from "@/components/ui/button-social";
+> 3 | import InputAuth from "@/components/ui/input-auth";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  4 | import { Metadata } from "next";
+  5 | import Image from "next/image";
+  6 | import Link from "next/link";
+
+Import map: aliased to relative './components/ui/input-auth' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found
+[00:40:43.886] Browser ERROR   ./app/(auth)/login/page.tsx:1:1
+Module not found: Can't resolve '@/components/ui/button-auth'
+> 1 | import ButtonAuth from "@/components/ui/button-auth";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  2 | import ButtonSocial from "@/components/ui/button-social";
+  3 | import InputAuth from "@/components/ui/input-auth";
+  4 | import { Metadata } from "next";
+
+Import map: aliased to relative './components/ui/button-auth' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found
+[00:40:43.886] Browser ERROR   ./app/(auth)/login/page.tsx:2:1
+Module not found: Can't resolve '@/components/ui/button-social'
+  1 | import ButtonAuth from "@/components/ui/button-auth";
+> 2 | import ButtonSocial from "@/components/ui/button-social";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  3 | import InputAuth from "@/components/ui/input-auth";
+  4 | import { Metadata } from "next";
+  5 | import Image from "next/image";
+
+Import map: aliased to relative './components/ui/button-social' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found
+[00:40:43.886] Browser ERROR   ./app/(auth)/login/page.tsx:3:1
+Module not found: Can't resolve '@/components/ui/input-auth'
+  1 | import ButtonAuth from "@/components/ui/button-auth";
+  2 | import ButtonSocial from "@/components/ui/button-social";
+> 3 | import InputAuth from "@/components/ui/input-auth";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  4 | import { Metadata } from "next";
+  5 | import Image from "next/image";
+  6 | import Link from "next/link";
+
+Import map: aliased to relative './components/ui/input-auth' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found
+[00:41:13.086] Server  ERROR   ⨯ ./app/(auth)/login/page.tsx:1:1
+Module not found: Can't resolve '@/components/ui/button-auth'
+> 1 | import ButtonAuth from "@/components/ui/button-auth";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  2 | import ButtonSocial from "@/components/ui/button-social";
+  3 | import InputAuth from "@/components/ui/input-auth";
+  4 | import { Metadata } from "next";
+
+Import map: aliased to relative './components/ui/button-auth' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+[00:41:13.087] Server  ERROR   ⨯ ./app/(auth)/login/page.tsx:1:1
+Module not found: Can't resolve '@/components/ui/button-auth'
+> 1 | import ButtonAuth from "@/components/ui/button-auth";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  2 | import ButtonSocial from "@/components/ui/button-social";
+  3 | import InputAuth from "@/components/ui/input-auth";
+  4 | import { Metadata } from "next";
+
+Import map: aliased to relative './components/ui/button-auth' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+[00:41:13.092] Server  ERROR   ⨯ ./app/(auth)/login/page.tsx:2:1
+Module not found: Can't resolve '@/components/ui/button-social'
+  1 | import ButtonAuth from "@/components/ui/button-auth";
+> 2 | import ButtonSocial from "@/components/ui/button-social";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  3 | import InputAuth from "@/components/ui/input-auth";
+  4 | import { Metadata } from "next";
+  5 | import Image from "next/image";
+
+Import map: aliased to relative './components/ui/button-social' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+[00:41:13.094] Server  ERROR   ⨯ ./app/(auth)/login/page.tsx:2:1
+Module not found: Can't resolve '@/components/ui/button-social'
+  1 | import ButtonAuth from "@/components/ui/button-auth";
+> 2 | import ButtonSocial from "@/components/ui/button-social";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  3 | import InputAuth from "@/components/ui/input-auth";
+  4 | import { Metadata } from "next";
+  5 | import Image from "next/image";
+
+Import map: aliased to relative './components/ui/button-social' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+[00:41:13.095] Server  ERROR   ⨯ ./app/(auth)/login/page.tsx:3:1
+Module not found: Can't resolve '@/components/ui/input-auth'
+  1 | import ButtonAuth from "@/components/ui/button-auth";
+  2 | import ButtonSocial from "@/components/ui/button-social";
+> 3 | import InputAuth from "@/components/ui/input-auth";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  4 | import { Metadata } from "next";
+  5 | import Image from "next/image";
+  6 | import Link from "next/link";
+
+Import map: aliased to relative './components/ui/input-auth' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+[00:41:13.098] Server  ERROR   ⨯ ./app/(auth)/login/page.tsx:3:1
+Module not found: Can't resolve '@/components/ui/input-auth'
+  1 | import ButtonAuth from "@/components/ui/button-auth";
+  2 | import ButtonSocial from "@/components/ui/button-social";
+> 3 | import InputAuth from "@/components/ui/input-auth";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  4 | import { Metadata } from "next";
+  5 | import Image from "next/image";
+  6 | import Link from "next/link";
+
+Import map: aliased to relative './components/ui/input-auth' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+[00:41:13.881] Browser ERROR   ./app/(auth)/login/page.tsx:1:1
+Module not found: Can't resolve '@/components/ui/button-auth'
+> 1 | import ButtonAuth from "@/components/ui/button-auth";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  2 | import ButtonSocial from "@/components/ui/button-social";
+  3 | import InputAuth from "@/components/ui/input-auth";
+  4 | import { Metadata } from "next";
+
+Import map: aliased to relative './components/ui/button-auth' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found
+[00:41:13.881] Browser ERROR   ./app/(auth)/login/page.tsx:2:1
+Module not found: Can't resolve '@/components/ui/button-social'
+  1 | import ButtonAuth from "@/components/ui/button-auth";
+> 2 | import ButtonSocial from "@/components/ui/button-social";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  3 | import InputAuth from "@/components/ui/input-auth";
+  4 | import { Metadata } from "next";
+  5 | import Image from "next/image";
+
+Import map: aliased to relative './components/ui/button-social' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found
+[00:41:13.881] Browser ERROR   ./app/(auth)/login/page.tsx:3:1
+Module not found: Can't resolve '@/components/ui/input-auth'
+  1 | import ButtonAuth from "@/components/ui/button-auth";
+  2 | import ButtonSocial from "@/components/ui/button-social";
+> 3 | import InputAuth from "@/components/ui/input-auth";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  4 | import { Metadata } from "next";
+  5 | import Image from "next/image";
+  6 | import Link from "next/link";
+
+Import map: aliased to relative './components/ui/input-auth' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found
+[00:41:18.960] Server  LOG     ✓ Compiled in 105ms
+[00:41:19.151] Server  ERROR   ⨯ ./app/(auth)/login/page.tsx:1:1
+Module not found: Can't resolve '@/components/ui/button-auth'
+> 1 | import ButtonAuth from "@/components/ui/button-auth";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  2 | import ButtonSocial from "@/components/ui/button-social";
+  3 | import InputAuth from "@/components/ui/input-auth";
+  4 | import { Metadata } from "next";
+
+Import map: aliased to relative './components/ui/button-auth' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+
+./app/(auth)/login/page.tsx:2:1
+Module not found: Can't resolve '@/components/ui/button-social'
+  1 | import ButtonAuth from "@/components/ui/button-auth";
+> 2 | import ButtonSocial from "@/components/ui/button-social";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  3 | import InputAuth from "@/components/ui/input-auth";
+  4 | import { Metadata } from "next";
+  5 | import Image from "next/image";
+
+Import map: aliased to relative './components/ui/button-social' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+
+./app/(auth)/login/page.tsx:3:1
+Module not found: Can't resolve '@/components/ui/input-auth'
+  1 | import ButtonAuth from "@/components/ui/button-auth";
+  2 | import ButtonSocial from "@/components/ui/button-social";
+> 3 | import InputAuth from "@/components/ui/input-auth";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  4 | import { Metadata } from "next";
+  5 | import Image from "next/image";
+  6 | import Link from "next/link";
+
+Import map: aliased to relative './components/ui/input-auth' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+[00:41:19.422] Browser ERROR   uncaughtError: Error: ./app/(auth)/login/page.tsx:1:1
+Module not found: Can't resolve '@/components/ui/button-auth'
+> 1 | import ButtonAuth from "@/components/ui/button-auth";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  2 | import ButtonSocial from "@/components/ui/button-social";
+  3 | import InputAuth from "@/components/ui/input-auth";
+  4 | import { Metadata } from "next";
+
+Import map: aliased to relative './components/ui/button-auth' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+[00:41:19.888] Browser ERROR   ./app/(auth)/login/page.tsx:1:1
+Module not found: Can't resolve '@/components/ui/button-auth'
+> 1 | import ButtonAuth from "@/components/ui/button-auth";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  2 | import ButtonSocial from "@/components/ui/button-social";
+  3 | import InputAuth from "@/components/ui/input-auth";
+  4 | import { Metadata } from "next";
+
+Import map: aliased to relative './components/ui/button-auth' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found
+[00:41:19.888] Browser ERROR   ./app/(auth)/login/page.tsx:2:1
+Module not found: Can't resolve '@/components/ui/button-social'
+  1 | import ButtonAuth from "@/components/ui/button-auth";
+> 2 | import ButtonSocial from "@/components/ui/button-social";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  3 | import InputAuth from "@/components/ui/input-auth";
+  4 | import { Metadata } from "next";
+  5 | import Image from "next/image";
+
+Import map: aliased to relative './components/ui/button-social' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found
+[00:41:19.888] Browser ERROR   ./app/(auth)/login/page.tsx:3:1
+Module not found: Can't resolve '@/components/ui/input-auth'
+  1 | import ButtonAuth from "@/components/ui/button-auth";
+  2 | import ButtonSocial from "@/components/ui/button-social";
+> 3 | import InputAuth from "@/components/ui/input-auth";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  4 | import { Metadata } from "next";
+  5 | import Image from "next/image";
+  6 | import Link from "next/link";
+
+Import map: aliased to relative './components/ui/input-auth' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found
+[00:41:19.888] Browser ERROR   ./app/(auth)/login/page.tsx:1:1
+Module not found: Can't resolve '@/components/ui/button-auth'
+> 1 | import ButtonAuth from "@/components/ui/button-auth";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  2 | import ButtonSocial from "@/components/ui/button-social";
+  3 | import InputAuth from "@/components/ui/input-auth";
+  4 | import { Metadata } from "next";
+
+Import map: aliased to relative './components/ui/button-auth' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found
+[00:41:19.888] Browser ERROR   ./app/(auth)/login/page.tsx:2:1
+Module not found: Can't resolve '@/components/ui/button-social'
+  1 | import ButtonAuth from "@/components/ui/button-auth";
+> 2 | import ButtonSocial from "@/components/ui/button-social";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  3 | import InputAuth from "@/components/ui/input-auth";
+  4 | import { Metadata } from "next";
+  5 | import Image from "next/image";
+
+Import map: aliased to relative './components/ui/button-social' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found
+[00:41:19.888] Browser ERROR   ./app/(auth)/login/page.tsx:3:1
+Module not found: Can't resolve '@/components/ui/input-auth'
+  1 | import ButtonAuth from "@/components/ui/button-auth";
+  2 | import ButtonSocial from "@/components/ui/button-social";
+> 3 | import InputAuth from "@/components/ui/input-auth";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  4 | import { Metadata } from "next";
+  5 | import Image from "next/image";
+  6 | import Link from "next/link";
+
+Import map: aliased to relative './components/ui/input-auth' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found
+[00:41:24.576] Server  LOG     ✓ Compiled in 76ms
+[00:41:24.653] Server  ERROR   ⨯ ./app/(auth)/login/page.tsx:1:1
+Module not found: Can't resolve '@/components/ui/button-auth'
+> 1 | import ButtonAuth from "@/components/ui/button-auth";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  2 | import ButtonSocial from "@/components/ui/button-social";
+  3 | import InputAuth from "@/components/ui/input-auth";
+  4 | import { Metadata } from "next";
+
+Import map: aliased to relative './components/ui/button-auth' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+
+./app/(auth)/login/page.tsx:2:1
+Module not found: Can't resolve '@/components/ui/button-social'
+  1 | import ButtonAuth from "@/components/ui/button-auth";
+> 2 | import ButtonSocial from "@/components/ui/button-social";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  3 | import InputAuth from "@/components/ui/input-auth";
+  4 | import { Metadata } from "next";
+  5 | import Image from "next/image";
+
+Import map: aliased to relative './components/ui/button-social' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+
+./app/(auth)/login/page.tsx:3:1
+Module not found: Can't resolve '@/components/ui/input-auth'
+  1 | import ButtonAuth from "@/components/ui/button-auth";
+  2 | import ButtonSocial from "@/components/ui/button-social";
+> 3 | import InputAuth from "@/components/ui/input-auth";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  4 | import { Metadata } from "next";
+  5 | import Image from "next/image";
+  6 | import Link from "next/link";
+
+Import map: aliased to relative './components/ui/input-auth' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+[00:41:24.856] Browser ERROR   uncaughtError: Error: ./app/(auth)/login/page.tsx:1:1
+Module not found: Can't resolve '@/components/ui/button-auth'
+> 1 | import ButtonAuth from "@/components/ui/button-auth";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  2 | import ButtonSocial from "@/components/ui/button-social";
+  3 | import InputAuth from "@/components/ui/input-auth";
+  4 | import { Metadata } from "next";
+
+Import map: aliased to relative './components/ui/button-auth' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+[00:41:25.892] Browser ERROR   ./app/(auth)/login/page.tsx:1:1
+Module not found: Can't resolve '@/components/ui/button-auth'
+> 1 | import ButtonAuth from "@/components/ui/button-auth";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  2 | import ButtonSocial from "@/components/ui/button-social";
+  3 | import InputAuth from "@/components/ui/input-auth";
+  4 | import { Metadata } from "next";
+
+Import map: aliased to relative './components/ui/button-auth' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found
+[00:41:25.892] Browser ERROR   ./app/(auth)/login/page.tsx:2:1
+Module not found: Can't resolve '@/components/ui/button-social'
+  1 | import ButtonAuth from "@/components/ui/button-auth";
+> 2 | import ButtonSocial from "@/components/ui/button-social";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  3 | import InputAuth from "@/components/ui/input-auth";
+  4 | import { Metadata } from "next";
+  5 | import Image from "next/image";
+
+Import map: aliased to relative './components/ui/button-social' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found
+[00:41:25.892] Browser ERROR   ./app/(auth)/login/page.tsx:3:1
+Module not found: Can't resolve '@/components/ui/input-auth'
+  1 | import ButtonAuth from "@/components/ui/button-auth";
+  2 | import ButtonSocial from "@/components/ui/button-social";
+> 3 | import InputAuth from "@/components/ui/input-auth";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  4 | import { Metadata } from "next";
+  5 | import Image from "next/image";
+  6 | import Link from "next/link";
+
+Import map: aliased to relative './components/ui/input-auth' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found
+[00:41:25.892] Browser ERROR   ./app/(auth)/login/page.tsx:1:1
+Module not found: Can't resolve '@/components/ui/button-auth'
+> 1 | import ButtonAuth from "@/components/ui/button-auth";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  2 | import ButtonSocial from "@/components/ui/button-social";
+  3 | import InputAuth from "@/components/ui/input-auth";
+  4 | import { Metadata } from "next";
+
+Import map: aliased to relative './components/ui/button-auth' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found
+[00:41:25.892] Browser ERROR   ./app/(auth)/login/page.tsx:2:1
+Module not found: Can't resolve '@/components/ui/button-social'
+  1 | import ButtonAuth from "@/components/ui/button-auth";
+> 2 | import ButtonSocial from "@/components/ui/button-social";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  3 | import InputAuth from "@/components/ui/input-auth";
+  4 | import { Metadata } from "next";
+  5 | import Image from "next/image";
+
+Import map: aliased to relative './components/ui/button-social' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found
+[00:41:25.892] Browser ERROR   ./app/(auth)/login/page.tsx:3:1
+Module not found: Can't resolve '@/components/ui/input-auth'
+  1 | import ButtonAuth from "@/components/ui/button-auth";
+  2 | import ButtonSocial from "@/components/ui/button-social";
+> 3 | import InputAuth from "@/components/ui/input-auth";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  4 | import { Metadata } from "next";
+  5 | import Image from "next/image";
+  6 | import Link from "next/link";
+
+Import map: aliased to relative './components/ui/input-auth' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found
+[00:41:25.892] Browser ERROR   ./app/(auth)/login/page.tsx:1:1
+Module not found: Can't resolve '@/components/ui/button-auth'
+> 1 | import ButtonAuth from "@/components/ui/button-auth";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  2 | import ButtonSocial from "@/components/ui/button-social";
+  3 | import InputAuth from "@/components/ui/input-auth";
+  4 | import { Metadata } from "next";
+
+Import map: aliased to relative './components/ui/button-auth' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found
+[00:41:25.892] Browser ERROR   ./app/(auth)/login/page.tsx:2:1
+Module not found: Can't resolve '@/components/ui/button-social'
+  1 | import ButtonAuth from "@/components/ui/button-auth";
+> 2 | import ButtonSocial from "@/components/ui/button-social";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  3 | import InputAuth from "@/components/ui/input-auth";
+  4 | import { Metadata } from "next";
+  5 | import Image from "next/image";
+
+Import map: aliased to relative './components/ui/button-social' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found
+[00:41:25.892] Browser ERROR   ./app/(auth)/login/page.tsx:3:1
+Module not found: Can't resolve '@/components/ui/input-auth'
+  1 | import ButtonAuth from "@/components/ui/button-auth";
+  2 | import ButtonSocial from "@/components/ui/button-social";
+> 3 | import InputAuth from "@/components/ui/input-auth";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  4 | import { Metadata } from "next";
+  5 | import Image from "next/image";
+  6 | import Link from "next/link";
+
+Import map: aliased to relative './components/ui/input-auth' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found
+[00:41:28.513] Server  LOG     ✓ Compiled in 92ms
+[00:41:28.526] Server  ERROR   ⨯ ./app/(auth)/login/page.tsx:1:1
+Module not found: Can't resolve '@/components/ui/button-auth'
+> 1 | import ButtonAuth from "@/components/ui/button-auth";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  2 | import ButtonSocial from "@/components/ui/button-social";
+  3 | import InputAuth from "@/components/ui/input-auth";
+  4 | import { Metadata } from "next";
+
+Import map: aliased to relative './components/ui/button-auth' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+
+./app/(auth)/login/page.tsx:2:1
+Module not found: Can't resolve '@/components/ui/button-social'
+  1 | import ButtonAuth from "@/components/ui/button-auth";
+> 2 | import ButtonSocial from "@/components/ui/button-social";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  3 | import InputAuth from "@/components/ui/input-auth";
+  4 | import { Metadata } from "next";
+  5 | import Image from "next/image";
+
+Import map: aliased to relative './components/ui/button-social' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+
+./app/(auth)/login/page.tsx:3:1
+Module not found: Can't resolve '@/components/ui/input-auth'
+  1 | import ButtonAuth from "@/components/ui/button-auth";
+  2 | import ButtonSocial from "@/components/ui/button-social";
+> 3 | import InputAuth from "@/components/ui/input-auth";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  4 | import { Metadata } from "next";
+  5 | import Image from "next/image";
+  6 | import Link from "next/link";
+
+Import map: aliased to relative './components/ui/input-auth' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+[00:41:28.669] Browser ERROR   uncaughtError: Error: ./app/(auth)/login/page.tsx:1:1
+Module not found: Can't resolve '@/components/ui/button-auth'
+> 1 | import ButtonAuth from "@/components/ui/button-auth";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  2 | import ButtonSocial from "@/components/ui/button-social";
+  3 | import InputAuth from "@/components/ui/input-auth";
+  4 | import { Metadata } from "next";
+
+Import map: aliased to relative './components/ui/button-auth' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+[00:41:28.884] Browser ERROR   ./app/(auth)/login/page.tsx:1:1
+Module not found: Can't resolve '@/components/ui/button-auth'
+> 1 | import ButtonAuth from "@/components/ui/button-auth";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  2 | import ButtonSocial from "@/components/ui/button-social";
+  3 | import InputAuth from "@/components/ui/input-auth";
+  4 | import { Metadata } from "next";
+
+Import map: aliased to relative './components/ui/button-auth' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found
+[00:41:28.884] Browser ERROR   ./app/(auth)/login/page.tsx:2:1
+Module not found: Can't resolve '@/components/ui/button-social'
+  1 | import ButtonAuth from "@/components/ui/button-auth";
+> 2 | import ButtonSocial from "@/components/ui/button-social";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  3 | import InputAuth from "@/components/ui/input-auth";
+  4 | import { Metadata } from "next";
+  5 | import Image from "next/image";
+
+Import map: aliased to relative './components/ui/button-social' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found
+[00:41:28.884] Browser ERROR   ./app/(auth)/login/page.tsx:3:1
+Module not found: Can't resolve '@/components/ui/input-auth'
+  1 | import ButtonAuth from "@/components/ui/button-auth";
+  2 | import ButtonSocial from "@/components/ui/button-social";
+> 3 | import InputAuth from "@/components/ui/input-auth";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  4 | import { Metadata } from "next";
+  5 | import Image from "next/image";
+  6 | import Link from "next/link";
+
+Import map: aliased to relative './components/ui/input-auth' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found
+[00:41:28.884] Browser ERROR   ./app/(auth)/login/page.tsx:1:1
+Module not found: Can't resolve '@/components/ui/button-auth'
+> 1 | import ButtonAuth from "@/components/ui/button-auth";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  2 | import ButtonSocial from "@/components/ui/button-social";
+  3 | import InputAuth from "@/components/ui/input-auth";
+  4 | import { Metadata } from "next";
+
+Import map: aliased to relative './components/ui/button-auth' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found
+[00:41:28.884] Browser ERROR   ./app/(auth)/login/page.tsx:2:1
+Module not found: Can't resolve '@/components/ui/button-social'
+  1 | import ButtonAuth from "@/components/ui/button-auth";
+> 2 | import ButtonSocial from "@/components/ui/button-social";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  3 | import InputAuth from "@/components/ui/input-auth";
+  4 | import { Metadata } from "next";
+  5 | import Image from "next/image";
+
+Import map: aliased to relative './components/ui/button-social' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found
+[00:41:28.884] Browser ERROR   ./app/(auth)/login/page.tsx:3:1
+Module not found: Can't resolve '@/components/ui/input-auth'
+  1 | import ButtonAuth from "@/components/ui/button-auth";
+  2 | import ButtonSocial from "@/components/ui/button-social";
+> 3 | import InputAuth from "@/components/ui/input-auth";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  4 | import { Metadata } from "next";
+  5 | import Image from "next/image";
+  6 | import Link from "next/link";
+
+Import map: aliased to relative './components/ui/input-auth' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found
+[00:41:35.890] Browser ERROR   ./app/(auth)/login/page.tsx:1:1
+Module not found: Can't resolve '@/components/ui/button-auth'
+> 1 | import ButtonAuth from "@/components/ui/button-auth";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  2 | import ButtonSocial from "@/components/ui/button-social";
+  3 | import InputAuth from "@/components/ui/input-auth";
+  4 | import { Metadata } from "next";
+
+Import map: aliased to relative './components/ui/button-auth' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found
+[00:41:35.890] Browser ERROR   ./app/(auth)/login/page.tsx:2:1
+Module not found: Can't resolve '@/components/ui/button-social'
+  1 | import ButtonAuth from "@/components/ui/button-auth";
+> 2 | import ButtonSocial from "@/components/ui/button-social";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  3 | import InputAuth from "@/components/ui/input-auth";
+  4 | import { Metadata } from "next";
+  5 | import Image from "next/image";
+
+Import map: aliased to relative './components/ui/button-social' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found
+[00:41:35.890] Browser ERROR   ./app/(auth)/login/page.tsx:3:1
+Module not found: Can't resolve '@/components/ui/input-auth'
+  1 | import ButtonAuth from "@/components/ui/button-auth";
+  2 | import ButtonSocial from "@/components/ui/button-social";
+> 3 | import InputAuth from "@/components/ui/input-auth";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  4 | import { Metadata } from "next";
+  5 | import Image from "next/image";
+  6 | import Link from "next/link";
+
+Import map: aliased to relative './components/ui/input-auth' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found
+[00:41:51.861] Server  ERROR   ⨯ ./app/(auth)/login/page.tsx:1:1
+Module not found: Can't resolve '@/components/ui/button-auth'
+> 1 | import ButtonAuth from "@/components/ui/button-auth";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  2 | import ButtonSocial from "@/components/ui/button-social";
+  3 | import InputAuth from "@/components/ui/input-auth";
+  4 | import { Metadata } from "next";
+
+Import map: aliased to relative './components/ui/button-auth' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+[00:41:51.862] Server  ERROR   ⨯ ./app/(auth)/login/page.tsx:1:1
+Module not found: Can't resolve '@/components/ui/button-auth'
+> 1 | import ButtonAuth from "@/components/ui/button-auth";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  2 | import ButtonSocial from "@/components/ui/button-social";
+  3 | import InputAuth from "@/components/ui/input-auth";
+  4 | import { Metadata } from "next";
+
+Import map: aliased to relative './components/ui/button-auth' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+[00:41:51.864] Server  ERROR   ⨯ ./app/(auth)/login/page.tsx:2:1
+Module not found: Can't resolve '@/components/ui/button-social'
+  1 | import ButtonAuth from "@/components/ui/button-auth";
+> 2 | import ButtonSocial from "@/components/ui/button-social";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  3 | import InputAuth from "@/components/ui/input-auth";
+  4 | import { Metadata } from "next";
+  5 | import Image from "next/image";
+
+Import map: aliased to relative './components/ui/button-social' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+[00:41:51.865] Server  ERROR   ⨯ ./app/(auth)/login/page.tsx:2:1
+Module not found: Can't resolve '@/components/ui/button-social'
+  1 | import ButtonAuth from "@/components/ui/button-auth";
+> 2 | import ButtonSocial from "@/components/ui/button-social";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  3 | import InputAuth from "@/components/ui/input-auth";
+  4 | import { Metadata } from "next";
+  5 | import Image from "next/image";
+
+Import map: aliased to relative './components/ui/button-social' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+[00:41:51.866] Server  ERROR   ⨯ ./app/(auth)/login/page.tsx:3:1
+Module not found: Can't resolve '@/components/ui/input-auth'
+  1 | import ButtonAuth from "@/components/ui/button-auth";
+  2 | import ButtonSocial from "@/components/ui/button-social";
+> 3 | import InputAuth from "@/components/ui/input-auth";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  4 | import { Metadata } from "next";
+  5 | import Image from "next/image";
+  6 | import Link from "next/link";
+
+Import map: aliased to relative './components/ui/input-auth' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+[00:41:51.868] Server  ERROR   ⨯ ./app/(auth)/login/page.tsx:3:1
+Module not found: Can't resolve '@/components/ui/input-auth'
+  1 | import ButtonAuth from "@/components/ui/button-auth";
+  2 | import ButtonSocial from "@/components/ui/button-social";
+> 3 | import InputAuth from "@/components/ui/input-auth";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  4 | import { Metadata } from "next";
+  5 | import Image from "next/image";
+  6 | import Link from "next/link";
+
+Import map: aliased to relative './components/ui/input-auth' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+[00:41:52.889] Browser ERROR   ./app/(auth)/login/page.tsx:1:1
+Module not found: Can't resolve '@/components/ui/button-auth'
+> 1 | import ButtonAuth from "@/components/ui/button-auth";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  2 | import ButtonSocial from "@/components/ui/button-social";
+  3 | import InputAuth from "@/components/ui/input-auth";
+  4 | import { Metadata } from "next";
+
+Import map: aliased to relative './components/ui/button-auth' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found
+[00:41:52.889] Browser ERROR   ./app/(auth)/login/page.tsx:2:1
+Module not found: Can't resolve '@/components/ui/button-social'
+  1 | import ButtonAuth from "@/components/ui/button-auth";
+> 2 | import ButtonSocial from "@/components/ui/button-social";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  3 | import InputAuth from "@/components/ui/input-auth";
+  4 | import { Metadata } from "next";
+  5 | import Image from "next/image";
+
+Import map: aliased to relative './components/ui/button-social' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found
+[00:41:52.889] Browser ERROR   ./app/(auth)/login/page.tsx:3:1
+Module not found: Can't resolve '@/components/ui/input-auth'
+  1 | import ButtonAuth from "@/components/ui/button-auth";
+  2 | import ButtonSocial from "@/components/ui/button-social";
+> 3 | import InputAuth from "@/components/ui/input-auth";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  4 | import { Metadata } from "next";
+  5 | import Image from "next/image";
+  6 | import Link from "next/link";
+
+Import map: aliased to relative './components/ui/input-auth' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found
+[00:41:55.852] Server  ERROR   ⨯ ./app/(auth)/login/page.tsx:1:1
+Module not found: Can't resolve '@/components/ui/button-auth'
+> 1 | import ButtonAuth from "@/components/ui/button-auth";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  2 | import ButtonSocial from "@/components/ui/button-social";
+  3 | import InputAuth from "@/components/ui/input-auth";
+  4 | import { Metadata } from "next";
+
+Import map: aliased to relative './components/ui/button-auth' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+[00:41:55.855] Server  ERROR   ⨯ ./app/(auth)/login/page.tsx:1:1
+Module not found: Can't resolve '@/components/ui/button-auth'
+> 1 | import ButtonAuth from "@/components/ui/button-auth";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  2 | import ButtonSocial from "@/components/ui/button-social";
+  3 | import InputAuth from "@/components/ui/input-auth";
+  4 | import { Metadata } from "next";
+
+Import map: aliased to relative './components/ui/button-auth' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+[00:41:55.856] Server  ERROR   ⨯ ./app/(auth)/login/page.tsx:2:1
+Module not found: Can't resolve '@/components/ui/button-social'
+  1 | import ButtonAuth from "@/components/ui/button-auth";
+> 2 | import ButtonSocial from "@/components/ui/button-social";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  3 | import InputAuth from "@/components/ui/input-auth";
+  4 | import { Metadata } from "next";
+  5 | import Image from "next/image";
+
+Import map: aliased to relative './components/ui/button-social' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+[00:41:55.857] Server  ERROR   ⨯ ./app/(auth)/login/page.tsx:2:1
+Module not found: Can't resolve '@/components/ui/button-social'
+  1 | import ButtonAuth from "@/components/ui/button-auth";
+> 2 | import ButtonSocial from "@/components/ui/button-social";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  3 | import InputAuth from "@/components/ui/input-auth";
+  4 | import { Metadata } from "next";
+  5 | import Image from "next/image";
+
+Import map: aliased to relative './components/ui/button-social' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+[00:41:55.859] Server  ERROR   ⨯ ./app/(auth)/login/page.tsx:3:1
+Module not found: Can't resolve '@/components/ui/input-auth'
+  1 | import ButtonAuth from "@/components/ui/button-auth";
+  2 | import ButtonSocial from "@/components/ui/button-social";
+> 3 | import InputAuth from "@/components/ui/input-auth";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  4 | import { Metadata } from "next";
+  5 | import Image from "next/image";
+  6 | import Link from "next/link";
+
+Import map: aliased to relative './components/ui/input-auth' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+[00:41:55.860] Server  ERROR   ⨯ ./app/(auth)/login/page.tsx:3:1
+Module not found: Can't resolve '@/components/ui/input-auth'
+  1 | import ButtonAuth from "@/components/ui/button-auth";
+  2 | import ButtonSocial from "@/components/ui/button-social";
+> 3 | import InputAuth from "@/components/ui/input-auth";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  4 | import { Metadata } from "next";
+  5 | import Image from "next/image";
+  6 | import Link from "next/link";
+
+Import map: aliased to relative './components/ui/input-auth' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+[00:41:56.878] Browser ERROR   ./app/(auth)/login/page.tsx:1:1
+Module not found: Can't resolve '@/components/ui/button-auth'
+> 1 | import ButtonAuth from "@/components/ui/button-auth";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  2 | import ButtonSocial from "@/components/ui/button-social";
+  3 | import InputAuth from "@/components/ui/input-auth";
+  4 | import { Metadata } from "next";
+
+Import map: aliased to relative './components/ui/button-auth' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found
+[00:41:56.878] Browser ERROR   ./app/(auth)/login/page.tsx:2:1
+Module not found: Can't resolve '@/components/ui/button-social'
+  1 | import ButtonAuth from "@/components/ui/button-auth";
+> 2 | import ButtonSocial from "@/components/ui/button-social";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  3 | import InputAuth from "@/components/ui/input-auth";
+  4 | import { Metadata } from "next";
+  5 | import Image from "next/image";
+
+Import map: aliased to relative './components/ui/button-social' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found
+[00:41:56.878] Browser ERROR   ./app/(auth)/login/page.tsx:3:1
+Module not found: Can't resolve '@/components/ui/input-auth'
+  1 | import ButtonAuth from "@/components/ui/button-auth";
+  2 | import ButtonSocial from "@/components/ui/button-social";
+> 3 | import InputAuth from "@/components/ui/input-auth";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  4 | import { Metadata } from "next";
+  5 | import Image from "next/image";
+  6 | import Link from "next/link";
+
+Import map: aliased to relative './components/ui/input-auth' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found
+[00:43:52.875] Server  LOG     ✓ Compiled in 228ms
+[00:43:58.631] Browser WARN    Image with src "/images/logo.png" was detected as the Largest Contentful Paint (LCP). Please add the `loading="eager"` property if this image is above the fold.
+Read more: https://nextjs.org/docs/app/api-reference/components/image#loading
+[00:44:48.665] Browser WARN    Image with src "/images/logo.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[00:44:48.665] Browser WARN    Image with src "/images/images1.jpg" has "fill" but is missing "sizes" prop. Please add it to improve page performance. Read more: https://nextjs.org/docs/api-reference/next/image#sizes
+[00:44:48.831] Browser WARN    Image with src "/images/banner_giasuai.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[00:44:48.832] Browser WARN    Image with src "/images/banner_cnjobs.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[00:44:48.832] Browser WARN    Image with src "/images/banner_cnbooks.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[00:44:51.465] Browser WARN    Image with src "/images/whychoose.png" has "fill" but is missing "sizes" prop. Please add it to improve page performance. Read more: https://nextjs.org/docs/api-reference/next/image#sizes
+[00:44:55.370] Browser WARN    Image with src "/images/logo.png" was detected as the Largest Contentful Paint (LCP). Please add the `loading="eager"` property if this image is above the fold.
+Read more: https://nextjs.org/docs/app/api-reference/components/image#loading
+[00:45:39.407] Browser WARN    Image with src "/images/logo.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[00:45:39.407] Browser WARN    Image with src "/images/images1.jpg" has "fill" but is missing "sizes" prop. Please add it to improve page performance. Read more: https://nextjs.org/docs/api-reference/next/image#sizes
+[00:45:39.407] Browser WARN    Image with src "/images/whychoose.png" has "fill" but is missing "sizes" prop. Please add it to improve page performance. Read more: https://nextjs.org/docs/api-reference/next/image#sizes
+[00:45:39.963] Browser WARN    Image with src "/images/image2.jpg" has "fill" but is missing "sizes" prop. Please add it to improve page performance. Read more: https://nextjs.org/docs/api-reference/next/image#sizes
+[00:45:49.045] Browser WARN    Image with src "/images/logo.png" was detected as the Largest Contentful Paint (LCP). Please add the `loading="eager"` property if this image is above the fold.
+Read more: https://nextjs.org/docs/app/api-reference/components/image#loading
+[00:52:48.506] Server  WARN    ⚠ Fast Refresh had to perform a full reload when ./node_modules/next/dist/client/image-component.js changed. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+[00:52:50.968] Browser WARN    Image with src "/images/logo.png" was detected as the Largest Contentful Paint (LCP). Please add the `loading="eager"` property if this image is above the fold.
+Read more: https://nextjs.org/docs/app/api-reference/components/image#loading
+[00:53:38.323] Browser WARN    Image with src "/images/logo.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[00:53:38.323] Browser WARN    Image with src "/images/images1.jpg" has "fill" but is missing "sizes" prop. Please add it to improve page performance. Read more: https://nextjs.org/docs/api-reference/next/image#sizes
+[00:53:38.485] Browser WARN    Image with src "/images/whychoose.png" has "fill" but is missing "sizes" prop. Please add it to improve page performance. Read more: https://nextjs.org/docs/api-reference/next/image#sizes
+[00:53:46.403] Server  ERROR   ⨯ Error: The default export is not a React Component in "/otp/page"
+[00:53:46.753] Server  ERROR   ⨯ Error: The default export is not a React Component in "/otp/page"
+[00:53:47.012] Browser ERROR   uncaughtError: Error: The default export is not a React Component in "/otp/page"
+[00:58:29.601] Server  LOG     ✓ Compiled in 146ms
+[01:07:58.659] Server  WARN    ⚠ Fast Refresh had to perform a full reload when ./app/(auth)/otp/page.tsx changed. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+[01:07:58.685] Server  LOG     ✓ Compiled in 99ms
+[01:08:14.162] Browser WARN    Image with src "/images/logo.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[01:08:14.162] Browser WARN    Image with src "/images/images1.jpg" has "fill" but is missing "sizes" prop. Please add it to improve page performance. Read more: https://nextjs.org/docs/api-reference/next/image#sizes
+[01:08:14.162] Browser WARN    Image with src "/images/whychoose.png" has "fill" but is missing "sizes" prop. Please add it to improve page performance. Read more: https://nextjs.org/docs/api-reference/next/image#sizes
+[01:08:31.430] Server  LOG     ✓ Compiled in 96ms
+[01:13:38.937] Server  LOG     ✓ Compiled in 100ms
+[01:14:33.107] Server  LOG     ✓ Compiled in 59ms
+[01:14:40.284] Browser ERROR   Each child in a list should have a unique "key" prop.%s%s See https://react.dev/link/warning-keys for more information. 
+
+Check the render method of `div`.  It was passed a child from ProvinceSelect.
+[01:15:39.328] Server  WARN    Error: Route "/diendan" used `searchParams.id`. `searchParams` is a Promise and must be unwrapped with `await` or `React.use()` before accessing its properties. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+[01:15:40.246] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[01:15:40.984] Browser ERROR   A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+%s%s https://react.dev/link/hydration-mismatch 
+
+  ...
+    <UserLayoutMain>
+      <Header>
+        ...
+          <MenuProvider scope={{Menu:[...], ...}} onClose={function Menu.useCallback} ...>
+            <DropdownMenuTrigger asChild={true}>
+              <DropdownMenuTrigger data-slot="dropdown-m..." asChild={true}>
+                <MenuAnchor asChild={true} __scopeMenu={{Menu:[...], ...}}>
+                  <PopperAnchor __scopePopper={{Menu:[...], ...}} asChild={true} ref={null}>
+                    <Primitive.div asChild={true} ref={function}>
+                      <Primitive.div.Slot ref={function}>
+                        <Primitive.div.SlotClone ref={function}>
+                          <Primitive.button type="button" id="radix-_R_4..." aria-haspopup="menu" aria-expanded={false} ...>
+                            <Primitive.button.Slot type="button" id="radix-_R_4..." aria-haspopup="menu" ...>
+                              <Primitive.button.SlotClone type="button" id="radix-_R_4..." aria-haspopup="menu" ...>
+                                <div
+                                  className="p-0.5 rounded-full"
+                                  type="button"
++                                 id="radix-_R_4pkneitmlb_"
+-                                 id="radix-_R_j5kneitmlb_"
+                                  aria-haspopup="menu"
+                                  aria-expanded={false}
+                                  aria-controls={undefined}
+                                  data-state="closed"
+                                  data-disabled={undefined}
+                                  disabled={false}
+                                  data-slot="dropdown-menu-trigger"
+                                  onPointerDown={function handleEvent}
+                                  onKeyDown={function handleEvent}
+                                  ref={function}
+                                >
+            ...
+        ...
+          <MenuProvider scope={{Menu:[...], ...}} onClose={function Menu.useCallback} ...>
+            <DropdownMenuTrigger asChild={true}>
+              <DropdownMenuTrigger data-slot="dropdown-m..." asChild={true}>
+                <MenuAnchor asChild={true} __scopeMenu={{Menu:[...], ...}}>
+                  <PopperAnchor __scopePopper={{Menu:[...], ...}} asChild={true} ref={null}>
+                    <Primitive.div asChild={true} ref={function}>
+                      <Primitive.div.Slot ref={function}>
+                        <Primitive.div.SlotClone ref={function}>
+                          <Primitive.button type="button" id="radix-_R_4..." aria-haspopup="menu" aria-expanded={false} ...>
+                            <Primitive.button.Slot type="button" id="radix-_R_4..." aria-haspopup="menu" ...>
+                              <Primitive.button.SlotClone type="button" id="radix-_R_4..." aria-haspopup="menu" ...>
+                                <div
+                                  className="p-0.5 rounded-full"
+                                  type="button"
++                                 id="radix-_R_4ikneitmlb_"
+-                                 id="radix-_R_i9kneitmlb_"
+                                  aria-haspopup="menu"
+                                  aria-expanded={false}
+                                  aria-controls={undefined}
+                                  data-state="closed"
+                                  data-disabled={undefined}
+                                  disabled={false}
+                                  data-slot="dropdown-menu-trigger"
+                                  onPointerDown={function handleEvent}
+                                  onKeyDown={function handleEvent}
+                                  ref={function}
+                                >
+            ...
+        ...
+
+[01:15:41.058] Browser WARN    Image with src "/images/logo.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+[01:15:55.314] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[01:16:04.343] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[01:16:11.710] Browser ERROR   Each child in a list should have a unique "key" prop.%s%s See https://react.dev/link/warning-keys for more information. 
+
+Check the render method of `div`.  It was passed a child from ProvinceSelect.
+[01:19:50.069] Server  LOG     ✓ Compiled in 55ms
+[01:20:36.167] Server  LOG     ✓ Compiled in 76ms
