@@ -25,7 +25,7 @@ export default function Feed() {
     const iframeRefs = useRef<HTMLIFrameElement[]>([])
 
     const [currentIndex, setCurrentIndex] = useState(0)
-    const [isMuted, setIsMuted] = useState(true) // luôn start muted
+    const [isMuted, setIsMuted] = useState(true)
     const [hasInteracted, setHasInteracted] = useState(false)
     const [showIconIndex, setShowIconIndex] = useState<number | null>(null)
     const [isPlaying, setIsPlaying] = useState(true)
@@ -33,20 +33,12 @@ export default function Feed() {
     const touchStartY = useRef(0)
     const isScrolling = useRef(false)
 
-    // 🎯 Auto play
+    // 🎯 Auto play video active
     useEffect(() => {
         iframeRefs.current.forEach((iframe, index) => {
             if (!iframe) return
 
-            iframe.contentWindow?.postMessage(
-                JSON.stringify({
-                    event: "command",
-                    func: "seekTo",
-                    args: [0, true],
-                }),
-                "*"
-            )
-
+            // Pause tất cả video khác
             iframe.contentWindow?.postMessage(
                 JSON.stringify({
                     event: "command",
@@ -55,10 +47,30 @@ export default function Feed() {
                 }),
                 "*"
             )
-        })
-    }, [currentIndex])
 
-    // ✋ touch
+            // Reset thời gian video active về 0
+            if (index === currentIndex) {
+                iframe.contentWindow?.postMessage(
+                    JSON.stringify({
+                        event: "command",
+                        func: "seekTo",
+                        args: [0, true],
+                    }),
+                    "*"
+                )
+            }
+
+            // Nếu user đã tương tác bật âm thanh → unMute tất cả
+            if (hasInteracted) {
+                iframe.contentWindow?.postMessage(
+                    JSON.stringify({ event: "command", func: "unMute", args: [] }),
+                    "*"
+                )
+            }
+        })
+    }, [currentIndex, hasInteracted])
+
+    // ✋ Touch swipe
     const handleTouchStart = (e: React.TouchEvent) => {
         touchStartY.current = e.touches[0].clientY
     }
@@ -67,11 +79,8 @@ export default function Feed() {
         const diff = e.changedTouches[0].clientY - touchStartY.current
         if (Math.abs(diff) < 20) return
 
-        if (diff < 0 && currentIndex < videos.length - 1) {
-            setCurrentIndex((prev) => prev + 1)
-        } else if (diff > 0 && currentIndex > 0) {
-            setCurrentIndex((prev) => prev - 1)
-        }
+        if (diff < 0 && currentIndex < videos.length - 1) setCurrentIndex(currentIndex + 1)
+        else if (diff > 0 && currentIndex > 0) setCurrentIndex(currentIndex - 1)
     }
 
     const handleWheel = (e: React.WheelEvent) => {
@@ -80,72 +89,64 @@ export default function Feed() {
 
         isScrolling.current = true
 
-        if (e.deltaY > 0 && currentIndex < videos.length - 1) {
-            setCurrentIndex((prev) => prev + 1)
-        } else if (e.deltaY < 0 && currentIndex > 0) {
-            setCurrentIndex((prev) => prev - 1)
-        }
+        if (e.deltaY > 0 && currentIndex < videos.length - 1) setCurrentIndex(currentIndex + 1)
+        else if (e.deltaY < 0 && currentIndex > 0) setCurrentIndex(currentIndex - 1)
 
         setTimeout(() => (isScrolling.current = false), 400)
     }
 
-    // 🎯 Play/Pause + UNMUTE lần đầu
+    // 🎯 Play/Pause video active + lần đầu bật âm thanh
     const toggleVideo = (index: number) => {
         const iframe = iframeRefs.current[index]
         if (!iframe) return
 
-        // 🔥 lần đầu user click → bật tiếng
+        // lần đầu user click → bật âm thanh video active và tất cả video khác
         if (!hasInteracted) {
             setHasInteracted(true)
             setIsMuted(false)
-
             iframeRefs.current.forEach((frame) => {
                 frame?.contentWindow?.postMessage(
-                    JSON.stringify({
-                        event: "command",
-                        func: "unMute",
-                        args: [],
-                    }),
+                    JSON.stringify({ event: "command", func: "unMute", args: [] }),
                     "*"
                 )
             })
         }
 
         const action = isPlaying ? "pauseVideo" : "playVideo"
-
-        iframe.contentWindow?.postMessage(
-            JSON.stringify({
-                event: "command",
-                func: action,
-                args: [],
-            }),
-            "*"
-        )
-
+        iframe.contentWindow?.postMessage(JSON.stringify({ event: "command", func: action, args: [] }), "*")
         setIsPlaying(!isPlaying)
 
-        // giữ nguyên showIconIndex
         setShowIconIndex(index)
         setTimeout(() => setShowIconIndex(null), 500)
     }
 
-    // 🔊 toggle mute
+    // 🔊 Toggle mute
     const toggleMute = (e: React.MouseEvent) => {
         e.stopPropagation()
+
+        // lần đầu click → bật âm thanh tất cả video
+        if (!hasInteracted) {
+            setHasInteracted(true)
+            setIsMuted(false)
+            iframeRefs.current.forEach((iframe) => {
+                iframe?.contentWindow?.postMessage(
+                    JSON.stringify({ event: "command", func: "unMute", args: [] }),
+                    "*"
+                )
+            })
+            return
+        }
 
         const newMuted = !isMuted
         setIsMuted(newMuted)
 
-        iframeRefs.current.forEach((iframe) => {
-            iframe?.contentWindow?.postMessage(
-                JSON.stringify({
-                    event: "command",
-                    func: newMuted ? "mute" : "unMute",
-                    args: [],
-                }),
-                "*"
-            )
-        })
+        const iframe = iframeRefs.current[currentIndex]
+        if (!iframe) return
+
+        iframe.contentWindow?.postMessage(
+            JSON.stringify({ event: "command", func: newMuted ? "mute" : "unMute", args: [] }),
+            "*"
+        )
     }
 
     return (
@@ -162,13 +163,13 @@ export default function Feed() {
             >
                 {videos.map((id, index) => (
                     <div key={index} className="w-full h-full flex items-center justify-center relative">
-
                         <div className="w-full h-full md:w-90 md:h-160 overflow-hidden relative">
-
                             <iframe
-                                ref={(el) => { if (el) iframeRefs.current[index] = el }}
+                                ref={(el) => {
+                                    if (el) iframeRefs.current[index] = el
+                                }}
                                 className="absolute top-1/2 left-1/2 w-screen h-screen -translate-x-1/2 -translate-y-1/2 pointer-events-none object-cover"
-                                style={{ minWidth: '100%', minHeight: '100%' }}
+                                style={{ minWidth: "100%", minHeight: "100%" }}
                                 src={`https://www.youtube.com/embed/${id}?enablejsapi=1&autoplay=1&mute=1&controls=0&modestbranding=1&rel=0&playsinline=1&loop=1&playlist=${id}`}
                                 allow="autoplay"
                             />
@@ -182,11 +183,19 @@ export default function Feed() {
                                 </button>
                             </div>
 
-                            {/* 👉 Sidebar GIỮ NGUYÊN */}
+                            {/* Sidebar */}
                             <div className="absolute right-3 bottom-9 md:right-3 md:bottom-3 flex flex-col items-center gap-4 text-white filter drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
                                 <div className="relative">
-                                    <Image width={40} height={40} src="https://i.pravatar.cc/40" alt="" className="w-10 h-10 rounded-full border-2 border-white" />
-                                    <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-red-500 w-5 h-5 flex items-center justify-center rounded-full text-xs">+</div>
+                                    <Image
+                                        width={40}
+                                        height={40}
+                                        src="https://i.pravatar.cc/40"
+                                        alt=""
+                                        className="w-10 h-10 rounded-full border-2 border-white"
+                                    />
+                                    <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-red-500 w-5 h-5 flex items-center justify-center rounded-full text-xs">
+                                        +
+                                    </div>
                                 </div>
                                 <button className="flex flex-col items-center">
                                     <Heart variant="Bold" size="28" />
@@ -199,17 +208,20 @@ export default function Feed() {
                                 <button className="flex flex-col items-center">
                                     <Bookmark variant="Bold" size="28" />
                                     <span className="text-[10px] font-bold">3K</span>
-                                </button> <button className="flex flex-col items-center">
+                                </button>
+                                <button className="flex flex-col items-center">
                                     <Send2 variant="Bold" size="28" />
                                     <span className="text-[10px] font-bold">2.0K</span>
-                                </button> </div>
+                                </button>
+                            </div>
+
                             <div className="absolute bottom-9 left-3 md:left-3 md:bottom-3 text-white max-w-[70%] filter drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)]">
                                 <p className="font-bold">Lý Cao Nguyên</p>
                                 <p className="text-sm">Demo video TikTok clone #cncode #fyp #learncode</p>
                             </div>
                         </div>
 
-                        {/* Icon giữ nguyên */}
+                        {/* Icon Play/Pause */}
                         {showIconIndex === index && (
                             <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-30">
                                 <div className="bg-black/50 text-white p-4 rounded-full">
