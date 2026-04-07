@@ -154,7 +154,7 @@ export default function Feed() {
             onTouchStart={handleTouchStart}
             onTouchEnd={handleTouchEnd}
             onWheel={handleWheel}
-            className="w-full h-[calc(100dvh-80px)] lg:h-[calc(100dvh-60px)] overflow-hidden bg-black touch-none"
+            className="w-full h-[calc(100dvh-110px)] lg:h-[calc(100dvh-90px)] overflow-hidden bg-black touch-none"
         >
             <div
                 className="w-full h-full transition-transform duration-300"
@@ -176,14 +176,14 @@ export default function Feed() {
                             <div className="absolute inset-0 z-10" onClick={() => toggleVideo(index)} />
 
                             {/* 🔊 Sound */}
-                            <div className="absolute top-4 right-4 z-20">
+                            <div className="absolute top-3 right-3 z-20">
                                 <button onClick={toggleMute} className="bg-black/50 p-2 rounded-full text-white">
                                     {isMuted ? <VolumeMute size="20" /> : <VolumeHigh size="20" />}
                                 </button>
                             </div>
 
                             {/* 👉 Sidebar GIỮ NGUYÊN */}
-                            <div className="absolute right-5 bottom-10 md:right-3 md:bottom-3 flex flex-col items-center gap-4 text-white">
+                            <div className="absolute right-3 bottom-9 md:right-3 md:bottom-3 flex flex-col items-center gap-4 text-white filter drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
                                 <div className="relative">
                                     <Image width={40} height={40} src="https://i.pravatar.cc/40" alt="" className="w-10 h-10 rounded-full border-2 border-white" />
                                     <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-red-500 w-5 h-5 flex items-center justify-center rounded-full text-xs">+</div>
@@ -203,8 +203,8 @@ export default function Feed() {
                                     <Send2 variant="Bold" size="28" />
                                     <span className="text-[10px] font-bold">2.0K</span>
                                 </button> </div>
-                            <div className="absolute bottom-10 left-5 md:left-3 md:bottom-3 text-white max-w-[70%]">
-                                <p className="font-bold">@cncode_user</p>
+                            <div className="absolute bottom-9 left-3 md:left-3 md:bottom-3 text-white max-w-[70%] filter drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)]">
+                                <p className="font-bold">Lý Cao Nguyên</p>
                                 <p className="text-sm">Demo video TikTok clone #cncode #fyp #learncode</p>
                             </div>
                         </div>
