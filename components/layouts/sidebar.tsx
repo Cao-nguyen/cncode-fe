@@ -26,12 +26,6 @@ export default function Sidebar({ open }: { open: boolean }) {
         }
     ]
 
-    // Phân quyền người dùng
-    // Người dùng vi phạm
-    //     Khoá / mở khoá tài khoản
-    // Lịch sử hoạt động
-    // Quản lí xu người dùng
-
     const path = usePathname()
 
     return (

@@ -3,7 +3,7 @@ import { useTheme } from "next-themes";
 import Link from "next/link";
 
 export default function NavAdmin({ setOpen, open }: { setOpen: (open: boolean) => void, open: boolean }) {
-    const { theme, setTheme } = useTheme();
+    const { setTheme } = useTheme();
 
     return (
         <header className="flex justify-between items-center">

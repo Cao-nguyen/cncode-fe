@@ -3,14 +3,12 @@
 import Image from "next/image"
 import Link from "next/link"
 
-// ================== DỮ LIỆU ==================
-
 // Danh sách mạng xã hội
 const SOCIALS = [
-    { size: 34, dark: "/icons/pw.svg", light: "/icons/pb.svg", link: "https://zalo.me/0394217863", big: true },
-    { size: 34, dark: "/icons/ttw.svg", light: "/icons/ttb.svg", link: "/", big: true },
-    { size: 30, dark: "/icons/fbw.svg", light: "/icons/fbb.svg", link: "https://www.facebook.com/cncode.edu.vn" },
-    { size: 30, dark: "/icons/ytbw.svg", light: "/icons/ytbb.svg", link: "https://www.youtube.com/@CNcode-edu" },
+    { size: 30, dark: "/icons/pw.svg", light: "/icons/pb.svg", link: "https://zalo.me/0394217863", big: true },
+    { size: 30, dark: "/icons/ttw.svg", light: "/icons/ttb.svg", link: "/", big: true },
+    { size: 34, dark: "/icons/fbw.svg", light: "/icons/fbb.svg", link: "https://www.facebook.com/cncode.edu.vn" },
+    { size: 34, dark: "/icons/ytbw.svg", light: "/icons/ytbb.svg", link: "https://www.youtube.com/@CNcode-edu" },
 ]
 
 // Danh sách các nhóm link
@@ -80,7 +78,7 @@ export function Footer() {
                 <div className="col-span-2 lg:col-span-1">
                     <h3 className="font-semibold mb-2">Thông tin chung</h3>
                     <p className="text-justify">
-                        CNcode - Nền tảng dạy và học công nghệ thông tin miễn phí với nhiều công nghệ hiện đại
+                        CNcode - Nền tảng học công nghệ và đổi mới sáng tạo với nhiều công nghệ hiện đại
                         dành cho mọi đối tượng như học sinh, sinh viên, giáo viên, người làm văn phòng,...
                     </p>
                 </div>

@@ -123,6 +123,7 @@ function UserDropdown({ user }: { user: UserType }) {
     )
 }
 
+// ===== COMPONENT HEADER =====
 export function Header() {
 
     const pathname = usePathname()

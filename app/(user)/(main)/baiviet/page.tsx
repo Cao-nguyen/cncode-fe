@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react"
 import Link from "next/link"
 import { Add } from "iconsax-react"
-import BlogCard from "@/components/ui/blog"
+import BlogCard from "@/components/sections/blog"
 
 const blogPosts = [
     {
