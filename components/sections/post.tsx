@@ -1,127 +1,248 @@
-"use client";
+"use client"
 
-import { useState } from "react";
-import { Like, Heart, Message, Share } from "iconsax-react";
-import { Save2, Wallet, SafeHome, Activity } from "iconsax-react";
+import { useState, useRef } from "react"
+import Image from "next/image"
+import { More, Like1 } from "iconsax-react"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Button } from "@/components/ui/button"
+import { Dialog, DialogContent } from "@/components/ui/dialog"
 
-type ReactionType =
-    | null
-    | "Thích"
-    | "Yêu thích"
-    | "Thương Thương"
-    | "Haha"
-    | "Wow"
-    | "Buồn"
-    | "Giận";
+// ===== Reactions =====
+const reactions = ["👍", "❤️", "🥰", "😂", "😮", "😢", "😡"] as const
+type Reaction = (typeof reactions)[number] | null
 
-export default function Post() {
-    const [liked, setLiked] = useState<ReactionType>(null);
-    const [showReactions, setShowReactions] = useState(false);
-    const [showFull, setShowFull] = useState(false);
+// ===== Types =====
+type Post = {
+    id: number
+    user: string
+    avatar: string
+    time: string
+    content: string
+    image?: string
+    likes: number
+    comments: number
+    shares: number
+}
 
-    // Fake data
-    const data = {
-        fullName: "Nguyễn Văn A",
-        avatar: "https://i.pravatar.cc/150?img=3",
+// ===== Fake Data =====
+const posts: Post[] = [
+    {
+        id: 1,
+        user: "Nguyên Cao",
+        avatar: "/images/avatar.png",
         time: "2 giờ trước",
         content:
-            "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
-        image: "https://picsum.photos/600/400",
-        likes: 10,
+            "Hôm nay mình build được feature social cho CNcode 😎🔥, sắp launch rồi...",
+        image: "/images/post1.jpg",
+        likes: 120,
         comments: 20,
         shares: 5,
-    };
+    },
+    {
+        id: 2,
+        user: "Trần Dev",
+        avatar: "/images/avatar.png",
+        time: "5 giờ trước",
+        content:
+            "Tip: Khi dùng React, luôn tách component nhỏ để dễ maintain...",
+        likes: 80,
+        comments: 10,
+        shares: 2,
+    },
+    {
+        id: 3,
+        user: "UI Designer",
+        avatar: "/images/avatar.png",
+        time: "1 ngày trước",
+        content:
+            "UI đẹp chưa đủ, UX mới giữ user lại lâu dài 🚀",
+        image: "/images/post2.jpg",
+        likes: 200,
+        comments: 50,
+        shares: 12,
+    },
+]
 
-    const reactions = [
-        { label: "Thích", icon: <Like size="24" variant="Bold" />, color: "#4267B2" },
-        { label: "Yêu thích", icon: <Heart size="24" variant="Bold" />, color: "#f33a58" },
-        { label: "Thương Thương", icon: <Save2 size="24" variant="Bold" />, color: "#f7b125" },
-        { label: "Haha", icon: <Activity size="24" variant="Bold" />, color: "#f7b125" },
-        { label: "Wow", icon: <Activity size="24" variant="Bold" />, color: "#f7b125" },
-        { label: "Buồn", icon: <SafeHome size="24" variant="Bold" />, color: "#f7b125" },
-        { label: "Giận", icon: <Wallet size="24" variant="Bold" />, color: "#f33a58" },
-    ];
+// ===== Component =====
+export default function PostFeed() {
+    const [open, setOpen] = useState(false)
+    const [hoveredPost, setHoveredPost] = useState<number | null>(null)
+    const [reaction, setReaction] = useState<Record<number, Reaction>>({})
+
+    const openTimeout = useRef<NodeJS.Timeout | null>(null)
+    const closeTimeout = useRef<NodeJS.Timeout | null>(null)
+
+    // ===== Hover Logic =====
+    const handleHover = (id: number) => {
+        if (closeTimeout.current) clearTimeout(closeTimeout.current)
+
+        openTimeout.current = setTimeout(() => {
+            setHoveredPost(id)
+        }, 200)
+    }
+
+    const leaveHover = () => {
+        if (openTimeout.current) clearTimeout(openTimeout.current)
+
+        closeTimeout.current = setTimeout(() => {
+            setHoveredPost(null)
+        }, 250)
+    }
 
     return (
-        <div className="max-w-xl w-full mx-auto my-4 bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden transition-colors duration-300">
-            {/* HEADER */}
-            <div className="flex items-center p-4">
-                <img
-                    src={data.avatar}
-                    alt="avatar"
-                    className="w-12 h-12 sm:w-14 sm:h-14 rounded-full object-cover"
-                />
-                <div className="ml-3 flex-1">
-                    <h5 className="text-gray-900 dark:text-white font-semibold text-sm sm:text-base">{data.fullName}</h5>
-                    <span className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm">{data.time}</span>
-                </div>
-                <button className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 text-sm sm:text-base">
-                    ...
-                </button>
-            </div>
+        <div className="h-[calc(100dvh-110px)] lg:h-[calc(100dvh-90px)] overflow-y-auto px-2 sm:px-4 flex justify-center bg-zinc-100 dark:bg-zinc-950">
 
-            {/* CONTENT */}
-            <div className="px-4 pb-4">
-                <p className="text-gray-800 dark:text-gray-200 text-sm sm:text-base">
-                    {showFull ? data.content : data.content.slice(0, 120) + "..."}
-                    {data.content.length > 120 && (
-                        <span
-                            onClick={() => setShowFull(!showFull)}
-                            className="text-blue-500 dark:text-blue-400 cursor-pointer ml-1"
+            {/* Wrapper */}
+            <div className="w-full max-w-xl lg:max-w-2xl space-y-4 py-4 pb-20">
+
+                {/* Create Post */}
+                <div className="bg-white dark:bg-zinc-900/80 backdrop-blur border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 shadow-sm">
+                    <div className="flex gap-3 items-center">
+                        <Avatar>
+                            <AvatarImage src="/images/avatar.png" />
+                            <AvatarFallback>N</AvatarFallback>
+                        </Avatar>
+
+                        <div
+                            onClick={() => setOpen(true)}
+                            className="flex-1 bg-zinc-100 dark:bg-zinc-800/70 px-4 py-2 rounded-full cursor-pointer hover:bg-zinc-200 dark:hover:bg-zinc-700 transition"
                         >
-                            {showFull ? "Thu gọn" : "Xem thêm"}
-                        </span>
-                    )}
-                </p>
-            </div>
-
-            {/* IMAGE */}
-            {data.image && (
-                <div className="w-full max-h-[500px] overflow-hidden">
-                    <img src={data.image} alt="" className="w-full object-cover" />
-                </div>
-            )}
-
-            {/* ACTIONS */}
-            <div className="flex justify-around items-center p-3 border-t border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 relative text-xs sm:text-sm">
-                {/* LIKE */}
-                <div
-                    className="flex items-center gap-1 relative cursor-pointer"
-                    onMouseEnter={() => setShowReactions(true)}
-                    onMouseLeave={() => setShowReactions(false)}
-                >
-                    {liked ? reactions.find((r) => r.label === liked)?.icon : <Like size="24" variant="Bold" />}
-                    <span className="select-none">{data.likes + (liked ? 1 : 0)}</span>
-
-                    {/* Reactions Tooltip */}
-                    {showReactions && (
-                        <div className="absolute -top-24 left-0 flex bg-white dark:bg-gray-700 rounded-full shadow-lg p-2 gap-2 z-10">
-                            {reactions.map((r) => (
-                                <div
-                                    key={r.label}
-                                    className="flex flex-col items-center cursor-pointer transform transition-all duration-200 hover:scale-125"
-                                    onClick={() => setLiked(r.label as ReactionType)}
-                                >
-                                    <div>{r.icon}</div>
-                                    <span className="text-xs text-gray-700 dark:text-gray-200 mt-1">{r.label}</span>
-                                </div>
-                            ))}
+                            Hôm nay bạn thế nào?
                         </div>
-                    )}
+                    </div>
                 </div>
 
-                {/* COMMENT */}
-                <div className="flex items-center gap-1 cursor-pointer hover:text-blue-500">
-                    <Message size="24" variant="Bold" />
-                    <span>{data.comments}</span>
-                </div>
+                {/* Modal */}
+                <Dialog open={open} onOpenChange={setOpen}>
+                    <DialogContent className="rounded-2xl">
+                        <div className="text-lg font-semibold">
+                            Tạo bài viết
+                        </div>
 
-                {/* SHARE */}
-                <div className="flex items-center gap-1 cursor-pointer hover:text-blue-500">
-                    <Share size="24" variant="Bold" />
-                    <span>{data.shares}</span>
-                </div>
+                        <textarea
+                            className="w-full mt-3 p-3 border border-zinc-200 dark:border-zinc-700 rounded-lg outline-none bg-white dark:bg-zinc-900"
+                            placeholder="Bạn đang nghĩ gì?"
+                        />
+
+                        <Button className="mt-3 w-full">
+                            Đăng
+                        </Button>
+                    </DialogContent>
+                </Dialog>
+
+                {/* Posts */}
+                {posts.map((post) => (
+                    <div
+                        key={post.id}
+                        className="bg-white dark:bg-zinc-900/80 backdrop-blur border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 shadow-sm space-y-3 overflow-visible"
+                    >
+                        {/* Header */}
+                        <div className="flex justify-between items-center">
+                            <div className="flex gap-3 items-center">
+                                <Avatar>
+                                    <AvatarImage src={post.avatar} />
+                                    <AvatarFallback>N</AvatarFallback>
+                                </Avatar>
+
+                                <div>
+                                    <div className="font-semibold">
+                                        {post.user}
+                                    </div>
+                                    <div className="text-xs text-zinc-500">
+                                        {post.time}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <More size={25} />
+                        </div>
+
+                        {/* Content */}
+                        <div className="text-sm leading-relaxed">
+                            {post.content}
+                            <span className="text-blue-500 cursor-pointer ml-1">
+                                xem thêm
+                            </span>
+                        </div>
+
+                        {/* Image */}
+                        {post.image && (
+                            <div className="relative w-full h-60 rounded-xl overflow-hidden">
+                                <Image
+                                    src={post.image}
+                                    alt=""
+                                    fill
+                                    className="object-cover"
+                                />
+                            </div>
+                        )}
+
+                        {/* Stats */}
+                        <div className="text-xs text-zinc-500 flex justify-between">
+                            <span>{post.likes} lượt thích</span>
+                            <span>
+                                {post.comments} bình luận · {post.shares} chia sẻ
+                            </span>
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex justify-around border-t border-zinc-200 dark:border-zinc-800 pt-2 text-sm">
+
+                            {/* Like */}
+                            <div
+                                className="relative w-fit"
+                                onMouseEnter={() => handleHover(post.id)}
+                                onMouseLeave={leaveHover}
+                            >
+                                <button className="flex items-center gap-1 hover:text-blue-500 transition">
+                                    <Like1 size={18} />
+                                    {reaction[post.id] || "Like"}
+                                </button>
+
+                                {/* Reaction Box */}
+                                {hoveredPost === post.id && (
+                                    <div
+                                        className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 shadow-xl rounded-full px-2 py-1 flex gap-2 animate-in fade-in zoom-in-95 transform-gpu will-change-transform"
+                                        onMouseEnter={() => {
+                                            if (closeTimeout.current) clearTimeout(closeTimeout.current)
+                                        }}
+                                        onMouseLeave={() => {
+                                            closeTimeout.current = setTimeout(() => {
+                                                setHoveredPost(null)
+                                            }, 200)
+                                        }}
+                                    >
+                                        {reactions.map((r) => (
+                                            <span
+                                                key={r}
+                                                className="text-xl cursor-pointer hover:scale-125 active:scale-110 transition"
+                                                onClick={() =>
+                                                    setReaction((prev) => ({
+                                                        ...prev,
+                                                        [post.id]: r,
+                                                    }))
+                                                }
+                                            >
+                                                {r}
+                                            </span>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Comment */}
+                            <button className="hover:text-blue-500 transition">
+                                💬 {post.comments}
+                            </button>
+
+                            {/* Share */}
+                            <button className="hover:text-blue-500 transition">
+                                ↗️ {post.shares}
+                            </button>
+                        </div>
+                    </div>
+                ))}
             </div>
         </div>
-    );
+    )
 }

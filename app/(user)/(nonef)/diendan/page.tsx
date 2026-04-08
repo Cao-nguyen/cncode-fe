@@ -23,7 +23,6 @@ export default function Diendan() {
 
     return (
         <div className="pt-0 lg:pt-15">
-            {/* Header sáng/tối, tab nằm giữa */}
             <header className="flex h-7.5 bg-white dark:bg-black border-b border-gray-300 dark:border-gray-700 justify-center">
                 <div className="flex space-x-2">
                     {[

@@ -11,6 +11,15 @@ import {
     LikeShapes,
     Clock,
     Paperclip2,
+    Notification,
+    Link21,
+    DocumentText,
+    Setting2,
+    People,
+    EyeSlash,
+    Warning2,
+    UserRemove,
+    Trash,
 } from "iconsax-react"
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
@@ -47,6 +56,12 @@ export default function ChatPage() {
     const [loading, setLoading] = useState(false)
     const [typing, setTyping] = useState(false)
     const [toolTimeout, setToolTimeout] = useState<NodeJS.Timeout | null>(null)
+
+    const [showInfo, setShowInfo] = useState(false)
+    const [hideChat, setHideChat] = useState(false) // ✅ NEW
+
+    const imageInputRef = useRef<HTMLInputElement>(null)
+    const fileInputRef = useRef<HTMLInputElement>(null)
     const textareaRef = useRef<HTMLTextAreaElement>(null)
 
     useEffect(() => {
@@ -80,8 +95,14 @@ export default function ChatPage() {
         if (textareaRef.current) textareaRef.current.style.height = "auto"
     }
 
+    const handleSelectImage = () => imageInputRef.current?.click()
+    const handleSelectFile = () => fileInputRef.current?.click()
+
     return (
         <div className="flex h-[calc(100dvh-130px)] md:h-[calc(100dvh-90px)] bg-background">
+
+            <input type="file" ref={imageInputRef} className="hidden" accept="image/*" multiple />
+            <input type="file" ref={fileInputRef} className="hidden" multiple />
 
             {/* SIDEBAR */}
             <div className={cn(
@@ -121,157 +142,214 @@ export default function ChatPage() {
                 </ScrollArea>
             </div>
 
-            {/* PLACEHOLDER (desktop only) */}
             {!activeChat && (
                 <div className="hidden md:flex flex-1 items-center justify-center text-muted-foreground">
                     <p className="text-sm">Chọn đoạn chat để trò chuyện</p>
                 </div>
             )}
 
-            {/* CHAT (chỉ render khi có activeChat) */}
             {activeChat && (
-                <div className={cn(
-                    "flex-1 flex flex-col transition-all duration-300",
-                    view === "list" && "hidden md:flex",
-                    view === "chat" && "animate-in slide-in-from-right"
-                )}>
+                <div className="flex-1 flex">
 
-                    {/* HEADER */}
-                    <div className="h-14 border-b flex items-center justify-between px-4">
-                        <div className="flex items-center gap-3">
-                            <button className="md:hidden" onClick={() => setView("list")}>
+                    <div className="flex-1 flex flex-col">
+
+                        {/* HEADER */}
+                        <div className="h-14 border-b flex items-center justify-between px-4">
+                            <div className="flex items-center gap-3">
+                                <button className="md:hidden" onClick={() => setView("list")}>
+                                    <SidebarLeft variant="Bold" size={20} />
+                                </button>
+
+                                <Avatar>
+                                    <AvatarFallback>A</AvatarFallback>
+                                </Avatar>
+
+                                <div>
+                                    <p className="text-sm font-medium">Nguyễn Văn A</p>
+                                    <p className="text-xs text-green-500">Đang hoạt động</p>
+                                </div>
+                            </div>
+
+                            <button onClick={() => setShowInfo(true)}>
                                 <SidebarLeft variant="Bold" size={20} />
                             </button>
-
-                            <Avatar>
-                                <AvatarFallback>A</AvatarFallback>
-                            </Avatar>
-
-                            <div>
-                                <p className="text-sm font-medium">Nguyễn Văn A</p>
-                                <p className="text-xs text-green-500">Đang hoạt động</p>
-                            </div>
                         </div>
 
-                        <SidebarLeft variant="Bold" size={20} />
-                    </div>
+                        {/* PIN */}
+                        <div className="px-4 py-2 text-sm bg-muted border-b flex items-center gap-2">
+                            <Paperclip2 variant="Bold" size={20} />
+                            Họp lúc 8h - Nguyễn Văn A
+                        </div>
 
-                    {/* PIN */}
-                    <div className="px-4 py-2 text-sm bg-muted border-b flex items-center gap-2">
-                        <Paperclip2 variant="Bold" size={20} />
-                        Họp lúc 8h - Nguyễn Văn A
-                    </div>
+                        {/* MESSAGES */}
+                        <ScrollArea className="flex-1 p-4 space-y-5">
+                            {messages.map((msg) => (
+                                <div key={msg.id} className={cn("flex", msg.fromMe ? "justify-end" : "justify-start")}>
+                                    <div className="flex gap-2 max-w-[65%]">
 
-                    {/* MESSAGES */}
-                    <ScrollArea className="flex-1 p-4 space-y-5">
+                                        {!msg.fromMe && (
+                                            <Avatar className="w-8 h-8">
+                                                <AvatarFallback>A</AvatarFallback>
+                                            </Avatar>
+                                        )}
 
-                        {loading && (
-                            <div className="space-y-3">
-                                <div className="h-4 w-32 bg-muted rounded animate-pulse" />
-                                <div className="h-4 w-48 bg-muted rounded animate-pulse" />
-                            </div>
-                        )}
+                                        <div className={cn("flex flex-col", msg.fromMe && "items-end text-right")}>
+                                            <p className="text-xs font-medium mb-1">{msg.name}</p>
 
-                        {!loading && messages.map((msg) => (
-                            <div
-                                key={msg.id}
-                                className={cn(
-                                    "flex",
-                                    msg.fromMe ? "justify-end" : "justify-start"
-                                )}
-                            >
-                                <div className="flex gap-2 max-w-[65%]">
+                                            <div className={cn(
+                                                "px-3 py-2 rounded-xl text-sm",
+                                                msg.fromMe ? "bg-blue-500 text-white" : "bg-muted"
+                                            )}>
+                                                {msg.text}
+                                            </div>
 
-                                    {!msg.fromMe && (
-                                        <Avatar className="w-8 h-8">
-                                            <AvatarFallback>A</AvatarFallback>
-                                        </Avatar>
-                                    )}
-
-                                    <div className={cn(
-                                        "flex flex-col",
-                                        msg.fromMe && "items-end text-right"
-                                    )}>
-                                        <p className="text-xs font-medium mb-1">{msg.name}</p>
-
-                                        <div className={cn(
-                                            "px-3 py-2 rounded-xl text-sm",
-                                            msg.fromMe
-                                                ? "bg-blue-500 text-white"
-                                                : "bg-muted"
-                                        )}>
-                                            {msg.text}
+                                            <p className="text-[10px] text-muted-foreground mt-1">
+                                                {msg.time}
+                                            </p>
                                         </div>
 
-                                        <p className="text-[10px] text-muted-foreground mt-1">
-                                            {msg.time}
-                                        </p>
+                                        {msg.fromMe && (
+                                            <Avatar className="w-8 h-8">
+                                                <AvatarFallback>B</AvatarFallback>
+                                            </Avatar>
+                                        )}
                                     </div>
+                                </div>
+                            ))}
+                        </ScrollArea>
 
-                                    {msg.fromMe && (
-                                        <Avatar className="w-8 h-8">
-                                            <AvatarFallback>B</AvatarFallback>
-                                        </Avatar>
+                        {/* INPUT giữ nguyên */}
+                        <div className="border-t p-3 space-y-2">
+                            <div className="flex items-center gap-3 text-muted-foreground relative">
+                                <Gallery variant="Bold" size={22} onClick={handleSelectImage} />
+                                <DirectSend variant="Bold" size={22} onClick={handleSelectFile} />
+
+                                <div
+                                    onMouseEnter={() => {
+                                        if (toolTimeout) clearTimeout(toolTimeout)
+                                        setShowTools(true)
+                                    }}
+                                    onMouseLeave={() => {
+                                        const t = setTimeout(() => setShowTools(false), 200)
+                                        setToolTimeout(t)
+                                    }}
+                                    className="relative"
+                                >
+                                    <Element3 variant="Bold" size={22} />
+
+                                    {showTools && (
+                                        <div className="absolute bottom-6 left-0 bg-background border rounded-lg shadow p-2 w-36">
+                                            <div className="flex items-center gap-2 p-2 hover:bg-muted rounded cursor-pointer">
+                                                <LikeShapes variant="Bold" size={20} /> Bình chọn
+                                            </div>
+                                            <div className="flex items-center gap-2 p-2 hover:bg-muted rounded cursor-pointer">
+                                                <Clock variant="Bold" size={20} /> Nhắn hẹn
+                                            </div>
+                                        </div>
                                     )}
                                 </div>
                             </div>
-                        ))}
 
-                        {typing && (
-                            <div className="text-xs text-muted-foreground animate-pulse">
-                                Nguyễn Văn A đang nhập...
+                            <div className="flex items-end gap-2">
+                                <textarea
+                                    ref={textareaRef}
+                                    rows={1}
+                                    value={text}
+                                    onChange={handleInput}
+                                    onKeyDown={handleKeyDown}
+                                    placeholder="Tin nhắn..."
+                                    className="flex-1 border rounded-lg px-3 py-2 text-sm"
+                                />
+
+                                <button className="p-2 bg-blue-500 text-white rounded-lg">
+                                    <Send2 variant="Bold" size={20} />
+                                </button>
                             </div>
-                        )}
-                    </ScrollArea>
+                        </div>
+                    </div>
+                </div>
+            )}
 
-                    {/* INPUT */}
-                    <div className="border-t p-3 space-y-2">
+            {/* PANEL */}
+            {showInfo && (
+                <div className="fixed right-0 z-50 bg-background border-l w-full md:w-80 h-[calc(100dvh-130px)] md:h-[calc(100dvh-90px)] flex flex-col">
 
-                        <div className="flex items-center gap-3 text-muted-foreground relative">
-                            <Gallery size={22} variant="Bold" />
-                            <DirectSend size={22} variant="Bold" />
+                    <div className="h-14 border-b flex items-center justify-between px-4 shrink-0">
+                        <p className="font-semibold text-sm">Thông tin hội thoại</p>
+                        <button onClick={() => setShowInfo(false)}>
+                            <SidebarLeft variant="Bold" size={20} />
+                        </button>
+                    </div>
 
-                            <div
-                                onMouseEnter={() => {
-                                    if (toolTimeout) clearTimeout(toolTimeout)
-                                    setShowTools(true)
-                                }}
-                                onMouseLeave={() => {
-                                    const t = setTimeout(() => setShowTools(false), 200)
-                                    setToolTimeout(t)
-                                }}
-                                className="relative"
-                            >
-                                <Element3 variant="Bold" size={22} />
+                    <div className="flex-1 overflow-y-auto p-4 space-y-4">
 
-                                {showTools && (
-                                    <div className="absolute bottom-6 left-0 bg-background border rounded-lg shadow p-2 w-36">
-                                        <div className="flex items-center gap-2 p-2 hover:bg-muted rounded cursor-pointer">
-                                            <LikeShapes variant="Bold" size={20} /> Bình chọn
-                                        </div>
-                                        <div className="flex items-center gap-2 p-2 hover:bg-muted rounded cursor-pointer">
-                                            <Clock variant="Bold" size={20} /> Nhắn hẹn
-                                        </div>
-                                    </div>
-                                )}
+                        <div className="flex flex-col items-center gap-2">
+                            <Avatar className="w-20 h-20"><AvatarFallback>A</AvatarFallback></Avatar>
+                            <p className="font-medium">Nguyễn Văn A</p>
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-2 text-xs">
+                            <div className="p-2 rounded-xl hover:bg-muted flex flex-col items-center gap-1">
+                                <Notification variant="Bold" size={26} />
+                                <p className="text-center">Tắt thông báo</p>
+                            </div>
+                            <div className="p-2 rounded-xl hover:bg-muted flex flex-col items-center gap-1">
+                                <Paperclip2 variant="Bold" size={26} />
+                                <p className="text-center">Ghim</p>
+                            </div>
+                            <div className="p-2 rounded-xl hover:bg-muted flex flex-col items-center gap-1">
+                                <Element3 variant="Bold" size={26} />
+                                <p className="text-center">Tạo nhóm</p>
                             </div>
                         </div>
 
-                        <div className="flex items-end gap-2">
-                            <textarea
-                                ref={textareaRef}
-                                rows={1}
-                                value={text}
-                                onChange={handleInput}
-                                onKeyDown={handleKeyDown}
-                                placeholder="Tin nhắn..."
-                                className="no-scrollbar flex-1 resize-none border rounded-lg px-3 py-2 text-sm max-h-24 overflow-y-auto"
-                            />
+                        <div className="h-2 bg-muted -mx-4" />
 
-                            <button className="p-2 bg-blue-500 text-white rounded-lg">
-                                <Send2 size={20} variant="Bold" />
-                            </button>
+                        <div className="space-y-2 text-sm">
+                            <div className="p-2 rounded-xl hover:bg-muted flex items-center gap-3"><Clock variant="Bold" size={26} /><p>Nhắn hẹn</p></div>
+                            <div className="p-2 rounded-xl hover:bg-muted flex items-center gap-3"><LikeShapes variant="Bold" size={26} /><p>Bình chọn</p></div>
+                            <div className="p-2 rounded-xl hover:bg-muted flex items-center gap-3"><Gallery variant="Bold" size={26} /><p>Ảnh</p></div>
+                            <div className="p-2 rounded-xl hover:bg-muted flex items-center gap-3"><Link21 variant="Bold" size={26} /><p>Link</p></div>
+                            <div className="p-2 rounded-xl hover:bg-muted flex items-center gap-3"><DocumentText variant="Bold" size={26} /><p>File</p></div>
                         </div>
+
+                        <div className="h-2 bg-muted -mx-4" />
+
+                        <div className="space-y-2 text-sm">
+                            <div className="p-2 rounded-xl hover:bg-muted flex items-center gap-3"><Setting2 variant="Bold" size={26} /><p>Cài đặt chung</p></div>
+                            <div className="p-2 rounded-xl hover:bg-muted flex items-center gap-3"><People variant="Bold" size={26} /><p>Cài đặt cộng đồng</p></div>
+                        </div>
+
+                        <div className="h-2 bg-muted -mx-4" />
+
+                        <div className="space-y-2 text-sm">
+                            <div className="p-2 rounded-xl hover:bg-muted flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <EyeSlash variant="Bold" size={26} />
+                                    <p>Ẩn cuộc trò chuyện</p>
+                                </div>
+
+                                <div
+                                    onClick={() => setHideChat(!hideChat)}
+                                    className={cn(
+                                        "w-10 h-5 flex items-center rounded-full p-1 cursor-pointer transition",
+                                        hideChat ? "bg-blue-500" : "bg-muted"
+                                    )}
+                                >
+                                    <div
+                                        className={cn(
+                                            "w-4 h-4 bg-white rounded-full transition",
+                                            hideChat ? "translate-x-5" : "translate-x-0"
+                                        )}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="p-2 rounded-xl hover:bg-muted flex items-center gap-3 text-red-500"><Warning2 variant="Bold" size={26} /><p>Báo xấu</p></div>
+                            <div className="p-2 rounded-xl hover:bg-muted flex items-center gap-3 text-red-500"><UserRemove variant="Bold" size={26} /><p>Chặn</p></div>
+                            <div className="p-2 rounded-xl hover:bg-muted flex items-center gap-3 text-red-500"><Trash variant="Bold" size={26} /><p>Xoá lịch sử</p></div>
+                        </div>
+
                     </div>
                 </div>
             )}
