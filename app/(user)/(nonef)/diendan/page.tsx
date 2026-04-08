@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import Feed from "@/components/sections/feed";
+import Post from "@/components/sections/post";
+import ChatPage from "@/components/sections/chat";
 
 export default function Diendan() {
     const [currentTab, setCurrentTab] = useState<string>(() => {
@@ -47,8 +49,8 @@ export default function Diendan() {
             {/* Nội dung tab */}
             <div>
                 {currentTab === "khampha" && <Feed />}
-                {currentTab === "thongtin" && <div>Đây là nội dung Thông tin</div>}
-                {currentTab === "diendan" && <div>Đây là nội dung Diễn đàn</div>}
+                {currentTab === "thongtin" && <Post />}
+                {currentTab === "diendan" && <ChatPage />}
             </div>
         </div>
     );
