@@ -1,11 +1,12 @@
 "use client"
 
+import { Suspense } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import Feed from "@/components/sections/feed"
 import Post from "@/components/sections/post"
 import ChatPage from "@/components/sections/chat"
 
-export default function Diendan() {
+function DiendanContent() {
     const searchParams = useSearchParams()
     const router = useRouter()
 
@@ -47,5 +48,13 @@ export default function Diendan() {
                 {currentTab === "diendan" && <ChatPage />}
             </div>
         </div>
+    )
+}
+
+export default function Diendan() {
+    return (
+        <Suspense fallback={<div></div>}>
+            <DiendanContent />
+        </Suspense>
     )
 }
