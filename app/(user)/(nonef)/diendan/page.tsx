@@ -2,9 +2,9 @@
 
 import { Suspense } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
-import Feed from "@/components/sections/feed"
-import Post from "@/components/sections/post"
-import ChatPage from "@/components/sections/chat"
+import Feed from "@/components/sections/diendan/feed"
+import Post from "@/components/sections/diendan/post"
+import ChatPage from "@/components/sections/diendan/chat"
 
 function DiendanContent() {
     const searchParams = useSearchParams()

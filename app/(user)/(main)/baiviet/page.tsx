@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react"
 import Link from "next/link"
 import { Add } from "iconsax-react"
-import BlogCard from "@/components/sections/blog"
+import BlogCard from "@/components/sections/blog/blog"
 
 const blogPosts = [
     {
@@ -15,7 +15,7 @@ const blogPosts = [
         author: "Nguyễn Văn A",
         avatar: "/images/avatar.jpg",
         category: "Frontend",
-        link: "/blog/1"
+        link: "/baiviet/1"
     },
     {
         title: "Hướng dẫn React 2026: từ cơ bản đến nâng cao",
@@ -26,7 +26,7 @@ const blogPosts = [
         author: "Trần Thị B",
         avatar: "/images/avatar.jpg",
         category: "React",
-        link: "/blog/2"
+        link: "/baiviet/2"
     },
     {
         title: "Tối ưu hoá hiệu năng website bằng Next.js",
@@ -37,7 +37,7 @@ const blogPosts = [
         author: "Lê Văn C",
         avatar: "/images/avatar.jpg",
         category: "NextJS",
-        link: "/blog/3"
+        link: "/baiviet/3"
     },
     {
         title: "Lập trình backend với Node.js cho người mới",
@@ -48,7 +48,7 @@ const blogPosts = [
         author: "Phạm Thị D",
         avatar: "/images/avatar.jpg",
         category: "Backend",
-        link: "/blog/4"
+        link: "/baiviet/4"
     }
 ]
 
