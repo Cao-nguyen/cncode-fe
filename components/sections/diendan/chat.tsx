@@ -20,6 +20,7 @@ import {
     Warning2,
     UserRemove,
     Trash,
+    Back
 } from "iconsax-react"
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
@@ -58,7 +59,7 @@ export default function ChatPage() {
     const [toolTimeout, setToolTimeout] = useState<NodeJS.Timeout | null>(null)
 
     const [showInfo, setShowInfo] = useState(false)
-    const [hideChat, setHideChat] = useState(false) // ✅ NEW
+    const [hideChat, setHideChat] = useState(false)
 
     const imageInputRef = useRef<HTMLInputElement>(null)
     const fileInputRef = useRef<HTMLInputElement>(null)
@@ -105,10 +106,14 @@ export default function ChatPage() {
             <input type="file" ref={fileInputRef} className="hidden" multiple />
 
             {/* SIDEBAR */}
-            <div className={cn(
-                "w-full md:w-80 border-r flex flex-col",
-                view === "chat" && "hidden md:flex"
-            )}>
+            <div
+                className={cn(
+                    "flex flex-col border-r",
+                    // Mobile: nếu đang chat thì ẩn sidebar, desktop luôn show
+                    view === "chat" ? "hidden md:flex md:w-80" : "w-full md:w-80"
+                )}
+            >
+                {/* Sidebar content giữ nguyên */}
                 <div className="p-[9.6px] border-b">
                     <div className="flex items-center gap-2 bg-muted px-3 py-2 rounded-xl">
                         <SearchNormal1 variant="Outline" size={20} />
@@ -142,22 +147,21 @@ export default function ChatPage() {
                 </ScrollArea>
             </div>
 
-            {!activeChat && (
-                <div className="hidden md:flex flex-1 items-center justify-center text-muted-foreground">
-                    <p className="text-sm">Chọn đoạn chat để trò chuyện</p>
-                </div>
-            )}
-
+            {/* CHAT VIEW */}
             {activeChat && (
-                <div className="flex-1 flex">
-
+                <div
+                    className={cn(
+                        "flex-1 flex flex-col",
+                        view === "list" ? "hidden md:flex" : "w-full md:flex-1"
+                    )}
+                >
                     <div className="flex-1 flex flex-col">
 
                         {/* HEADER */}
                         <div className="h-14 border-b flex items-center justify-between px-4">
                             <div className="flex items-center gap-3">
                                 <button className="md:hidden" onClick={() => setView("list")}>
-                                    <SidebarLeft variant="Bold" size={20} />
+                                    <Back variant="Bold" size={20} />
                                 </button>
 
                                 <Avatar>
@@ -218,7 +222,7 @@ export default function ChatPage() {
                             ))}
                         </ScrollArea>
 
-                        {/* INPUT giữ nguyên */}
+                        {/* INPUT */}
                         <div className="border-t p-3 space-y-2">
                             <div className="flex items-center gap-3 text-muted-foreground relative">
                                 <Gallery variant="Bold" size={22} onClick={handleSelectImage} />
@@ -273,7 +277,7 @@ export default function ChatPage() {
             {/* PANEL */}
             {showInfo && (
                 <div className="fixed right-0 z-50 bg-background border-l w-full md:w-80 h-[calc(100dvh-130px)] md:h-[calc(100dvh-90px)] flex flex-col">
-
+                    {/* Panel content giữ nguyên y hệt code gốc */}
                     <div className="h-14 border-b flex items-center justify-between px-4 shrink-0">
                         <p className="font-semibold text-sm">Thông tin hội thoại</p>
                         <button onClick={() => setShowInfo(false)}>
@@ -282,7 +286,6 @@ export default function ChatPage() {
                     </div>
 
                     <div className="flex-1 overflow-y-auto p-4 space-y-4">
-
                         <div className="flex flex-col items-center gap-2">
                             <Avatar className="w-20 h-20"><AvatarFallback>A</AvatarFallback></Avatar>
                             <p className="font-medium">Nguyễn Văn A</p>
@@ -349,7 +352,6 @@ export default function ChatPage() {
                             <div className="p-2 rounded-xl hover:bg-muted flex items-center gap-3 text-red-500"><UserRemove variant="Bold" size={26} /><p>Chặn</p></div>
                             <div className="p-2 rounded-xl hover:bg-muted flex items-center gap-3 text-red-500"><Trash variant="Bold" size={26} /><p>Xoá lịch sử</p></div>
                         </div>
-
                     </div>
                 </div>
             )}
