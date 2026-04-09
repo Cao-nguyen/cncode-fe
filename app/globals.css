@@ -7,6 +7,12 @@ body {
   overscroll-behavior: none;
 }
 
+.no-download {
+  user-select: none;
+  -webkit-user-drag: none;
+  -webkit-touch-callout: none;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
