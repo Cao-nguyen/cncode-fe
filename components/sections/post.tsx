@@ -2,14 +2,23 @@
 
 import { useState, useRef } from "react"
 import Image from "next/image"
-import { More, Like1 } from "iconsax-react"
+import { More, Like1, MessageText1, Send2 } from "iconsax-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent } from "@/components/ui/dialog"
 
-// ===== Reactions =====
-const reactions = ["👍", "❤️", "🥰", "😂", "😮", "😢", "😡"] as const
-type Reaction = (typeof reactions)[number] | null
+// ===== Reaction =====
+const reactions = [
+    { key: "like", icon: "/icons/like.svg" },
+    { key: "love", icon: "/icons/love.svg" },
+    { key: "care", icon: "/icons/care.svg" },
+    { key: "haha", icon: "/icons/haha.svg" },
+    { key: "wow", icon: "/icons/wow.svg" },
+    { key: "sad", icon: "/icons/sad.svg" },
+    { key: "angry", icon: "/icons/angry.svg" },
+] as const
+
+type ReactionKey = (typeof reactions)[number]["key"] | null
 
 // ===== Types =====
 type Post = {
@@ -32,7 +41,7 @@ const posts: Post[] = [
         avatar: "/images/avatar.png",
         time: "2 giờ trước",
         content:
-            "Hôm nay mình build được feature social cho CNcode 😎🔥, sắp launch rồi...",
+            "Hôm nay mình build được feature social cho CNcode 😎🔥... Nội dung dài test để vượt quá 2 dòng xem có hoạt động không...",
         image: "/images/post1.jpg",
         likes: 120,
         comments: 20,
@@ -43,23 +52,10 @@ const posts: Post[] = [
         user: "Trần Dev",
         avatar: "/images/avatar.png",
         time: "5 giờ trước",
-        content:
-            "Tip: Khi dùng React, luôn tách component nhỏ để dễ maintain...",
+        content: "Tip: Khi dùng React, luôn tách component nhỏ...",
         likes: 80,
         comments: 10,
         shares: 2,
-    },
-    {
-        id: 3,
-        user: "UI Designer",
-        avatar: "/images/avatar.png",
-        time: "1 ngày trước",
-        content:
-            "UI đẹp chưa đủ, UX mới giữ user lại lâu dài 🚀",
-        image: "/images/post2.jpg",
-        likes: 200,
-        comments: 50,
-        shares: 12,
     },
 ]
 
@@ -67,36 +63,18 @@ const posts: Post[] = [
 export default function PostFeed() {
     const [open, setOpen] = useState(false)
     const [hoveredPost, setHoveredPost] = useState<number | null>(null)
-    const [reaction, setReaction] = useState<Record<number, Reaction>>({})
+    const [reaction, setReaction] = useState<Record<number, ReactionKey>>({})
+    const [expanded, setExpanded] = useState<Record<number, boolean>>({})
 
     const openTimeout = useRef<NodeJS.Timeout | null>(null)
-    const closeTimeout = useRef<NodeJS.Timeout | null>(null)
-
-    // ===== Hover Logic =====
-    const handleHover = (id: number) => {
-        if (closeTimeout.current) clearTimeout(closeTimeout.current)
-
-        openTimeout.current = setTimeout(() => {
-            setHoveredPost(id)
-        }, 200)
-    }
-
-    const leaveHover = () => {
-        if (openTimeout.current) clearTimeout(openTimeout.current)
-
-        closeTimeout.current = setTimeout(() => {
-            setHoveredPost(null)
-        }, 250)
-    }
 
     return (
         <div className="h-[calc(100dvh-110px)] lg:h-[calc(100dvh-90px)] overflow-y-auto px-2 sm:px-4 flex justify-center bg-zinc-100 dark:bg-zinc-950">
 
-            {/* Wrapper */}
-            <div className="w-full max-w-xl lg:max-w-2xl space-y-4 py-4 pb-20">
+            <div className="w-full max-w-xl lg:max-w-2xl space-y-4 pt-[20px] pb-[40px]">
 
                 {/* Create Post */}
-                <div className="bg-white dark:bg-zinc-900/80 backdrop-blur border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 shadow-sm">
+                <div className="bg-white dark:bg-zinc-900 border rounded-2xl p-4 shadow-sm">
                     <div className="flex gap-3 items-center">
                         <Avatar>
                             <AvatarImage src="/images/avatar.png" />
@@ -105,7 +83,7 @@ export default function PostFeed() {
 
                         <div
                             onClick={() => setOpen(true)}
-                            className="flex-1 bg-zinc-100 dark:bg-zinc-800/70 px-4 py-2 rounded-full cursor-pointer hover:bg-zinc-200 dark:hover:bg-zinc-700 transition"
+                            className="flex-1 bg-zinc-100 dark:bg-zinc-800 px-4 py-2 rounded-full cursor-pointer"
                         >
                             Hôm nay bạn thế nào?
                         </div>
@@ -114,134 +92,168 @@ export default function PostFeed() {
 
                 {/* Modal */}
                 <Dialog open={open} onOpenChange={setOpen}>
-                    <DialogContent className="rounded-2xl">
-                        <div className="text-lg font-semibold">
-                            Tạo bài viết
-                        </div>
-
-                        <textarea
-                            className="w-full mt-3 p-3 border border-zinc-200 dark:border-zinc-700 rounded-lg outline-none bg-white dark:bg-zinc-900"
-                            placeholder="Bạn đang nghĩ gì?"
-                        />
-
-                        <Button className="mt-3 w-full">
-                            Đăng
-                        </Button>
+                    <DialogContent>
+                        <textarea className="w-full p-3 border rounded-lg" />
+                        <Button className="mt-3 w-full">Đăng</Button>
                     </DialogContent>
                 </Dialog>
 
                 {/* Posts */}
-                {posts.map((post) => (
-                    <div
-                        key={post.id}
-                        className="bg-white dark:bg-zinc-900/80 backdrop-blur border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 shadow-sm space-y-3 overflow-visible"
-                    >
-                        {/* Header */}
-                        <div className="flex justify-between items-center">
-                            <div className="flex gap-3 items-center">
-                                <Avatar>
-                                    <AvatarImage src={post.avatar} />
-                                    <AvatarFallback>N</AvatarFallback>
-                                </Avatar>
+                {posts.map((post) => {
+                    const isExpanded = expanded[post.id]
 
-                                <div>
-                                    <div className="font-semibold">
-                                        {post.user}
-                                    </div>
-                                    <div className="text-xs text-zinc-500">
-                                        {post.time}
+                    return (
+                        <div
+                            key={post.id}
+                            className="bg-white dark:bg-zinc-900 border rounded-2xl p-4 shadow-sm space-y-3 overflow-visible"
+                        >
+
+                            {/* Header */}
+                            <div className="flex justify-between">
+                                <div className="flex gap-3">
+                                    <Avatar>
+                                        <AvatarImage src={post.avatar} />
+                                        <AvatarFallback>N</AvatarFallback>
+                                    </Avatar>
+
+                                    <div>
+                                        <div className="font-semibold">{post.user}</div>
+                                        <div className="text-xs text-zinc-500">{post.time}</div>
                                     </div>
                                 </div>
+
+                                <More size={22} variant="Outline" />
                             </div>
 
-                            <More size={25} />
-                        </div>
+                            {/* Content */}
+                            <div className="text-sm">
+                                <div className={`${!isExpanded ? "line-clamp-2" : ""}`}>
+                                    {post.content}
+                                </div>
 
-                        {/* Content */}
-                        <div className="text-sm leading-relaxed">
-                            {post.content}
-                            <span className="text-blue-500 cursor-pointer ml-1">
-                                xem thêm
-                            </span>
-                        </div>
-
-                        {/* Image */}
-                        {post.image && (
-                            <div className="relative w-full h-60 rounded-xl overflow-hidden">
-                                <Image
-                                    src={post.image}
-                                    alt=""
-                                    fill
-                                    className="object-cover"
-                                />
-                            </div>
-                        )}
-
-                        {/* Stats */}
-                        <div className="text-xs text-zinc-500 flex justify-between">
-                            <span>{post.likes} lượt thích</span>
-                            <span>
-                                {post.comments} bình luận · {post.shares} chia sẻ
-                            </span>
-                        </div>
-
-                        {/* Actions */}
-                        <div className="flex justify-around border-t border-zinc-200 dark:border-zinc-800 pt-2 text-sm">
-
-                            {/* Like */}
-                            <div
-                                className="relative w-fit"
-                                onMouseEnter={() => handleHover(post.id)}
-                                onMouseLeave={leaveHover}
-                            >
-                                <button className="flex items-center gap-1 hover:text-blue-500 transition">
-                                    <Like1 size={18} />
-                                    {reaction[post.id] || "Like"}
-                                </button>
-
-                                {/* Reaction Box */}
-                                {hoveredPost === post.id && (
-                                    <div
-                                        className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 shadow-xl rounded-full px-2 py-1 flex gap-2 animate-in fade-in zoom-in-95 transform-gpu will-change-transform"
-                                        onMouseEnter={() => {
-                                            if (closeTimeout.current) clearTimeout(closeTimeout.current)
-                                        }}
-                                        onMouseLeave={() => {
-                                            closeTimeout.current = setTimeout(() => {
-                                                setHoveredPost(null)
-                                            }, 200)
-                                        }}
+                                {post.content.length > 80 && (
+                                    <span
+                                        onClick={() =>
+                                            setExpanded((prev) => ({
+                                                ...prev,
+                                                [post.id]: !prev[post.id],
+                                            }))
+                                        }
+                                        className="text-blue-500 cursor-pointer"
                                     >
-                                        {reactions.map((r) => (
-                                            <span
-                                                key={r}
-                                                className="text-xl cursor-pointer hover:scale-125 active:scale-110 transition"
-                                                onClick={() =>
-                                                    setReaction((prev) => ({
-                                                        ...prev,
-                                                        [post.id]: r,
-                                                    }))
-                                                }
-                                            >
-                                                {r}
-                                            </span>
-                                        ))}
-                                    </div>
+                                        {isExpanded ? "Thu gọn" : "xem thêm"}
+                                    </span>
                                 )}
                             </div>
 
-                            {/* Comment */}
-                            <button className="hover:text-blue-500 transition">
-                                💬 {post.comments}
-                            </button>
+                            {/* Image */}
+                            {post.image && (
+                                <div className="relative w-full h-60 rounded-xl overflow-hidden">
+                                    <Image src={post.image} alt="" fill className="object-cover" />
+                                </div>
+                            )}
 
-                            {/* Share */}
-                            <button className="hover:text-blue-500 transition">
-                                ↗️ {post.shares}
-                            </button>
+                            {/* Stats */}
+                            <div className="text-xs text-zinc-500 flex justify-between">
+                                <span>{post.likes} lượt thích</span>
+                                <span>{post.comments} bình luận · {post.shares} chia sẻ</span>
+                            </div>
+
+                            {/* Actions */}
+                            <div className="flex justify-around border-t pt-2">
+
+                                {/* LIKE */}
+                                <div
+                                    className="relative"
+                                    onMouseEnter={() => setHoveredPost(post.id)}
+                                    onMouseLeave={() => setHoveredPost(null)}
+                                    onTouchStart={() => {
+                                        openTimeout.current = setTimeout(() => {
+                                            setHoveredPost(post.id)
+                                        }, 300)
+                                    }}
+                                    onTouchEnd={() => {
+                                        if (openTimeout.current) clearTimeout(openTimeout.current)
+                                    }}
+                                >
+                                    <button className="flex items-center gap-2">
+                                        <Like1 size={22} variant="Bold" />
+                                        Like
+                                    </button>
+
+                                    {hoveredPost === post.id && (
+                                        <div
+                                            className="
+                                                absolute 
+                                                bottom-[120%]
+                                                left-1/2 -translate-x-1/2
+                                                bg-white dark:bg-zinc-900
+                                                border rounded-full
+                                                px-3 py-2
+                                                flex gap-2
+                                                shadow-xl z-[999]
+                                            "
+                                            onTouchMove={(e) => {
+                                                const touch = e.touches[0]
+                                                const el = document.elementFromPoint(
+                                                    touch.clientX,
+                                                    touch.clientY
+                                                ) as HTMLElement
+
+                                                if (el?.dataset?.key) {
+                                                    setReaction((prev) => ({
+                                                        ...prev,
+                                                        [post.id]: el.dataset.key as ReactionKey,
+                                                    }))
+                                                }
+                                            }}
+                                            onTouchEnd={() => setHoveredPost(null)}
+                                        >
+                                            {reactions.map((r) => {
+                                                const active = reaction[post.id] === r.key
+
+                                                return (
+                                                    <Image
+                                                        width={100}
+                                                        height={100}
+                                                        alt=""
+                                                        key={r.key}
+                                                        data-key={r.key}
+                                                        src={r.icon}
+                                                        className={`
+                                                            w-8 h-8 object-contain
+                                                            transition-all duration-150
+                                                            ${active
+                                                                ? "scale-150 -translate-y-3"
+                                                                : "hover:scale-125"}
+                                                        `}
+                                                    />
+                                                )
+                                            })}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Comment */}
+                                <button className="flex items-center gap-2">
+                                    <MessageText1 size={22} variant="Bold" />
+                                    {post.comments}
+                                </button>
+
+                                {/* Share */}
+                                <button className="flex items-center gap-2">
+                                    <Send2 size={22} variant="Bold" />
+                                    {post.shares}
+                                </button>
+                            </div>
                         </div>
-                    </div>
-                ))}
+                    )
+                })}
+
+                {/* End */}
+                <div className="text-center text-sm text-zinc-500 pt-4 pb-10">
+                    Không còn bài đăng nào khác
+                </div>
             </div>
         </div>
     )

@@ -30,15 +30,22 @@ export default function Feed() {
     const [showIconIndex, setShowIconIndex] = useState<number | null>(null)
     const [isPlaying, setIsPlaying] = useState(true)
 
+    const [isMobile, setIsMobile] = useState(false)
+
+    useEffect(() => {
+        const check = () => setIsMobile(window.innerWidth < 768)
+        check()
+        window.addEventListener("resize", check)
+        return () => window.removeEventListener("resize", check)
+    }, [])
+
     const touchStartY = useRef(0)
     const isScrolling = useRef(false)
 
-    // 🎯 Auto play video active
     useEffect(() => {
         iframeRefs.current.forEach((iframe, index) => {
             if (!iframe) return
 
-            // Pause tất cả video khác
             iframe.contentWindow?.postMessage(
                 JSON.stringify({
                     event: "command",
@@ -48,7 +55,6 @@ export default function Feed() {
                 "*"
             )
 
-            // Reset thời gian video active về 0
             if (index === currentIndex) {
                 iframe.contentWindow?.postMessage(
                     JSON.stringify({
@@ -60,7 +66,6 @@ export default function Feed() {
                 )
             }
 
-            // Nếu user đã tương tác bật âm thanh → unMute tất cả
             if (hasInteracted) {
                 iframe.contentWindow?.postMessage(
                     JSON.stringify({ event: "command", func: "unMute", args: [] }),
@@ -70,7 +75,6 @@ export default function Feed() {
         })
     }, [currentIndex, hasInteracted])
 
-    // ✋ Touch swipe
     const handleTouchStart = (e: React.TouchEvent) => {
         touchStartY.current = e.touches[0].clientY
     }
@@ -95,12 +99,10 @@ export default function Feed() {
         setTimeout(() => (isScrolling.current = false), 400)
     }
 
-    // 🎯 Play/Pause video active + lần đầu bật âm thanh
     const toggleVideo = (index: number) => {
         const iframe = iframeRefs.current[index]
         if (!iframe) return
 
-        // lần đầu user click → bật âm thanh video active và tất cả video khác
         if (!hasInteracted) {
             setHasInteracted(true)
             setIsMuted(false)
@@ -120,11 +122,9 @@ export default function Feed() {
         setTimeout(() => setShowIconIndex(null), 500)
     }
 
-    // 🔊 Toggle mute
     const toggleMute = (e: React.MouseEvent) => {
         e.stopPropagation()
 
-        // lần đầu click → bật âm thanh tất cả video
         if (!hasInteracted) {
             setHasInteracted(true)
             setIsMuted(false)
@@ -155,7 +155,7 @@ export default function Feed() {
             onTouchStart={handleTouchStart}
             onTouchEnd={handleTouchEnd}
             onWheel={handleWheel}
-            className="w-full h-[calc(100dvh-110px)] lg:h-[calc(100dvh-90px)] overflow-hidden bg-black touch-none"
+            className="w-full h-[calc(100dvh-110px)] lg:h-[calc(100dvh-90px)] overflow-hidden bg-white dark:bg-black touch-none"
         >
             <div
                 className="w-full h-full transition-transform duration-300"
@@ -169,21 +169,30 @@ export default function Feed() {
                                     if (el) iframeRefs.current[index] = el
                                 }}
                                 className="absolute top-1/2 left-1/2 w-screen h-screen -translate-x-1/2 -translate-y-1/2 pointer-events-none object-cover"
-                                style={{ minWidth: "100%", minHeight: "100%" }}
+                                style={
+                                    isMobile
+                                        ? {
+                                            minWidth: "100%",
+                                            minHeight: "100%",
+                                        }
+                                        : {
+                                            width: "100%",
+                                            height: "100%",
+                                            objectFit: "contain"
+                                        }
+                                }
                                 src={`https://www.youtube.com/embed/${id}?enablejsapi=1&autoplay=1&mute=1&controls=0&modestbranding=1&rel=0&playsinline=1&loop=1&playlist=${id}`}
                                 allow="autoplay"
                             />
 
                             <div className="absolute inset-0 z-10" onClick={() => toggleVideo(index)} />
 
-                            {/* 🔊 Sound */}
                             <div className="absolute top-3 right-3 z-20">
                                 <button onClick={toggleMute} className="bg-black/50 p-2 rounded-full text-white">
                                     {isMuted ? <VolumeMute size="20" /> : <VolumeHigh size="20" />}
                                 </button>
                             </div>
 
-                            {/* Sidebar */}
                             <div className="absolute right-3 bottom-9 md:right-3 md:bottom-3 flex flex-col items-center gap-4 text-white filter drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
                                 <div className="relative">
                                     <Image
@@ -221,7 +230,6 @@ export default function Feed() {
                             </div>
                         </div>
 
-                        {/* Icon Play/Pause */}
                         {showIconIndex === index && (
                             <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-30">
                                 <div className="bg-black/50 text-white p-4 rounded-full">

@@ -1,25 +1,19 @@
 "use client"
 
-import { useState } from "react";
-import Feed from "@/components/sections/feed";
-import Post from "@/components/sections/post";
-import ChatPage from "@/components/sections/chat";
+import { useSearchParams, useRouter } from "next/navigation"
+import Feed from "@/components/sections/feed"
+import Post from "@/components/sections/post"
+import ChatPage from "@/components/sections/chat"
 
 export default function Diendan() {
-    const [currentTab, setCurrentTab] = useState<string>(() => {
-        if (typeof window !== "undefined") {
-            const params = new URLSearchParams(window.location.search);
-            return params.get("tab") || "khampha";
-        }
-        return "khampha";
-    });
+    const searchParams = useSearchParams()
+    const router = useRouter()
+
+    const currentTab = searchParams.get("tab") || "khampha"
 
     const handleTabClick = (tab: string) => {
-        setCurrentTab(tab);
-        const url = new URL(window.location.href);
-        url.searchParams.set("tab", tab);
-        window.history.pushState({}, "", url.toString());
-    };
+        router.push(`/diendan?tab=${tab}`)
+    }
 
     return (
         <div className="pt-0 lg:pt-15">
@@ -33,10 +27,11 @@ export default function Diendan() {
                         <button
                             key={tab.key}
                             className={`px-3 py-1 text-sm font-medium
-                ${currentTab === tab.key
+                            ${currentTab === tab.key
                                     ? "border-b-2 border-blue-500 text-blue-500"
-                                    : "text-gray-700 dark:text-gray-300"}
-                transition-colors duration-200`}
+                                    : "text-gray-700 dark:text-gray-300"
+                                }
+                            transition-colors duration-200`}
                             onClick={() => handleTabClick(tab.key)}
                         >
                             {tab.label}
@@ -45,12 +40,12 @@ export default function Diendan() {
                 </div>
             </header>
 
-            {/* Nội dung tab */}
+            {/* Nội dung */}
             <div>
                 {currentTab === "khampha" && <Feed />}
                 {currentTab === "thongtin" && <Post />}
                 {currentTab === "diendan" && <ChatPage />}
             </div>
         </div>
-    );
+    )
 }
