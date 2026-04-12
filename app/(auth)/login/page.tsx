@@ -1,3 +1,5 @@
+"use client";
+
 import Image from "next/image"
 import Link from "next/link"
 
@@ -29,6 +31,7 @@ export default function Login() {
 
                         {/* Google */}
                         <button
+                            onClick={() => { window.location.href = "http://localhost:5000/api/auth/google"; }}
                             className="w-full flex items-center justify-center gap-3 rounded-xl bg-white text-black py-4 text-sm font-medium hover:bg-gray-100 transition"
                         >
                             <Image
