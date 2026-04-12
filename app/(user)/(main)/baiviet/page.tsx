@@ -94,7 +94,7 @@ export default function BlogPage() {
                         />
 
                         <Link
-                            href="/blog/create"
+                            href="/baiviet/create"
                             className="flex items-center gap-2 rounded-3xl bg-black dark:bg-white px-3 py-2 text-sm text-white dark:text-black shadow hover:opacity-90 transition"
                         >
                             <Add variant="Outline" size={28} />
