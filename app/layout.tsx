@@ -3,10 +3,12 @@ import AppThemeProvider from "@/providers/theme.provider";
 import AOSProvider from "@/providers/aos.provider";
 import ReduxProvider from "@/providers/redux.provider";
 import SocketProvider from "@/providers/socket.provider";
+import { GoogleOAuthProvider } from "@react-oauth/google";
 import { Inter } from "next/font/google";
 import type { Metadata } from "next";
-import "aos/dist/aos.css"
+import "aos/dist/aos.css";
 import "./globals.css";
+import AuthProvider from "@/providers/auth.provider";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -19,25 +21,6 @@ export const metadata: Metadata = {
     template: "CNcode | %s",
   },
   description: "CNcode - Nền tảng học công nghệ và sáng tạo",
-  keywords: ["CNcode", "lập trình", "học code", "đổi mới sáng tạo"],
-  authors: [{ name: "Lý Cao Nguyên" }],
-  openGraph: {
-    title: "CNcode",
-    description: "CNcode - Nền tảng học công nghệ và sáng tạo",
-    url: "https://cncode.io.vn",
-    siteName: "CNcode",
-    images: [
-      {
-        url: "/images/logo.png",
-        width: 1200,
-        height: 630,
-      },
-    ],
-    type: "website",
-  },
-  icons: {
-    icon: "/images/logo.png",
-  },
 };
 
 export default function RootLayout({
@@ -53,7 +36,11 @@ export default function RootLayout({
             <SocketProvider>
               <ToasterProvider>
                 <AOSProvider>
-                  {children}
+                  <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!}>
+                    <AuthProvider>
+                      {children}
+                    </AuthProvider>
+                  </GoogleOAuthProvider>
                 </AOSProvider>
               </ToasterProvider>
             </SocketProvider>
