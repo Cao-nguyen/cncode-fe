@@ -2,12 +2,11 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useSelector } from "react-redux";
-import { selectToken, selectUser } from "@/store/userSlice";
+import { useDispatch, useSelector } from "react-redux"; // Thêm useDispatch
+import { selectToken, selectUser, updateUserStats } from "@/store/userSlice"; // Thêm updateUserStats
 import { Exercise, Question, UserAnswer } from "@/types/exercise";
 import { toast } from "sonner";
 import Link from "next/link";
-// Iconsax
 import {
     ArrowLeft, Clock, Danger, TickCircle, Element4, Card,
     Hashtag, DocumentText, Code, Eye, EyeSlash
@@ -26,6 +25,7 @@ const typeIcons: Record<string, React.ReactNode> = {
 export default function LamBaiPage() {
     const { id } = useParams<{ id: string }>();
     const router = useRouter();
+    const dispatch = useDispatch(); // Thêm dispatch
     const token = useSelector(selectToken);
     const user = useSelector(selectUser);
     const [exercise, setExercise] = useState<Exercise | null>(null);
@@ -60,7 +60,6 @@ export default function LamBaiPage() {
         }
     };
 
-    // Timer
     useEffect(() => {
         if (!timeLeft || timeLeft <= 0) return;
         const timer = setInterval(() => {
@@ -83,7 +82,6 @@ export default function LamBaiPage() {
     const handleSubmit = async () => {
         if (submitting) return;
 
-        // Kiểm tra đã trả lời hết chưa
         const unanswered = exercise?.questions.filter((_, i) => !answers[i]);
         if (unanswered && unanswered.length > 0) {
             if (!confirm(`Bạn còn ${unanswered.length} câu chưa trả lời. Vẫn nộp bài?`)) {
@@ -112,7 +110,11 @@ export default function LamBaiPage() {
             const data = await res.json();
             if (!res.ok) throw new Error(data.message);
 
-            // Lưu kết quả vào sessionStorage
+            // CẬP NHẬT SỐ XU SAU KHI NỘP BÀI (quan trọng!)
+            if (data.currentCoins !== undefined) {
+                dispatch(updateUserStats({ cncoins: data.currentCoins }));
+            }
+
             sessionStorage.setItem(`result_${id}`, JSON.stringify(data));
             toast.success("Nộp bài thành công!", { id: toastId });
             router.push(`/luyentap/${id}/ketqua`);
@@ -179,7 +181,7 @@ export default function LamBaiPage() {
     );
 }
 
-// Question Card Component
+// Question Card Component (giữ nguyên)
 function QuestionCard({
     question,
     index,
