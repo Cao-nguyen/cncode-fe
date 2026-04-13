@@ -1,68 +1,6 @@
 export type Subject = "programming" | "ai" | "office" | "highschool" | "other";
 export type Difficulty = "easy" | "medium" | "hard";
 
-export interface MultipleChoice {
-    options: string[];
-    correctIndex: number;
-}
-
-export interface MultiSelect {
-    options: string[];
-    correctIndexes: number[];
-}
-
-export interface ShortAnswer {
-    correctAnswer: string;
-    hint?: string;
-}
-
-export interface Essay {
-    keywords?: string[];
-    sampleAnswer?: string;
-}
-
-export interface CodeQuestion {
-    starterCode?: string;
-    testCases?: Array<{
-        input: string;
-        expectedOutput: string;
-        isHidden?: boolean;
-    }>;
-}
-
-export interface Question {
-    _id: string;
-    content: string;
-    type: "multiple_choice" | "multi_select" | "short_answer" | "essay" | "code";
-    points: number;
-    multipleChoice?: MultipleChoice;
-    multiSelect?: MultiSelect;
-    shortAnswer?: ShortAnswer;
-    essay?: Essay;
-    code?: CodeQuestion;
-    correctAnswer?: string | number | number[];
-    explanation?: string;
-}
-
-export interface UserAnswer {
-    type: string;
-    selectedIndex?: number;
-    selectedIndexes?: number[];
-    textAnswer?: string;
-    code?: string;
-}
-
-export interface GradedAnswer {
-    questionIndex: number;
-    selectedIndex: number | null;
-    selectedIndexes: number[];
-    textAnswer: string | null;
-    code: string | null;
-    isCorrect: boolean;
-    pointsEarned: number;
-    testResults?: string[];
-}
-
 export interface Exercise {
     _id: string;
     title: string;
@@ -74,14 +12,62 @@ export interface Exercise {
     isSpinnable: boolean;
     thumbnail?: string;
     tags?: string[];
-    questions: Question[];
+    questions?: unknown[];
     timeLimit?: number;
     totalAttempts: number;
     averageScore: number;
-    author?: {
-        _id: string;
-        name: string;
-        avatar: string;
-        username: string;
-    };
+}
+
+export interface Pagination {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+}
+
+export interface ExercisesResponse {
+    exercises: Exercise[];
+    pagination: Pagination;
+}
+
+export interface FilterOptions {
+    search: string;
+    subject: Subject | "";
+    difficulty: Difficulty | "";
+    isFree: boolean | null;
+}
+
+export interface SubmitResult {
+    submissionId: string;
+    totalScore: number;
+    maxScore: number;
+    percentage: number;
+    timeTaken: number;
+    isSpinnable: boolean;
+    spinReward: number;
+    currentCoins: number;
+}
+
+export interface Question {
+    _id: string;
+    content: string;
+    type: "multiple_choice" | "multi_select" | "short_answer" | "essay" | "code";
+    points: number;
+    multipleChoice?: { options: string[] };
+    multiSelect?: { options: string[] };
+    shortAnswer?: { hint?: string };
+    code?: { starterCode?: string };
+    correctAnswer?: string | number | number[];
+    explanation?: string;
+}
+
+export interface GradedAnswer {
+    questionIndex: number;
+    selectedIndex: number | null;
+    selectedIndexes: number[];
+    textAnswer: string | null;
+    code: string | null;
+    isCorrect: boolean;
+    pointsEarned: number;
+    testResults?: string[];
 }

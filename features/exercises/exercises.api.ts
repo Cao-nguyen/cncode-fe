@@ -23,6 +23,6 @@ export const exercisesApi = {
 
         const res = await fetch(`${API}/api/exercises?${urlParams}`);
         const data = await res.json();
-        return data;
+        return data as ExercisesResponse;
     },
 };
