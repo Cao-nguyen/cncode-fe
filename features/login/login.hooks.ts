@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setUser, selectUser, selectIsLoaded } from "@/store/userSlice";
@@ -11,41 +11,43 @@ export const useLogin = () => {
     const dispatch = useAppDispatch();
     const user = useAppSelector(selectUser);
     const isLoaded = useAppSelector(selectIsLoaded);
+    const [checking, setChecking] = useState(true);
+
+    const redirectBasedOnProfile = useCallback((userData: { isProfileCompleted: boolean }) => {
+        if (!userData.isProfileCompleted) {
+            router.replace("/onboarding");
+        } else {
+            router.replace("/");
+        }
+    }, [router]);
 
     useEffect(() => {
-        // Nếu đã có user từ localStorage (hydrate từ Redux)
         if (user && isLoaded) {
-            if (!user.isProfileCompleted) {
-                router.replace("/onboarding");
-            } else {
-                router.replace("/");
-            }
+            redirectBasedOnProfile(user);
             return;
         }
 
-        // Nếu chưa có user nhưng có token trong localStorage
         const checkAuth = async () => {
             const token = localStorage.getItem("token");
 
-            if (!token) return;
+            if (!token) {
+                setChecking(false);
+                return;
+            }
 
             try {
                 const userData = await loginApi.checkAuth(token);
                 dispatch(setUser({ user: userData, token }));
-
-                if (!userData.isProfileCompleted) {
-                    router.replace("/onboarding");
-                } else {
-                    router.replace("/");
-                }
+                redirectBasedOnProfile(userData);
             } catch {
                 localStorage.removeItem("token");
                 localStorage.removeItem("user_safe");
+                setChecking(false);
             }
         };
 
         checkAuth();
-    }, [user, isLoaded, router, dispatch]);
+    }, [user, isLoaded, router, dispatch, redirectBasedOnProfile]);
 
     const handleGoogleSuccess = async (credentialResponse: CredentialResponse) => {
         try {
@@ -72,5 +74,5 @@ export const useLogin = () => {
         toast.error("Đăng nhập Google thất bại");
     };
 
-    return { handleGoogleSuccess, handleGoogleError };
+    return { checking, handleGoogleSuccess, handleGoogleError };
 };
