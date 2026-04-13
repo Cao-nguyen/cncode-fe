@@ -5,8 +5,22 @@ import { useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
 import { selectUser, selectToken } from "@/store/userSlice";
 import { toast } from "sonner";
-import { ImportQuestions, ImportedQuestion } from "@/components/sections/exercise/ImportQuestions";
+import dynamic from "next/dynamic";
 import { Add, Trash, DirectRight } from "iconsax-react";
+import type { ImportedQuestion } from "@/components/sections/exercise/ImportQuestions";
+
+const ImportQuestions = dynamic(
+    () => import("@/components/sections/exercise/ImportQuestions").then(mod => mod.ImportQuestions),
+    {
+        ssr: false,
+        loading: () => (
+            <div className="border-2 border-dashed border-border rounded-xl p-6 text-center">
+                <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+                <span className="text-sm text-muted-foreground">Đang tải công cụ import...</span>
+            </div>
+        )
+    }
+);
 
 interface TestCase {
     input: string;
@@ -125,7 +139,9 @@ export default function TaoBaiTapPage() {
     }, []);
 
     const removeQuestion = useCallback((index: number): void => {
-        setQuestions(prev => prev.filter((_, i) => i !== index));
+        if (confirm("Bạn có chắc muốn xóa câu hỏi này?")) {
+            setQuestions(prev => prev.filter((_, i) => i !== index));
+        }
     }, []);
 
     const updateQuestion = useCallback((index: number, updates: Partial<Question>): void => {
@@ -194,7 +210,7 @@ export default function TaoBaiTapPage() {
 
     const buildSubmitPayload = () => ({
         title: formData.title,
-        description: formData.description,
+        description: formData.description || "",
         subject: formData.subject,
         difficulty: formData.difficulty,
         timeLimit: formData.timeLimit,
@@ -207,17 +223,17 @@ export default function TaoBaiTapPage() {
                 content: q.content,
                 type: q.type,
                 points: q.points,
-                explanation: q.explanation,
+                explanation: q.explanation || "",
             };
             switch (q.type) {
                 case "multiple_choice":
                     return { ...base, multipleChoice: { options: q.options, correctIndex: q.correctIndex } };
                 case "short_answer":
-                    return { ...base, shortAnswer: q.shortAnswer };
+                    return { ...base, shortAnswer: q.shortAnswer || { correctAnswer: "" } };
                 case "essay":
                     return { ...base, essay: q.essay || {} };
                 case "code":
-                    return { ...base, code: q.code };
+                    return { ...base, code: q.code || { testCases: [] } };
                 default:
                     return base;
             }
@@ -552,7 +568,7 @@ export default function TaoBaiTapPage() {
                         onClick={addQuestion}
                         className="flex items-center gap-2 px-4 py-2 border border-border rounded-xl hover:border-primary/40 transition"
                     >
-                        <Add variant="Outline" size={18} />
+                        <Add size={18} />
                         Thêm câu hỏi
                     </button>
 
