@@ -35,12 +35,6 @@ import {
     Home,
 } from "iconsax-react"
 
-type UserType = {
-    fullname: string
-    avatar: string
-    role: "admin" | "user" | "teacher"
-}
-
 const formatNumber = (num: number) => {
     return new Intl.NumberFormat("en", {
         notation: "compact",
@@ -48,20 +42,18 @@ const formatNumber = (num: number) => {
     }).format(num)
 }
 
-function UserDropdown({ user }: { user: UserType }) {
+function UserDropdown({ user }: { user: { fullname: string; avatar: string; role: string } }) {
 
     const dispatch = useAppDispatch()
     const router = useRouter()
 
     const handleLogout = () => {
         dispatch(logout())
-        localStorage.removeItem("token")
-        router.push("/login")
+        router.push("/")
     }
 
     return (
         <DropdownMenuContent align="end" className="w-50">
-
             <div className="flex items-center gap-3 px-2 py-2">
                 <Avatar className="w-8 h-8">
                     <AvatarImage src={user.avatar} />
@@ -123,7 +115,6 @@ function UserDropdown({ user }: { user: UserType }) {
                 <Logout size={20} variant="Outline" className="mr-1 w-4.5! h-4.5!" />
                 Đăng xuất
             </DropdownMenuItem>
-
         </DropdownMenuContent>
     )
 }
@@ -132,16 +123,7 @@ export function Header() {
 
     const pathname = usePathname()
     const { setTheme } = useTheme()
-
     const userRedux = useAppSelector(state => state.user.user)
-
-    const user: UserType | null = userRedux
-        ? {
-            fullname: userRedux.name,
-            avatar: userRedux.avatar || "/images/avatar.png",
-            role: userRedux.role
-        }
-        : null
 
     const menu = [
         { title: "Trang chủ", link: "/", icon: Home2 },
@@ -152,6 +134,15 @@ export function Header() {
         { title: "Bài viết", link: "/baiviet", icon: Document },
         { title: "Cửa hàng", link: "/cuahangso", icon: Shop },
     ]
+
+    const displayUser = userRedux ? {
+        fullname: userRedux.name,
+        avatar: userRedux.avatar || "/images/avatar.png",
+        role: userRedux.role,
+    } : null
+
+    const displayCoins = userRedux?.cncoins ?? 0
+    const displayStreak = userRedux?.streak ?? 0
 
     return (
         <>
@@ -199,7 +190,7 @@ export function Header() {
                             <div className="relative flex items-center">
                                 <div className="border border-gray-400 dark:border-gray-600 rounded-2xl pl-2 pr-4 py-0.5">
                                     <p className="text-blue-500 dark:text-blue-300 text-[12px] font-medium">
-                                        {formatNumber(userRedux?.cncoins ?? 0)}
+                                        {formatNumber(displayCoins)}
                                     </p>
                                 </div>
                                 <Image src="/icons/coins.svg" alt="Coins" width={25} height={25} className="absolute -right-3" />
@@ -208,7 +199,7 @@ export function Header() {
                             <div className="relative flex items-center">
                                 <div className="border border-gray-400 dark:border-gray-600 rounded-2xl pl-2 pr-5 py-0.5">
                                     <p className="text-blue-500 dark:text-blue-300 text-[12px] font-medium">
-                                        {formatNumber(userRedux?.streak ?? 0)}
+                                        {formatNumber(displayStreak)}
                                     </p>
                                 </div>
                                 <Image src="/icons/streak.svg" alt="Streak" width={27} height={27} className="absolute -right-3" />
@@ -217,17 +208,17 @@ export function Header() {
 
                         <Notification size={20} variant="Outline" className="cursor-pointer text-black dark:text-white" />
 
-                        {user ? (
+                        {displayUser ? (
                             <DropdownMenu modal={false}>
                                 <DropdownMenuTrigger asChild>
                                     <div className="p-0.5 rounded-full">
                                         <Avatar className="cursor-pointer w-8 h-8">
-                                            <AvatarImage src={user.avatar} />
-                                            <AvatarFallback>{user.fullname.charAt(0)}</AvatarFallback>
+                                            <AvatarImage src={displayUser.avatar} />
+                                            <AvatarFallback>{displayUser.fullname.charAt(0)}</AvatarFallback>
                                         </Avatar>
                                     </div>
                                 </DropdownMenuTrigger>
-                                <UserDropdown user={user} />
+                                <UserDropdown user={displayUser} />
                             </DropdownMenu>
                         ) : (
                             <Link href="/login" className="bg-black text-white dark:bg-white dark:text-black px-2 py-1 rounded-[10px] font-bold text-[14px]">
@@ -258,7 +249,7 @@ export function Header() {
                             <div className="relative flex items-center">
                                 <div className="border border-gray-400 dark:border-gray-600 rounded-2xl pl-2 pr-4 py-0.5">
                                     <p className="text-blue-500 dark:text-blue-300 text-[12px] font-medium">
-                                        {formatNumber(userRedux?.cncoins ?? 0)}
+                                        {formatNumber(displayCoins)}
                                     </p>
                                 </div>
                                 <Image src="/icons/coins.svg" alt="Coins" width={25} height={25} className="absolute -right-3" />
@@ -267,7 +258,7 @@ export function Header() {
                             <div className="relative flex items-center">
                                 <div className="border border-gray-400 dark:border-gray-600 rounded-2xl pl-2 pr-5 py-0.5">
                                     <p className="text-blue-500 dark:text-blue-300 text-[12px] font-medium">
-                                        {formatNumber(userRedux?.streak ?? 0)}
+                                        {formatNumber(displayStreak)}
                                     </p>
                                 </div>
                                 <Image src="/icons/streak.svg" alt="Streak" width={27} height={27} className="absolute -right-3" />
@@ -276,17 +267,17 @@ export function Header() {
 
                         <Notification size={20} variant="Outline" className="cursor-pointer text-black dark:text-white" />
 
-                        {user ? (
+                        {displayUser ? (
                             <DropdownMenu modal={false}>
                                 <DropdownMenuTrigger asChild>
                                     <div className="p-0.5 rounded-full">
                                         <Avatar className="cursor-pointer w-6.5 h-6.5">
-                                            <AvatarImage src={user.avatar} />
-                                            <AvatarFallback>{user.fullname.charAt(0)}</AvatarFallback>
+                                            <AvatarImage src={displayUser.avatar} />
+                                            <AvatarFallback>{displayUser.fullname.charAt(0)}</AvatarFallback>
                                         </Avatar>
                                     </div>
                                 </DropdownMenuTrigger>
-                                <UserDropdown user={user} />
+                                <UserDropdown user={displayUser} />
                             </DropdownMenu>
                         ) : (
                             <Link href="/login" className="bg-black text-white dark:bg-white dark:text-black px-2 py-1 rounded-[10px] font-bold text-[12px]">

@@ -1,96 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import axios from "axios";
-import { useRouter } from "next/navigation";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { setUser, selectUser } from "@/store/userSlice";
-import { GoogleLogin, CredentialResponse } from "@react-oauth/google";
-import { toast } from "sonner";
+import { GoogleLogin } from "@react-oauth/google";
+import { useLogin } from "@/features/login/login.hooks";
 
-export default function Login() {
-    const router = useRouter();
-    const dispatch = useAppDispatch();
-    const user = useAppSelector(selectUser);
-
-    const [checking, setChecking] = useState(true);
-
-    useEffect(() => {
-        const checkAuth = async () => {
-            const token = localStorage.getItem("token");
-
-            if (!token) {
-                setChecking(false);
-                return;
-            }
-
-            try {
-                const res = await axios.get(
-                    `${process.env.NEXT_PUBLIC_API_URL}/api/user/me`,
-                    {
-                        headers: { Authorization: `Bearer ${token}` },
-                    }
-                );
-
-                dispatch(setUser({ user: res.data, token }));
-
-                if (!res.data.isProfileCompleted) {
-                    router.replace("/onboarding");
-                } else {
-                    router.replace("/");
-                }
-            } catch {
-                localStorage.removeItem("token");
-                setChecking(false);
-            }
-        };
-
-        if (!user) {
-            checkAuth();
-        } else {
-            if (!user.isProfileCompleted) {
-                router.replace("/onboarding");
-            } else {
-                router.replace("/");
-            }
-        }
-    }, [user, router, dispatch]);
+export default function LoginPage() {
+    const { checking, handleGoogleSuccess, handleGoogleError } = useLogin();
 
     if (checking) return null;
-
-    const handleSuccess = async (credentialResponse: CredentialResponse) => {
-        try {
-            if (!credentialResponse.credential) return;
-
-            const res = await axios.post(
-                `${process.env.NEXT_PUBLIC_API_URL}/api/user/google`,
-                { token: credentialResponse.credential }
-            );
-
-            const { token, user } = res.data;
-
-            localStorage.setItem("token", token);
-            dispatch(setUser({ user, token }));
-
-            if (!user.isProfileCompleted) {
-                router.push("/onboarding");
-            } else {
-                toast.success(`Chào mừng trở lại, ${user.name}! 👋`);
-                router.push("/");
-            }
-        } catch (err) {
-            toast.error("Đăng nhập thất bại. Vui lòng thử lại.");
-            console.error("Login error:", err);
-        }
-    };
 
     return (
         <div className="w-full h-screen bg-black flex items-center justify-center">
             <div className="w-[85%] md:w-[50%] lg:w-[35%] xl:w-[28%] backdrop-blur-md">
                 <div className="p-6">
-
                     <div className="flex flex-col items-center justify-center">
                         <Image
                             src="/images/logo.png"
@@ -110,8 +33,8 @@ export default function Login() {
                     <div className="mt-6 space-y-3">
                         <div className="flex justify-center">
                             <GoogleLogin
-                                onSuccess={handleSuccess}
-                                onError={() => toast.error("Đăng nhập Google thất bại")}
+                                onSuccess={handleGoogleSuccess}
+                                onError={handleGoogleError}
                                 theme="filled_black"
                                 shape="pill"
                                 width="300"
@@ -144,7 +67,6 @@ export default function Login() {
                             Trở về trang chủ
                         </button>
                     </Link>
-
                 </div>
             </div>
         </div>
