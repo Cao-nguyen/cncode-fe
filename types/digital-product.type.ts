@@ -34,6 +34,7 @@ export interface ICreateProduct {
   category: 'powerpoint' | 'code' | 'design' | 'document'
   price: number
   priceInXu: number
+  enableXuPayment: boolean
   thumbnail: string
   previewImages: string[]
   downloadUrl: string
@@ -41,6 +42,7 @@ export interface ICreateProduct {
   features: string[]
   requirements: string[]
   tags: string[]
+  status?: 'draft' | 'published'
 }
 
 export interface IPaymentResponse {

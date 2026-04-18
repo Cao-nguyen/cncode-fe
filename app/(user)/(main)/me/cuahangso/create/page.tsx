@@ -216,69 +216,70 @@ export default function CreateProductPage() {
   }
 
   const handleSubmit = async (status: 'draft' | 'published') => {
-    if (!token) {
-      toast.error('Vui lòng đăng nhập để đăng sản phẩm')
-      router.push('/login')
-      return
-    }
-
-    const isValid = await validateForm()
-    if (!isValid) return
-
-    setIsSubmitting(true)
-    setError(null)
-
-    try {
-      setIsUploading(true)
-      
-      let thumbnailUrl = ''
-      if (formData.thumbnail) {
-        thumbnailUrl = await uploadFileToCloudinary(formData.thumbnail, 'thumbnails')
-      }
-
-      const previewUrls: string[] = []
-      for (const file of formData.previewImages) {
-        const url = await uploadFileToCloudinary(file, 'previews')
-        previewUrls.push(url)
-      }
-      
-      setIsUploading(false)
-
-      const productData = {
-        name: formData.name,
-        description: formData.description,
-        longDescription: formData.longDescription,
-        category: formData.category,
-        price: formData.price,
-        enableXuPayment: formData.enableXuPayment,
-        thumbnail: thumbnailUrl,
-        previewImages: previewUrls,
-        downloadUrl: formData.downloadUrl,
-        previewUrl: formData.previewUrl,
-        features: formData.features,
-        requirements: formData.requirements,
-        tags: formData.tags,
-        status
-      }
-
-      const result = await digitalProductApi.createProduct(productData, token)
-
-      if (result.success) {
-        toast.success(status === 'draft' ? 'Đã lưu sản phẩm vào bản nháp' : 'Đăng sản phẩm thành công')
-        router.push('/me/cuahangso')
-      } else {
-        setError(result.message || 'Có lỗi xảy ra')
-        toast.error(result.message || 'Có lỗi xảy ra')
-      }
-    } catch (err) {
-      console.error('Create product failed:', err)
-      setError('Không thể kết nối đến server')
-      toast.error('Không thể kết nối đến server')
-    } finally {
-      setIsSubmitting(false)
-      setIsUploading(false)
-    }
+  if (!token) {
+    toast.error('Vui lòng đăng nhập để đăng sản phẩm')
+    router.push('/login')
+    return
   }
+
+  const isValid = await validateForm()
+  if (!isValid) return
+
+  setIsSubmitting(true)
+  setError(null)
+
+  try {
+    setIsUploading(true)
+    
+    let thumbnailUrl = ''
+    if (formData.thumbnail) {
+      thumbnailUrl = await uploadFileToCloudinary(formData.thumbnail, 'thumbnails')
+    }
+
+    const previewUrls: string[] = []
+    for (const file of formData.previewImages) {
+      const url = await uploadFileToCloudinary(file, 'previews')
+      previewUrls.push(url)
+    }
+    
+    setIsUploading(false)
+
+    const productData = {
+      name: formData.name,
+      description: formData.description,
+      longDescription: formData.longDescription,
+      category: formData.category,
+      price: formData.price,
+      priceInXu: formData.enableXuPayment ? Math.floor(formData.price / 10) : 0,
+      enableXuPayment: formData.enableXuPayment,
+      thumbnail: thumbnailUrl,
+      previewImages: previewUrls,
+      downloadUrl: formData.downloadUrl,
+      previewUrl: formData.previewUrl,
+      features: formData.features,
+      requirements: formData.requirements,
+      tags: formData.tags,
+      status
+    }
+
+    const result = await digitalProductApi.createProduct(productData, token)
+
+    if (result.success) {
+      toast.success(status === 'draft' ? 'Đã lưu sản phẩm vào bản nháp' : 'Đăng sản phẩm thành công')
+      router.push('/me/cuahangso')
+    } else {
+      setError(result.message || 'Có lỗi xảy ra')
+      toast.error(result.message || 'Có lỗi xảy ra')
+    }
+  } catch (err) {
+    console.error('Create product failed:', err)
+    setError('Không thể kết nối đến server')
+    toast.error('Không thể kết nối đến server')
+  } finally {
+    setIsSubmitting(false)
+    setIsUploading(false)
+  }
+}
 
   const xuAmount = formData.enableXuPayment ? Math.floor(formData.price / 10) : 0
 
