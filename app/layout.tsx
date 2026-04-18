@@ -8,7 +8,6 @@ import ToasterProvider from "@/providers/toaster.provider";
 import AppThemeProvider from "@/providers/theme.provider";
 import AOSProvider from "@/providers/aos.provider";
 import ReduxProvider from "@/providers/redux.provider";
-import SocketProvider from "@/providers/socket.provider";
 import AuthProvider from "@/providers/auth.provider";
 
 const inter = Inter({
