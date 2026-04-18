@@ -1,47 +1,75 @@
 'use client';
 
-import { createContext, useContext, useEffect, useRef, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useRef, ReactNode, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useAuthStore } from '@/store/auth.store';
 
 interface SocketContextType {
     socket: Socket | null;
+    isConnected: boolean;
 }
 
-const SocketContext = createContext<SocketContextType>({ socket: null });
+const SocketContext = createContext<SocketContextType>({
+    socket: null,
+    isConnected: false,
+});
 
 export const useSocket = () => useContext(SocketContext);
 
-export function SocketProvider({ children }: { children: ReactNode }) {
+interface SocketProviderProps {
+    children: ReactNode;
+}
+
+export function SocketProvider({ children }: SocketProviderProps) {
+    const [socket, setSocket] = useState<Socket | null>(null);
+    const [isConnected, setIsConnected] = useState(false);
     const { user, token } = useAuthStore();
-    const socketRef = useRef<Socket | null>(null);
 
     useEffect(() => {
-        if (!token || !user) return;
+        if (!token || !user) {
+            if (socket) {
+                socket.disconnect();
+                setSocket(null);
+                setIsConnected(false);
+            }
+            return;
+        }
 
-        const newSocket = io(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000', {
-            auth: { token },
-            transports: ['websocket']
+        const socketInstance = io(`${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:5000'}`, {
+            auth: {
+                token,
+            },
+            transports: ['websocket'],
         });
 
-        newSocket.on('connect', () => {
+        socketInstance.on('connect', () => {
             console.log('Socket connected');
-            newSocket.emit('register', user.id);
+            setIsConnected(true);
         });
 
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-        socketRef.current = newSocket;
+        socketInstance.on('disconnect', () => {
+            console.log('Socket disconnected');
+            setIsConnected(false);
+        });
+
+        socketInstance.on('connect_error', (error: Error) => {
+            console.error('Socket connection error:', error);
+            setIsConnected(false);
+        });
+
+        setSocket(socketInstance);
 
         return () => {
-            if (socketRef.current) {
-                socketRef.current.disconnect();
-                socketRef.current = null;
+            if (socketInstance) {
+                socketInstance.disconnect();
+                setSocket(null);
+                setIsConnected(false);
             }
         };
     }, [token, user]);
 
     return (
-        <SocketContext.Provider value={{ socket: socketRef.current }}>
+        <SocketContext.Provider value={{ socket, isConnected }}>
             {children}
         </SocketContext.Provider>
     );
