@@ -28,6 +28,77 @@ export const postApi = {
         return response.json();
     },
 
+    createPost: async (data: {
+        title: string;
+        description: string;
+        content: string;
+        category: string;
+        thumbnail: string;
+        tags?: string[];
+        status: 'draft' | 'published';
+    }, token: string): Promise<IApiResponse<IPost>> => {
+        const response = await fetch(`${API_URL}/api/posts`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(data)
+        });
+        return response.json();
+    },
+
+    updatePost: async (slug: string, data: {
+        title?: string;
+        description?: string;
+        content?: string;
+        category?: string;
+        thumbnail?: string;
+        tags?: string[];
+        status?: 'draft' | 'published';
+    }, token: string): Promise<IApiResponse<IPost>> => {
+        const response = await fetch(`${API_URL}/api/posts/${slug}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(data)
+        });
+        return response.json();
+    },
+
+    deletePost: async (slug: string, token: string): Promise<IApiResponse<null>> => {
+        const response = await fetch(`${API_URL}/api/posts/${slug}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        return response.json();
+    },
+
+    getUserPosts: async (token: string, params?: {
+        status?: string;
+        page?: number;
+        limit?: number;
+    }): Promise<IApiResponse<IPost[]>> => {
+        const query = new URLSearchParams();
+        if (params) {
+            Object.entries(params).forEach(([key, value]) => {
+                if (value !== undefined && value !== null) {
+                    query.append(key, String(value));
+                }
+            });
+        }
+        const response = await fetch(`${API_URL}/api/posts/user${query.toString() ? `?${query}` : ''}`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        return response.json();
+    },
+
     likePost: async (id: string, token: string): Promise<IApiResponse<{ liked: boolean; likes: number }>> => {
         const response = await fetch(`${API_URL}/api/posts/${id}/like`, {
             method: 'POST',
