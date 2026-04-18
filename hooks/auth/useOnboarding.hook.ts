@@ -22,6 +22,16 @@ const PROVINCES: string[] = [
 
 const CLASSES: string[] = Array.from({ length: 12 }, (_, i) => `Lớp ${i + 1}`)
 
+interface ErrorsType {
+  username?: string
+  class?: string
+  province?: string
+  school?: string
+  birthday?: string
+  bio?: string
+  general?: string
+}
+
 export const useOnboarding = () => {
   const router = useRouter()
   const { token, setUser, setIsOnboarded } = useAuthStore()
@@ -35,13 +45,13 @@ export const useOnboarding = () => {
     birthday: '',
     bio: ''
   })
-  const [errors, setErrors] = useState<Partial<Record<keyof IOnboardingData, string>>>({})
+  const [errors, setErrors] = useState<ErrorsType>({})
   const checkTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const lastCheckedUsernameRef = useRef<string>('')
 
   const handleChange = useCallback((field: keyof IOnboardingData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }))
-    if (errors[field]) {
+    if (errors[field as keyof ErrorsType]) {
       setErrors(prev => ({ ...prev, [field]: undefined }))
     }
   }, [errors])
@@ -93,7 +103,7 @@ export const useOnboarding = () => {
   }, [formData.username, errors.username, checkUsername])
 
   const validateForm = useCallback((): boolean => {
-    const newErrors: Partial<Record<keyof IOnboardingData, string>> = {}
+    const newErrors: ErrorsType = {}
 
     if (!formData.username.trim()) {
       newErrors.username = 'Vui lòng nhập tên người dùng'
