@@ -1,8 +1,8 @@
-"use client";
+'use client'
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Heart, Message } from "iconsax-react";
+import { Heart, MessageCircle } from "lucide-react";
 
 interface BlogSidebarProps {
     authorName?: string;
@@ -34,14 +34,14 @@ export default function BlogSidebar({
                         onClick={onLike}
                         className="flex items-center gap-2 hover:text-red-500 cursor-pointer transition"
                     >
-                        <Heart variant="Bold" size={22} />
+                        <Heart size={22} />
                         <span>{likeCount}</span>
                     </button>
                     <button
                         onClick={onComment}
                         className="flex items-center gap-2 hover:text-blue-500 cursor-pointer transition"
                     >
-                        <Message variant="Bold" size={22} />
+                        <MessageCircle size={22} />
                         <span>{commentCount}</span>
                     </button>
                 </div>

@@ -1,4 +1,4 @@
-"use client";
+'use client'
 
 import Link from "next/link";
 import {
@@ -9,7 +9,7 @@ import {
     BreadcrumbSeparator,
     BreadcrumbPage,
 } from "@/components/ui/breadcrumb";
-import { ArrowRight2 } from "iconsax-react";
+import { ChevronRight } from "lucide-react";
 
 interface BlogBreadcrumbProps {
     title?: string;
@@ -28,19 +28,19 @@ export default function BlogBreadcrumb({ title = "Bài viết" }: BlogBreadcrumb
                 </BreadcrumbItem>
 
                 <BreadcrumbSeparator>
-                    <ArrowRight2 size={14} variant="Outline" className="opacity-50" />
+                    <ChevronRight size={14} className="opacity-50" />
                 </BreadcrumbSeparator>
 
                 <BreadcrumbItem className="shrink-0">
                     <BreadcrumbLink asChild>
-                        <Link href="/blog" className="hover:text-foreground transition">
-                            Blog
+                        <Link href="/baiviet" className="hover:text-foreground transition">
+                            Bài viết
                         </Link>
                     </BreadcrumbLink>
                 </BreadcrumbItem>
 
                 <BreadcrumbSeparator>
-                    <ArrowRight2 size={14} variant="Outline" className="opacity-50" />
+                    <ChevronRight size={14} className="opacity-50" />
                 </BreadcrumbSeparator>
 
                 <BreadcrumbItem className="min-w-0 flex-1">

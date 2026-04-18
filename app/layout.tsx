@@ -9,6 +9,7 @@ import AppThemeProvider from "@/providers/theme.provider";
 import AOSProvider from "@/providers/aos.provider";
 import ReduxProvider from "@/providers/redux.provider";
 import AuthProvider from "@/providers/auth.provider";
+import { SocketProvider } from "@/providers/socket.provider";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -36,7 +37,8 @@ export default function RootLayout({
       <body className={`${inter.className} antialiased`}>
         <AppThemeProvider>
           <ReduxProvider>
-              <AuthProvider>
+            <AuthProvider>
+              <SocketProvider>
                 <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!}>
                   <ToasterProvider>
                     <AOSProvider>
@@ -44,7 +46,8 @@ export default function RootLayout({
                     </AOSProvider>
                   </ToasterProvider>
                 </GoogleOAuthProvider>
-              </AuthProvider>
+              </SocketProvider>
+            </AuthProvider>
           </ReduxProvider>
         </AppThemeProvider>
       </body>

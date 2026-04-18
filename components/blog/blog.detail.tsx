@@ -1,4 +1,4 @@
-"use client";
+'use client'
 
 import BlogBreadcrumb from "./blog.breadcrumb";
 import BlogActions from "./blog.action";

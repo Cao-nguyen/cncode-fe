@@ -13,6 +13,7 @@ import {
     Calendar2,
     Document,
 } from "iconsax-react";
+import NotificationBell from "./NotificationBell";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
     DropdownMenu,
@@ -229,7 +230,7 @@ export default function Header() {
                             </div>
                         </div>
 
-                        <Bell size={20} className="cursor-pointer text-black dark:text-white" />
+                        <NotificationBell />
 
                         {displayUser ? (
                             <DropdownMenu modal={false}>
@@ -280,7 +281,7 @@ export default function Header() {
                             </div>
                         </div>
 
-                        <Bell size={18} className="cursor-pointer text-black dark:text-white" />
+                        <NotificationBell />
 
                         {displayUser ? (
                             <DropdownMenu modal={false}>
