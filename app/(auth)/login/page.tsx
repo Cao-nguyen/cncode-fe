@@ -1,20 +1,20 @@
 'use client'
 
-import Image from 'next/image'
-import Link from 'next/link'
-import { GoogleLogin } from '@react-oauth/google'
-import { Loader2 } from 'lucide-react'
-import { useLogin } from '@/hooks/auth/useLogin.hook'
+import Image from "next/image";
+import Link from "next/link";
+import { GoogleLogin } from "@react-oauth/google";
+import { Loader2 } from "lucide-react";
+import { useLogin } from "@/hooks/auth/useLogin.hook";
 
 export default function LoginPage() {
-  const { checking, handleGoogleSuccess, handleGoogleError } = useLogin()
+  const { checking, handleGoogleSuccess, handleGoogleError } = useLogin();
 
   if (checking) {
     return (
       <div className="w-full h-screen bg-black flex items-center justify-center">
         <Loader2 size={40} className="animate-spin text-white" />
       </div>
-    )
+    );
   }
 
   return (
@@ -47,7 +47,6 @@ export default function LoginPage() {
                 shape="pill"
                 width="300"
                 text="continue_with"
-                locale="vi"
               />
             </div>
           </div>
@@ -62,11 +61,11 @@ export default function LoginPage() {
           </div>
 
           <p className="text-center text-xs text-zinc-500">
-            Bằng cách tiếp tục, bạn đang đồng ý với{' '}
+            Bằng cách tiếp tục, bạn đang đồng ý với{" "}
             <Link href="/dieukhoansudung" className="text-blue-400">
               Điều khoản sử dụng
-            </Link>{' '}
-            và{' '}
+            </Link>{" "}
+            và{" "}
             <Link href="/antoanbaomat" className="text-blue-400">
               Chính sách bảo mật
             </Link>.
@@ -80,5 +79,5 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }
