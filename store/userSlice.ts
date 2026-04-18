@@ -18,9 +18,11 @@ export interface User {
     streak: number;
     referralCode: string;
     isProfileCompleted: boolean;
+    isActive: boolean;
+    createdAt: string;
+    updatedAt: string;
 }
 
-// Thông tin an toàn để lưu vào localStorage (không nhạy cảm)
 export interface SafeUserStorage {
     _id: string;
     name: string;
@@ -38,7 +40,6 @@ interface UserState {
     isLoaded: boolean;
 }
 
-// Hàm lấy initialState từ localStorage (chỉ lấy thông tin an toàn)
 const getInitialState = (): UserState => {
     if (typeof window === "undefined") {
         return { user: null, token: null, isLoaded: false };
@@ -50,7 +51,6 @@ const getInitialState = (): UserState => {
 
         if (token && safeUserStr) {
             const safeUser = JSON.parse(safeUserStr) as SafeUserStorage;
-            // Tạo user tạm từ safe data, các field nhạy cảm để null hoặc rỗng
             const partialUser: User = {
                 _id: safeUser._id,
                 name: safeUser.name,
@@ -67,7 +67,10 @@ const getInitialState = (): UserState => {
                 cncoins: safeUser.cncoins,
                 streak: safeUser.streak,
                 referralCode: "",
-                isProfileCompleted: true,
+                isProfileCompleted: false,
+                isActive: true,
+                createdAt: "",
+                updatedAt: "",
             };
             return { user: partialUser, token, isLoaded: true };
         }
@@ -92,7 +95,6 @@ const userSlice = createSlice({
             if (typeof window !== "undefined") {
                 localStorage.setItem("token", action.payload.token);
 
-                // Chỉ lưu thông tin an toàn vào localStorage
                 const safeUser: SafeUserStorage = {
                     _id: action.payload.user._id,
                     name: action.payload.user.name,
@@ -111,7 +113,6 @@ const userSlice = createSlice({
             if (state.user) {
                 state.user = { ...state.user, ...action.payload };
                 if (typeof window !== "undefined") {
-                    // Cập nhật lại thông tin an toàn
                     const safeUser: SafeUserStorage = {
                         _id: state.user._id,
                         name: state.user.name,
@@ -151,6 +152,33 @@ const userSlice = createSlice({
             }
         },
 
+        setUserFromSafe: (state, action: PayloadAction<SafeUserStorage>) => {
+            const safeUser = action.payload;
+            const partialUser: User = {
+                _id: safeUser._id,
+                name: safeUser.name,
+                email: "",
+                avatar: safeUser.avatar,
+                username: safeUser.username,
+                birthday: null,
+                province: null,
+                className: null,
+                school: null,
+                bio: null,
+                role: safeUser.role,
+                plan: safeUser.plan,
+                cncoins: safeUser.cncoins,
+                streak: safeUser.streak,
+                referralCode: "",
+                isProfileCompleted: false,
+                isActive: true,
+                createdAt: "",
+                updatedAt: "",
+            };
+            state.user = partialUser;
+            state.isLoaded = true;
+        },
+
         logout: (state) => {
             state.user = null;
             state.token = null;
@@ -168,13 +196,24 @@ const userSlice = createSlice({
     },
 });
 
-export const { setUser, updateUser, updateUserStats, logout, setLoaded } = userSlice.actions;
+export const {
+    setUser,
+    updateUser,
+    updateUserStats,
+    setUserFromSafe,
+    logout,
+    setLoaded,
+} = userSlice.actions;
+
 export default userSlice.reducer;
 
-/* ===== SELECTORS ===== */
 export const selectUser = (state: RootState) => state.user.user;
 export const selectToken = (state: RootState) => state.user.token;
 export const selectIsLoaded = (state: RootState) => state.user.isLoaded;
+export const selectIsAuthenticated = (state: RootState) => !!state.user.user && !!state.user.token;
+export const selectUserRole = (state: RootState) => state.user.user?.role || "user";
+export const selectIsAdmin = (state: RootState) => state.user.user?.role === "admin";
+export const selectIsTeacher = (state: RootState) => state.user.user?.role === "teacher";
 export const selectUserStats = (state: RootState) => ({
     cncoins: state.user.user?.cncoins || 0,
     streak: state.user.user?.streak || 0,

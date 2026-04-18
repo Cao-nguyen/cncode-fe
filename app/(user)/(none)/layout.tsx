@@ -1,4 +1,4 @@
-export default function UserLayoutNone({
+export default function UserLayoutMain({
     children,
 }: {
     children: React.ReactNode

@@ -1,4 +1,4 @@
-import { Header } from "@/components/layouts/header"
+import Header from "@/components/layouts/header"
 
 export default function UserLayoutMain({
     children,

@@ -1,7 +1,6 @@
 "use client";
 
 import { ArrowLeft, ArrowRight } from "iconsax-react";
-import { useExercises } from "@/features/exercises/exercises.hooks";
 import { ExerciseCard } from "@/components/sections/exercise/ExerciseCard";
 import { ExerciseCardSkeleton } from "@/components/sections/exercise/ExerciseCardSkeleton";
 import { ExerciseFilters } from "@/components/sections/exercise/ExerciseFilters";

@@ -1,125 +1,426 @@
-"use client"
+// src/app/create-post/page.tsx
+'use client'
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Switch } from "@/components/ui/switch"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { useState, useRef, FormEvent, ChangeEvent, KeyboardEvent } from 'react'
+import { useRouter } from 'next/navigation'
+import dynamic from 'next/dynamic'
+import { DocumentText, Image as ImageIcon, Tag, TickCircle, CloseCircle } from 'iconsax-react'
+import { Eye, Save, Trash2, Plus, Loader2 } from 'lucide-react'
 
-import {
-    TextBold, TextItalic, TextUnderline,
-    Link1, Gallery, Code, QuoteDown, Grid8,
-    TextalignLeft, TextalignCenter, TextalignRight, TextalignJustifycenter,
-    Math
-} from "iconsax-react"
+const Editor = dynamic(
+    () => import('@tinymce/tinymce-react').then((mod) => mod.Editor),
+    { ssr: false }
+)
 
-// KaTeX
-import 'katex/dist/katex.min.css'
-import { BlockMath } from 'react-katex'
+interface Category {
+    id: string
+    name: string
+    value: string
+}
 
-// SyntaxHighlighter
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
-import { tomorrow } from 'react-syntax-highlighter/dist/esm/styles/prism'
+interface FormData {
+    title: string
+    content: string
+    excerpt: string
+    category: string
+    tags: string[]
+    thumbnail: string
+    status: 'draft' | 'published'
+}
 
-// Markdown parser
-import { marked } from "marked"
+interface ApiResponse {
+    success: boolean
+    data: {
+        slug: string
+        _id: string
+    }
+    message: string
+}
 
-export default function CreateBlogPage() {
-    const [title, setTitle] = useState("")
-    const [contentBlocks, setContentBlocks] = useState<string[]>([])
-    const [editorMarkdown, setEditorMarkdown] = useState("")
-    const [isPublic, setIsPublic] = useState(true)
+const CATEGORIES: Category[] = [
+    { id: 'frontend', name: 'Frontend Development', value: 'frontend' },
+    { id: 'backend', name: 'Backend Development', value: 'backend' },
+    { id: 'fullstack', name: 'Fullstack', value: 'fullstack' },
+    { id: 'devops', name: 'DevOps', value: 'devops' },
+    { id: 'ai', name: 'AI & Machine Learning', value: 'ai' },
+    { id: 'innovation', name: 'Innovation', value: 'innovation' }
+]
 
-    // Thêm Markdown block
-    const addBlock = (markdown: string) => {
-        setEditorMarkdown((prev) => prev + markdown)
-        setContentBlocks((prev) => [...prev, markdown])
+export default function CreatePostPage() {
+    const router = useRouter()
+    const editorRef = useRef<unknown>(null)
+    const [isLoading, setIsLoading] = useState<boolean>(false)
+    const [error, setError] = useState<string | null>(null)
+    const [success, setSuccess] = useState<string | null>(null)
+    const [tagInput, setTagInput] = useState<string>('')
+
+    const [formData, setFormData] = useState<FormData>({
+        title: '',
+        content: '',
+        excerpt: '',
+        category: '',
+        tags: [],
+        thumbnail: '',
+        status: 'draft'
+    })
+
+    const handleInputChange = (
+        e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    ) => {
+        const { name, value } = e.target
+        setFormData(prev => ({ ...prev, [name]: value }))
+        if (error) setError(null)
     }
 
-    const handlePublish = () => alert(`Xuất bản blog!\nCông khai: ${isPublic}`)
+    const handleEditorChange = (content: string) => {
+        setFormData(prev => ({ ...prev, content }))
+    }
+
+    const handleAddTag = (): void => {
+        const trimmedTag = tagInput.trim()
+        if (trimmedTag && !formData.tags.includes(trimmedTag)) {
+            setFormData(prev => ({
+                ...prev,
+                tags: [...prev.tags, trimmedTag]
+            }))
+            setTagInput('')
+        }
+    }
+
+    const handleRemoveTag = (tagToRemove: string): void => {
+        setFormData(prev => ({
+            ...prev,
+            tags: prev.tags.filter(tag => tag !== tagToRemove)
+        }))
+    }
+
+    const handleTagKeyPress = (e: KeyboardEvent<HTMLInputElement>): void => {
+        if (e.key === 'Enter') {
+            e.preventDefault()
+            handleAddTag()
+        }
+    }
+
+    const validateForm = (): boolean => {
+        if (!formData.title.trim()) {
+            setError('Vui lòng nhập tiêu đề bài viết')
+            return false
+        }
+        if (!formData.content.trim()) {
+            setError('Vui lòng nhập nội dung bài viết')
+            return false
+        }
+        if (!formData.excerpt.trim()) {
+            setError('Vui lòng nhập mô tả ngắn')
+            return false
+        }
+        if (!formData.category) {
+            setError('Vui lòng chọn danh mục')
+            return false
+        }
+        if (formData.excerpt.length > 300) {
+            setError('Mô tả ngắn không được vượt quá 300 ký tự')
+            return false
+        }
+        return true
+    }
+
+    const handleSubmit = async (status: 'draft' | 'published'): Promise<void> => {
+        if (!validateForm()) return
+
+        setIsLoading(true)
+        setError(null)
+        setSuccess(null)
+
+        try {
+            const token = localStorage.getItem('token')
+            if (!token) {
+                throw new Error('Vui lòng đăng nhập để tạo bài viết')
+            }
+
+            const submitData = { ...formData, status }
+
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/posts`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(submitData)
+            })
+
+            const result: ApiResponse = await response.json()
+
+            if (!response.ok) {
+                throw new Error(result.message || 'Không thể tạo bài viết')
+            }
+
+            setSuccess(
+                status === 'draft'
+                    ? 'Bài viết đã được lưu vào bản nháp!'
+                    : 'Bài viết đã được đăng thành công!'
+            )
+
+            setTimeout(() => {
+                if (status === 'published' && result.data?.slug) {
+                    router.push(`/blog/${result.data.slug}`)
+                } else {
+                    router.push('/dashboard/posts')
+                }
+            }, 1500)
+
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Có lỗi xảy ra')
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
+    const tinymceApiKey = process.env.NEXT_PUBLIC_TINYMCE_API_KEY || ''
 
     return (
-        <div className="pb-10 min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
-            {/* Header */}
-            <header className="flex justify-between items-center px-4 py-2 md:px-6 md:py-3 bg-white dark:bg-gray-800 shadow-md sticky top-0 z-10">
-                <Button variant="outline" onClick={() => window.history.back()}>Back</Button>
-                <div className="flex gap-2">
-                    <Button
-                        className="bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600"
-                        onClick={handlePublish}
-                    >
-                        Xuất bản
-                    </Button>
-                </div>
-            </header>
-
-            <main className="p-4 md:p-6 max-w-6xl mx-auto">
-                {/* Tiêu đề */}
-                <div className="mb-6">
-                    <Label htmlFor="title">Tiêu đề blog</Label>
-                    <Input
-                        id="title"
-                        placeholder="Nhập tiêu đề..."
-                        value={title}
-                        onChange={(e) => setTitle(e.target.value)}
-                        className="mt-2 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700 focus:ring-indigo-500 focus:border-indigo-500"
-                    />
-                </div>
-
-                {/* Toolbar */}
-                <div className="mb-2 flex flex-wrap gap-2">
-                    <Button variant="outline" size="sm" onClick={() => addBlock("**Bold text**")}><TextBold variant="Outline" size="20" /></Button>
-                    <Button variant="outline" size="sm" onClick={() => addBlock("*Italic text*")}><TextItalic variant="Outline" size="20" /></Button>
-                    <Button variant="outline" size="sm" onClick={() => addBlock("__Underline text__")}><TextUnderline variant="Outline" size="20" /></Button>
-                    <Button variant="outline" size="sm" onClick={() => addBlock(`[Link](${prompt("Nhập URL") || "#"})`)}><Link1 variant="Outline" size="20" /></Button>
-                    <Button variant="outline" size="sm" onClick={() => addBlock(`![Image](${prompt("Nhập link ảnh")})`)}><Gallery variant="Outline" size="20" /></Button>
-                    <Button variant="outline" size="sm" onClick={() => addBlock(`\`\`\`javascript\n${prompt("Nhập code")}\n\`\`\``)}><Code variant="Outline" size="20" /></Button>
-                    <Button variant="outline" size="sm" onClick={() => addBlock("> Quote")}><QuoteDown variant="Outline" size="20" /></Button>
-                    <Button variant="outline" size="sm" onClick={() => addBlock("| Cell1 | Cell2 |\n| ----- | ----- |\n| Row1  | Row2  |")}><Grid8 variant="Outline" size="20" /></Button>
-                    <Button variant="outline" size="sm" onClick={() => addBlock("<div align='left'>Left</div>")}><TextalignLeft variant="Outline" size="20" /></Button>
-                    <Button variant="outline" size="sm" onClick={() => addBlock("<div align='center'>Center</div>")}><TextalignCenter variant="Outline" size="20" /></Button>
-                    <Button variant="outline" size="sm" onClick={() => addBlock("<div align='right'>Right</div>")}><TextalignRight variant="Outline" size="20" /></Button>
-                    <Button variant="outline" size="sm" onClick={() => addBlock("<div align='justify'>Justify</div>")}><TextalignJustifycenter variant="Outline" size="20" /></Button>
-                    <Button variant="outline" size="sm" onClick={() => addBlock(`\\(${prompt("Nhập công thức toán") || ""}\\)`)}><Math variant="Outline" size="20" /></Button>
-                </div>
-
-                {/* Editor */}
-                <textarea
-                    className="w-full min-h-[200px] p-3 mb-4 border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-                    value={editorMarkdown}
-                    onChange={(e) => setEditorMarkdown(e.target.value)}
-                />
-
-                {/* Công khai */}
-                <div className="mb-6 flex items-center gap-2">
-                    <Label>Công khai</Label>
-                    <Switch checked={isPublic} onCheckedChange={(val: boolean) => setIsPublic(val)} />
-                </div>
-
-                {/* Bản xem trước */}
-                <Card className="bg-gray-50 dark:bg-gray-800">
-                    <CardHeader><CardTitle>Bản xem trước</CardTitle></CardHeader>
-                    <CardContent>
-                        <ScrollArea className="h-64 md:h-80">
-                            <div className="prose dark:prose-invert max-w-full space-y-2">
-                                {editorMarkdown ? editorMarkdown.split("\n\n").map((block, i) => {
-                                    if (block.startsWith("```")) {
-                                        const code = block.replace(/```.*\n?|```/g, "")
-                                        return <SyntaxHighlighter key={i} language="javascript" style={tomorrow}>{code}</SyntaxHighlighter>
-                                    } else if (block.includes("\\(") && block.includes("\\)")) {
-                                        const math = block.replace(/\\\(|\\\)/g, "")
-                                        return <BlockMath key={i} math={math} />
-                                    } else {
-                                        return <div key={i} dangerouslySetInnerHTML={{ __html: marked(block) }} />
-                                    }
-                                }) : <p className="text-gray-700 dark:text-gray-300">Chưa có nội dung</p>}
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8">
+            <div className="container mx-auto px-4 max-w-7xl">
+                <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+                    <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-8 py-6">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-white/20 rounded-xl backdrop-blur-sm">
+                                <DocumentText size={28} className="text-white" variant="Outline" />
                             </div>
-                        </ScrollArea>
-                    </CardContent>
-                </Card>
-            </main>
+                            <div>
+                                <h1 className="text-2xl font-bold text-white">
+                                    Tạo bài viết mới
+                                </h1>
+                                <p className="text-blue-100 mt-1 text-sm">
+                                    Chia sẻ kiến thức và trải nghiệm của bạn với cộng đồng
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="p-8">
+                        {error && (
+                            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl flex items-center gap-3 text-red-700">
+                                <CloseCircle size={20} variant="Outline" />
+                                <span className="flex-1">{error}</span>
+                                <button
+                                    onClick={() => setError(null)}
+                                    className="text-red-500 hover:text-red-700"
+                                    type="button"
+                                >
+                                    ×
+                                </button>
+                            </div>
+                        )}
+
+                        {success && (
+                            <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-xl flex items-center gap-3 text-green-700">
+                                <TickCircle size={20} variant="Outline" />
+                                <span className="flex-1">{success}</span>
+                            </div>
+                        )}
+
+                        <div className="space-y-6">
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                    Tiêu đề bài viết <span className="text-red-500">*</span>
+                                </label>
+                                <input
+                                    type="text"
+                                    name="title"
+                                    value={formData.title}
+                                    onChange={handleInputChange}
+                                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-lg"
+                                    placeholder="Nhập tiêu đề bài viết..."
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                        Danh mục <span className="text-red-500">*</span>
+                                    </label>
+                                    <select
+                                        name="category"
+                                        value={formData.category}
+                                        onChange={handleInputChange}
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    >
+                                        <option value="">Chọn danh mục</option>
+                                        {CATEGORIES.map((category) => (
+                                            <option key={category.id} value={category.value}>
+                                                {category.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                        URL ảnh thumbnail
+                                    </label>
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="url"
+                                            name="thumbnail"
+                                            value={formData.thumbnail}
+                                            onChange={handleInputChange}
+                                            className="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            placeholder="https://example.com/image.jpg"
+                                        />
+                                        <button
+                                            type="button"
+                                            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors"
+                                        >
+                                            <ImageIcon size={20} variant="Outline" />
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                    Mô tả ngắn <span className="text-red-500">*</span>
+                                </label>
+                                <textarea
+                                    name="excerpt"
+                                    value={formData.excerpt}
+                                    onChange={handleInputChange}
+                                    rows={3}
+                                    maxLength={300}
+                                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    placeholder="Tóm tắt nội dung bài viết (tối đa 300 ký tự)..."
+                                />
+                                <div className="text-right text-xs text-gray-400 mt-1">
+                                    {formData.excerpt.length}/300
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                    Nội dung <span className="text-red-500">*</span>
+                                </label>
+                                {tinymceApiKey ? (
+                                    <Editor
+                                        onInit={(_evt, editor) => {
+                                            editorRef.current = editor
+                                        }}
+                                        value={formData.content}
+                                        onEditorChange={handleEditorChange}
+                                        apiKey={tinymceApiKey}
+                                        init={{
+                                            height: 500,
+                                            menubar: true,
+                                            plugins: [
+                                                'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
+                                                'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
+                                                'insertdatetime', 'media', 'table', 'help', 'wordcount', 'codesample'
+                                            ],
+                                            toolbar: 'undo redo | blocks | ' +
+                                                'bold italic backcolor | alignleft aligncenter ' +
+                                                'alignright alignjustify | bullist numlist outdent indent | ' +
+                                                'removeformat | help | code | fullscreen | image | link | codesample',
+                                            content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:16px }',
+                                            codesample_languages: [
+                                                { text: 'HTML/XML', value: 'markup' },
+                                                { text: 'JavaScript', value: 'javascript' },
+                                                { text: 'TypeScript', value: 'typescript' },
+                                                { text: 'CSS', value: 'css' },
+                                                { text: 'Python', value: 'python' },
+                                                { text: 'Java', value: 'java' },
+                                                { text: 'C++', value: 'cpp' },
+                                                { text: 'C#', value: 'csharp' },
+                                                { text: 'Go', value: 'go' },
+                                                { text: 'Rust', value: 'rust' },
+                                                { text: 'PHP', value: 'php' },
+                                                { text: 'Ruby', value: 'ruby' },
+                                                { text: 'SQL', value: 'sql' },
+                                                { text: 'Bash', value: 'bash' },
+                                                { text: 'JSON', value: 'json' }
+                                            ],
+                                            promotion: false
+                                        }}
+                                    />
+                                ) : (
+                                    <div className="border border-gray-300 rounded-xl p-4 bg-gray-50 text-gray-500 text-center">
+                                        <p>⚠️ Vui lòng cấu hình TinyMCE API Key trong file .env</p>
+                                        <p className="text-sm mt-2">Thêm dòng: NEXT_PUBLIC_TINYMCE_API_KEY=your_api_key</p>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                    Thẻ tags
+                                </label>
+                                <div className="flex gap-2 mb-3">
+                                    <div className="flex-1 relative">
+                                        <Tag size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" variant="Outline" />
+                                        <input
+                                            type="text"
+                                            value={tagInput}
+                                            onChange={(e) => setTagInput(e.target.value)}
+                                            onKeyPress={handleTagKeyPress}
+                                            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            placeholder="Nhập tag và nhấn Enter"
+                                        />
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={handleAddTag}
+                                        className="px-5 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors flex items-center gap-2"
+                                    >
+                                        <Plus size={18} />
+                                        Thêm
+                                    </button>
+                                </div>
+
+                                {formData.tags.length > 0 && (
+                                    <div className="flex flex-wrap gap-2">
+                                        {formData.tags.map((tag) => (
+                                            <span
+                                                key={tag}
+                                                className="px-3 py-1.5 bg-gradient-to-r from-gray-100 to-gray-50 text-gray-700 rounded-lg text-sm flex items-center gap-2 border border-gray-200"
+                                            >
+                                                #{tag}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleRemoveTag(tag)}
+                                                    className="text-gray-400 hover:text-red-600 transition-colors"
+                                                >
+                                                    <Trash2 size={14} />
+                                                </button>
+                                            </span>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="pt-4 flex gap-4">
+                                <button
+                                    type="button"
+                                    onClick={() => handleSubmit('draft')}
+                                    disabled={isLoading}
+                                    className="flex-1 px-6 py-3 bg-gradient-to-r from-gray-600 to-gray-700 text-white rounded-xl hover:from-gray-700 hover:to-gray-800 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-semibold shadow-lg"
+                                >
+                                    {isLoading ? <Loader2 size={20} className="animate-spin" /> : <Save size={20} />}
+                                    {isLoading ? 'Đang lưu...' : 'Lưu nháp'}
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={() => handleSubmit('published')}
+                                    disabled={isLoading}
+                                    className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-semibold shadow-lg"
+                                >
+                                    {isLoading ? <Loader2 size={20} className="animate-spin" /> : <Eye size={20} />}
+                                    {isLoading ? 'Đang đăng...' : 'Đăng bài'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     )
 }

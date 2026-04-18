@@ -1,0 +1,90 @@
+@layer utilities {
+    .responsive-container {
+        @apply w-full max-w-[100%] overflow-x-hidden;
+    }
+
+    .responsive-grid {
+        @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6;
+    }
+
+    .responsive-flex {
+        @apply flex flex-col sm:flex-row flex-wrap gap-4;
+    }
+
+    .hide-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+
+    .hide-scrollbar::-webkit-scrollbar {
+        display: none;
+    }
+}
+
+@layer components {
+    .mobile-menu {
+        @apply fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-black shadow-xl transform transition-transform duration-300 ease-in-out;
+    }
+
+    .mobile-menu-open {
+        @apply translate-x-0;
+    }
+
+    .mobile-menu-closed {
+        @apply -translate-x-full;
+    }
+
+    .mobile-overlay {
+        @apply fixed inset-0 bg-black/50 z-40 transition-opacity duration-300;
+    }
+
+    .tablet-grid-2 {
+        @apply grid grid-cols-1 md:grid-cols-2 gap-4;
+    }
+
+    .tablet-grid-3 {
+        @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4;
+    }
+
+    .desktop-grid-4 {
+        @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6;
+    }
+}
+
+@media (max-width: 640px) {
+    .responsive-text-sm {
+        font-size: 0.875rem;
+    }
+
+    .responsive-padding {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+
+    .responsive-margin {
+        margin-left: 1rem;
+        margin-right: 1rem;
+    }
+}
+
+@media (min-width: 641px) and (max-width: 1024px) {
+    .responsive-text-base {
+        font-size: 1rem;
+    }
+
+    .responsive-padding {
+        padding-left: 1.5rem;
+        padding-right: 1.5rem;
+    }
+}
+
+@media (min-width: 1025px) {
+    .responsive-text-lg {
+        font-size: 1.125rem;
+    }
+
+    .responsive-padding {
+        padding-left: 2rem;
+        padding-right: 2rem;
+    }
+}

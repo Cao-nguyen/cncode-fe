@@ -1,5 +1,5 @@
-import { Footer } from "@/components/layouts/footer"
-import { Header } from "@/components/layouts/header"
+import Footer from "@/components/layouts/footer"
+import Header from "@/components/layouts/header"
 
 export default function UserLayoutMain({
     children,
@@ -9,7 +9,7 @@ export default function UserLayoutMain({
     return (
         <>
             <Header />
-            <div className="min-h-screen mt-0 lg:mt-15">
+            <div className="min-h-screen mt-0 md:mt-0 lg:mt-15">
                 {children}
             </div>
             <Footer />

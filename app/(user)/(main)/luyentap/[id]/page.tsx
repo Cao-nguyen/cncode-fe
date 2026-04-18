@@ -2,14 +2,21 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useDispatch, useSelector } from "react-redux"; // Thêm useDispatch
-import { selectToken, selectUser, updateUserStats } from "@/store/userSlice"; // Thêm updateUserStats
-import { Exercise, Question, UserAnswer } from "@/types/exercise";
+import { useDispatch, useSelector } from "react-redux";
+import { selectToken, selectUser, updateUserStats } from "@/store/userSlice";
+import { Exercise, Question, UserAnswer } from "@/types/exercise.types";
 import { toast } from "sonner";
 import Link from "next/link";
 import {
-    ArrowLeft, Clock, Danger, TickCircle, Element4, Card,
-    Hashtag, DocumentText, Code, Eye, EyeSlash
+    ArrowLeft,
+    Clock,
+    Element4,
+    Card,
+    Hashtag,
+    DocumentText,
+    Code,
+    Eye,
+    EyeSlash,
 } from "iconsax-react";
 
 const API = process.env.NEXT_PUBLIC_API_URL;
@@ -25,9 +32,8 @@ const typeIcons: Record<string, React.ReactNode> = {
 export default function LamBaiPage() {
     const { id } = useParams<{ id: string }>();
     const router = useRouter();
-    const dispatch = useDispatch(); // Thêm dispatch
+    const dispatch = useDispatch();
     const token = useSelector(selectToken);
-    const user = useSelector(selectUser);
     const [exercise, setExercise] = useState<Exercise | null>(null);
     const [loading, setLoading] = useState(true);
     const [answers, setAnswers] = useState<Record<number, UserAnswer>>({});
@@ -60,31 +66,12 @@ export default function LamBaiPage() {
         }
     };
 
-    useEffect(() => {
-        if (!timeLeft || timeLeft <= 0) return;
-        const timer = setInterval(() => {
-            setTimeLeft(prev => {
-                if (prev && prev <= 1) {
-                    clearInterval(timer);
-                    handleSubmit();
-                    return 0;
-                }
-                return prev ? prev - 1 : null;
-            });
-        }, 1000);
-        return () => clearInterval(timer);
-    }, [timeLeft]);
+    const handleSubmit = useCallback(async () => {
+        if (submitting || !exercise) return;
 
-    const handleAnswer = (index: number, answer: UserAnswer) => {
-        setAnswers(prev => ({ ...prev, [index]: answer }));
-    };
-
-    const handleSubmit = async () => {
-        if (submitting) return;
-
-        const unanswered = exercise?.questions.filter((_, i) => !answers[i]);
-        if (unanswered && unanswered.length > 0) {
-            if (!confirm(`Bạn còn ${unanswered.length} câu chưa trả lời. Vẫn nộp bài?`)) {
+        const unansweredCount = exercise.questions.filter((_, i) => !answers[i]).length;
+        if (unansweredCount > 0) {
+            if (!confirm(`Bạn còn ${unansweredCount} câu chưa trả lời. Vẫn nộp bài?`)) {
                 return;
             }
         }
@@ -93,7 +80,7 @@ export default function LamBaiPage() {
         const toastId = toast.loading("Đang chấm điểm...");
 
         const timeTaken = Math.floor((Date.now() - startTime) / 1000);
-        const answerList = exercise?.questions.map((_, i) => answers[i] || {});
+        const answerList = exercise.questions.map((_, i) => answers[i] || {});
 
         try {
             const res = await fetch(`${API}/api/exercises/${id}/submit`, {
@@ -110,7 +97,6 @@ export default function LamBaiPage() {
             const data = await res.json();
             if (!res.ok) throw new Error(data.message);
 
-            // CẬP NHẬT SỐ XU SAU KHI NỘP BÀI (quan trọng!)
             if (data.currentCoins !== undefined) {
                 dispatch(updateUserStats({ cncoins: data.currentCoins }));
             }
@@ -124,7 +110,26 @@ export default function LamBaiPage() {
         } finally {
             setSubmitting(false);
         }
-    };
+    }, [answers, exercise, id, token, startTime, submitting, dispatch, router]);
+
+    useEffect(() => {
+        if (!timeLeft || timeLeft <= 0) return;
+        const timer = setInterval(() => {
+            setTimeLeft((prev) => {
+                if (prev && prev <= 1) {
+                    clearInterval(timer);
+                    handleSubmit();
+                    return 0;
+                }
+                return prev ? prev - 1 : null;
+            });
+        }, 1000);
+        return () => clearInterval(timer);
+    }, [timeLeft, handleSubmit]);
+
+    const handleAnswer = useCallback((index: number, answer: UserAnswer) => {
+        setAnswers((prev) => ({ ...prev, [index]: answer }));
+    }, []);
 
     if (loading) {
         return (
@@ -140,14 +145,20 @@ export default function LamBaiPage() {
         <div className="min-h-screen bg-background">
             <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-sm border-b border-border">
                 <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
-                    <Link href={`/luyentap/${id}`} className="text-muted-foreground hover:text-foreground">
+                    <Link
+                        href={`/luyentap/${id}`}
+                        className="text-muted-foreground hover:text-foreground"
+                    >
                         <ArrowLeft size={20} variant="Outline" />
                     </Link>
                     <h1 className="text-sm font-medium text-foreground truncate max-w-[200px]">
                         {exercise.title}
                     </h1>
                     {timeLeft !== null && (
-                        <div className={`flex items-center gap-1 text-sm font-mono ${timeLeft < 60 ? "text-red-500" : "text-muted-foreground"}`}>
+                        <div
+                            className={`flex items-center gap-1 text-sm font-mono ${timeLeft < 60 ? "text-red-500" : "text-muted-foreground"
+                                }`}
+                        >
                             <Clock size={16} variant="Outline" />
                             {Math.floor(timeLeft / 60)}:{String(timeLeft % 60).padStart(2, "0")}
                         </div>
@@ -170,8 +181,7 @@ export default function LamBaiPage() {
                     <button
                         onClick={handleSubmit}
                         disabled={submitting}
-                        className="w-full py-4 bg-primary text-primary-foreground font-semibold rounded-xl
-                                   hover:bg-primary/90 disabled:opacity-50 transition-all"
+                        className="w-full py-4 bg-primary text-primary-foreground font-semibold rounded-xl hover:bg-primary/90 disabled:opacity-50 transition-all"
                     >
                         {submitting ? "Đang nộp bài..." : "Nộp bài"}
                     </button>
@@ -181,12 +191,11 @@ export default function LamBaiPage() {
     );
 }
 
-// Question Card Component (giữ nguyên)
 function QuestionCard({
     question,
     index,
     answer,
-    onAnswer
+    onAnswer,
 }: {
     question: Question;
     index: number;
@@ -201,12 +210,17 @@ function QuestionCard({
                 return (
                     <div className="space-y-2">
                         {question.multipleChoice?.options.map((opt, i) => (
-                            <label key={i} className="flex items-center gap-3 p-3 rounded-lg border border-border hover:bg-secondary/30 cursor-pointer">
+                            <label
+                                key={i}
+                                className="flex items-center gap-3 p-3 rounded-lg border border-border hover:bg-secondary/30 cursor-pointer"
+                            >
                                 <input
                                     type="radio"
                                     name={`q${index}`}
                                     checked={answer?.type === "multiple_choice" && answer.selectedIndex === i}
-                                    onChange={() => onAnswer({ type: "multiple_choice", selectedIndex: i })}
+                                    onChange={() =>
+                                        onAnswer({ type: "multiple_choice", selectedIndex: i })
+                                    }
                                     className="accent-primary"
                                 />
                                 <span className="text-sm">{opt}</span>
@@ -219,15 +233,24 @@ function QuestionCard({
                 return (
                     <div className="space-y-2">
                         {question.multiSelect?.options.map((opt, i) => (
-                            <label key={i} className="flex items-center gap-3 p-3 rounded-lg border border-border hover:bg-secondary/30 cursor-pointer">
+                            <label
+                                key={i}
+                                className="flex items-center gap-3 p-3 rounded-lg border border-border hover:bg-secondary/30 cursor-pointer"
+                            >
                                 <input
                                     type="checkbox"
-                                    checked={answer?.type === "multi_select" && answer.selectedIndexes?.includes(i)}
+                                    checked={
+                                        answer?.type === "multi_select" &&
+                                        answer.selectedIndexes?.includes(i)
+                                    }
                                     onChange={(e) => {
-                                        const current = answer?.type === "multi_select" ? answer.selectedIndexes : [];
+                                        const current =
+                                            answer?.type === "multi_select" && answer.selectedIndexes
+                                                ? answer.selectedIndexes
+                                                : [];
                                         const newSelected = e.target.checked
                                             ? [...current, i]
-                                            : current.filter(x => x !== i);
+                                            : current.filter((x) => x !== i);
                                         onAnswer({ type: "multi_select", selectedIndexes: newSelected });
                                     }}
                                     className="accent-primary"
@@ -243,7 +266,9 @@ function QuestionCard({
                     <input
                         type="text"
                         value={answer?.type === "short_answer" ? answer.textAnswer : ""}
-                        onChange={(e) => onAnswer({ type: "short_answer", textAnswer: e.target.value })}
+                        onChange={(e) =>
+                            onAnswer({ type: "short_answer", textAnswer: e.target.value })
+                        }
                         placeholder="Nhập câu trả lời..."
                         className="w-full px-4 py-3 bg-background border border-border rounded-xl focus:outline-none focus:border-primary/50"
                     />
@@ -254,7 +279,9 @@ function QuestionCard({
                     <textarea
                         rows={6}
                         value={answer?.type === "essay" ? answer.textAnswer : ""}
-                        onChange={(e) => onAnswer({ type: "essay", textAnswer: e.target.value })}
+                        onChange={(e) =>
+                            onAnswer({ type: "essay", textAnswer: e.target.value })
+                        }
                         placeholder="Viết câu trả lời của bạn tại đây..."
                         className="w-full px-4 py-3 bg-background border border-border rounded-xl focus:outline-none focus:border-primary/50 resize-none"
                     />
@@ -306,9 +333,7 @@ function QuestionCard({
                     )}
                 </div>
 
-                <p className="text-foreground mb-4 whitespace-pre-wrap">
-                    {question.content}
-                </p>
+                <p className="text-foreground mb-4 whitespace-pre-wrap">{question.content}</p>
 
                 {showHint && question.shortAnswer?.hint && (
                     <div className="mb-4 p-3 bg-primary/5 border border-primary/20 rounded-lg text-sm text-muted-foreground">

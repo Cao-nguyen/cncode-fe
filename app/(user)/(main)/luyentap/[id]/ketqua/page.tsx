@@ -9,7 +9,7 @@ import Link from "next/link";
 import {
     Refresh, Home, TickCircle, CloseCircle, ArrowDown2, ArrowUp2, Flash
 } from "iconsax-react";
-import type { SubmitResult, Question, GradedAnswer } from "@/types/exercise";
+import type { SubmitResult, Question, GradedAnswer } from "@/types/exercise.types";
 
 interface SpinResponse {
     reward: number;

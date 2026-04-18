@@ -4,7 +4,7 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
 import { selectToken } from "@/store/userSlice";
-import { Exercise, Question } from "@/types/exercise";
+import { Exercise, Question } from "@/types/exercise.types";
 import { toast } from "sonner";
 import {
     Clock, ChevronLeft, ChevronRight, Send,
@@ -182,7 +182,7 @@ export default function LamBaiPage() {
     const storageKey = `exercise_${id}`;
 
     useEffect(() => {
-        if (!token) { router.push("/auth/login"); return; }
+        if (!token) { router.push("/login"); return; }
         fetch(`${API}/api/exercises/${id}`)
             .then(r => r.json())
             .then(data => {

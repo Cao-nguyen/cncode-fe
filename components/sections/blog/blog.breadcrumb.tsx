@@ -1,6 +1,6 @@
-"use client"
+"use client";
 
-import Link from "next/link"
+import Link from "next/link";
 import {
     Breadcrumb,
     BreadcrumbItem,
@@ -8,15 +8,17 @@ import {
     BreadcrumbList,
     BreadcrumbSeparator,
     BreadcrumbPage,
-} from "@/components/ui/breadcrumb"
-import { ArrowRight2 } from "iconsax-react"
+} from "@/components/ui/breadcrumb";
+import { ArrowRight2 } from "iconsax-react";
 
-export default function BlogBreadcrumb() {
+interface BlogBreadcrumbProps {
+    title?: string;
+}
+
+export default function BlogBreadcrumb({ title = "Bài viết" }: BlogBreadcrumbProps) {
     return (
         <Breadcrumb>
             <BreadcrumbList className="text-sm text-muted-foreground flex-nowrap overflow-hidden">
-
-                {/* Trang chủ */}
                 <BreadcrumbItem className="shrink-0">
                     <BreadcrumbLink asChild>
                         <Link href="/" className="hover:text-foreground transition">
@@ -29,7 +31,6 @@ export default function BlogBreadcrumb() {
                     <ArrowRight2 size={14} variant="Outline" className="opacity-50" />
                 </BreadcrumbSeparator>
 
-                {/* Blog */}
                 <BreadcrumbItem className="shrink-0">
                     <BreadcrumbLink asChild>
                         <Link href="/blog" className="hover:text-foreground transition">
@@ -43,20 +44,11 @@ export default function BlogBreadcrumb() {
                 </BreadcrumbSeparator>
 
                 <BreadcrumbItem className="min-w-0 flex-1">
-                    <BreadcrumbPage
-                        className="
-                            block
-                            truncate
-                            max-w-full
-                            text-foreground
-                            font-medium
-                        "
-                    >
-                        SDLC và STLC cơ bản: Quy trình tester phải nắm để đọc requirement rất dài rất dài
+                    <BreadcrumbPage className="block truncate max-w-full text-foreground font-medium">
+                        {title}
                     </BreadcrumbPage>
                 </BreadcrumbItem>
-
             </BreadcrumbList>
         </Breadcrumb>
-    )
+    );
 }
