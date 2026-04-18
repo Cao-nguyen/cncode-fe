@@ -1,10 +1,22 @@
-'use client'
+"use client";
 
 import BlogBreadcrumb from "./blog.breadcrumb";
 import BlogActions from "./blog.action";
 import BlogComment from "./blog.comment";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import BlogSidebarMobile from "./blog.sidebar.m";
+import { IUser } from "@/types/post.type";
+
+interface FormattedComment {
+    id: string;
+    content: string;
+    authorName: string;
+    authorAvatar: string;
+    createdAt: string;
+    parentId: string | null;
+    replyToName?: string;
+    children?: FormattedComment[];
+}
 
 interface BlogDetailProps {
     title?: string;
@@ -15,6 +27,10 @@ interface BlogDetailProps {
     readTime?: string;
     likeCount?: number;
     commentCount?: number;
+    comments?: FormattedComment[];
+    onSubmitComment?: (content: string, parentId?: string | null, replyToName?: string) => void;
+    onDeleteComment?: (commentId: string) => void;
+    currentUser?: IUser | null;
 }
 
 export default function BlogDetail({
@@ -26,6 +42,10 @@ export default function BlogDetail({
     readTime = "12 phút đọc",
     likeCount = 0,
     commentCount = 0,
+    comments = [],
+    onSubmitComment,
+    onDeleteComment,
+    currentUser,
 }: BlogDetailProps) {
     return (
         <div className="max-w-3xl mx-auto space-y-6">
@@ -58,7 +78,14 @@ export default function BlogDetail({
                 <BlogSidebarMobile likeCount={likeCount} commentCount={commentCount} />
             </div>
 
-            <BlogComment />
+            <BlogComment
+                initialComments={comments}
+                currentUserAvatar={currentUser?.avatar || "/avatar.png"}
+                currentUserName={currentUser?.fullName || "U"}
+                currentUserId={currentUser?._id}
+                onSubmitComment={onSubmitComment}
+                onDeleteComment={onDeleteComment}
+            />
         </div>
     );
 }

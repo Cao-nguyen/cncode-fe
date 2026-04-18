@@ -41,14 +41,16 @@ export interface IPost {
     comments: IComment[];
     readTime: number;
     status: 'draft' | 'published';
+    publishedAt?: string | null;
     createdAt: string;
     updatedAt: string;
+    relatedPosts?: IPost[];
 }
 
 export interface IApiResponse<T> {
     success: boolean;
     data: T;
-    message: string;
+    message?: string;
     pagination?: {
         page: number;
         limit: number;
