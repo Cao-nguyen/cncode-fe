@@ -37,7 +37,6 @@ export default function RootLayout({
       <body className={`${inter.className} antialiased`}>
         <AppThemeProvider>
           <ReduxProvider>
-            <SocketProvider>
               <AuthProvider>
                 <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!}>
                   <ToasterProvider>
@@ -47,7 +46,6 @@ export default function RootLayout({
                   </ToasterProvider>
                 </GoogleOAuthProvider>
               </AuthProvider>
-            </SocketProvider>
           </ReduxProvider>
         </AppThemeProvider>
       </body>
