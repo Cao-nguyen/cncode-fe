@@ -75,7 +75,7 @@ export default function BlogComment({
                             comment={comment}
                             post={post}
                             onCommentUpdated={handleUpdated}
-                            level={0}
+                            isChild={false}
                         />
                     ))
                 )}
