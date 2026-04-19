@@ -106,8 +106,13 @@ export default function BlogActions({ postId, isBookmarked = false, onBookmarkCh
     return (
         <>
             <div className="flex items-center gap-3 md:gap-4">
-                <button onClick={handleBookmark} className="transition cursor-pointer">
+                <button
+                    onClick={handleBookmark}
+                    className="transition cursor-pointer p-1 rounded-full hover:bg-muted"
+                    aria-label="Lưu bài viết"
+                >
                     <Bookmark
+                        data-filled={bookmarked ? "" : undefined}
                         size={22}
                         fill={bookmarked ? '#eab308' : 'none'}
                         className={bookmarked ? 'text-yellow-500' : ''}
@@ -116,14 +121,30 @@ export default function BlogActions({ postId, isBookmarked = false, onBookmarkCh
 
                 <DropdownMenu modal={false}>
                     <DropdownMenuTrigger asChild>
-                        <MoreHorizontal size={22} className="cursor-pointer" />
+                        <button
+                            className="p-1 rounded-full hover:bg-muted transition cursor-pointer"
+                            aria-label="Thêm tùy chọn"
+                        >
+                            <MoreHorizontal size={22} />
+                        </button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-56 rounded-xl p-1 flex flex-col gap-1">
-                        <DropdownMenuItem onClick={shareFacebook} className="py-2 flex items-center gap-2 cursor-pointer">
+                    <DropdownMenuContent
+                        align="end"
+                        side="bottom"
+                        sideOffset={8}
+                        className="w-56 rounded-xl p-1 flex flex-col gap-1 z-50"
+                    >
+                        <DropdownMenuItem
+                            onClick={shareFacebook}
+                            className="py-2 flex items-center gap-2 cursor-pointer"
+                        >
                             <Facebook size={20} className="text-blue-500" />
                             <span>Chia sẻ lên Facebook</span>
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={handleCopy} className="py-2 flex items-center gap-3 cursor-pointer">
+                        <DropdownMenuItem
+                            onClick={handleCopy}
+                            className="py-2 flex items-center gap-3 cursor-pointer"
+                        >
                             <Copy size={20} />
                             <span>Sao chép liên kết</span>
                         </DropdownMenuItem>
@@ -160,7 +181,9 @@ export default function BlogActions({ postId, isBookmarked = false, onBookmarkCh
                         ))}
                     </div>
                     <DialogFooter className="gap-2">
-                        <Button variant="ghost" onClick={() => setReportOpen(false)}>Hủy</Button>
+                        <Button variant="ghost" onClick={() => setReportOpen(false)}>
+                            Hủy
+                        </Button>
                         <Button onClick={handleReport} disabled={reporting || !selectedReason}>
                             {reporting ? 'Đang gửi...' : 'Gửi báo cáo'}
                         </Button>

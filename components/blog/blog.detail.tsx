@@ -43,21 +43,25 @@ export default function BlogDetail({
     onSubmitComment,
     onDeleteComment,
 }: BlogDetailProps) {
+    const handleBookmarkFromMobile = () => {
+        onBookmarkChange(!bookmarked);
+    };
+
     return (
         <div className="max-w-3xl mx-auto space-y-6">
             <BlogBreadcrumb title={post.title} />
 
             <h1 className="text-[26px] md:text-[32px] font-bold leading-[1.3]">{post.title}</h1>
 
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                    <Avatar>
+            <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3 min-w-0">
+                    <Avatar className="flex-shrink-0">
                         <AvatarImage src={post.author.avatar || '/avatar.png'} />
                         <AvatarFallback>{post.author.fullName.charAt(0)}</AvatarFallback>
                     </Avatar>
-                    <div>
-                        <p className="text-sm font-medium">{post.author.fullName}</p>
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <div className="min-w-0">
+                        <p className="text-sm font-medium truncate">{post.author.fullName}</p>
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
                             <span>{formatDate(post.createdAt)}</span>
                             <span>·</span>
                             <span>{post.readTime} phút đọc</span>
@@ -77,19 +81,23 @@ export default function BlogDetail({
             </div>
 
             <article
-                className="space-y-5 text-[16px] leading-7"
+                className="space-y-5 text-[16px] leading-7 overflow-hidden"
                 dangerouslySetInnerHTML={{ __html: post.content }}
             />
 
             <div className="block lg:hidden">
                 <BlogSidebarMobile
+                    authorName={post.author.fullName}
+                    authorBio={post.author.bio || ''}
                     likeCount={likeCount}
                     commentCount={comments.length}
                     liked={liked}
+                    bookmarked={bookmarked}
                     onLike={onLike}
                     onComment={() => {
                         document.getElementById('comment-section')?.scrollIntoView({ behavior: 'smooth' });
                     }}
+                    onBookmark={handleBookmarkFromMobile}
                 />
             </div>
 

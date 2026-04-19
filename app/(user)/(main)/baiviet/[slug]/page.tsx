@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import BlogDetail from '@/components/blog/blog.detail';
 import BlogSidebar from '@/components/blog/blog.sidebar';
@@ -18,6 +18,7 @@ export default function ChiTietBaiVietPage() {
     const [liked, setLiked] = useState(false);
     const [likeCount, setLikeCount] = useState(0);
     const [bookmarked, setBookmarked] = useState(false);
+    const viewTracked = useRef(false);
 
     const buildCommentTree = (flat: IComment[]): IComment[] => {
         const map = new Map<string, IComment>();
@@ -45,7 +46,7 @@ export default function ChiTietBaiVietPage() {
                 const p = result.data;
                 setPost(p);
                 setLikeCount(p.likes || 0);
-                setLiked(user ? p.likedBy?.includes(user.id) : false);
+                setLiked(user ? (p.likedBy?.includes(user.id) ?? false) : false);
                 setBookmarked(user ? (p.bookmarks?.includes(user.id) ?? false) : false);
                 setComments(buildCommentTree(p.comments || []));
             }
@@ -62,6 +63,12 @@ export default function ChiTietBaiVietPage() {
         };
         load();
     }, [fetchPost]);
+
+    useEffect(() => {
+        if (!slug || viewTracked.current) return;
+        viewTracked.current = true;
+        postApi.trackView(slug as string).catch(() => { });
+    }, [slug]);
 
     const handleLike = async () => {
         if (!token || !post) return;
@@ -149,13 +156,16 @@ export default function ChiTietBaiVietPage() {
                         <div className="sticky top-24">
                             <BlogSidebar
                                 authorName={post.author.fullName}
-                                authorBio={post.author.bio || 'Chia sẻ kiến thức về công nghệ và lập trình'}
+                                authorBio={post.author.bio || ''}
                                 likeCount={likeCount}
                                 commentCount={comments.length}
                                 liked={liked}
+                                bookmarked={bookmarked}
                                 onLike={handleLike}
                                 onComment={() => {
-                                    document.getElementById('comment-section')?.scrollIntoView({ behavior: 'smooth' });
+                                    document.getElementById('comment-section')?.scrollIntoView({
+                                        behavior: 'smooth',
+                                    });
                                 }}
                             />
                         </div>

@@ -15,6 +15,7 @@ import {
     DialogTitle,
     DialogFooter,
 } from '@/components/ui/dialog';
+import Image from 'next/image';
 import { postApi } from '@/lib/api/post.api';
 
 const REACTIONS = [
@@ -55,10 +56,15 @@ interface CommentItemProps {
     comment: IComment;
     post: IPost;
     onCommentUpdated: () => Promise<void>;
-    level?: number;
+    isChild?: boolean;
 }
 
-export default function CommentItem({ comment, post, onCommentUpdated, level = 0 }: CommentItemProps) {
+export default function CommentItem({
+    comment,
+    post,
+    onCommentUpdated,
+    isChild = false,
+}: CommentItemProps) {
     const { user, token } = useAuthStore();
     const [showReplyInput, setShowReplyInput] = useState(false);
     const [replyContent, setReplyContent] = useState('');
@@ -86,18 +92,16 @@ export default function CommentItem({ comment, post, onCommentUpdated, level = 0
 
     const getUserReaction = () => {
         if (!user) return null;
-        return REACTIONS.find((r) =>
-            localReactions[r.type as ReactionKey]?.includes(user.id)
-        ) ?? null;
+        return REACTIONS.find((r) => localReactions[r.type as ReactionKey]?.includes(user.id)) ?? null;
     };
 
     const userReaction = getUserReaction();
     const totalReactions = getTotalReactions(localReactions);
-    const canDelete = user && (
-        user.id === comment.user._id ||
-        user.id === post.author._id ||
-        user.role === 'admin'
-    );
+    const canDelete =
+        user &&
+        (user.id === comment.user.id ||
+            user.id === post.author.id ||
+            user.role === 'admin');
 
     const handleReaction = async (type: string) => {
         if (!token || !user) {
@@ -139,7 +143,8 @@ export default function CommentItem({ comment, post, onCommentUpdated, level = 0
 
         setSubmitting(true);
         try {
-            await postApi.addComment(post._id, replyContent, token, comment._id);
+            const rootId = comment.parentId ?? comment._id;
+            await postApi.addComment(post._id, replyContent, token, rootId);
             setReplyContent('');
             setShowReplyInput(false);
             await onCommentUpdated();
@@ -186,61 +191,87 @@ export default function CommentItem({ comment, post, onCommentUpdated, level = 0
 
     return (
         <>
-            <div className={`flex gap-3 ${level > 0 ? 'ml-10 mt-3' : 'mt-4'}`}>
-                <Avatar className="w-8 h-8 flex-shrink-0">
+            <div className={`flex gap-2 sm:gap-3 ${isChild ? 'ml-8 sm:ml-10 mt-3' : 'mt-4'}`}>
+                <Avatar className="w-7 h-7 sm:w-8 sm:h-8 flex-shrink-0 mt-0.5">
                     <AvatarImage src={comment.user?.avatar} />
                     <AvatarFallback>{comment.user?.fullName?.charAt(0) || 'U'}</AvatarFallback>
                 </Avatar>
 
                 <div className="flex-1 min-w-0">
-                    <div className="bg-gray-100 dark:bg-gray-800 px-4 py-2.5 rounded-2xl inline-block max-w-full">
-                        <div className="flex items-center gap-2 mb-0.5">
-                            <p className="font-semibold text-sm">{comment.user?.fullName || 'Người dùng'}</p>
-                            {comment.user?._id === post.author._id && (
+                    <div className="bg-gray-100 dark:bg-gray-800 px-3 sm:px-4 py-2.5 rounded-2xl inline-block max-w-full">
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mb-0.5">
+                            <p className="font-semibold text-sm leading-tight">
+                                {comment.user?.fullName || 'Người dùng'}
+                            </p>
+                            {comment.user?.id === post.author.id && (
                                 <span className="text-xs bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-full">
                                     Tác giả
                                 </span>
                             )}
                         </div>
-                        {comment.replyToName && level > 0 && (
-                            <span className="text-xs text-blue-500 font-medium">@{comment.replyToName} </span>
+                        {comment.replyToName && isChild && (
+                            <span className="text-xs text-blue-500 font-medium">
+                                @{comment.replyToName}{' '}
+                            </span>
                         )}
-                        <p className="text-sm text-gray-700 dark:text-gray-300 break-words">{comment.content}</p>
+                        <p className="text-sm text-gray-700 dark:text-gray-300 break-words whitespace-pre-wrap">
+                            {comment.content}
+                        </p>
                     </div>
 
                     {totalReactions > 0 && (
                         <div className="flex items-center gap-1 mt-1 ml-1">
                             <div className="flex -space-x-1">
-                                {REACTIONS.filter((r) => localReactions[r.type as ReactionKey]?.length > 0)
+                                {REACTIONS.filter(
+                                    (r) => localReactions[r.type as ReactionKey]?.length > 0
+                                )
                                     .slice(0, 3)
                                     .map((r) => (
-                                        <img key={r.type} src={r.icon} alt={r.type} className="w-4 h-4" />
+                                        <Image
+                                            width={16}
+                                            height={16}
+                                            key={r.type}
+                                            src={r.icon}
+                                            alt={r.type}
+                                            className="w-4 h-4"
+                                        />
                                     ))}
                             </div>
                             <span className="text-xs text-muted-foreground">{totalReactions}</span>
                         </div>
                     )}
 
-                    <div className="flex items-center gap-3 mt-1 ml-1">
-                        <span className="text-xs text-muted-foreground">{formatDate(comment.createdAt)}</span>
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 ml-1">
+                        <span className="text-xs text-muted-foreground whitespace-nowrap">
+                            {formatDate(comment.createdAt)}
+                        </span>
 
                         <div className="relative" ref={popupRef}>
                             <button
                                 onClick={() => setShowReactionPopup(!showReactionPopup)}
-                                className={`text-xs font-semibold transition ${userReaction ? 'text-blue-500' : 'text-muted-foreground hover:text-foreground'}`}
+                                className={`text-xs font-semibold transition ${userReaction
+                                    ? 'text-blue-500'
+                                    : 'text-muted-foreground hover:text-foreground'
+                                    }`}
                             >
                                 {userReaction ? userReaction.label : 'Thích'}
                             </button>
                             {showReactionPopup && (
-                                <div className="absolute bottom-full left-0 mb-2 bg-white dark:bg-gray-800 rounded-full shadow-xl border border-gray-200 dark:border-gray-700 px-3 py-2 flex gap-1 z-50">
+                                <div className="absolute bottom-full left-0 mb-2 bg-white dark:bg-gray-800 rounded-full shadow-xl border border-gray-200 dark:border-gray-700 px-2 sm:px-3 py-2 flex gap-0.5 sm:gap-1 z-50">
                                     {REACTIONS.map((reaction) => (
                                         <button
                                             key={reaction.type}
                                             onClick={() => handleReaction(reaction.type)}
                                             title={reaction.label}
-                                            className="w-9 h-9 hover:scale-125 transition-transform duration-150 rounded-full flex items-center justify-center"
+                                            className="w-8 h-8 sm:w-9 sm:h-9 hover:scale-125 transition-transform duration-150 rounded-full flex items-center justify-center"
                                         >
-                                            <img src={reaction.icon} alt={reaction.type} className="w-7 h-7" />
+                                            <Image
+                                                width={24}
+                                                height={24}
+                                                src={reaction.icon}
+                                                alt={reaction.type}
+                                                className="w-6 h-6 sm:w-7 sm:h-7"
+                                            />
                                         </button>
                                     ))}
                                 </div>
@@ -260,7 +291,7 @@ export default function CommentItem({ comment, post, onCommentUpdated, level = 0
                                 className="text-xs font-semibold text-muted-foreground hover:text-red-500 transition flex items-center gap-1"
                             >
                                 <Trash2 size={12} />
-                                Xóa
+                                <span>Xóa</span>
                             </button>
                         )}
 
@@ -269,7 +300,7 @@ export default function CommentItem({ comment, post, onCommentUpdated, level = 0
                             className="text-xs font-semibold text-muted-foreground hover:text-red-500 transition flex items-center gap-1"
                         >
                             <Flag size={12} />
-                            Báo cáo
+                            <span>Báo cáo</span>
                         </button>
                     </div>
 
@@ -279,19 +310,30 @@ export default function CommentItem({ comment, post, onCommentUpdated, level = 0
                                 <AvatarImage src={user?.avatar} />
                                 <AvatarFallback>{user?.fullName?.charAt(0) || 'U'}</AvatarFallback>
                             </Avatar>
-                            <div className="flex-1">
+                            <div className="flex-1 min-w-0">
                                 <Textarea
                                     placeholder={`Trả lời ${comment.user?.fullName}...`}
                                     value={replyContent}
                                     onChange={(e) => setReplyContent(e.target.value)}
                                     rows={2}
-                                    className="text-sm rounded-2xl resize-none"
+                                    className="text-sm rounded-2xl resize-none w-full"
                                 />
                                 <div className="flex gap-2 mt-2">
-                                    <Button size="sm" onClick={handleReply} disabled={submitting || !replyContent.trim()}>
+                                    <Button
+                                        size="sm"
+                                        onClick={handleReply}
+                                        disabled={submitting || !replyContent.trim()}
+                                    >
                                         {submitting ? 'Đang gửi...' : 'Gửi'}
                                     </Button>
-                                    <Button size="sm" variant="ghost" onClick={() => { setShowReplyInput(false); setReplyContent(''); }}>
+                                    <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        onClick={() => {
+                                            setShowReplyInput(false);
+                                            setReplyContent('');
+                                        }}
+                                    >
                                         Hủy
                                     </Button>
                                 </div>
@@ -299,7 +341,7 @@ export default function CommentItem({ comment, post, onCommentUpdated, level = 0
                         </div>
                     )}
 
-                    {comment.children && comment.children.length > 0 && (
+                    {!isChild && comment.children && comment.children.length > 0 && (
                         <div className="mt-2 space-y-1">
                             {comment.children.map((child) => (
                                 <CommentItem
@@ -307,7 +349,7 @@ export default function CommentItem({ comment, post, onCommentUpdated, level = 0
                                     comment={child}
                                     post={post}
                                     onCommentUpdated={onCommentUpdated}
-                                    level={1}
+                                    isChild={true}
                                 />
                             ))}
                         </div>
@@ -337,7 +379,9 @@ export default function CommentItem({ comment, post, onCommentUpdated, level = 0
                         ))}
                     </div>
                     <DialogFooter className="gap-2">
-                        <Button variant="ghost" onClick={() => setReportOpen(false)}>Hủy</Button>
+                        <Button variant="ghost" onClick={() => setReportOpen(false)}>
+                            Hủy
+                        </Button>
                         <Button onClick={handleReport} disabled={reporting || !selectedReason}>
                             {reporting ? 'Đang gửi...' : 'Gửi báo cáo'}
                         </Button>

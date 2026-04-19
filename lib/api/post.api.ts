@@ -28,6 +28,10 @@ export const postApi = {
         return response.json();
     },
 
+    trackView: async (slug: string): Promise<void> => {
+        await fetch(`${API_URL}/api/posts/${slug}/view`, { method: 'POST' });
+    },
+
     createPost: async (data: {
         title: string;
         description: string;
@@ -179,5 +183,5 @@ export const postApi = {
             body: JSON.stringify({ type })
         });
         return response.json();
-    }
+    },
 };
