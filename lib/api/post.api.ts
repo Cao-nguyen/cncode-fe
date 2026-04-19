@@ -28,6 +28,14 @@ const apiFetch = async <T>(
 };
 
 export const postApi = {
+    getFeaturedPosts: async (limit: number = 3): Promise<IApiResponse<IPost[]>> => {
+        return postApi.getPosts({
+            sort: '-views',
+            limit: limit,
+            status: 'published'
+        });
+    },
+
     getPosts: (params?: {
         category?: string;
         search?: string;

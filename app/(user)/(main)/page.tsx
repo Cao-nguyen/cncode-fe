@@ -1,4 +1,6 @@
 "use client"
+
+import { useState, useEffect } from "react"
 import "swiper/css"
 import "swiper/css/pagination"
 import Slideshow from "@/components/sections/home/slideshow"
@@ -7,14 +9,28 @@ import Link from "next/link"
 import CardCourses from "@/components/sections/course/cardcourses"
 import Roadmap from "@/components/ui/roadmap"
 import Stats from "@/components/sections/home/stats"
-import { User, Book, ListTodo, Award } from "lucide-react"
+import { User, Book, ListTodo, Award, Loader2 } from "lucide-react"
 import BlogCard from "@/components/blog/BlogCard"
 import Analytics from "@/components/sections/home/analytic"
 import WhyChoose from "@/components/sections/home/whychoose"
 import Testimonial from "@/components/sections/home/testimoninal"
 import FloatingButtons from "@/components/common/floatingicon"
+import { postApi } from "@/lib/api/post.api"
+import { IPost } from "@/types/post.type"
 
 export default function Home() {
+    const [featuredPosts, setFeaturedPosts] = useState<IPost[]>([])
+    const [loadingPosts, setLoadingPosts] = useState(true)
+
+    // State cho thống kê
+    const [stats, setStats] = useState({
+        today: 0,
+        guest: 0,
+        online: 0,
+        total: 0
+    })
+    const [loadingStats, setLoadingStats] = useState(true)
+
     const roadmapData = [
         {
             title: "Web Dev",
@@ -62,13 +78,64 @@ export default function Home() {
         }
     ]
 
+    useEffect(() => {
+        fetchFeaturedPosts()
+        fetchStatistics()
+
+        // Refresh thống kê mỗi 30 giây
+        const interval = setInterval(fetchStatistics, 30000)
+        return () => clearInterval(interval)
+    }, [])
+
+    const fetchFeaturedPosts = async () => {
+        try {
+            setLoadingPosts(true)
+            const response = await postApi.getFeaturedPosts(3)
+            if (response.success) {
+                setFeaturedPosts(response.data)
+            }
+        } catch (error) {
+            console.error("Lỗi khi lấy bài viết nổi bật:", error)
+        } finally {
+            setLoadingPosts(false)
+        }
+    }
+
+    const fetchStatistics = async () => {
+        try {
+            setLoadingStats(true)
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/public/stats`)
+            const result = await response.json()
+
+            if (result.success) {
+                setStats({
+                    total: result.data.totalVisits,
+                    today: result.data.todayVisits,
+                    guest: result.data.onlineGuest,
+                    online: result.data.onlineUser
+                })
+            }
+        } catch (error) {
+            console.error("Lỗi khi lấy thống kê:", error)
+        } finally {
+            setLoadingStats(false)
+        }
+    }
+
+    // Helper để tính thời gian đọc (ước lượng)
+    const getReadingTime = (content: string) => {
+        const wordsPerMinute = 200
+        const wordCount = content?.split(/\s+/).length || 0
+        const minutes = Math.ceil(wordCount / wordsPerMinute)
+        return `${minutes} phút đọc`
+    }
+
     return (
         <div>
             <FloatingButtons />
             <Slideshow />
             <div className="m-5 xl:m-10">
                 {/* Banner giới thiệu */}
-                {/* Lộ trình học tập */}
                 <div className="mt-8">
                     <div className="mb-5" data-aos="fade-up">
                         <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-black dark:text-white">
@@ -228,7 +295,7 @@ export default function Home() {
                     </div>
                 </div>
 
-                {/* Bài viết */}
+                {/* Bài viết nổi bật */}
                 <div className="mt-8">
                     <div className="mb-5" data-aos="fade-up">
                         <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-black dark:text-white">
@@ -236,69 +303,42 @@ export default function Home() {
                         </h1>
 
                         <p className="text-sm text-gray-500 dark:text-gray-400">
-                            Hãy xem mọi người đang bàn luận về những vấn đề nào
+                            Những bài viết được quan tâm nhiều nhất
                         </p>
 
                         <div className="w-16 h-0.75 bg-black dark:bg-white mt-2 rounded-full" />
                     </div>
 
-                    <div
-                        className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
-                        data-aos="fade-up"
-                        data-aos-delay="100"
-                    >
-                        <div data-aos="zoom-in" data-aos-delay="100">
-                            <BlogCard
-                                title="Cách học lập trình hiệu quả cho người mới bắt đầu"
-                                description="Bài viết này sẽ giúp bạn hiểu rõ lộ trình học lập trình từ con số 0 đến khi có thể đi làm thực tế..."
-                                image="/images/image2.jpg"
-                                time="5 phút đọc"
-                                author="Nguyễn Văn A"
-                                avatar="/images/avatar.jpg"
-                                category="Frontend"
-                                link="/blog/1"
-                            />
+                    {loadingPosts ? (
+                        <div className="flex justify-center items-center py-12">
+                            <Loader2 size={40} className="animate-spin text-blue-600" />
                         </div>
-                        <div data-aos="zoom-in" data-aos-delay="100">
-                            <BlogCard
-                                title="Cách học lập trình hiệu quả cho người mới bắt đầu"
-                                description="Bài viết này sẽ giúp bạn hiểu rõ lộ trình học lập trình từ con số 0 đến khi có thể đi làm thực tế..."
-                                image="/images/image2.jpg"
-                                time="5 phút đọc"
-                                author="Nguyễn Văn A"
-                                avatar="/images/avatar.jpg"
-                                category="Frontend"
-                                link="/blog/1"
-                            />
+                    ) : featuredPosts.length === 0 ? (
+                        <div className="text-center py-12 text-gray-500">
+                            Chưa có bài viết nào.
                         </div>
-                        <div data-aos="zoom-in" data-aos-delay="100">
-                            <BlogCard
-                                title="Cách học lập trình hiệu quả cho người mới bắt đầu"
-                                description="Bài viết này sẽ giúp bạn hiểu rõ lộ trình học lập trình từ con số 0 đến khi có thể đi làm thực tế..."
-                                image="/images/image2.jpg"
-                                time="5 phút đọc"
-                                author="Nguyễn Văn A"
-                                avatar="/images/avatar.jpg"
-                                category="Frontend"
-                                link="/blog/1"
-                            />
+                    ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+                            {featuredPosts.map((post, idx) => (
+                                <div key={post._id} data-aos="zoom-in" data-aos-delay={100 + idx * 50}>
+                                    <BlogCard
+                                        title={post.title}
+                                        description={post.description}
+                                        image={post.thumbnail}
+                                        time={getReadingTime(post.content)}
+                                        author={post.author?.fullName || "CNcode"}
+                                        avatar={post.author?.avatar || "/images/avatar.jpg"}
+                                        category={post.category}
+                                        link={`/blog/${post.slug}`}
+                                        views={post.views}
+                                    />
+                                </div>
+                            ))}
                         </div>
-                        <div data-aos="zoom-in" data-aos-delay="100">
-                            <BlogCard
-                                title="Cách học lập trình hiệu quả cho người mới bắt đầu"
-                                description="Bài viết này sẽ giúp bạn hiểu rõ lộ trình học lập trình từ con số 0 đến khi có thể đi làm thực tế..."
-                                image="/images/image2.jpg"
-                                time="5 phút đọc"
-                                author="Nguyễn Văn A"
-                                avatar="/images/avatar.jpg"
-                                category="Frontend"
-                                link="/blog/1"
-                            />
-                        </div>
-                    </div>
+                    )}
                 </div>
 
-                {/* Thống kê truy cập */}
+                {/* Thống kê truy cập - DỮ LIỆU THẬT TỪ API */}
                 <div className="mt-8">
                     <div className="mb-5" data-aos="fade-up">
                         <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-black dark:text-white">
@@ -308,14 +348,18 @@ export default function Home() {
                         <div className="w-16 h-0.75 bg-black dark:bg-white mt-2 rounded-full" />
                     </div>
 
-                    <div className="mx-auto">
+                    {loadingStats ? (
+                        <div className="flex justify-center items-center py-12">
+                            <Loader2 size={40} className="animate-spin text-blue-600" />
+                        </div>
+                    ) : (
                         <Analytics
-                            today={1200}
-                            guest={320}
-                            online={180}
-                            total={420000}
+                            today={stats.today}
+                            guest={stats.guest}
+                            online={stats.online}
+                            total={stats.total}
                         />
-                    </div>
+                    )}
                 </div>
 
                 {/* Người dùng nói gì về chúng tôi */}

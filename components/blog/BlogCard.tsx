@@ -16,6 +16,7 @@ interface IBlogCardProps {
     avatar: string;
     category: string;
     link?: string;
+    views?: number;
 }
 
 export default function BlogCard({
