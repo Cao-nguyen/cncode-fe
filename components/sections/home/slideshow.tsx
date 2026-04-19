@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft2, ArrowRight2 } from "iconsax-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 const SLIDES = [
     { img: "/images/images1.jpg", link: "/course" },
@@ -45,11 +45,11 @@ export default function Slideshow() {
                 ))}
 
                 <button onClick={() => handleManual(prev)} className="absolute z-20 left-2 md:left-4 top-1/2 -translate-y-1/2 w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded-full bg-white/80 shadow hover:bg-white">
-                    <ArrowLeft2 size="18" color="#111" variant="Outline" />
+                    <ChevronLeft size="18" color="#111" />
                 </button>
 
                 <button onClick={() => handleManual(next)} className="absolute z-20 right-2 md:right-4 top-1/2 -translate-y-1/2 w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded-full bg-white/80 shadow hover:bg-white">
-                    <ArrowRight2 size="18" color="#111" variant="Outline" />
+                    <ChevronRight size="18" color="#111" />
                 </button>
 
                 {/* dots */}

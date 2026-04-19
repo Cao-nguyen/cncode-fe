@@ -4,14 +4,14 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
-import { Sun, Moon, Bell, User, Settings, LogOut, BookOpen, FileText, Home, ShoppingBag, Heart } from "lucide-react";
+import { Sun, Moon, User, Settings, LogOut, BookOpen, FileText, Home, ShoppingBag, Heart } from "lucide-react";
 import {
-    Home2,
-    Message2,
-    Book1,
-    DocumentCode,
-    Calendar2,
-    Document,
+    Home2 as Trangchu,
+    Message2 as Diendan,
+    Book1 as Khoahoc,
+    DocumentCode as Luyentap,
+    Calendar2 as Sukien,
+    Document as Baiviet,
 } from "iconsax-react";
 import NotificationBell from "./NotificationBell";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -151,12 +151,12 @@ export default function Header() {
     ];
 
     const menuMobile = [
-        { title: "Trang chủ", link: "/", icon: Home2 },
-        { title: "Diễn đàn", link: "/forum", icon: Message2 },
-        { title: "Khoá học", link: "/khoahoc", icon: Book1 },
-        { title: "Luyện tập", link: "/luyentap", icon: DocumentCode },
-        { title: "Sự kiện", link: "/sukien", icon: Calendar2 },
-        { title: "Bài viết", link: "/baiviet", icon: Document },
+        { title: "Trang chủ", link: "/", icon: Trangchu },
+        { title: "Diễn đàn", link: "/forum", icon: Diendan },
+        { title: "Khoá học", link: "/khoahoc", icon: Khoahoc },
+        { title: "Luyện tập", link: "/luyentap", icon: Luyentap },
+        { title: "Sự kiện", link: "/sukien", icon: Sukien },
+        { title: "Bài viết", link: "/baiviet", icon: Baiviet },
         { title: "Cửa hàng", link: "/cuahangso", icon: ShoppingBag },
     ];
 

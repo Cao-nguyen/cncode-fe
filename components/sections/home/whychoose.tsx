@@ -1,14 +1,14 @@
 "use client";
 
 import Image from "next/image";
-import { Teacher, Personalcard, People, Book } from "iconsax-react";
+import { GraduationCap, IdCard, UserRound, Book } from "lucide-react";
 
 // data tĩnh
 const DATA = [
-    { icon: <Book size={26} className="text-dark dark:text-white" variant="Bold" />, title: "Phương pháp giảng dạy hiện đại", desc: "Chương trình học được thiết kế phù hợp với chương trình và năng lực của người học" },
-    { icon: <People size={26} className="text-dark dark:text-white" variant="Bold" />, title: "Video bài giảng tương tác", desc: "Học online nhưng giống như đang học trên lớp với tính năng tương tác ngay trong lúc học" },
-    { icon: <Teacher size={26} className="text-dark dark:text-white" variant="Bold" />, title: "Giá cả của khoá học phù hợp", desc: "Giá cả phù hợp với nhiều đối tượng và có nhiều ưu đãi hàng tháng" },
-    { icon: <Personalcard size={26} className="text-dark dark:text-white" variant="Bold" />, title: "Cộng đồng hỗ trợ", desc: "CNcode không chỉ đang dạy bạn học mà đang kết nối bạn với những người cùng học để chia sẻ và trao đổi với nhau" }
+    { icon: <Book size={26} className="text-dark dark:text-white" />, title: "Phương pháp giảng dạy hiện đại", desc: "Chương trình học được thiết kế phù hợp với chương trình và năng lực của người học" },
+    { icon: <UserRound size={26} className="text-dark dark:text-white" />, title: "Video bài giảng tương tác", desc: "Học online nhưng giống như đang học trên lớp với tính năng tương tác ngay trong lúc học" },
+    { icon: <GraduationCap size={26} className="text-dark dark:text-white" />, title: "Giá cả của khoá học phù hợp", desc: "Giá cả phù hợp với nhiều đối tượng và có nhiều ưu đãi hàng tháng" },
+    { icon: <IdCard size={26} className="text-dark dark:text-white" />, title: "Cộng đồng hỗ trợ", desc: "CNcode không chỉ đang dạy bạn học mà đang kết nối bạn với những người cùng học để chia sẻ và trao đổi với nhau" }
 ];
 
 export default function WhyChoose() {

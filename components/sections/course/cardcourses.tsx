@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Clock, User, Eye } from "iconsax-react";
+import { Clock, User, Eye } from "lucide-react";
 
 interface CardCoursesProps {
     title: string;
@@ -61,11 +61,11 @@ export default function CardCourses({
 
                     <div className="flex items-center gap-3 mt-3 text-xs text-gray-500 dark:text-gray-400">
                         <span className="flex items-center gap-1">
-                            <Clock size={14} variant="Outline" />
+                            <Clock size={14} />
                             {duration}
                         </span>
                         <span className="flex items-center gap-1">
-                            <User size={14} variant="Outline" />
+                            <User size={14} />
                             {students} học viên
                         </span>
                     </div>
@@ -82,7 +82,7 @@ export default function CardCourses({
                             </span>
                         </div>
                         <span className="text-primary group-hover:translate-x-1 transition">
-                            <Eye size={18} variant="Outline" />
+                            <Eye size={18} />
                         </span>
                     </div>
                 </div>

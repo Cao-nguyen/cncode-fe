@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react"
 import Image from "next/image"
-import { More, Like1, MessageText1, Send2 } from "iconsax-react"
+import { Ellipsis, ThumbsUp, MessageSquareMore, Send } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent } from "@/components/ui/dialog"
@@ -180,7 +180,7 @@ export default function PostFeed() {
                                     </div>
                                 </div>
 
-                                <More size={20} />
+                                <Ellipsis size={20} />
                             </div>
 
                             {/* Content */}
@@ -289,7 +289,7 @@ export default function PostFeed() {
                                                 className="no-download"
                                             />
                                         ) : (
-                                            <Like1 size={22} variant="Bold" />
+                                            <ThumbsUp size={22} />
                                         )}
                                         Like
                                     </button>
@@ -334,13 +334,13 @@ export default function PostFeed() {
 
                                 {/* Comment */}
                                 <button className="flex items-center gap-2">
-                                    <MessageText1 size={22} />
+                                    <MessageSquareMore size={22} />
                                     {post.comments}
                                 </button>
 
                                 {/* Share */}
                                 <button className="flex items-center gap-2">
-                                    <Send2 size={22} />
+                                    <Send size={22} />
                                     {post.shares}
                                 </button>
                             </div>

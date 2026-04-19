@@ -7,7 +7,7 @@ import Link from "next/link"
 import CardCourses from "@/components/sections/course/cardcourses"
 import Roadmap from "@/components/ui/roadmap"
 import Stats from "@/components/sections/home/stats"
-import { User, Book, TaskSquare, Award } from "iconsax-react"
+import { User, Book, ListTodo, Award } from "lucide-react"
 import BlogCard from "@/components/blog/BlogCard"
 import Analytics from "@/components/sections/home/analytic"
 import WhyChoose from "@/components/sections/home/whychoose"
@@ -43,22 +43,22 @@ export default function Home() {
         {
             label: "Người học",
             value: 12000,
-            icon: <User size={20} className="text-white dark:text-black" variant="Bold" />
+            icon: <User size={20} className="text-white dark:text-black" />
         },
         {
             label: "Khoá học",
             value: 120,
-            icon: <Book size={20} className="text-white dark:text-black" variant="Bold" />
+            icon: <Book size={20} className="text-white dark:text-black" />
         },
         {
             label: "Bài tập",
             value: 3500,
-            icon: <TaskSquare size={20} className="text-white dark:text-black" variant="Bold" />
+            icon: <ListTodo size={20} className="text-white dark:text-black" />
         },
         {
             label: "Thành tựu",
             value: 980,
-            icon: <Award size={20} className="text-white dark:text-black" variant="Bold" />
+            icon: <Award size={20} className="text-white dark:text-black" />
         }
     ]
 

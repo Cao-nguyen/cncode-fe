@@ -1,11 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { SmsTracking, MessageQuestion } from "iconsax-react";
+import { MessageSquareMore, Bot } from "lucide-react";
 
 const data = [
-    { icon: SmsTracking, label: "Chat với Admin", href: "/chatwithadmin" },
-    { icon: MessageQuestion, label: "Gia sư AI", href: "/giasuai" },
+    { icon: MessageSquareMore, label: "Chat với Admin", href: "/chatwithadmin" },
+    { icon: Bot, label: "Gia sư AI", href: "/giasuai" },
 ];
 
 export default function FloatingButtons() {
@@ -22,7 +22,7 @@ export default function FloatingButtons() {
                         </div>
 
                         <Link href={item.href} className="w-10 h-10 rounded-full bg-black text-white dark:bg-white dark:text-black flex items-center justify-center shadow-lg hover:scale-105 transition">
-                            <Icon variant="Bulk" size={23} />
+                            <Icon size={23} />
                         </Link>
                     </div>
                 );

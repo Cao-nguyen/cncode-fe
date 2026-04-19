@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Star1 } from "iconsax-react";
+import { Star } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 interface Comment {
@@ -72,9 +72,8 @@ export default function Testimonial() {
                 <div className="flex items-center gap-2">
                     {[1, 2, 3, 4, 5].map((v) => (
                         <button key={v} onClick={() => setRating(v)} className="transition-transform duration-200 hover:-translate-y-1">
-                            <Star1
+                            <Star
                                 size={28}
-                                variant="Bold"
                                 className={`transition-all ${v <= rating ? "text-yellow-400 scale-110" : "text-gray-300 dark:text-gray-500"}`}
                             />
                         </button>
@@ -134,7 +133,7 @@ export default function Testimonial() {
                                     <p className="font-semibold">{activeComment.name}</p>
                                     <div className="flex gap-1 mt-1">
                                         {Array.from({ length: activeComment.rating }).map((_, i) => (
-                                            <Star1 key={i} size={16} variant="Bold" className="text-yellow-400" />
+                                            <Star key={i} size={16} className="text-yellow-400" />
                                         ))}
                                     </div>
                                 </div>

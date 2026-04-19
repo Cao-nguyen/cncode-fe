@@ -5,11 +5,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { useSelector } from "react-redux";
 import { selectUser } from "@/store/userSlice";
-import { Check, User, Book, Clock, Coin, ShoppingCart, DocumentText } from "iconsax-react";
+import { Check, User, Book, Clock, Coins, ShoppingCart, File } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { getCourseById, courses } from "@/lib/courseData";
+import { getCourseById } from "@/lib/courseData";
 
 export default function CourseDetailPage() {
     const { id } = useParams<{ id: string }>();
@@ -110,7 +110,7 @@ export default function CourseDetailPage() {
                                     <span className="text-2xl font-bold text-green-500">Miễn phí</span>
                                 ) : (
                                     <div className="flex items-center justify-center gap-1">
-                                        <Coin size={24} className="text-yellow-500" />
+                                        <Coins size={24} className="text-yellow-500" />
                                         <span className="text-3xl font-bold">{course.price.toLocaleString()}</span>
                                         <span className="text-muted-foreground">xu</span>
                                     </div>
@@ -134,7 +134,7 @@ export default function CourseDetailPage() {
                                 <div className="mt-4 pt-4 border-t border-border">
                                     <p className="text-xs text-muted-foreground text-center">Hoặc thanh toán qua</p>
                                     <Button variant="outline" className="w-full mt-2 gap-2">
-                                        <DocumentText size={16} />
+                                        <File size={16} />
                                         Chuyển khoản PayOS
                                     </Button>
                                 </div>

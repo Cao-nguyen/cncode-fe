@@ -3,15 +3,15 @@
 import { useRef, useState, useEffect } from "react"
 import Image from "next/image"
 import {
-    VolumeHigh,
-    VolumeMute,
+    Volume2,
+    VolumeOff,
     Pause,
     Play,
     Heart,
-    Message,
+    MessageSquareMore,
     Bookmark,
-    Send2,
-} from "iconsax-react"
+    Send,
+} from "lucide-react"
 
 const videos = [
     "Li9J5TB7Pg4",
@@ -190,7 +190,7 @@ export default function Feed() {
 
                             <div className="absolute top-3 right-3 z-20">
                                 <button onClick={toggleMute} className="bg-black/50 p-2 rounded-full text-white">
-                                    {isMuted ? <VolumeMute size="20" /> : <VolumeHigh size="20" />}
+                                    {isMuted ? <VolumeOff size="20" /> : <Volume2 size="20" />}
                                 </button>
                             </div>
 
@@ -208,19 +208,19 @@ export default function Feed() {
                                     </div>
                                 </div>
                                 <button className="flex flex-col items-center">
-                                    <Heart variant="Bold" size="28" />
+                                    <Heart size="28" />
                                     <span className="text-[10px] font-bold">1.2k</span>
                                 </button>
                                 <button className="flex flex-col items-center">
-                                    <Message variant="Bold" size="28" />
+                                    <MessageSquareMore size="28" />
                                     <span className="text-[10px] font-bold">Bóc tem</span>
                                 </button>
                                 <button className="flex flex-col items-center">
-                                    <Bookmark variant="Bold" size="28" />
+                                    <Bookmark size="28" />
                                     <span className="text-[10px] font-bold">3K</span>
                                 </button>
                                 <button className="flex flex-col items-center">
-                                    <Send2 variant="Bold" size="28" />
+                                    <Send size="28" />
                                     <span className="text-[10px] font-bold">2.0K</span>
                                 </button>
                             </div>

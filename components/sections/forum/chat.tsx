@@ -2,26 +2,26 @@
 
 import { useState, useRef, useEffect } from "react"
 import {
-    SearchNormal1,
-    Send2,
-    Gallery,
-    DirectSend,
-    Element3,
-    SidebarLeft,
-    LikeShapes,
+    Search,
+    Send,
+    Image as Galary,
+    Folder,
+    Component,
+    PanelRight,
+    ThumbsUp,
     Clock,
-    Paperclip2,
-    Notification,
-    Link21,
-    DocumentText,
-    Setting2,
-    People,
-    EyeSlash,
-    Warning2,
-    UserRemove,
+    Paperclip,
+    Bell,
+    Link,
+    File,
+    Settings,
+    UserRound,
+    Eye,
+    OctagonAlert,
+    CircleX,
     Trash,
-    Back
-} from "iconsax-react"
+    ChevronLeft
+} from "lucide-react"
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -116,7 +116,7 @@ export default function ChatPage() {
                 {/* Sidebar content giữ nguyên */}
                 <div className="p-[9.6px] border-b">
                     <div className="flex items-center gap-2 bg-muted px-3 py-2 rounded-xl">
-                        <SearchNormal1 variant="Outline" size={20} />
+                        <Search size={20} />
                         <input className="bg-transparent outline-none text-sm w-full" />
                     </div>
                 </div>
@@ -161,7 +161,7 @@ export default function ChatPage() {
                         <div className="h-14 border-b flex items-center justify-between px-4">
                             <div className="flex items-center gap-3">
                                 <button className="md:hidden" onClick={() => setView("list")}>
-                                    <Back variant="Bold" size={20} />
+                                    <ChevronLeft size={20} />
                                 </button>
 
                                 <Avatar>
@@ -175,13 +175,13 @@ export default function ChatPage() {
                             </div>
 
                             <button onClick={() => setShowInfo(true)}>
-                                <SidebarLeft variant="Bold" size={20} />
+                                <PanelRight size={20} />
                             </button>
                         </div>
 
                         {/* PIN */}
                         <div className="px-4 py-2 text-sm bg-muted border-b flex items-center gap-2">
-                            <Paperclip2 variant="Bold" size={20} />
+                            <Paperclip size={20} />
                             Họp lúc 8h - Nguyễn Văn A
                         </div>
 
@@ -225,8 +225,8 @@ export default function ChatPage() {
                         {/* INPUT */}
                         <div className="border-t p-3 space-y-2">
                             <div className="flex items-center gap-3 text-muted-foreground relative">
-                                <Gallery variant="Bold" size={22} onClick={handleSelectImage} />
-                                <DirectSend variant="Bold" size={22} onClick={handleSelectFile} />
+                                <Galary size={22} onClick={handleSelectImage} />
+                                <Folder size={22} onClick={handleSelectFile} />
 
                                 <div
                                     onMouseEnter={() => {
@@ -239,15 +239,15 @@ export default function ChatPage() {
                                     }}
                                     className="relative"
                                 >
-                                    <Element3 variant="Bold" size={22} />
+                                    <Component size={22} />
 
                                     {showTools && (
                                         <div className="absolute bottom-6 left-0 bg-background border rounded-lg shadow p-2 w-36">
                                             <div className="flex items-center gap-2 p-2 hover:bg-muted rounded cursor-pointer">
-                                                <LikeShapes variant="Bold" size={20} /> Bình chọn
+                                                <ThumbsUp size={20} /> Bình chọn
                                             </div>
                                             <div className="flex items-center gap-2 p-2 hover:bg-muted rounded cursor-pointer">
-                                                <Clock variant="Bold" size={20} /> Nhắn hẹn
+                                                <Clock size={20} /> Nhắn hẹn
                                             </div>
                                         </div>
                                     )}
@@ -266,7 +266,7 @@ export default function ChatPage() {
                                 />
 
                                 <button className="p-2 bg-blue-500 text-white rounded-lg">
-                                    <Send2 variant="Bold" size={20} />
+                                    <Send size={20} />
                                 </button>
                             </div>
                         </div>
@@ -277,11 +277,10 @@ export default function ChatPage() {
             {/* PANEL */}
             {showInfo && (
                 <div className="fixed right-0 z-50 bg-background border-l w-full md:w-80 h-[calc(100dvh-130px)] md:h-[calc(100dvh-90px)] flex flex-col">
-                    {/* Panel content giữ nguyên y hệt code gốc */}
                     <div className="h-14 border-b flex items-center justify-between px-4 shrink-0">
                         <p className="font-semibold text-sm">Thông tin hội thoại</p>
                         <button onClick={() => setShowInfo(false)}>
-                            <SidebarLeft variant="Bold" size={20} />
+                            <PanelRight size={20} />
                         </button>
                     </div>
 
@@ -293,15 +292,15 @@ export default function ChatPage() {
 
                         <div className="grid grid-cols-3 gap-2 text-xs">
                             <div className="p-2 rounded-xl hover:bg-muted flex flex-col items-center gap-1">
-                                <Notification variant="Bold" size={26} />
+                                <Bell size={26} />
                                 <p className="text-center">Tắt thông báo</p>
                             </div>
                             <div className="p-2 rounded-xl hover:bg-muted flex flex-col items-center gap-1">
-                                <Paperclip2 variant="Bold" size={26} />
+                                <Paperclip size={26} />
                                 <p className="text-center">Ghim</p>
                             </div>
                             <div className="p-2 rounded-xl hover:bg-muted flex flex-col items-center gap-1">
-                                <Element3 variant="Bold" size={26} />
+                                <Component size={26} />
                                 <p className="text-center">Tạo nhóm</p>
                             </div>
                         </div>
@@ -309,18 +308,18 @@ export default function ChatPage() {
                         <div className="h-2 bg-muted -mx-4" />
 
                         <div className="space-y-2 text-sm">
-                            <div className="p-2 rounded-xl hover:bg-muted flex items-center gap-3"><Clock variant="Bold" size={26} /><p>Nhắn hẹn</p></div>
-                            <div className="p-2 rounded-xl hover:bg-muted flex items-center gap-3"><LikeShapes variant="Bold" size={26} /><p>Bình chọn</p></div>
-                            <div className="p-2 rounded-xl hover:bg-muted flex items-center gap-3"><Gallery variant="Bold" size={26} /><p>Ảnh</p></div>
-                            <div className="p-2 rounded-xl hover:bg-muted flex items-center gap-3"><Link21 variant="Bold" size={26} /><p>Link</p></div>
-                            <div className="p-2 rounded-xl hover:bg-muted flex items-center gap-3"><DocumentText variant="Bold" size={26} /><p>File</p></div>
+                            <div className="p-2 rounded-xl hover:bg-muted flex items-center gap-3"><Clock size={26} /><p>Nhắn hẹn</p></div>
+                            <div className="p-2 rounded-xl hover:bg-muted flex items-center gap-3"><ThumbsUp size={26} /><p>Bình chọn</p></div>
+                            <div className="p-2 rounded-xl hover:bg-muted flex items-center gap-3"><Galary size={26} /><p>Ảnh</p></div>
+                            <div className="p-2 rounded-xl hover:bg-muted flex items-center gap-3"><Link size={26} /><p>Link</p></div>
+                            <div className="p-2 rounded-xl hover:bg-muted flex items-center gap-3"><File size={26} /><p>File</p></div>
                         </div>
 
                         <div className="h-2 bg-muted -mx-4" />
 
                         <div className="space-y-2 text-sm">
-                            <div className="p-2 rounded-xl hover:bg-muted flex items-center gap-3"><Setting2 variant="Bold" size={26} /><p>Cài đặt chung</p></div>
-                            <div className="p-2 rounded-xl hover:bg-muted flex items-center gap-3"><People variant="Bold" size={26} /><p>Cài đặt cộng đồng</p></div>
+                            <div className="p-2 rounded-xl hover:bg-muted flex items-center gap-3"><Settings size={26} /><p>Cài đặt chung</p></div>
+                            <div className="p-2 rounded-xl hover:bg-muted flex items-center gap-3"><UserRound size={26} /><p>Cài đặt cộng đồng</p></div>
                         </div>
 
                         <div className="h-2 bg-muted -mx-4" />
@@ -328,7 +327,7 @@ export default function ChatPage() {
                         <div className="space-y-2 text-sm">
                             <div className="p-2 rounded-xl hover:bg-muted flex items-center justify-between">
                                 <div className="flex items-center gap-3">
-                                    <EyeSlash variant="Bold" size={26} />
+                                    <Eye size={26} />
                                     <p>Ẩn cuộc trò chuyện</p>
                                 </div>
 
@@ -348,9 +347,9 @@ export default function ChatPage() {
                                 </div>
                             </div>
 
-                            <div className="p-2 rounded-xl hover:bg-muted flex items-center gap-3 text-red-500"><Warning2 variant="Bold" size={26} /><p>Báo xấu</p></div>
-                            <div className="p-2 rounded-xl hover:bg-muted flex items-center gap-3 text-red-500"><UserRemove variant="Bold" size={26} /><p>Chặn</p></div>
-                            <div className="p-2 rounded-xl hover:bg-muted flex items-center gap-3 text-red-500"><Trash variant="Bold" size={26} /><p>Xoá lịch sử</p></div>
+                            <div className="p-2 rounded-xl hover:bg-muted flex items-center gap-3 text-red-500"><OctagonAlert size={26} /><p>Báo xấu</p></div>
+                            <div className="p-2 rounded-xl hover:bg-muted flex items-center gap-3 text-red-500"><CircleX size={26} /><p>Chặn</p></div>
+                            <div className="p-2 rounded-xl hover:bg-muted flex items-center gap-3 text-red-500"><Trash size={26} /><p>Xoá lịch sử</p></div>
                         </div>
                     </div>
                 </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { User, UserTick, Chart } from "iconsax-react";
+import { User, UserCheck, TrendingUp } from "lucide-react";
 
 interface AnalyticsProps {
     today: number;
@@ -11,10 +11,10 @@ interface AnalyticsProps {
 
 // config data
 const ITEMS = [
-    { label: "Tổng", key: "total", icon: Chart },
-    { label: "Hôm nay", key: "today", icon: Chart },
+    { label: "Tổng", key: "total", icon: TrendingUp },
+    { label: "Hôm nay", key: "today", icon: TrendingUp },
     { label: "Khách online", key: "guest", icon: User },
-    { label: "User online", key: "online", icon: UserTick }
+    { label: "User online", key: "online", icon: UserCheck }
 ] as const;
 
 export default function Analytics({ today, guest, online, total }: AnalyticsProps) {
@@ -40,7 +40,7 @@ export default function Analytics({ today, guest, online, total }: AnalyticsProp
                         </div>
 
                         {/* icon */}
-                        <Icon size={24} className="text-black dark:text-white" variant="Bold" />
+                        <Icon size={24} className="text-black dark:text-white" />
 
                     </div>
                 );

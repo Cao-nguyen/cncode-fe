@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { SearchNormal1, Coin, Book, Crown } from "iconsax-react";
+import { Search, CirclePoundSterling, Book, Crown } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -31,7 +31,7 @@ export default function KhoaHocPage() {
                     <h1 className="text-2xl md:text-3xl font-bold text-foreground">Khoá học</h1>
 
                     <div className="relative w-full md:w-80">
-                        <SearchNormal1 size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                        <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                         <Input
                             type="text"
                             placeholder="Tìm kiếm khoá học..."
@@ -44,7 +44,6 @@ export default function KhoaHocPage() {
 
                 <div className="flex flex-wrap gap-2 mb-6">
                     <Button
-                        variant={selectedLevel === "Tất cả" ? "default" : "outline"}
                         onClick={() => setSelectedLevel("Tất cả")}
                         size="sm"
                     >
@@ -53,7 +52,6 @@ export default function KhoaHocPage() {
                     {LEVELS.map((level) => (
                         <Button
                             key={level}
-                            variant={selectedLevel === level ? "default" : "outline"}
                             onClick={() => setSelectedLevel(level)}
                             size="sm"
                         >
@@ -64,14 +62,12 @@ export default function KhoaHocPage() {
 
                 <div className="flex gap-2 mb-8">
                     <Button
-                        variant={priceType === "all" ? "default" : "outline"}
                         onClick={() => setPriceType("all")}
                         size="sm"
                     >
                         Tất cả
                     </Button>
                     <Button
-                        variant={priceType === "free" ? "default" : "outline"}
                         onClick={() => setPriceType("free")}
                         size="sm"
                         className="gap-1"
@@ -79,7 +75,6 @@ export default function KhoaHocPage() {
                         <Book size={16} /> Miễn phí
                     </Button>
                     <Button
-                        variant={priceType === "pro" ? "default" : "outline"}
                         onClick={() => setPriceType("pro")}
                         size="sm"
                         className="gap-1"
@@ -108,7 +103,7 @@ export default function KhoaHocPage() {
                                             <Badge className="absolute top-2 left-2 bg-green-500">Miễn phí</Badge>
                                         ) : (
                                             <Badge className="absolute top-2 left-2 bg-yellow-500 gap-1">
-                                                <Coin size={12} /> {course.price.toLocaleString()} xu
+                                                <CirclePoundSterling size={12} /> {course.price.toLocaleString()} xu
                                             </Badge>
                                         )}
                                         <Badge className="absolute top-2 right-2 bg-black/70">{course.level}</Badge>

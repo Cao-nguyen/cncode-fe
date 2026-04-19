@@ -16,7 +16,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import Image from "next/image";
-import { ArrowLeft } from "iconsax-react";
+import { ChevronLeft } from "lucide-react";
 import Link from "next/link";
 import { postApi } from "@/lib/api/post.api";
 
@@ -139,7 +139,7 @@ export default function CreatePostPage() {
                 href="/baiviet"
                 className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 mb-4 transition"
             >
-                <ArrowLeft size={18} variant="Outline" />
+                <ChevronLeft size={18} />
                 Quay lại trang bài viết
             </Link>
 
