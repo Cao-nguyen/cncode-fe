@@ -51,5 +51,19 @@ export const digitalProductApi = {
       headers: { 'Authorization': `Bearer ${token}` }
     })
     return response.json()
-  }
+  },
+
+  getReviews: async (productId: string) => {
+    const res = await fetch(`${API_URL}/api/digital-products/${productId}/reviews`);
+    return res.json();
+  },
+
+  submitReview: async (productId: string, data: { rating: number; comment: string }, token: string) => {
+    const res = await fetch(`${API_URL}/api/digital-products/${productId}/reviews`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify(data),
+    });
+    return res.json();
+  },
 }

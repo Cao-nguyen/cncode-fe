@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Search, Star, Download, Filter, LayoutGrid, List, ChevronDown } from 'lucide-react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { digitalProductApi } from '@/lib/api/digital-product.api'
 import { IDigitalProduct } from '@/types/digital-product.type'
 
@@ -36,7 +37,7 @@ const formatNumber = (num: number) => {
 }
 
 const getCategoryColor = (category: string) => {
-  switch(category) {
+  switch (category) {
     case 'powerpoint': return 'bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400'
     case 'code': return 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
     case 'design': return 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400'
@@ -46,7 +47,7 @@ const getCategoryColor = (category: string) => {
 }
 
 const getCategoryName = (category: string) => {
-  switch(category) {
+  switch (category) {
     case 'powerpoint': return 'PowerPoint'
     case 'code': return 'Code'
     case 'design': return 'Design'
@@ -116,11 +117,10 @@ export default function CuaHangSoPage() {
                         <button
                           key={category.id}
                           onClick={() => setSelectedCategory(category.id)}
-                          className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
-                            selectedCategory === category.id
-                              ? 'bg-blue-600 text-white'
-                              : 'text-gray-700 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
-                          }`}
+                          className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${selectedCategory === category.id
+                            ? 'bg-blue-600 text-white'
+                            : 'text-gray-700 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                            }`}
                         >
                           {category.name}
                         </button>
@@ -183,7 +183,7 @@ export default function CuaHangSoPage() {
 
             {loading ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {[1,2,3,4,5,6].map((i) => (
+                {[1, 2, 3, 4, 5, 6].map((i) => (
                   <div key={i} className="bg-white dark:bg-[#171717] rounded-xl shadow-sm animate-pulse border border-gray-200 dark:border-gray-800">
                     <div className="h-48 bg-gray-200 dark:bg-gray-800 rounded-t-xl"></div>
                     <div className="p-5 space-y-3">
@@ -203,7 +203,7 @@ export default function CuaHangSoPage() {
                     className="group bg-white dark:bg-[#171717] rounded-xl shadow-sm hover:shadow-md transition-all overflow-hidden border border-gray-200 dark:border-gray-800"
                   >
                     <div className="relative h-48 overflow-hidden bg-gray-100 dark:bg-gray-800">
-                      <img src={product.thumbnail} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                      <Image width={300} height={200} src={product.thumbnail} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                       <div className={`absolute top-2 right-2 px-2 py-1 rounded-lg text-xs font-semibold ${getCategoryColor(product.category)}`}>
                         {getCategoryName(product.category)}
                       </div>
@@ -213,7 +213,7 @@ export default function CuaHangSoPage() {
                       <p className="text-sm text-gray-600 dark:text-gray-400 mb-3 line-clamp-2">{product.description}</p>
                       <div className="flex items-center gap-2 mb-3">
                         <div className="flex items-center gap-1">
-                          <Star size={16} className="text-yellow-400 fill-current" />
+                          <Star data-filled={true} size={16} className="text-yellow-400 fill-current" />
                           <span className="text-sm font-medium text-gray-900 dark:text-white">{product.rating.toFixed(1)}</span>
                         </div>
                         <span className="text-xs text-gray-500 dark:text-gray-500">({formatNumber(product.reviewCount)} đánh giá)</span>
@@ -242,7 +242,7 @@ export default function CuaHangSoPage() {
                   >
                     <div className="flex gap-4">
                       <div className="w-24 h-24 flex-shrink-0 bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden">
-                        <img src={product.thumbnail} alt={product.name} className="w-full h-full object-cover" />
+                        <Image width={100} height={100} src={product.thumbnail} alt={product.name} className="w-full h-full object-cover" />
                       </div>
                       <div className="flex-1">
                         <div className="flex items-start justify-between mb-2">
@@ -256,7 +256,7 @@ export default function CuaHangSoPage() {
                         </div>
                         <div className="flex items-center gap-4 text-sm">
                           <div className="flex items-center gap-1">
-                            <Star size={14} className="text-yellow-400 fill-current" />
+                            <Star data-filled={true} size={14} className="text-yellow-400 fill-current" />
                             <span className="text-gray-700 dark:text-gray-300">{product.rating.toFixed(1)}</span>
                           </div>
                           <div className="flex items-center gap-1">
