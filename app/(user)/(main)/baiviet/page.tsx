@@ -2,28 +2,15 @@
 
 import { useMemo, useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
-import { Plus } from 'lucide-react';
+import { Plus, Search } from 'lucide-react';
 import BlogCard from '@/components/blog/BlogCard';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { postApi } from '@/lib/api/post.api';
 import { IPost } from '@/types/post.type';
 
 const LIMIT = 8;
-
-const STATIC_HEADER = (
-    <div className="mb-8 space-y-6">
-        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-            <div className="max-w-2xl">
-                <h1 className="text-3xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">
-                    Tất cả bài viết
-                </h1>
-                <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
-                    Tìm nhanh bài viết theo tiêu đề, nội dung hoặc tác giả.
-                </p>
-            </div>
-        </div>
-    </div>
-);
 
 function BlogCardSkeleton() {
     return (
@@ -95,36 +82,37 @@ export default function BlogPage(): React.ReactElement {
         return `${minutes} phút đọc`;
     };
 
-    const formatDate = (dateString: string): string => {
-        const date = new Date(dateString);
-        const now = new Date();
-        const diffDays = Math.ceil(Math.abs(now.getTime() - date.getTime()) / 86_400_000);
-        if (diffDays === 1) return 'Hôm qua';
-        if (diffDays < 7) return `${diffDays} ngày trước`;
-        if (diffDays < 30) return `${Math.floor(diffDays / 7)} tuần trước`;
-        return date.toLocaleDateString('vi-VN');
-    };
-
     return (
-        <main className="px-4 py-8 sm:px-6 lg:px-8">
-            {STATIC_HEADER}
+        <main className="px-4 py-5 sm:px-5 lg:px-10 mx-auto">
+            {/* Header với title bên trái, search + button bên phải */}
+            <div className="flex flex-col gap-4 mb-8 md:flex-row md:items-center md:justify-between">
+                <div>
+                    <h1 className="text-3xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">
+                        Tất cả bài viết
+                    </h1>
+                    <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                        Khám phá kiến thức công nghệ và đổi mới sáng tạo
+                    </p>
+                </div>
 
-            {/* Search + button — tĩnh, không bị re-render khi fetch */}
-            <div className="flex w-full max-w-lg gap-3 mb-8">
-                <input
-                    type="search"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    placeholder="Tìm kiếm bài viết..."
-                    className="w-[60%] lg:w-[74%] rounded-3xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-slate-900 focus:ring-2 focus:ring-slate-200 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:border-slate-100 dark:focus:ring-slate-800"
-                />
-                <Link
-                    href="/me/baiviet/create"
-                    className="flex items-center gap-2 rounded-3xl bg-black dark:bg-white px-3 py-2 text-sm text-white dark:text-black shadow hover:opacity-90 transition"
-                >
-                    <Plus size={20} />
-                    <span>Tạo blog</span>
-                </Link>
+                <div className="flex items-center gap-3">
+                    <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" size={18} />
+                        <Input
+                            type="search"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            placeholder="Tìm kiếm bài viết..."
+                            className="w-full md:w-80 pl-10 rounded-full border-slate-200 dark:border-slate-700 focus:border-black dark:focus:border-white"
+                        />
+                    </div>
+                    <Link href="/me/baiviet/create">
+                        <Button className="rounded-full bg-black text-white dark:bg-white dark:text-black hover:opacity-90">
+                            <Plus size={18} className="mr-1" />
+                            Tạo blog
+                        </Button>
+                    </Link>
+                </div>
             </div>
 
             <div className="mb-6 text-sm text-slate-500 dark:text-slate-400">

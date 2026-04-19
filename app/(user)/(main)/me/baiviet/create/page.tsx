@@ -12,13 +12,6 @@ type BlobInfo = {
 };
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
 import { toast } from 'sonner';
 import { ChevronLeft, ImageIcon, Loader2, Globe, Lock } from 'lucide-react';
 import Link from 'next/link';
@@ -33,16 +26,6 @@ const Editor = dynamic(() => import('@tinymce/tinymce-react').then((mod) => mod.
         </div>
     ),
 });
-
-const CATEGORIES = [
-    { value: 'frontend', label: 'Frontend' },
-    { value: 'backend', label: 'Backend' },
-    { value: 'fullstack', label: 'Fullstack' },
-    { value: 'devops', label: 'DevOps' },
-    { value: 'ai', label: 'AI / ML' },
-    { value: 'innovation', label: 'Đổi mới sáng tạo' },
-    { value: 'tutorial', label: 'Tutorial' },
-];
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -70,13 +53,12 @@ export default function CreatePostPage() {
     const [loading, setLoading] = useState(false);
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
-    const [category, setCategory] = useState('');
     const [status, setStatus] = useState<'published' | 'draft'>('published');
 
     useEffect(() => {
         if (!token) {
             toast.error('Vui lòng đăng nhập để đăng bài');
-            router.push('/dang-nhap');
+            router.push('/login');
         }
     }, [token, router]);
 
@@ -102,7 +84,6 @@ export default function CreatePostPage() {
     const handleSubmit = async () => {
         if (!title.trim()) { toast.error('Vui lòng nhập tiêu đề'); return; }
         if (!content.trim()) { toast.error('Vui lòng nhập nội dung'); return; }
-        if (!category) { toast.error('Vui lòng chọn danh mục'); return; }
         if (!token) { toast.error('Vui lòng đăng nhập lại'); return; }
 
         const thumbnail = extractFirstImage(content);
@@ -119,7 +100,7 @@ export default function CreatePostPage() {
                     slug: createSlug(title.trim()),
                     description: extractDescription(content),
                     content,
-                    category,
+                    category: 'general',
                     thumbnail,
                     status,
                 },
@@ -199,24 +180,10 @@ export default function CreatePostPage() {
                     className="text-xl font-semibold h-14 rounded-xl border-0 border-b border-border bg-transparent px-0 focus-visible:ring-0 focus-visible:border-foreground transition placeholder:text-muted-foreground/50"
                 />
 
-                <div className="flex items-center gap-3 flex-wrap">
-                    <Select value={category} onValueChange={setCategory}>
-                        <SelectTrigger className="w-44 rounded-xl">
-                            <SelectValue placeholder="Chọn danh mục" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {CATEGORIES.map((cat) => (
-                                <SelectItem key={cat.value} value={cat.value}>
-                                    {cat.label}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                    <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-                        <ImageIcon size={13} />
-                        Ảnh đầu tiên trong bài sẽ làm ảnh đại diện
-                    </p>
-                </div>
+                <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                    <ImageIcon size={13} />
+                    Ảnh đầu tiên trong bài sẽ làm ảnh đại diện
+                </p>
 
                 <div className="rounded-xl overflow-hidden border">
                     <Editor
