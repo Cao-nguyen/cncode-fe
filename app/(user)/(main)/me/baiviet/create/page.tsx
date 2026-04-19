@@ -1,95 +1,124 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import dynamic from "next/dynamic";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
+import { useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { toast } from "sonner";
-import Image from "next/image";
-import { ChevronLeft } from "lucide-react";
-import Link from "next/link";
-import { postApi } from "@/lib/api/post.api";
+} from '@/components/ui/select';
+import { toast } from 'sonner';
+import { ChevronLeft, ImageIcon, Loader2, Globe, Lock } from 'lucide-react';
+import Link from 'next/link';
+import { postApi } from '@/lib/api/post.api';
+import { useAuthStore } from '@/store/auth.store';
+import { useEffect } from 'react';
 
-const Editor = dynamic(() => import("@tinymce/tinymce-react").then((mod) => mod.Editor), {
+const Editor = dynamic(() => import('@tinymce/tinymce-react').then((mod) => mod.Editor), {
     ssr: false,
+    loading: () => (
+        <div className="h-[500px] w-full rounded-xl border bg-muted flex items-center justify-center">
+            <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+        </div>
+    ),
 });
 
-const categories = [
-    { value: "frontend", label: "Frontend" },
-    { value: "backend", label: "Backend" },
-    { value: "devops", label: "DevOps" },
-    { value: "mobile", label: "Mobile" },
-    { value: "ai", label: "AI/ML" },
-    { value: "career", label: "Career" },
-    { value: "react", label: "React" },
-    { value: "nextjs", label: "NextJS" },
-    { value: "nodejs", label: "NodeJS" },
+const CATEGORIES = [
+    { value: 'frontend', label: 'Frontend' },
+    { value: 'backend', label: 'Backend' },
+    { value: 'fullstack', label: 'Fullstack' },
+    { value: 'devops', label: 'DevOps' },
+    { value: 'ai', label: 'AI / ML' },
+    { value: 'innovation', label: 'Đổi mới sáng tạo' },
+    { value: 'tutorial', label: 'Tutorial' },
 ];
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
+const extractFirstImage = (html: string): string => {
+    const match = html.match(/<img[^>]+src=["']([^"']+)["']/i);
+    return match ? match[1] : '';
+};
+
+const extractDescription = (html: string): string => {
+    const text = html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+    return text.slice(0, 200).trim();
+};
+
+// ✅ THÊM HÀM TẠO SLUG
+const createSlug = (title: string): string => {
+    return title
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '') // xóa dấu tiếng Việt
+        .replace(/[^a-z0-9]+/g, '-')     // thay khoảng trắng bằng -
+        .replace(/^-+|-+$/g, '');        // xóa - ở đầu và cuối
+};
 
 export default function CreatePostPage() {
     const router = useRouter();
+    const { user, token } = useAuthStore();
     const [loading, setLoading] = useState(false);
-    const [formData, setFormData] = useState({
-        title: "",
-        description: "",
-        content: "",
-        category: "",
-        thumbnail: "",
-    });
-    const [imagePreview, setImagePreview] = useState("");
-    const [token, setToken] = useState<string | null>(null);
+    const [title, setTitle] = useState('');
+    const [content, setContent] = useState('');
+    const [category, setCategory] = useState('');
+    const [status, setStatus] = useState<'published' | 'draft'>('published');
 
     useEffect(() => {
-        const storedToken = localStorage.getItem("token");
-        if (!storedToken) {
-            toast.error("Vui lòng đăng nhập để đăng bài");
-            router.push("/dang-nhap");
-            return;
-        }
-        setToken(storedToken);
-    }, [router]);
-
-    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-
-        const formDataImg = new FormData();
-        formDataImg.append("image", file);
-
-        try {
-            const response = await fetch("/api/upload", {
-                method: "POST",
-                body: formDataImg,
-            });
-            const data = await response.json();
-            if (data.url) {
-                setFormData({ ...formData, thumbnail: data.url });
-                setImagePreview(data.url);
-                toast.success("Tải ảnh lên thành công");
-            }
-        } catch (error) {
-            toast.error("Lỗi khi tải ảnh lên");
-        }
-    };
-
-    const handleSubmit = async (status: "draft" | "published") => {
-        if (!formData.title || !formData.description || !formData.content || !formData.category || !formData.thumbnail) {
-            toast.error("Vui lòng điền đầy đủ thông tin");
-            return;
-        }
-
         if (!token) {
-            toast.error("Vui lòng đăng nhập lại");
+            toast.error('Vui lòng đăng nhập để đăng bài');
+            router.push('/dang-nhap');
+        }
+    }, [token, router]);
+
+    const uploadImageToCloudinary = useCallback(
+        async (file: File): Promise<string> => {
+            const formData = new FormData();
+            formData.append('image', file);
+            formData.append('folder', 'blogs');
+
+            const response = await fetch(`${API_URL}/api/upload/single`, {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${token}` },
+                body: formData,
+            });
+
+            const data = await response.json();
+            if (!data.success) throw new Error(data.message || 'Upload thất bại');
+            return data.data.url;
+        },
+        [token]
+    );
+
+    const handleSubmit = async () => {
+        if (!title.trim()) {
+            toast.error('Vui lòng nhập tiêu đề');
+            return;
+        }
+        if (!content.trim()) {
+            toast.error('Vui lòng nhập nội dung');
+            return;
+        }
+        if (!category) {
+            toast.error('Vui lòng chọn danh mục');
+            return;
+        }
+        if (!token) {
+            toast.error('Vui lòng đăng nhập lại');
+            return;
+        }
+
+        const thumbnail = extractFirstImage(content);
+        const description = extractDescription(content);
+        const slug = createSlug(title.trim()); // ✅ TẠO SLUG TỪ TIÊU ĐỀ
+
+        if (!thumbnail) {
+            toast.error('Nội dung cần có ít nhất 1 ảnh để làm ảnh đại diện');
             return;
         }
 
@@ -97,25 +126,24 @@ export default function CreatePostPage() {
         try {
             const result = await postApi.createPost(
                 {
-                    title: formData.title,
-                    description: formData.description,
-                    content: formData.content,
-                    category: formData.category,
-                    thumbnail: formData.thumbnail,
-                    status: status,
+                    title: title.trim(),
+                    slug,              // ✅ THÊM SLUG VÀO DATA
+                    description,
+                    content,
+                    category,
+                    thumbnail,
+                    status
                 },
                 token
             );
-
             if (result.success) {
-                toast.success(status === "draft" ? "Đã lưu bài viết" : "Đăng bài thành công");
+                toast.success(status === 'draft' ? 'Đã lưu bài nháp' : 'Đăng bài thành công!');
                 router.push(`/baiviet/${result.data.slug}`);
             } else {
-                toast.error(result.message || "Đăng bài thất bại");
+                toast.error(result.message || 'Đăng bài thất bại');
             }
-        } catch (error) {
-            console.error("Create post error:", error);
-            toast.error("Lỗi khi đăng bài");
+        } catch {
+            toast.error('Lỗi khi đăng bài');
         } finally {
             setLoading(false);
         }
@@ -123,132 +151,136 @@ export default function CreatePostPage() {
 
     if (!token) {
         return (
-            <div className="container mx-auto px-4 py-8 max-w-5xl">
-                <Card>
-                    <CardContent className="py-12 text-center">
-                        <p className="text-muted-foreground">Đang kiểm tra đăng nhập...</p>
-                    </CardContent>
-                </Card>
+            <div className="min-h-[60vh] flex items-center justify-center">
+                <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
             </div>
         );
     }
 
     return (
-        <div className="container mx-auto px-4 py-8 max-w-5xl">
-            <Link
-                href="/baiviet"
-                className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 mb-4 transition"
-            >
-                <ChevronLeft size={18} />
-                Quay lại trang bài viết
-            </Link>
+        <div className="container mx-auto px-4 py-6 max-w-4xl">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-6 gap-3 flex-wrap">
+                <Link
+                    href="/baiviet"
+                    className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition"
+                >
+                    <ChevronLeft size={16} />
+                    Quay lại
+                </Link>
+                <div className="flex items-center gap-2">
+                    {/* Toggle public/draft */}
+                    <button
+                        onClick={() => setStatus((s) => (s === 'published' ? 'draft' : 'published'))}
+                        className={`inline-flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-full border transition ${status === 'published'
+                            ? 'bg-green-50 border-green-200 text-green-700 dark:bg-green-950 dark:border-green-800 dark:text-green-400'
+                            : 'bg-muted border-border text-muted-foreground'
+                            }`}
+                    >
+                        {status === 'published' ? <Globe size={14} /> : <Lock size={14} />}
+                        {status === 'published' ? 'Công khai' : 'Nháp'}
+                    </button>
 
-            <Card>
-                <CardHeader>
-                    <CardTitle className="text-2xl">Đăng bài viết mới</CardTitle>
-                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                        Chia sẻ kiến thức và kinh nghiệm của bạn với cộng đồng
+                    <Button variant="ghost" size="sm" onClick={() => router.push('/baiviet')}>
+                        Hủy
+                    </Button>
+                    <Button
+                        size="sm"
+                        onClick={handleSubmit}
+                        disabled={loading}
+                        className="bg-black text-white dark:bg-white dark:text-black hover:opacity-90"
+                    >
+                        {loading ? (
+                            <>
+                                <Loader2 size={14} className="animate-spin mr-1.5" />
+                                Đang đăng...
+                            </>
+                        ) : (
+                            status === 'published' ? 'Đăng bài' : 'Lưu nháp'
+                        )}
+                    </Button>
+                </div>
+            </div>
+
+            <div className="space-y-5">
+                {/* Tiêu đề */}
+                <div>
+                    <Input
+                        placeholder="Tiêu đề bài viết..."
+                        value={title}
+                        onChange={(e) => setTitle(e.target.value)}
+                        className="text-xl font-semibold h-14 rounded-xl border-0 border-b border-border bg-transparent px-0 focus-visible:ring-0 focus-visible:border-foreground transition placeholder:text-muted-foreground/50"
+                    />
+                </div>
+
+                {/* Danh mục */}
+                <div className="flex items-center gap-3 flex-wrap">
+                    <Select value={category} onValueChange={setCategory}>
+                        <SelectTrigger className="w-44 rounded-xl">
+                            <SelectValue placeholder="Chọn danh mục" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {CATEGORIES.map((cat) => (
+                                <SelectItem key={cat.value} value={cat.value}>
+                                    {cat.label}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+
+                    <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                        <ImageIcon size={13} />
+                        Ảnh đầu tiên trong bài sẽ làm ảnh đại diện
                     </p>
-                </CardHeader>
-                <CardContent>
-                    <div className="space-y-6">
-                        <div>
-                            <label className="block text-sm font-medium mb-2">Tiêu đề *</label>
-                            <Input
-                                placeholder="Nhập tiêu đề bài viết..."
-                                value={formData.title}
-                                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                            />
-                        </div>
+                </div>
 
-                        <div>
-                            <label className="block text-sm font-medium mb-2">Mô tả ngắn *</label>
-                            <Textarea
-                                placeholder="Mô tả ngắn về bài viết..."
-                                rows={3}
-                                value={formData.description}
-                                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium mb-2">Danh mục *</label>
-                            <Select
-                                value={formData.category}
-                                onValueChange={(value) => setFormData({ ...formData, category: value })}
-                            >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Chọn danh mục" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {categories.map((cat) => (
-                                        <SelectItem key={cat.value} value={cat.value}>
-                                            {cat.label}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium mb-2">Ảnh đại diện *</label>
-                            <Input type="file" accept="image/*" onChange={handleImageUpload} />
-                            {imagePreview && (
-                                <div className="mt-3 relative h-48 w-full rounded-lg overflow-hidden border">
-                                    <Image src={imagePreview} alt="Preview" fill className="object-cover" />
-                                </div>
-                            )}
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium mb-2">Nội dung *</label>
-                            <Editor
-                                apiKey={process.env.NEXT_PUBLIC_TINYMCE_API_KEY || "your-api-key"}
-                                value={formData.content}
-                                onEditorChange={(content) => setFormData({ ...formData, content })}
-                                init={{
-                                    height: 500,
-                                    menubar: true,
-                                    plugins: [
-                                        "advlist", "autolink", "lists", "link", "image", "charmap", "preview",
-                                        "anchor", "searchreplace", "visualblocks", "code", "fullscreen",
-                                        "insertdatetime", "media", "table", "code", "help", "wordcount"
-                                    ],
-                                    toolbar: "undo redo | blocks | " +
-                                        "bold italic forecolor | alignleft aligncenter " +
-                                        "alignright alignjustify | bullist numlist outdent indent | " +
-                                        "removeformat | help",
-                                    content_style: "body { font-family:Helvetica,Arial,sans-serif; font-size:14px }",
-                                }}
-                            />
-                        </div>
-
-                        <div className="flex gap-3 pt-4">
-                            <Button
-                                onClick={() => handleSubmit("published")}
-                                disabled={loading}
-                                className="bg-black text-white dark:bg-white dark:text-black hover:opacity-90"
-                            >
-                                {loading ? "Đang đăng..." : "Đăng bài"}
-                            </Button>
-                            <Button
-                                onClick={() => handleSubmit("draft")}
-                                disabled={loading}
-                                variant="outline"
-                            >
-                                {loading ? "Đang lưu..." : "Lưu nháp"}
-                            </Button>
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                onClick={() => router.push("/baiviet")}
-                            >
-                                Hủy
-                            </Button>
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
+                {/* TinyMCE Editor */}
+                <div className="rounded-xl overflow-hidden border">
+                    <Editor
+                        apiKey={process.env.NEXT_PUBLIC_TINYMCE_API_KEY}
+                        value={content}
+                        onEditorChange={(val) => setContent(val)}
+                        init={{
+                            height: 600,
+                            menubar: false,
+                            mobile: {
+                                menubar: false,
+                                toolbar_mode: 'scrolling',
+                            },
+                            plugins: [
+                                'advlist', 'autolink', 'lists', 'link', 'image',
+                                'charmap', 'preview', 'searchreplace', 'visualblocks',
+                                'code', 'fullscreen', 'media', 'table', 'wordcount',
+                            ],
+                            toolbar:
+                                'undo redo | blocks | bold italic underline | ' +
+                                'forecolor backcolor | alignleft aligncenter alignright | ' +
+                                'bullist numlist | link image media | code fullscreen',
+                            toolbar_mode: 'sliding',
+                            content_style: `
+                                body {
+                                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+                                    font-size: 15px;
+                                    line-height: 1.7;
+                                    padding: 16px;
+                                    max-width: 100%;
+                                }
+                                img { max-width: 100%; height: auto; border-radius: 8px; }
+                                pre { overflow-x: auto; background: #f4f4f4; padding: 12px; border-radius: 6px; }
+                            `,
+                            images_upload_handler: async (blobInfo) => {
+                                const file = blobInfo.blob() as File;
+                                const url = await uploadImageToCloudinary(file);
+                                return url;
+                            },
+                            automatic_uploads: true,
+                            file_picker_types: 'image',
+                            branding: false,
+                            resize: false,
+                        }}
+                    />
+                </div>
+            </div>
         </div>
     );
 }

@@ -32,8 +32,10 @@ export const postApi = {
         await fetch(`${API_URL}/api/posts/${slug}/view`, { method: 'POST' });
     },
 
+    // ✅ SỬA: Thêm slug vào data type
     createPost: async (data: {
         title: string;
+        slug: string;        // ← THÊM DÒNG NÀY
         description: string;
         content: string;
         category: string;

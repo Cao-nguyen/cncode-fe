@@ -1,13 +1,19 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Trash2, Flag, Check } from 'lucide-react';
+import { Check, MoreHorizontal, Trash2, Flag } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/store/auth.store';
 import { IComment, IPost, IReactions } from '@/types/post.type';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import {
     Dialog,
     DialogContent,
@@ -74,7 +80,7 @@ export default function CommentItem({
     const [reportOpen, setReportOpen] = useState(false);
     const [selectedReason, setSelectedReason] = useState('');
     const [reporting, setReporting] = useState(false);
-    const popupRef = useRef<HTMLDivElement>(null);
+    const reactionRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         setLocalReactions(comment.reactions);
@@ -82,7 +88,7 @@ export default function CommentItem({
 
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
-            if (popupRef.current && !popupRef.current.contains(e.target as Node)) {
+            if (reactionRef.current && !reactionRef.current.contains(e.target as Node)) {
                 setShowReactionPopup(false);
             }
         };
@@ -124,6 +130,8 @@ export default function CommentItem({
             return next;
         });
 
+        setShowReactionPopup(false);
+
         try {
             await postApi.toggleCommentReaction(post._id, comment._id, type, token);
             await onCommentUpdated();
@@ -131,7 +139,6 @@ export default function CommentItem({
             toast.error('Có lỗi xảy ra');
             setLocalReactions(comment.reactions);
         }
-        setShowReactionPopup(false);
     };
 
     const handleReply = async () => {
@@ -191,14 +198,15 @@ export default function CommentItem({
 
     return (
         <>
-            <div className={`flex gap-2 sm:gap-3 ${isChild ? 'ml-8 sm:ml-10 mt-3' : 'mt-4'}`}>
+            <div className={`flex gap-2 sm:gap-3 ${isChild ? 'ml-6 sm:ml-8 mt-2' : 'mt-4'}`}>
                 <Avatar className="w-7 h-7 sm:w-8 sm:h-8 flex-shrink-0 mt-0.5">
                     <AvatarImage src={comment.user?.avatar} />
                     <AvatarFallback>{comment.user?.fullName?.charAt(0) || 'U'}</AvatarFallback>
                 </Avatar>
 
                 <div className="flex-1 min-w-0">
-                    <div className="bg-gray-100 dark:bg-gray-800 px-3 sm:px-4 py-2.5 rounded-2xl inline-block max-w-full">
+                    {/* Bubble nội dung */}
+                    <div className="bg-gray-100 dark:bg-gray-800 px-3 py-2.5 rounded-2xl inline-block max-w-full">
                         <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mb-0.5">
                             <p className="font-semibold text-sm leading-tight">
                                 {comment.user?.fullName || 'Người dùng'}
@@ -219,59 +227,49 @@ export default function CommentItem({
                         </p>
                     </div>
 
+                    {/* Reaction summary */}
                     {totalReactions > 0 && (
                         <div className="flex items-center gap-1 mt-1 ml-1">
                             <div className="flex -space-x-1">
-                                {REACTIONS.filter(
-                                    (r) => localReactions[r.type as ReactionKey]?.length > 0
-                                )
+                                {REACTIONS.filter((r) => localReactions[r.type as ReactionKey]?.length > 0)
                                     .slice(0, 3)
                                     .map((r) => (
-                                        <Image
-                                            width={16}
-                                            height={16}
-                                            key={r.type}
-                                            src={r.icon}
-                                            alt={r.type}
-                                            className="w-4 h-4"
-                                        />
+                                        <Image key={r.type} src={r.icon} alt={r.type} width={16} height={16} className="w-4 h-4" />
                                     ))}
                             </div>
                             <span className="text-xs text-muted-foreground">{totalReactions}</span>
                         </div>
                     )}
 
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 ml-1">
+                    {/* Action bar - tất cả items cùng hàng, dùng items-center */}
+                    <div className="flex items-center gap-2 sm:gap-3 mt-1 ml-1 flex-wrap">
                         <span className="text-xs text-muted-foreground whitespace-nowrap">
                             {formatDate(comment.createdAt)}
                         </span>
 
-                        <div className="relative" ref={popupRef}>
+                        {/* Reaction button + popup */}
+                        <div className="relative flex items-center" ref={reactionRef}>
                             <button
-                                onClick={() => setShowReactionPopup(!showReactionPopup)}
-                                className={`text-xs font-semibold transition ${userReaction
-                                    ? 'text-blue-500'
-                                    : 'text-muted-foreground hover:text-foreground'
+                                onClick={() => setShowReactionPopup((v) => !v)}
+                                className={`text-xs font-semibold leading-none transition ${userReaction ? 'text-blue-500' : 'text-muted-foreground hover:text-foreground'
                                     }`}
                             >
                                 {userReaction ? userReaction.label : 'Thích'}
                             </button>
+
                             {showReactionPopup && (
-                                <div className="absolute bottom-full left-0 mb-2 bg-white dark:bg-gray-800 rounded-full shadow-xl border border-gray-200 dark:border-gray-700 px-2 sm:px-3 py-2 flex gap-0.5 sm:gap-1 z-50">
+                                <div className="absolute bottom-full left-0 mb-2 bg-white dark:bg-gray-800 rounded-full shadow-xl border border-gray-200 dark:border-gray-700 px-2 py-1.5 flex gap-0.5 z-50">
                                     {REACTIONS.map((reaction) => (
                                         <button
                                             key={reaction.type}
-                                            onClick={() => handleReaction(reaction.type)}
+                                            onPointerDown={(e) => {
+                                                e.preventDefault();
+                                                handleReaction(reaction.type);
+                                            }}
                                             title={reaction.label}
-                                            className="w-8 h-8 sm:w-9 sm:h-9 hover:scale-125 transition-transform duration-150 rounded-full flex items-center justify-center"
+                                            className="w-8 h-8 hover:scale-125 active:scale-110 transition-transform duration-150 rounded-full flex items-center justify-center touch-manipulation"
                                         >
-                                            <Image
-                                                width={24}
-                                                height={24}
-                                                src={reaction.icon}
-                                                alt={reaction.type}
-                                                className="w-6 h-6 sm:w-7 sm:h-7"
-                                            />
+                                            <Image src={reaction.icon} alt={reaction.type} width={24} height={24} className="w-6 h-6" />
                                         </button>
                                     ))}
                                 </div>
@@ -279,31 +277,41 @@ export default function CommentItem({
                         </div>
 
                         <button
-                            onClick={() => setShowReplyInput(!showReplyInput)}
-                            className="text-xs font-semibold text-muted-foreground hover:text-foreground transition"
+                            onClick={() => setShowReplyInput((v) => !v)}
+                            className="text-xs font-semibold leading-none text-muted-foreground hover:text-foreground transition"
                         >
                             Trả lời
                         </button>
 
-                        {canDelete && (
-                            <button
-                                onClick={handleDelete}
-                                className="text-xs font-semibold text-muted-foreground hover:text-red-500 transition flex items-center gap-1"
-                            >
-                                <Trash2 size={12} />
-                                <span>Xóa</span>
-                            </button>
-                        )}
-
-                        <button
-                            onClick={() => setReportOpen(true)}
-                            className="text-xs font-semibold text-muted-foreground hover:text-red-500 transition flex items-center gap-1"
-                        >
-                            <Flag size={12} />
-                            <span>Báo cáo</span>
-                        </button>
+                        {/* Dropdown xóa/báo cáo */}
+                        <DropdownMenu modal={false}>
+                            <DropdownMenuTrigger asChild>
+                                <button className="flex items-center text-muted-foreground hover:text-foreground transition p-0.5 rounded-full hover:bg-muted">
+                                    <MoreHorizontal size={15} />
+                                </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="start" side="top" sideOffset={4} className="w-40 rounded-xl p-1">
+                                {canDelete && (
+                                    <DropdownMenuItem
+                                        onClick={handleDelete}
+                                        className="flex items-center gap-2 text-red-500 cursor-pointer py-2 rounded-lg"
+                                    >
+                                        <Trash2 size={14} />
+                                        <span className="text-xs">Xóa bình luận</span>
+                                    </DropdownMenuItem>
+                                )}
+                                <DropdownMenuItem
+                                    onClick={() => setReportOpen(true)}
+                                    className="flex items-center gap-2 cursor-pointer py-2 rounded-lg"
+                                >
+                                    <Flag size={14} />
+                                    <span className="text-xs">Báo cáo</span>
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                     </div>
 
+                    {/* Reply input */}
                     {showReplyInput && (
                         <div className="flex gap-2 mt-3">
                             <Avatar className="w-7 h-7 flex-shrink-0">
@@ -319,21 +327,10 @@ export default function CommentItem({
                                     className="text-sm rounded-2xl resize-none w-full"
                                 />
                                 <div className="flex gap-2 mt-2">
-                                    <Button
-                                        size="sm"
-                                        onClick={handleReply}
-                                        disabled={submitting || !replyContent.trim()}
-                                    >
+                                    <Button size="sm" onClick={handleReply} disabled={submitting || !replyContent.trim()}>
                                         {submitting ? 'Đang gửi...' : 'Gửi'}
                                     </Button>
-                                    <Button
-                                        size="sm"
-                                        variant="ghost"
-                                        onClick={() => {
-                                            setShowReplyInput(false);
-                                            setReplyContent('');
-                                        }}
-                                    >
+                                    <Button size="sm" variant="ghost" onClick={() => { setShowReplyInput(false); setReplyContent(''); }}>
                                         Hủy
                                     </Button>
                                 </div>
@@ -341,8 +338,9 @@ export default function CommentItem({
                         </div>
                     )}
 
+                    {/* Children - chỉ render ở level cha */}
                     {!isChild && comment.children && comment.children.length > 0 && (
-                        <div className="mt-2 space-y-1">
+                        <div className="mt-1 space-y-0">
                             {comment.children.map((child) => (
                                 <CommentItem
                                     key={child._id}
@@ -357,6 +355,7 @@ export default function CommentItem({
                 </div>
             </div>
 
+            {/* Report dialog */}
             <Dialog open={reportOpen} onOpenChange={setReportOpen}>
                 <DialogContent className="sm:max-w-md rounded-2xl">
                     <DialogHeader>
@@ -379,9 +378,7 @@ export default function CommentItem({
                         ))}
                     </div>
                     <DialogFooter className="gap-2">
-                        <Button variant="ghost" onClick={() => setReportOpen(false)}>
-                            Hủy
-                        </Button>
+                        <Button variant="ghost" onClick={() => setReportOpen(false)}>Hủy</Button>
                         <Button onClick={handleReport} disabled={reporting || !selectedReason}>
                             {reporting ? 'Đang gửi...' : 'Gửi báo cáo'}
                         </Button>

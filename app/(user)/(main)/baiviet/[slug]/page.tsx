@@ -23,9 +23,7 @@ export default function ChiTietBaiVietPage() {
     const buildCommentTree = (flat: IComment[]): IComment[] => {
         const map = new Map<string, IComment>();
         const roots: IComment[] = [];
-
         flat.forEach((c) => map.set(c._id, { ...c, children: [] }));
-
         flat.forEach((c) => {
             const node = map.get(c._id)!;
             if (c.parentId && map.has(c.parentId)) {
@@ -34,7 +32,6 @@ export default function ChiTietBaiVietPage() {
                 roots.push(node);
             }
         });
-
         return roots;
     };
 
@@ -112,13 +109,22 @@ export default function ChiTietBaiVietPage() {
             <div className="container mx-auto px-4 py-8">
                 <div className="max-w-6xl mx-auto">
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                        <div className="lg:col-span-2 space-y-6">
-                            <Skeleton className="h-10 w-3/4" />
-                            <Skeleton className="h-6 w-1/2" />
-                            <Skeleton className="h-96 w-full" />
+                        <div className="lg:col-span-2 space-y-4 min-w-0">
+                            <Skeleton className="h-5 w-32" />
+                            <Skeleton className="h-9 w-full" />
+                            <Skeleton className="h-9 w-3/4" />
+                            <div className="flex items-center gap-3">
+                                <Skeleton className="h-9 w-9 rounded-full flex-shrink-0" />
+                                <div className="space-y-1.5 flex-1">
+                                    <Skeleton className="h-3.5 w-28" />
+                                    <Skeleton className="h-3 w-20" />
+                                </div>
+                            </div>
+                            <Skeleton className="h-72 w-full" />
+                            <Skeleton className="h-40 w-full" />
                         </div>
-                        <div className="lg:col-span-1">
-                            <Skeleton className="h-64 w-full rounded-2xl" />
+                        <div className="hidden lg:block lg:col-span-1">
+                            <Skeleton className="h-48 w-full rounded-2xl" />
                         </div>
                     </div>
                 </div>
@@ -138,7 +144,7 @@ export default function ChiTietBaiVietPage() {
         <div className="container mx-auto px-4 py-8">
             <div className="max-w-6xl mx-auto">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    <div className="lg:col-span-2">
+                    <div className="lg:col-span-2 min-w-0 overflow-hidden">
                         <BlogDetail
                             post={post}
                             comments={comments}
@@ -152,7 +158,8 @@ export default function ChiTietBaiVietPage() {
                             onDeleteComment={handleDeleteComment}
                         />
                     </div>
-                    <div className="lg:col-span-1">
+                    {/* Sidebar chỉ hiện trên lg+ */}
+                    <div className="hidden lg:block lg:col-span-1">
                         <div className="sticky top-24">
                             <BlogSidebar
                                 authorName={post.author.fullName}
