@@ -4,15 +4,18 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
-import { Sun, Moon, User, Settings, LogOut, BookOpen, FileText, Home, ShoppingBag, Heart } from "lucide-react";
+import { Sun, Moon, User, Settings, LogOut, BookOpen, FileText, Home, Heart } from "lucide-react";
 import {
-    House as Trangchu,
-    MessageCircle as Diendan,
-    BookOpen as Khoahoc,
-    FileCodeCorner as Luyentap,
-    Calendar as Sukien,
-    File as Baiviet,
-} from "lucide-react";
+    Home as Trangchu,
+    Message2 as Diendan,
+    Book as Khoahoc,
+    DocumentCode as Luyentap,
+    Calendar2 as Sukien,
+    DocumentText as Baiviet,
+    Bag2 as Cuahangso,
+    ShoppingBag as NhaHang,
+} from "iconsax-react";
+import type { Icon } from "iconsax-react";
 import NotificationBell from "./NotificationBell";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -33,7 +36,12 @@ const formatNumber = (num: number) => {
     }).format(num);
 };
 
-function UserDropdown({ user, onLogout }: { user: { fullname: string; avatar: string; role: string }; onLogout: () => void }) {
+interface UserDropdownProps {
+    user: { fullname: string; avatar: string; role: string };
+    onLogout: () => void;
+}
+
+function UserDropdown({ user, onLogout }: UserDropdownProps) {
     return (
         <DropdownMenuContent align="end" className="w-55">
             <div className="flex items-center gap-3 px-2 py-2">
@@ -50,35 +58,35 @@ function UserDropdown({ user, onLogout }: { user: { fullname: string; avatar: st
             <DropdownMenuSeparator />
 
             <DropdownMenuItem>
-                <User size={20} className="mr-1 w-4.5 h-4.5" />
+                <User size={18} strokeWidth={1.5} className="mr-1" />
                 <Link href={`/profile/${user.fullname}`}>Trang cá nhân</Link>
             </DropdownMenuItem>
 
             <DropdownMenuItem>
-                <FileText size={20} className="mr-1 w-4.5 h-4.5" />
+                <FileText size={18} strokeWidth={1.5} className="mr-1" />
                 <Link href="/me/transactions">Giao dịch của tôi</Link>
             </DropdownMenuItem>
 
             <DropdownMenuItem>
-                <ShoppingBag size={20} className="mr-1 w-4.5 h-4.5" />
+                <Cuahangso size={18} variant="Outline" className="mr-1" />
                 <Link href="/me/cuahangso/create">Cửa hàng số</Link>
             </DropdownMenuItem>
 
             <DropdownMenuItem>
-                <Heart size={20} className="mr-1 w-4.5 h-4.5" />
+                <Heart size={18} strokeWidth={1.5} className="mr-1" />
                 <Link href="/hanhtrinhyethuong">Hành trình yêu thương</Link>
             </DropdownMenuItem>
 
             {user.role === "admin" && (
                 <DropdownMenuItem>
-                    <Settings size={20} className="mr-1 w-4.5 h-4.5" />
+                    <Settings size={18} strokeWidth={1.5} className="mr-1" />
                     <Link href="/admin/dashboard">Trang quản trị</Link>
                 </DropdownMenuItem>
             )}
 
             {user.role === "teacher" && (
                 <DropdownMenuItem>
-                    <Settings size={20} className="mr-1 w-4.5 h-4.5" />
+                    <Settings size={18} strokeWidth={1.5} className="mr-1" />
                     <Link href="/teacher/dashboard">Trang quản lý</Link>
                 </DropdownMenuItem>
             )}
@@ -86,38 +94,49 @@ function UserDropdown({ user, onLogout }: { user: { fullname: string; avatar: st
             <DropdownMenuSeparator />
 
             <DropdownMenuItem>
-                <BookOpen size={20} className="mr-1 w-4.5 h-4.5" />
+                <BookOpen size={18} strokeWidth={1.5} className="mr-1" />
                 <Link href="/me/khoahoc">Khoá học của tôi</Link>
             </DropdownMenuItem>
 
             <DropdownMenuItem>
-                <FileText size={20} className="mr-1 w-4.5 h-4.5" />
+                <FileText size={18} strokeWidth={1.5} className="mr-1" />
                 <Link href="/me/baiviet">Bài viết của tôi</Link>
             </DropdownMenuItem>
 
             <DropdownMenuItem>
-                <Home size={20} className="mr-1 w-4.5 h-4.5" />
+                <Home size={18} strokeWidth={1.5} className="mr-1" />
                 <Link href="/khuvuonhoctap">Khu vườn học tập</Link>
             </DropdownMenuItem>
 
             <DropdownMenuItem>
-                <ShoppingBag size={20} className="mr-1 w-4.5 h-4.5" />
+                <NhaHang size={18} variant="Outline" className="mr-1" />
                 <Link href="/nhahangcongnghe">Nhà hàng công nghệ</Link>
             </DropdownMenuItem>
 
             <DropdownMenuSeparator />
 
             <DropdownMenuItem>
-                <Settings size={20} className="mr-1 w-4.5 h-4.5" />
+                <Settings size={18} strokeWidth={1.5} className="mr-1" />
                 <Link href="/me/settings">Cài đặt</Link>
             </DropdownMenuItem>
 
             <DropdownMenuItem className="text-red-500" onClick={onLogout}>
-                <LogOut size={20} className="mr-1 w-4.5 h-4.5" />
+                <LogOut size={18} strokeWidth={1.5} className="mr-1" />
                 Đăng xuất
             </DropdownMenuItem>
         </DropdownMenuContent>
     );
+}
+
+interface MenuItem {
+    title: string;
+    link: string;
+}
+
+interface MobileMenuItem {
+    title: string;
+    link: string;
+    icon: Icon;
 }
 
 export default function Header() {
@@ -140,7 +159,7 @@ export default function Header() {
         router.push("/");
     };
 
-    const menu = [
+    const menu: MenuItem[] = [
         { title: "Trang chủ", link: "/" },
         { title: "Diễn đàn", link: "/forum" },
         { title: "Khoá học", link: "/khoahoc" },
@@ -150,14 +169,14 @@ export default function Header() {
         { title: "Cửa hàng", link: "/cuahangso" },
     ];
 
-    const menuMobile = [
+    const menuMobile: MobileMenuItem[] = [
         { title: "Trang chủ", link: "/", icon: Trangchu },
         { title: "Diễn đàn", link: "/forum", icon: Diendan },
         { title: "Khoá học", link: "/khoahoc", icon: Khoahoc },
         { title: "Luyện tập", link: "/luyentap", icon: Luyentap },
         { title: "Sự kiện", link: "/sukien", icon: Sukien },
         { title: "Bài viết", link: "/baiviet", icon: Baiviet },
-        { title: "Cửa hàng", link: "/cuahangso", icon: ShoppingBag },
+        { title: "Cửa hàng", link: "/cuahangso", icon: Cuahangso },
     ];
 
     const displayUser = user && token
@@ -171,12 +190,11 @@ export default function Header() {
     const displayCoins = user?.coins ?? 0;
     const displayStreak = user?.streak ?? 0;
 
-    if (!mounted) {
-        return null;
-    }
+    if (!mounted) return null;
 
     return (
         <>
+            {/* Desktop Header */}
             <div className="hidden lg:block bg-white dark:bg-black w-full h-15 fixed top-0 z-50">
                 <div className="flex h-full justify-between items-center">
                     <div className="ml-1.5 lg:ml-4">
@@ -193,13 +211,13 @@ export default function Header() {
                                     <Link
                                         href={m.link}
                                         className={`
-                      px-2.5 py-1.75 rounded-[9px] font-bold
-                      transition-all duration-100 lg:text-[15px] xl:text-[16px]
-                      ${isActive
+                                            px-2.5 py-1.75 rounded-[9px] font-bold
+                                            transition-all duration-100 lg:text-[15px] xl:text-[16px]
+                                            ${isActive
                                                 ? "bg-[#dedede] dark:bg-[#424141] bg-opacity-50"
                                                 : "hover:bg-[#d5d5d5] dark:hover:bg-[#5F5F5F] hover:bg-opacity-50"
                                             }
-                    `}
+                                        `}
                                     >
                                         {m.title}
                                     </Link>
@@ -253,6 +271,7 @@ export default function Header() {
                 </div>
             </div>
 
+            {/* Mobile Header */}
             <div className="lg:hidden fixed top-0 w-full h-10 bg-white dark:bg-black z-50 border-b border-gray-200 dark:border-gray-800">
                 <div className="flex h-full justify-between items-center px-1.5">
                     <Link href="/">
@@ -302,6 +321,7 @@ export default function Header() {
                 </div>
             </div>
 
+            {/* Mobile Bottom Nav */}
             <div className="lg:hidden fixed bottom-0 left-0 w-full z-50">
                 <div className="w-full h-14 bg-white dark:bg-black border-t border-gray-200 dark:border-gray-800 rounded-t-2xl shadow-[0_-4px_20px_rgba(0,0,0,0.15)] flex items-center px-2">
                     {menuMobile.map((m) => {
@@ -315,6 +335,7 @@ export default function Header() {
                             >
                                 <Icon
                                     size={20}
+                                    variant="Bold"
                                     className={isActive ? "text-blue-500" : "text-gray-500 dark:text-gray-400"}
                                 />
                                 <span className={`text-[10px] font-medium ${isActive ? "text-blue-500" : "text-gray-500 dark:text-gray-400"}`}>

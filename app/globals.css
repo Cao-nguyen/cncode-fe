@@ -82,8 +82,12 @@ body {
   scrollbar-color: rgba(100, 100, 100, 0.4) transparent;
 }
 
-svg {
+svg:not(.lucide) {
   fill: currentColor !important;
+}
+
+svg.lucide {
+  fill: none !important;
 }
 
 .no-scrollbar::-webkit-scrollbar {
