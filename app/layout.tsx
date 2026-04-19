@@ -10,6 +10,7 @@ import AOSProvider from "@/providers/aos.provider";
 import ReduxProvider from "@/providers/redux.provider";
 import AuthProvider from "@/providers/auth.provider";
 import { SocketProvider } from "@/providers/socket.provider";
+import SessionProvider from "@/providers/session.provider";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -39,13 +40,15 @@ export default function RootLayout({
           <ReduxProvider>
             <AuthProvider>
               <SocketProvider>
-                <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!}>
-                  <ToasterProvider>
-                    <AOSProvider>
-                      {children}
-                    </AOSProvider>
-                  </ToasterProvider>
-                </GoogleOAuthProvider>
+                <SessionProvider>
+                  <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!}>
+                    <ToasterProvider>
+                      <AOSProvider>
+                        {children}
+                      </AOSProvider>
+                    </ToasterProvider>
+                  </GoogleOAuthProvider>
+                </SessionProvider>
               </SocketProvider>
             </AuthProvider>
           </ReduxProvider>
