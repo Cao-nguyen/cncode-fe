@@ -43,10 +43,11 @@ export interface IPost {
     likes: number;
     likedBy: string[];
     bookmarks: string[];
-    reportedBy: string[];
+    reportedBy: Array<{ user: string; reason: string }>;
+    reportCount: number;
     comments: IComment[];
     readTime: number;
-    status: 'draft' | 'published';
+    status: 'draft' | 'pending' | 'published' | 'rejected';
     publishedAt?: string | null;
     createdAt: string;
     updatedAt: string;

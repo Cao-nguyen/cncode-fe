@@ -69,7 +69,7 @@ function UserDropdown({ user, onLogout }: UserDropdownProps) {
 
             <DropdownMenuItem>
                 <Cuahangso size={18} variant="Outline" className="mr-1" />
-                <Link href="/me/cuahangso/create">Cửa hàng số</Link>
+                <Link href="/me/cuahangso">Cửa hàng số</Link>
             </DropdownMenuItem>
 
             <DropdownMenuItem>

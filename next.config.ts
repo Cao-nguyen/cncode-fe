@@ -2,14 +2,10 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   images: {
-    // Cách cũ (deprecated) - xóa nếu có
-    // domains: ["example.com"],
-
-    // Cách mới (recommended)
     remotePatterns: [
       {
         protocol: "https",
-        hostname: "**", // Cho phép tất cả, hoặc thay bằng domain cụ thể
+        hostname: "**",
       },
       {
         protocol: "http",
@@ -18,19 +14,18 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: "https",
-        hostname: "res.cloudinary.com", // Nếu dùng Cloudinary
+        hostname: "res.cloudinary.com",
       },
       {
         protocol: "https",
-        hostname: "lh3.googleusercontent.com", // Avatar Google
+        hostname: "lh3.googleusercontent.com",
       },
       {
         protocol: "https",
-        hostname: "avatars.githubusercontent.com", // Avatar GitHub
+        hostname: "avatars.githubusercontent.com",
       },
     ],
   },
-  // Các cấu hình khác nếu có
   reactStrictMode: true,
 };
 

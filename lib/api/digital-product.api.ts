@@ -14,6 +14,14 @@ export const digitalProductApi = {
     return response.json()
   },
 
+  // THÊM METHOD NÀY
+  getProductById: async (id: string, token: string) => {
+    const response = await fetch(`${API_URL}/api/digital-products/product/${id}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
+    return response.json()
+  },
+
   createProduct: async (data: ICreateProduct, token: string) => {
     const response = await fetch(`${API_URL}/api/digital-products`, {
       method: 'POST',
@@ -65,5 +73,19 @@ export const digitalProductApi = {
       body: JSON.stringify(data),
     });
     return res.json();
+  },
+
+  uploadImage: async (file: File, token: string): Promise<{ success: boolean; url: string }> => {
+    const formData = new FormData();
+    formData.append('image', file);
+
+    const response = await fetch(`${API_URL}/api/upload`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
+      body: formData
+    });
+    return response.json();
   },
 }

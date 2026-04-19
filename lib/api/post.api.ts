@@ -29,11 +29,10 @@ const apiFetch = async <T>(
 
 export const postApi = {
     getFeaturedPosts: async (limit: number = 3): Promise<IApiResponse<IPost[]>> => {
-        return postApi.getPosts({
-            sort: '-views',
-            limit: limit,
-            status: 'published'
+        const response = await fetch(`${API_URL}/api/posts/featured?limit=${limit}`, {
+            cache: 'no-store'
         });
+        return response.json();
     },
 
     getPosts: (params?: {
@@ -53,59 +52,59 @@ export const postApi = {
     getPostBySlug: (slug: string): Promise<IApiResponse<IPost>> =>
         apiFetch(`${API_URL}/api/posts/${slug}`, { cache: 'no-store' }),
 
+    // THÊM METHOD NÀY
+    getPostById: (id: string, token: string): Promise<IApiResponse<IPost>> =>
+        apiFetch(`${API_URL}/api/posts/post/${id}`, {
+            headers: { Authorization: `Bearer ${token}` }
+        }),
+
     trackView: (slug: string): Promise<void> =>
         fetch(`${API_URL}/api/posts/${slug}/view`, { method: 'POST' }).then(() => undefined),
 
     createPost: (
         data: {
             title: string;
-            slug: string;
             description: string;
             content: string;
             category: string;
             thumbnail: string;
             tags?: string[];
-            status: 'draft' | 'published';
         },
         token: string,
     ): Promise<IApiResponse<IPost>> =>
         apiFetch(`${API_URL}/api/posts`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-            body: JSON.stringify(data),
+            body: JSON.stringify({ ...data, status: 'pending' }),
         }),
 
+    // SỬA: dùng id thay vì slug
     updatePost: (
-        slug: string,
+        id: string,
         data: {
             title?: string;
             description?: string;
             content?: string;
-            category?: string;
             thumbnail?: string;
-            tags?: string[];
             status?: 'draft' | 'published';
         },
         token: string,
     ): Promise<IApiResponse<IPost>> =>
-        apiFetch(`${API_URL}/api/posts/${slug}`, {
+        apiFetch(`${API_URL}/api/posts/${id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
             body: JSON.stringify(data),
         }),
 
-    deletePost: (slug: string, token: string): Promise<IApiResponse<null>> =>
-        apiFetch(`${API_URL}/api/posts/${slug}`, {
+    // SỬA: dùng id thay vì slug
+    deletePost: (id: string, token: string): Promise<IApiResponse<null>> =>
+        apiFetch(`${API_URL}/api/posts/${id}`, {
             method: 'DELETE',
             headers: { Authorization: `Bearer ${token}` },
         }),
 
-    getUserPosts: (
-        token: string,
-        params?: { status?: string; page?: number; limit?: number },
-    ): Promise<IApiResponse<IPost[]>> => {
-        const qs = params ? buildQuery(params) : '';
-        return apiFetch(`${API_URL}/api/posts/user${qs ? `?${qs}` : ''}`, {
+    getUserPosts: (token: string): Promise<IApiResponse<IPost[]>> => {
+        return apiFetch(`${API_URL}/api/posts/user`, {
             headers: { Authorization: `Bearer ${token}` },
             cache: 'no-store',
         });
