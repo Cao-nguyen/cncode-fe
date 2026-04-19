@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Check, MoreHorizontal, Trash2, Flag, Pencil, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/store/auth.store';
+import { useSocket } from '@/providers/socket.provider';
 import { IComment, IPost, IReactions } from '@/types/post.type';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -70,6 +71,7 @@ export default function CommentItem({
     isChild = false,
 }: CommentItemProps) {
     const { user, token } = useAuthStore();
+    const { socket } = useSocket();
     const [showReplyInput, setShowReplyInput] = useState(false);
     const [replyContent, setReplyContent] = useState('');
     const [showReactionPopup, setShowReactionPopup] = useState(false);
@@ -152,6 +154,20 @@ export default function CommentItem({
         try {
             await postApi.toggleCommentReaction(post._id, comment._id, type, token);
             await onCommentUpdated();
+
+            // ✅ Gửi notification realtime khi reaction comment
+            if (socket && socket.connected && commentUserId && commentUserId !== currentUserId) {
+                socket.emit('notification:reaction_comment', {
+                    postId: post._id,
+                    postTitle: post.title,
+                    recipientId: commentUserId,
+                    userId: currentUserId,
+                    userName: user.fullName,
+                    reactionType: type,
+                    commentId: comment._id
+                });
+                console.log('📤 Emitted reaction notification');
+            }
         } catch {
             toast.error('Có lỗi xảy ra');
             setLocalReactions(comment.reactions);
@@ -173,6 +189,23 @@ export default function CommentItem({
             setShowReplyInput(false);
             await onCommentUpdated();
             toast.success('Đã thêm phản hồi');
+
+            // ✅ Gửi notification realtime khi comment
+            if (socket && socket.connected) {
+                const recipientId = comment.parentId ? commentUserId : postAuthorId;
+                if (recipientId && recipientId !== currentUserId) {
+                    socket.emit('notification:comment', {
+                        postId: post._id,
+                        postTitle: post.title,
+                        recipientId: recipientId,
+                        userId: currentUserId,
+                        userName: user?.fullName,
+                        content: replyContent,
+                        commentId: rootId
+                    });
+                    console.log('📤 Emitted comment notification');
+                }
+            }
         } catch {
             toast.error('Có lỗi xảy ra');
         } finally {

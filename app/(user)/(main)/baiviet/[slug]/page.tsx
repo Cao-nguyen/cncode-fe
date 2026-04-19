@@ -8,11 +8,13 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { IPost, IComment } from '@/types/post.type';
 import { postApi } from '@/lib/api/post.api';
 import { useAuthStore } from '@/store/auth.store';
+import { useSocket } from '@/providers/socket.provider';
 import { ImagePreview } from '@/components/blog/ImagePreview';
 
 export default function ChiTietBaiVietPage() {
     const { slug } = useParams();
     const { user, token } = useAuthStore();
+    const { socket } = useSocket();
     const [post, setPost] = useState<IPost | null>(null);
     const [comments, setComments] = useState<IComment[]>([]);
     const [loading, setLoading] = useState(true);
@@ -21,6 +23,7 @@ export default function ChiTietBaiVietPage() {
     const [bookmarked, setBookmarked] = useState(false);
     const [previewSrc, setPreviewSrc] = useState<string | null>(null);
     const viewTracked = useRef(false);
+    const postRef = useRef<IPost | null>(null); // ✅ Ref để dùng trong socket handler
 
     const buildCommentTree = (flat: IComment[]): IComment[] => {
         const map = new Map<string, IComment>();
@@ -43,6 +46,7 @@ export default function ChiTietBaiVietPage() {
             const result = await postApi.getPostBySlug(slug as string);
             if (result.success && result.data) {
                 const p = result.data;
+                postRef.current = p; // ✅ Cập nhật ref
                 setPost(p);
                 setLikeCount(p.likes || 0);
                 setLiked(user ? (p.likedBy?.includes(user.id) ?? false) : false);
@@ -68,6 +72,29 @@ export default function ChiTietBaiVietPage() {
         viewTracked.current = true;
         postApi.trackView(slug as string).catch(() => { });
     }, [slug]);
+
+    // ✅ Lắng nghe realtime comment và reaction
+    useEffect(() => {
+        if (!socket || !slug) return;
+
+        const handleNewComment = (data: { postSlug: string }) => {
+            if (data.postSlug !== slug) return;
+            fetchPost();
+        };
+
+        const handleNewReaction = (data: { postSlug: string }) => {
+            if (data.postSlug !== slug) return;
+            fetchPost();
+        };
+
+        socket.on('post:new_comment', handleNewComment);
+        socket.on('post:new_reaction', handleNewReaction);
+
+        return () => {
+            socket.off('post:new_comment', handleNewComment);
+            socket.off('post:new_reaction', handleNewReaction);
+        };
+    }, [socket, slug, fetchPost]);
 
     const handleLike = async () => {
         if (!token || !post) return;
@@ -111,7 +138,6 @@ export default function ChiTietBaiVietPage() {
             <div className="container mx-auto px-4 py-8">
                 <div className="max-w-6xl mx-auto">
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                        {/* Skeleton chính — min-w-0 + overflow-hidden để không tràn mobile */}
                         <div className="lg:col-span-2 space-y-4 min-w-0 overflow-hidden w-full">
                             <Skeleton className="h-5 w-32" />
                             <Skeleton className="h-9 w-full" />
@@ -167,11 +193,14 @@ export default function ChiTietBaiVietPage() {
                             <div className="sticky top-24">
                                 <BlogSidebar
                                     authorName={post.author.fullName}
+                                    authorId={post.author.id}
                                     authorBio={post.author.bio || ''}
                                     likeCount={likeCount}
                                     commentCount={comments.length}
                                     liked={liked}
                                     bookmarked={bookmarked}
+                                    postId={post._id}
+                                    postTitle={post.title}
                                     onLike={handleLike}
                                     onComment={() => {
                                         document

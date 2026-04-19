@@ -3,28 +3,62 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Heart, MessageCircle, Bookmark } from 'lucide-react';
+import { toast } from 'sonner';
+import { useSocket } from '@/providers/socket.provider';
+import { useAuthStore } from '@/store/auth.store';
 
 interface BlogSidebarProps {
     authorName?: string;
+    authorId?: string;
     authorBio?: string;
     likeCount?: number;
     commentCount?: number;
     liked?: boolean;
     bookmarked?: boolean;
-    onLike?: () => void;
+    postId?: string;
+    postTitle?: string;
+    onLike?: () => Promise<void>;
     onComment?: () => void;
 }
 
 export default function BlogSidebar({
     authorName = 'Tác giả',
+    authorId,
     authorBio = '',
     likeCount = 0,
     commentCount = 0,
     liked = false,
     bookmarked = false,
+    postId,
+    postTitle,
     onLike,
     onComment,
 }: BlogSidebarProps) {
+    const { socket } = useSocket();
+    const { user } = useAuthStore();
+
+    const handleLike = async () => {
+        if (!user) {
+            toast.error('Vui lòng đăng nhập để thích bài viết');
+            return;
+        }
+        if (onLike) {
+            await onLike();
+
+            // ✅ Gửi socket notification khi like (nếu không phải like của chính mình)
+            if (socket && socket.connected && postId && authorId && user.id !== authorId) {
+                socket.emit('notification:like_post', {
+                    postId,
+                    postTitle: postTitle || 'bài viết',
+                    recipientId: authorId,
+                    userId: user.id,
+                    userName: user.fullName
+                });
+                console.log('📤 Emitted like notification');
+            }
+        }
+    };
+
     return (
         <Card className="rounded-2xl shadow-sm">
             <CardContent className="space-y-3">
@@ -37,7 +71,7 @@ export default function BlogSidebar({
                 <Separator />
                 <div className="flex gap-6 text-muted-foreground">
                     <button
-                        onClick={onLike}
+                        onClick={handleLike}
                         className="flex items-center gap-2 cursor-pointer transition"
                     >
                         <Heart

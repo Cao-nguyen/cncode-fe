@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Bookmark, Copy, Flag, Facebook, MoreHorizontal, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -42,6 +42,11 @@ export default function BlogActions({ postId, isBookmarked = false, onBookmarkCh
     const [selectedReason, setSelectedReason] = useState('');
     const [reporting, setReporting] = useState(false);
 
+    // ✅ Sync lại khi prop isBookmarked thay đổi (sau khi fetchPost xong)
+    useEffect(() => {
+        setBookmarked(isBookmarked);
+    }, [isBookmarked]);
+
     const handleBookmark = async () => {
         if (!token) {
             toast.error('Vui lòng đăng nhập để lưu bài viết');
@@ -75,7 +80,7 @@ export default function BlogActions({ postId, isBookmarked = false, onBookmarkCh
         window.open(
             `https://www.facebook.com/dialog/feed?app_id=${appId}&display=popup&link=${postUrl}&redirect_uri=${redirectUri}`,
             '_blank',
-            'width=600,height=400,noopener,noreferrer'
+            'width=600,height=400,noopener,noreferrer',
         );
     };
 

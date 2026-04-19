@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { Bell, MessageCircle, Heart } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Bell, MessageCircle, Heart, ThumbsUp } from 'lucide-react';
 import { useSocket } from '@/providers/socket.provider';
 import { useAuthStore } from '@/store/auth.store';
 import {
@@ -15,8 +15,8 @@ import Link from 'next/link';
 
 interface Notification {
     id: string;
-    type: 'comment' | 'reaction';
-    postId: string;
+    type: 'comment' | 'reaction_comment' | 'like_post';
+    postSlug: string;
     postTitle: string;
     commentId?: string;
     reactionType?: string;
@@ -26,134 +26,153 @@ interface Notification {
     createdAt: string;
 }
 
-export default function NotificationBell() {
+const REACTION_NAMES: Record<string, string> = {
+    like: '👍 thích',
+    love: '❤️ yêu thích',
+    care: '🤗 quan tâm',
+    haha: '😂 haha',
+    wow: '😲 wow',
+    sad: '😢 buồn',
+    angry: '😠 phẫn nộ',
+};
+
+function formatTime(dateString: string): string {
+    const diff = Math.floor((new Date().getTime() - new Date(dateString).getTime()) / 1000);
+    if (diff < 60) return 'Vừa xong';
+    if (diff < 3600) return `${Math.floor(diff / 60)} phút trước`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)} giờ trước`;
+    if (diff < 604800) return `${Math.floor(diff / 86400)} ngày trước`;
+    return new Date(dateString).toLocaleDateString('vi-VN');
+}
+
+function getNotificationContent(notification: Notification) {
+    if (notification.type === 'comment') {
+        return (
+            <div className="flex items-start gap-3">
+                <div className="bg-blue-100 dark:bg-blue-900/30 p-2 rounded-full shrink-0">
+                    <MessageCircle size={16} className="text-blue-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                    <p className="text-sm">
+                        <span className="font-semibold">{notification.userName}</span>{' '}
+                        đã bình luận về bài viết{' '}
+                        <span className="font-medium">{notification.postTitle}</span>
+                    </p>
+                    {notification.content && (
+                        <p className="text-xs text-gray-500 mt-1 line-clamp-2">
+                            {notification.content}
+                        </p>
+                    )}
+                    <p className="text-xs text-gray-400 mt-1">{formatTime(notification.createdAt)}</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (notification.type === 'like_post') {
+        return (
+            <div className="flex items-start gap-3">
+                <div className="bg-red-100 dark:bg-red-900/30 p-2 rounded-full shrink-0">
+                    <ThumbsUp size={16} className="text-red-500" />
+                </div>
+                <div className="flex-1 min-w-0">
+                    <p className="text-sm">
+                        <span className="font-semibold">{notification.userName}</span>{' '}
+                        đã thích bài viết{' '}
+                        <span className="font-medium">{notification.postTitle}</span>
+                    </p>
+                    <p className="text-xs text-gray-400 mt-1">{formatTime(notification.createdAt)}</p>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="flex items-start gap-3">
+            <div className="bg-purple-100 dark:bg-purple-900/30 p-2 rounded-full shrink-0">
+                <Heart size={16} className="text-purple-600" />
+            </div>
+            <div className="flex-1 min-w-0">
+                <p className="text-sm">
+                    <span className="font-semibold">{notification.userName}</span>{' '}
+                    đã {REACTION_NAMES[notification.reactionType || 'like']} bình luận của bạn
+                </p>
+                <p className="text-xs text-gray-400 mt-1">{formatTime(notification.createdAt)}</p>
+            </div>
+        </div>
+    );
+}
+
+function loadNotifications(userId: string): Notification[] {
+    try {
+        const saved = localStorage.getItem(`notifications_${userId}`);
+        return saved ? (JSON.parse(saved) as Notification[]) : [];
+    } catch {
+        return [];
+    }
+}
+
+function NotificationBellInner({ userId }: { userId: string }) {
     const { socket } = useSocket();
-    const { user } = useAuthStore();
-    const [notifications, setNotifications] = useState<Notification[]>([]);
-    const [unreadCount, setUnreadCount] = useState(0);
+
+    const [notifications, setNotifications] = useState<Notification[]>(() =>
+        loadNotifications(userId),
+    );
+    const [unreadCount, setUnreadCount] = useState<number>(
+        () => loadNotifications(userId).filter((n) => !n.read).length,
+    );
     const [open, setOpen] = useState(false);
-    const hasLoadedRef = useRef(false);
-
-    useEffect(() => {
-        if (hasLoadedRef.current) return;
-
-        const savedNotifications = localStorage.getItem(`notifications_${user?.id}`);
-        if (savedNotifications) {
-            const parsed = JSON.parse(savedNotifications);
-            setNotifications(parsed);
-            setUnreadCount(parsed.filter((n: Notification) => !n.read).length);
-            hasLoadedRef.current = true;
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [user?.id]);
 
     useEffect(() => {
         if (!socket) return;
 
-        const handleNewNotification = (notificationData: INotification) => {
+        const handleNewNotification = (data: INotification) => {
             const newNotification: Notification = {
-                id: Date.now().toString(),
-                type: notificationData.type,
-                postId: notificationData.postId || '',
-                postTitle: notificationData.postTitle || '',
-                userName: notificationData.userName || '',
-                commentId: notificationData.commentId,
-                reactionType: notificationData.reactionType,
-                content: notificationData.content,
+                id: crypto.randomUUID(),
+                type: data.type,
+                postSlug: data.postId || '',  // ✅ BE gửi field tên postId nhưng chứa slug
+                postTitle: data.postTitle || '',
+                userName: data.userName || 'Người dùng',
+                commentId: data.commentId,
+                reactionType: data.reactionType,
+                content: data.content,
                 read: false,
-                createdAt: new Date().toISOString()
+                createdAt: new Date().toISOString(),
             };
 
-            setNotifications(prev => [newNotification, ...prev]);
-            setUnreadCount(prev => prev + 1);
-            setNotifications(prevNotifications => {
-                const updated = [newNotification, ...prevNotifications];
-                localStorage.setItem(`notifications_${user?.id}`, JSON.stringify(updated));
+            setNotifications((prev) => {
+                const updated = [newNotification, ...prev];
+                localStorage.setItem(`notifications_${userId}`, JSON.stringify(updated));
                 return updated;
             });
+            setUnreadCount((prev) => prev + 1);
         };
 
         socket.on('new_notification', handleNewNotification);
         return () => {
             socket.off('new_notification', handleNewNotification);
         };
-    }, [socket, user?.id, notifications]);
+    }, [socket, userId]);
 
     const markAsRead = (notificationId: string) => {
-        const updated = notifications.map(n =>
-            n.id === notificationId ? { ...n, read: true } : n
-        );
-        setNotifications(updated);
-        setUnreadCount(updated.filter(n => !n.read).length);
-        localStorage.setItem(`notifications_${user?.id}`, JSON.stringify(updated));
+        setNotifications((prev) => {
+            const updated = prev.map((n) =>
+                n.id === notificationId ? { ...n, read: true } : n,
+            );
+            setUnreadCount(updated.filter((n) => !n.read).length);
+            localStorage.setItem(`notifications_${userId}`, JSON.stringify(updated));
+            return updated;
+        });
     };
 
     const markAllAsRead = () => {
-        const updated = notifications.map(n => ({ ...n, read: true }));
-        setNotifications(updated);
-        setUnreadCount(0);
-        localStorage.setItem(`notifications_${user?.id}`, JSON.stringify(updated));
+        setNotifications((prev) => {
+            const updated = prev.map((n) => ({ ...n, read: true }));
+            setUnreadCount(0);
+            localStorage.setItem(`notifications_${userId}`, JSON.stringify(updated));
+            return updated;
+        });
     };
-
-    const formatTime = (dateString: string) => {
-        const date = new Date(dateString);
-        const now = new Date();
-        const diff = Math.floor((now.getTime() - date.getTime()) / 1000);
-        if (diff < 60) return 'Vừa xong';
-        if (diff < 3600) return `${Math.floor(diff / 60)} phút trước`;
-        if (diff < 86400) return `${Math.floor(diff / 3600)} giờ trước`;
-        if (diff < 604800) return `${Math.floor(diff / 86400)} ngày trước`;
-        return date.toLocaleDateString('vi-VN');
-    };
-
-    const getNotificationContent = (notification: Notification) => {
-        if (notification.type === 'comment') {
-            return (
-                <div className="flex items-start gap-3">
-                    <div className="bg-blue-100 dark:bg-blue-900/30 p-2 rounded-full">
-                        <MessageCircle size={16} className="text-blue-600" />
-                    </div>
-                    <div className="flex-1">
-                        <p className="text-sm">
-                            <span className="font-semibold">{notification.userName}</span>{' '}
-                            đã bình luận về bài viết{' '}
-                            <span className="font-medium">{notification.postTitle}</span>
-                        </p>
-                        {notification.content && (
-                            <p className="text-xs text-gray-500 mt-1 line-clamp-2">{notification.content}</p>
-                        )}
-                        <p className="text-xs text-gray-400 mt-1">{formatTime(notification.createdAt)}</p>
-                    </div>
-                </div>
-            );
-        } else {
-            const reactionNames: Record<string, string> = {
-                like: '👍 thích',
-                love: '❤️ yêu thích',
-                care: '🤗 quan tâm',
-                haha: '😂 haha',
-                wow: '😲 wow',
-                sad: '😢 buồn',
-                angry: '😠 phẫn nộ'
-            };
-            return (
-                <div className="flex items-start gap-3">
-                    <div className="bg-purple-100 dark:bg-purple-900/30 p-2 rounded-full">
-                        <Heart size={16} className="text-purple-600" />
-                    </div>
-                    <div className="flex-1">
-                        <p className="text-sm">
-                            <span className="font-semibold">{notification.userName}</span>{' '}
-                            đã {reactionNames[notification.reactionType || 'like']} bình luận của bạn
-                        </p>
-                        <p className="text-xs text-gray-400 mt-1">{formatTime(notification.createdAt)}</p>
-                    </div>
-                </div>
-            );
-        }
-    };
-
-    if (!user) return null;
 
     return (
         <Popover open={open} onOpenChange={setOpen}>
@@ -190,12 +209,14 @@ export default function NotificationBell() {
                             {notifications.map((notification) => (
                                 <Link
                                     key={notification.id}
-                                    href={`/baiviet/${notification.postId}`}
+                                    href={`/baiviet/${notification.postSlug}`} // ✅ dùng postSlug
                                     onClick={() => {
                                         markAsRead(notification.id);
                                         setOpen(false);
                                     }}
-                                    className={`block p-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition ${!notification.read ? 'bg-blue-50 dark:bg-blue-950/20' : ''
+                                    className={`block p-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition ${!notification.read
+                                        ? 'bg-blue-50 dark:bg-blue-950/20'
+                                        : ''
                                         }`}
                                 >
                                     {getNotificationContent(notification)}
@@ -207,4 +228,10 @@ export default function NotificationBell() {
             </PopoverContent>
         </Popover>
     );
+}
+
+export default function NotificationBell() {
+    const { user } = useAuthStore();
+    if (!user?.id) return null;
+    return <NotificationBellInner userId={user.id} />;
 }

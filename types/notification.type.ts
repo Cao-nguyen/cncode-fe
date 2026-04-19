@@ -1,8 +1,8 @@
 export interface INotification {
-    type: 'comment' | 'reaction';
-    commentId?: string;
-    postId?: string;
+    type: 'comment' | 'reaction_comment' | 'like_post';
+    postId: string;
     postTitle?: string;
+    commentId?: string;
     reactionType?: string;
     userName?: string;
     content?: string;

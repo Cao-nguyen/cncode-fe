@@ -4,8 +4,8 @@ import {
     createContext,
     useContext,
     useEffect,
-    useState,
     useRef,
+    useState,
     useMemo,
     type ReactNode,
 } from 'react';
@@ -32,21 +32,13 @@ const BASE_URL =
 
 export function SocketProvider({ children }: { children: ReactNode }) {
     const { user, token } = useAuthStore();
-
     const socketRef = useRef<Socket | null>(null);
+    const [socketState, setSocketState] = useState<Socket | null>(null);
     const [isConnected, setIsConnected] = useState(false);
     const [socketId, setSocketId] = useState<string | undefined>(undefined);
 
     useEffect(() => {
-        if (!token || !user) {
-            socketRef.current?.disconnect();
-            socketRef.current = null;
-            setIsConnected(false);
-            setSocketId(undefined);
-            return;
-        }
-
-        let cancelled = false;
+        if (!token || !user) return; // ✅ Không gọi setState trong early return
 
         const instance = io(BASE_URL, {
             auth: { token },
@@ -56,16 +48,13 @@ export function SocketProvider({ children }: { children: ReactNode }) {
             reconnectionAttempts: 5,
         });
 
-        if (cancelled) {
-            instance.disconnect();
-            return;
-        }
-
         socketRef.current = instance;
 
         instance.on('connect', () => {
             setIsConnected(true);
             setSocketId(instance.id);
+            setSocketState(instance);
+            instance.emit('register', user.id);
         });
 
         instance.on('disconnect', () => {
@@ -73,31 +62,27 @@ export function SocketProvider({ children }: { children: ReactNode }) {
             setSocketId(undefined);
         });
 
-        instance.on('connect_error', () => {
+        instance.on('connect_error', (error) => {
+            console.error('Socket error:', error.message);
             setIsConnected(false);
-            setSocketId(undefined);
         });
 
         return () => {
-            cancelled = true;
             instance.off('connect');
             instance.off('disconnect');
             instance.off('connect_error');
             instance.disconnect();
             socketRef.current = null;
+            // ✅ setState trong cleanup function được phép
+            setSocketState(null);
             setIsConnected(false);
             setSocketId(undefined);
         };
     }, [token, user]);
 
     const value = useMemo<SocketContextType>(
-        () => ({
-            socket: socketRef.current,
-            isConnected,
-            socketId,
-        }),
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-        [isConnected, socketId],
+        () => ({ socket: socketState, isConnected, socketId }),
+        [socketState, isConnected, socketId],
     );
 
     return (

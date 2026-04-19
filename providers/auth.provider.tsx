@@ -18,7 +18,8 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
             }
 
             try {
-                const response = await axiosInstance.get("/user/me");
+                // ✅ SỬA: Thêm /api vào đầu URL
+                const response = await axiosInstance.get("/api/user/me");
                 if (response.data.success && response.data.data) {
                     dispatch(setUser({
                         user: response.data.data,
