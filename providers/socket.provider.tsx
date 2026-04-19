@@ -9,11 +9,12 @@ import {
     useMemo,
     type ReactNode,
 } from 'react';
-import { type Socket } from 'socket.io-client';
 import { useAuthStore } from '@/store/auth.store';
 
+type SocketInstance = ReturnType<typeof import('socket.io-client')['io']>;
+
 interface SocketContextType {
-    socket: Socket | null;
+    socket: SocketInstance | null;
     isConnected: boolean;
     socketId: string | undefined;
 }
@@ -33,7 +34,7 @@ const BASE_URL =
 export function SocketProvider({ children }: { children: ReactNode }) {
     const { user, token } = useAuthStore();
 
-    const socketRef = useRef<Socket | null>(null);
+    const socketRef = useRef<SocketInstance | null>(null);
     const [isConnected, setIsConnected] = useState(false);
     const [socketId, setSocketId] = useState<string | undefined>(undefined);
 
@@ -46,10 +47,14 @@ export function SocketProvider({ children }: { children: ReactNode }) {
             return;
         }
 
+        let cancelled = false;
+
         const init = async () => {
             const { io } = await import('socket.io-client');
 
-            const instance: Socket = io(BASE_URL, {
+            if (cancelled) return;
+
+            const instance = io(BASE_URL, {
                 auth: { token },
                 transports: ['websocket'],
                 autoConnect: true,
@@ -59,31 +64,30 @@ export function SocketProvider({ children }: { children: ReactNode }) {
 
             socketRef.current = instance;
 
-            const onConnect = () => {
+            instance.on('connect', () => {
                 setIsConnected(true);
                 setSocketId(instance.id);
-            };
+            });
 
-            const onDisconnect = () => {
+            instance.on('disconnect', () => {
                 setIsConnected(false);
                 setSocketId(undefined);
-            };
+            });
 
-            instance.on('connect', onConnect);
-            instance.on('disconnect', onDisconnect);
-            instance.on('connect_error', onDisconnect);
+            instance.on('connect_error', () => {
+                setIsConnected(false);
+                setSocketId(undefined);
+            });
         };
 
         init();
 
         return () => {
-            const instance = socketRef.current;
-            if (!instance) return;
-
-            instance.off('connect');
-            instance.off('disconnect');
-            instance.off('connect_error');
-            instance.disconnect();
+            cancelled = true;
+            socketRef.current?.off('connect');
+            socketRef.current?.off('disconnect');
+            socketRef.current?.off('connect_error');
+            socketRef.current?.disconnect();
             socketRef.current = null;
             setIsConnected(false);
             setSocketId(undefined);
