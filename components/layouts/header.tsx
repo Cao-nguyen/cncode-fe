@@ -6,13 +6,13 @@ import { usePathname, useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import { Sun, Moon, User, Settings, LogOut, BookOpen, FileText, Home, ShoppingBag, Heart } from "lucide-react";
 import {
-    Home2 as Trangchu,
-    Message2 as Diendan,
-    Book1 as Khoahoc,
-    DocumentCode as Luyentap,
-    Calendar2 as Sukien,
-    Document as Baiviet,
-} from "iconsax-react";
+    House as Trangchu,
+    MessageCircle as Diendan,
+    BookOpen as Khoahoc,
+    FileCodeCorner as Luyentap,
+    Calendar as Sukien,
+    File as Baiviet,
+} from "lucide-react";
 import NotificationBell from "./NotificationBell";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -315,7 +315,6 @@ export default function Header() {
                             >
                                 <Icon
                                     size={20}
-                                    variant={isActive ? "Bold" : "Outline"}
                                     className={isActive ? "text-blue-500" : "text-gray-500 dark:text-gray-400"}
                                 />
                                 <span className={`text-[10px] font-medium ${isActive ? "text-blue-500" : "text-gray-500 dark:text-gray-400"}`}>

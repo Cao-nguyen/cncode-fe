@@ -1,7 +1,8 @@
 'use client';
 
 import { createContext, useContext, useEffect, useRef, ReactNode, useState } from 'react';
-import { io, Socket } from 'socket.io-client';
+import { io } from 'socket.io-client';
+import type { Socket } from 'socket.io-client';
 import { useAuthStore } from '@/store/auth.store';
 
 interface SocketContextType {
@@ -66,7 +67,7 @@ export function SocketProvider({ children }: SocketProviderProps) {
                 setIsConnected(false);
             }
         };
-    }, [token, user]);
+    }, [token, user, socket]);
 
     return (
         <SocketContext.Provider value={{ socket, isConnected }}>
