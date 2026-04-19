@@ -42,10 +42,11 @@ export function SocketProvider({ children }: { children: ReactNode }) {
 
         const instance = io(BASE_URL, {
             auth: { token },
-            transports: ['websocket'],
+            transports: ['websocket', 'polling'],
             autoConnect: true,
             reconnection: true,
             reconnectionAttempts: 5,
+            reconnectionDelay: 2000,
         });
 
         socketRef.current = instance;
