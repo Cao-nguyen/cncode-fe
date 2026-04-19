@@ -9,7 +9,8 @@ import {
     useRef,
     useMemo,
 } from 'react';
-import { io, Socket } from 'socket.io-client';
+import { io } from 'socket.io-client';
+import type { Socket } from 'socket.io-client';
 import { useAuthStore } from '@/store/auth.store';
 
 interface SocketContextType {
@@ -33,7 +34,6 @@ interface SocketProviderProps {
 export function SocketProvider({ children }: SocketProviderProps) {
     const { user, token } = useAuthStore();
 
-    // Dùng useRef cho socket để tránh gọi setState trong effect body
     const socketRef = useRef<Socket | null>(null);
     const [isConnected, setIsConnected] = useState(false);
     const [socketId, setSocketId] = useState<string | undefined>(undefined);
@@ -44,10 +44,6 @@ export function SocketProvider({ children }: SocketProviderProps) {
                 socketRef.current.disconnect();
                 socketRef.current = null;
             }
-            // ✅ Các setState này nằm trong nhánh điều kiện, không phải
-            // synchronous call trực tiếp ngay đầu effect — vẫn được lint chấp nhận,
-            // nhưng để chắc chắn hơn, ta wrap trong setTimeout(0)
-            // hoặc chuyển thành cleanup pattern bên dưới.
             setIsConnected(false);
             setSocketId(undefined);
             return;
@@ -90,18 +86,14 @@ export function SocketProvider({ children }: SocketProviderProps) {
             socketInstance.off('connect', handleConnect);
             socketInstance.off('disconnect', handleDisconnect);
             socketInstance.off('connect_error', handleConnectError);
-
             socketInstance.disconnect();
             socketRef.current = null;
-
-            // ✅ setState trong cleanup function của effect — được phép,
-            // đây là pattern chuẩn để reset state khi unmount/re-run
             setIsConnected(false);
             setSocketId(undefined);
         };
     }, [token, user]);
 
-    const contextValue: SocketContextType = useMemo(
+    const contextValue = useMemo<SocketContextType>(
         () => ({
             socket: socketRef.current,
             isConnected,
@@ -109,7 +101,6 @@ export function SocketProvider({ children }: SocketProviderProps) {
         }),
         // eslint-disable-next-line react-hooks/exhaustive-deps
         [isConnected, socketId]
-        // socketRef.current không cần trong deps vì ref không trigger re-render
     );
 
     return (
