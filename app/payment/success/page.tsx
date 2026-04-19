@@ -1,100 +1,172 @@
-'use client'
+'use client';
 
-import { useEffect, useState, Suspense } from 'react'
-import { useSearchParams, useRouter } from 'next/navigation'
-import { CheckCircle, Loader2, Download } from 'lucide-react'
-import Link from 'next/link'
+import { useEffect, useRef, useState } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { Loader2, CheckCircle, XCircle, Clock, Download } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { paymentApi } from '@/lib/api/payment.api';
+import { useAuthStore } from '@/store/auth.store';
 
-function SuccessContent() {
-  const searchParams = useSearchParams()
-  const router = useRouter()
-  const [downloadUrl, setDownloadUrl] = useState<string | null>(null)
-  const [productName, setProductName] = useState<string | null>(null)
+type PageStatus = 'loading' | 'success' | 'pending' | 'failed';
+
+interface PaymentData {
+  productName: string;
+  downloadUrl: string | null;
+}
+
+const MAX_RETRIES = 8;
+const RETRY_INTERVAL_MS = 2000;
+
+export default function PaymentSuccessPage() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const { token } = useAuthStore();
+
+  const orderCode = searchParams.get('orderCode');
+
+  const [status, setStatus] = useState<PageStatus>('loading');
+  const [paymentData, setPaymentData] = useState<PaymentData | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
+  const [hydrated, setHydrated] = useState(false);
+
+  const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Chờ Zustand hydrate xong trước khi check token
+  useEffect(() => {
+    const timer = setTimeout(() => setHydrated(true), 300);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
-    const url = searchParams.get('downloadUrl')
-    const name = searchParams.get('productName')
-    
-    if (url && name) {
-      setDownloadUrl(decodeURIComponent(url))
-      setProductName(decodeURIComponent(name))
-    } else {
-      router.push('/cuahangso')
-    }
-  }, [searchParams, router])
+    if (!hydrated) return;
 
-  const handleDownload = () => {
-    if (downloadUrl) {
-      window.open(downloadUrl, '_blank')
-      setTimeout(() => {
-        router.push('/me/cuahangso')
-      }, 1000)
+    if (!orderCode) {
+      router.replace('/payment/cancel');
+      return;
     }
-  }
 
-  if (!downloadUrl) {
+    if (!token) {
+      router.replace(`/login?redirect=/payment/success?orderCode=${orderCode}`);
+      return;
+    }
+
+    let cancelled = false;
+
+    const run = async () => {
+      try {
+        const result = await paymentApi.checkPaymentStatus(orderCode, token);
+
+        if (cancelled) return;
+
+        if (!result.success) {
+          setStatus('failed');
+          return;
+        }
+
+        setPaymentData({
+          productName: result.data.productName,
+          downloadUrl: result.data.downloadUrl,
+        });
+
+        if (result.data.status === 'success') {
+          setStatus('success');
+        } else if (retryCount >= MAX_RETRIES) {
+          setStatus('pending');
+        } else {
+          retryTimerRef.current = setTimeout(() => {
+            if (!cancelled) setRetryCount((c) => c + 1);
+          }, RETRY_INTERVAL_MS);
+        }
+      } catch {
+        if (!cancelled) setStatus('failed');
+      }
+    };
+
+    run();
+
+    return () => {
+      cancelled = true;
+      if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
+    };
+  }, [hydrated, orderCode, token, retryCount, router]);
+
+  const handleRetry = () => {
+    setStatus('loading');
+    setRetryCount(0);
+  };
+
+  if (status === 'loading') {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-black flex items-center justify-center">
-        <Loader2 size={40} className="animate-spin text-blue-600" />
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-gray-50 dark:bg-black">
+        <Loader2 className="h-12 w-12 animate-spin text-blue-600" />
+        <p className="text-gray-500 dark:text-gray-400">
+          Đang xác nhận thanh toán{retryCount > 0 ? ` (${retryCount}/${MAX_RETRIES})` : ''}...
+        </p>
       </div>
-    )
+    );
   }
 
-  return (
-    <div className="min-h-screen bg-gray-50 dark:bg-black py-12">
-      <div className="container mx-auto px-5 lg:px-10 max-w-2xl">
-        <div className="bg-white dark:bg-[#171717] rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden">
-          <div className="p-6 text-center">
-            <CheckCircle size={64} className="text-green-500 mx-auto mb-4" />
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-              Thanh toán thành công!
-            </h1>
-            <p className="text-gray-600 dark:text-gray-400 mb-2">
-              Cảm ơn bạn đã mua hàng.
-            </p>
-            {productName && (
-              <p className="text-gray-500 mb-6">
-                Sản phẩm: <span className="font-medium">{productName}</span>
-              </p>
+  if (status === 'success' && paymentData) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-gray-50 px-4 text-center dark:bg-black">
+        <div className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-8 shadow-sm dark:border-gray-800 dark:bg-[#171717]">
+          <CheckCircle className="mx-auto mb-4 h-16 w-16 text-green-500" />
+          <h1 className="mb-2 text-2xl font-bold text-gray-900 dark:text-white">
+            Thanh toán thành công!
+          </h1>
+          <p className="mb-6 text-gray-500 dark:text-gray-400">{paymentData.productName}</p>
+          <div className="space-y-3">
+            {paymentData.downloadUrl && (
+              <Button className="w-full gap-2" asChild>
+                <a href={paymentData.downloadUrl} target="_blank" rel="noopener noreferrer">
+                  <Download size={18} /> Tải xuống ngay
+                </a>
+              </Button>
             )}
-
-            <button
-              onClick={handleDownload}
-              className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              <Download size={20} />
-              Tải sản phẩm ngay
-            </button>
-
-            <div className="mt-6 flex gap-4 justify-center">
-              <Link
-                href="/me/cuahangso"
-                className="text-blue-600 hover:text-blue-700"
-              >
-                Xem sản phẩm đã mua
-              </Link>
-              <Link
-                href="/cuahangso"
-                className="text-blue-600 hover:text-blue-700"
-              >
-                Tiếp tục mua sắm
-              </Link>
-            </div>
+            <Button variant="outline" className="w-full" asChild>
+              <Link href="/cuahangso">Quay lại cửa hàng</Link>
+            </Button>
           </div>
         </div>
       </div>
-    </div>
-  )
-}
+    );
+  }
 
-export default function PaymentSuccessPage() {
-  return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-gray-50 dark:bg-black flex items-center justify-center">
-        <Loader2 size={40} className="animate-spin text-blue-600" />
+  if (status === 'pending') {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-gray-50 px-4 text-center dark:bg-black">
+        <div className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-8 shadow-sm dark:border-gray-800 dark:bg-[#171717]">
+          <Clock className="mx-auto mb-4 h-16 w-16 text-yellow-500" />
+          <h1 className="mb-2 text-2xl font-bold text-gray-900 dark:text-white">Đang xử lý</h1>
+          <p className="mb-6 text-gray-500 dark:text-gray-400">
+            Hệ thống đang xác nhận thanh toán. Vui lòng kiểm tra lại sau vài phút.
+          </p>
+          <div className="space-y-3">
+            <Button className="w-full" onClick={handleRetry}>
+              Kiểm tra lại
+            </Button>
+            <Button variant="outline" className="w-full" asChild>
+              <Link href="/cuahangso">Quay lại cửa hàng</Link>
+            </Button>
+          </div>
+        </div>
       </div>
-    }>
-      <SuccessContent />
-    </Suspense>
-  )
+    );
+  }
+
+  return (
+    <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-gray-50 px-4 text-center dark:bg-black">
+      <div className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-8 shadow-sm dark:border-gray-800 dark:bg-[#171717]">
+        <XCircle className="mx-auto mb-4 h-16 w-16 text-red-500" />
+        <h1 className="mb-2 text-2xl font-bold text-gray-900 dark:text-white">Có lỗi xảy ra</h1>
+        <p className="mb-6 text-gray-500 dark:text-gray-400">
+          Không thể xác nhận thanh toán. Vui lòng liên hệ hỗ trợ nếu đã bị trừ tiền.
+        </p>
+        <Button className="w-full" asChild>
+          <Link href="/cuahangso">Quay lại cửa hàng</Link>
+        </Button>
+      </div>
+    </div>
+  );
 }
