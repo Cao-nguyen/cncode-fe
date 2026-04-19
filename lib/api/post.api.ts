@@ -69,6 +69,7 @@ export const postApi = {
             category: string;
             thumbnail: string;
             tags?: string[];
+            status?: 'draft' | 'published';
         },
         token: string,
     ): Promise<IApiResponse<IPost>> =>
