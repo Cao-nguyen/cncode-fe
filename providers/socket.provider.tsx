@@ -5,12 +5,11 @@ import {
     useContext,
     useEffect,
     useState,
-    ReactNode,
     useRef,
     useMemo,
+    type ReactNode,
 } from 'react';
-import { io } from 'socket.io-client';
-import type { Socket } from 'socket.io-client';
+import { type Socket } from 'socket.io-client';
 import { useAuthStore } from '@/store/auth.store';
 
 interface SocketContextType {
@@ -27,11 +26,11 @@ const SocketContext = createContext<SocketContextType>({
 
 export const useSocket = () => useContext(SocketContext);
 
-interface SocketProviderProps {
-    children: ReactNode;
-}
+const BASE_URL =
+    process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') ||
+    'http://localhost:5000';
 
-export function SocketProvider({ children }: SocketProviderProps) {
+export function SocketProvider({ children }: { children: ReactNode }) {
     const { user, token } = useAuthStore();
 
     const socketRef = useRef<Socket | null>(null);
@@ -40,71 +39,69 @@ export function SocketProvider({ children }: SocketProviderProps) {
 
     useEffect(() => {
         if (!token || !user) {
-            if (socketRef.current) {
-                socketRef.current.disconnect();
-                socketRef.current = null;
-            }
+            socketRef.current?.disconnect();
+            socketRef.current = null;
             setIsConnected(false);
             setSocketId(undefined);
             return;
         }
 
-        const baseURL =
-            process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') ||
-            'http://localhost:5000';
+        const init = async () => {
+            const { io } = await import('socket.io-client');
 
-        const socketInstance: Socket = io(baseURL, {
-            auth: { token },
-            transports: ['websocket'],
-            autoConnect: true,
-            reconnection: true,
-            reconnectionAttempts: 5,
-        });
+            const instance: Socket = io(BASE_URL, {
+                auth: { token },
+                transports: ['websocket'],
+                autoConnect: true,
+                reconnection: true,
+                reconnectionAttempts: 5,
+            });
 
-        socketRef.current = socketInstance;
+            socketRef.current = instance;
 
-        const handleConnect = () => {
-            setIsConnected(true);
-            setSocketId(socketInstance.id);
+            const onConnect = () => {
+                setIsConnected(true);
+                setSocketId(instance.id);
+            };
+
+            const onDisconnect = () => {
+                setIsConnected(false);
+                setSocketId(undefined);
+            };
+
+            instance.on('connect', onConnect);
+            instance.on('disconnect', onDisconnect);
+            instance.on('connect_error', onDisconnect);
         };
 
-        const handleDisconnect = () => {
-            setIsConnected(false);
-            setSocketId(undefined);
-        };
-
-        const handleConnectError = () => {
-            setIsConnected(false);
-            setSocketId(undefined);
-        };
-
-        socketInstance.on('connect', handleConnect);
-        socketInstance.on('disconnect', handleDisconnect);
-        socketInstance.on('connect_error', handleConnectError);
+        init();
 
         return () => {
-            socketInstance.off('connect', handleConnect);
-            socketInstance.off('disconnect', handleDisconnect);
-            socketInstance.off('connect_error', handleConnectError);
-            socketInstance.disconnect();
+            const instance = socketRef.current;
+            if (!instance) return;
+
+            instance.off('connect');
+            instance.off('disconnect');
+            instance.off('connect_error');
+            instance.disconnect();
             socketRef.current = null;
             setIsConnected(false);
             setSocketId(undefined);
         };
     }, [token, user]);
 
-    const contextValue = useMemo<SocketContextType>(
+    const value = useMemo<SocketContextType>(
         () => ({
             socket: socketRef.current,
             isConnected,
             socketId,
         }),
         // eslint-disable-next-line react-hooks/exhaustive-deps
-        [isConnected, socketId]
+        [isConnected, socketId],
     );
 
     return (
-        <SocketContext.Provider value={contextValue}>
+        <SocketContext.Provider value={value}>
             {children}
         </SocketContext.Provider>
     );
