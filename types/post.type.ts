@@ -25,6 +25,7 @@ export interface IComment {
     children?: IComment[];
     reactions: IReactions;
     createdAt: string;
+    editedAt?: string;
     replyToName?: string;
 }
 
@@ -62,4 +63,18 @@ export interface IApiResponse<T> {
         total: number;
         totalPages: number;
     };
+}
+
+export interface IBlogDetailProps {
+    post: IPost;
+    comments: IComment[];
+    likeCount: number;
+    liked: boolean;
+    bookmarked: boolean;
+    currentUser: IUser | null;
+    onLike: () => Promise<void>;
+    onBookmarkChange: (bookmarked: boolean) => void;
+    onSubmitComment: (content: string, parentId?: string | null) => Promise<void>;
+    onDeleteComment: (commentId: string) => Promise<void>;
+    onImagePreview: (src: string) => void;
 }

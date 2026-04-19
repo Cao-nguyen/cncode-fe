@@ -1,8 +1,15 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
+type BlobInfo = {
+    blob: () => Blob;
+    filename: () => string;
+    base64: () => string;
+    blobUri: () => string;
+    uri: () => string | undefined;
+};
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import {
@@ -17,7 +24,6 @@ import { ChevronLeft, ImageIcon, Loader2, Globe, Lock } from 'lucide-react';
 import Link from 'next/link';
 import { postApi } from '@/lib/api/post.api';
 import { useAuthStore } from '@/store/auth.store';
-import { useEffect } from 'react';
 
 const Editor = dynamic(() => import('@tinymce/tinymce-react').then((mod) => mod.Editor), {
     ssr: false,
@@ -50,19 +56,17 @@ const extractDescription = (html: string): string => {
     return text.slice(0, 200).trim();
 };
 
-// ✅ THÊM HÀM TẠO SLUG
-const createSlug = (title: string): string => {
-    return title
+const createSlug = (title: string): string =>
+    title
         .toLowerCase()
         .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '') // xóa dấu tiếng Việt
-        .replace(/[^a-z0-9]+/g, '-')     // thay khoảng trắng bằng -
-        .replace(/^-+|-+$/g, '');        // xóa - ở đầu và cuối
-};
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
 
 export default function CreatePostPage() {
     const router = useRouter();
-    const { user, token } = useAuthStore();
+    const { token } = useAuthStore();
     const [loading, setLoading] = useState(false);
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
@@ -92,31 +96,16 @@ export default function CreatePostPage() {
             if (!data.success) throw new Error(data.message || 'Upload thất bại');
             return data.data.url;
         },
-        [token]
+        [token],
     );
 
     const handleSubmit = async () => {
-        if (!title.trim()) {
-            toast.error('Vui lòng nhập tiêu đề');
-            return;
-        }
-        if (!content.trim()) {
-            toast.error('Vui lòng nhập nội dung');
-            return;
-        }
-        if (!category) {
-            toast.error('Vui lòng chọn danh mục');
-            return;
-        }
-        if (!token) {
-            toast.error('Vui lòng đăng nhập lại');
-            return;
-        }
+        if (!title.trim()) { toast.error('Vui lòng nhập tiêu đề'); return; }
+        if (!content.trim()) { toast.error('Vui lòng nhập nội dung'); return; }
+        if (!category) { toast.error('Vui lòng chọn danh mục'); return; }
+        if (!token) { toast.error('Vui lòng đăng nhập lại'); return; }
 
         const thumbnail = extractFirstImage(content);
-        const description = extractDescription(content);
-        const slug = createSlug(title.trim()); // ✅ TẠO SLUG TỪ TIÊU ĐỀ
-
         if (!thumbnail) {
             toast.error('Nội dung cần có ít nhất 1 ảnh để làm ảnh đại diện');
             return;
@@ -127,15 +116,16 @@ export default function CreatePostPage() {
             const result = await postApi.createPost(
                 {
                     title: title.trim(),
-                    slug,              // ✅ THÊM SLUG VÀO DATA
-                    description,
+                    slug: createSlug(title.trim()),
+                    description: extractDescription(content),
                     content,
                     category,
                     thumbnail,
-                    status
+                    status,
                 },
-                token
+                token,
             );
+
             if (result.success) {
                 toast.success(status === 'draft' ? 'Đã lưu bài nháp' : 'Đăng bài thành công!');
                 router.push(`/baiviet/${result.data.slug}`);
@@ -159,7 +149,6 @@ export default function CreatePostPage() {
 
     return (
         <div className="container mx-auto px-4 py-6 max-w-4xl">
-            {/* Header */}
             <div className="flex items-center justify-between mb-6 gap-3 flex-wrap">
                 <Link
                     href="/baiviet"
@@ -169,7 +158,6 @@ export default function CreatePostPage() {
                     Quay lại
                 </Link>
                 <div className="flex items-center gap-2">
-                    {/* Toggle public/draft */}
                     <button
                         onClick={() => setStatus((s) => (s === 'published' ? 'draft' : 'published'))}
                         className={`inline-flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-full border transition ${status === 'published'
@@ -180,7 +168,6 @@ export default function CreatePostPage() {
                         {status === 'published' ? <Globe size={14} /> : <Lock size={14} />}
                         {status === 'published' ? 'Công khai' : 'Nháp'}
                     </button>
-
                     <Button variant="ghost" size="sm" onClick={() => router.push('/baiviet')}>
                         Hủy
                     </Button>
@@ -195,25 +182,23 @@ export default function CreatePostPage() {
                                 <Loader2 size={14} className="animate-spin mr-1.5" />
                                 Đang đăng...
                             </>
+                        ) : status === 'published' ? (
+                            'Đăng bài'
                         ) : (
-                            status === 'published' ? 'Đăng bài' : 'Lưu nháp'
+                            'Lưu nháp'
                         )}
                     </Button>
                 </div>
             </div>
 
             <div className="space-y-5">
-                {/* Tiêu đề */}
-                <div>
-                    <Input
-                        placeholder="Tiêu đề bài viết..."
-                        value={title}
-                        onChange={(e) => setTitle(e.target.value)}
-                        className="text-xl font-semibold h-14 rounded-xl border-0 border-b border-border bg-transparent px-0 focus-visible:ring-0 focus-visible:border-foreground transition placeholder:text-muted-foreground/50"
-                    />
-                </div>
+                <Input
+                    placeholder="Tiêu đề bài viết..."
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    className="text-xl font-semibold h-14 rounded-xl border-0 border-b border-border bg-transparent px-0 focus-visible:ring-0 focus-visible:border-foreground transition placeholder:text-muted-foreground/50"
+                />
 
-                {/* Danh mục */}
                 <div className="flex items-center gap-3 flex-wrap">
                     <Select value={category} onValueChange={setCategory}>
                         <SelectTrigger className="w-44 rounded-xl">
@@ -227,14 +212,12 @@ export default function CreatePostPage() {
                             ))}
                         </SelectContent>
                     </Select>
-
                     <p className="text-xs text-muted-foreground flex items-center gap-1.5">
                         <ImageIcon size={13} />
                         Ảnh đầu tiên trong bài sẽ làm ảnh đại diện
                     </p>
                 </div>
 
-                {/* TinyMCE Editor */}
                 <div className="rounded-xl overflow-hidden border">
                     <Editor
                         apiKey={process.env.NEXT_PUBLIC_TINYMCE_API_KEY}
@@ -243,10 +226,7 @@ export default function CreatePostPage() {
                         init={{
                             height: 600,
                             menubar: false,
-                            mobile: {
-                                menubar: false,
-                                toolbar_mode: 'scrolling',
-                            },
+                            mobile: { menubar: false, toolbar_mode: 'scrolling' },
                             plugins: [
                                 'advlist', 'autolink', 'lists', 'link', 'image',
                                 'charmap', 'preview', 'searchreplace', 'visualblocks',
@@ -268,9 +248,8 @@ export default function CreatePostPage() {
                                 img { max-width: 100%; height: auto; border-radius: 8px; }
                                 pre { overflow-x: auto; background: #f4f4f4; padding: 12px; border-radius: 6px; }
                             `,
-                            images_upload_handler: async (blobInfo) => {
-                                const file = blobInfo.blob() as File;
-                                const url = await uploadImageToCloudinary(file);
+                            images_upload_handler: async (blobInfo: BlobInfo): Promise<string> => {
+                                const url = await uploadImageToCloudinary(blobInfo.blob() as File);
                                 return url;
                             },
                             automatic_uploads: true,

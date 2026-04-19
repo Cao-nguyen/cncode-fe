@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Check, MoreHorizontal, Trash2, Flag } from 'lucide-react';
+import { Check, MoreHorizontal, Trash2, Flag, Pencil, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/store/auth.store';
 import { IComment, IPost, IReactions } from '@/types/post.type';
@@ -44,16 +44,14 @@ const REPORT_REASONS = [
 
 type ReactionKey = keyof IReactions;
 
-const formatDate = (dateString: string): string => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('vi-VN', {
+const formatDate = (dateString: string): string =>
+    new Date(dateString).toLocaleDateString('vi-VN', {
         day: '2-digit',
         month: '2-digit',
         year: 'numeric',
         hour: '2-digit',
         minute: '2-digit',
     });
-};
 
 const getTotalReactions = (reactions: IReactions): number =>
     Object.values(reactions).reduce((sum, arr) => sum + arr.length, 0);
@@ -80,6 +78,12 @@ export default function CommentItem({
     const [reportOpen, setReportOpen] = useState(false);
     const [selectedReason, setSelectedReason] = useState('');
     const [reporting, setReporting] = useState(false);
+
+    // edit state
+    const [isEditing, setIsEditing] = useState(false);
+    const [editContent, setEditContent] = useState(comment.content);
+    const [editSubmitting, setEditSubmitting] = useState(false);
+
     const reactionRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -96,18 +100,20 @@ export default function CommentItem({
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    const getUserReaction = () => {
-        if (!user) return null;
-        return REACTIONS.find((r) => localReactions[r.type as ReactionKey]?.includes(user.id)) ?? null;
-    };
+    const userReaction =
+        user
+            ? REACTIONS.find((r) => localReactions[r.type as ReactionKey]?.includes(user.id)) ?? null
+            : null;
 
-    const userReaction = getUserReaction();
     const totalReactions = getTotalReactions(localReactions);
+
     const canDelete =
         user &&
         (user.id === comment.user.id ||
             user.id === post.author.id ||
             user.role === 'admin');
+
+    const canEdit = user && user.id === comment.user.id;
 
     const handleReaction = async (type: string) => {
         if (!token || !user) {
@@ -174,6 +180,21 @@ export default function CommentItem({
         }
     };
 
+    const handleEditSubmit = async () => {
+        if (!token || !editContent.trim()) return;
+        setEditSubmitting(true);
+        try {
+            await postApi.editComment(post._id, comment._id, editContent, token);
+            await onCommentUpdated();
+            setIsEditing(false);
+            toast.success('Đã cập nhật bình luận');
+        } catch {
+            toast.error('Có lỗi xảy ra');
+        } finally {
+            setEditSubmitting(false);
+        }
+    };
+
     const handleReport = async () => {
         if (!token) {
             toast.error('Vui lòng đăng nhập để báo cáo');
@@ -205,7 +226,6 @@ export default function CommentItem({
                 </Avatar>
 
                 <div className="flex-1 min-w-0">
-                    {/* Bubble nội dung */}
                     <div className="bg-gray-100 dark:bg-gray-800 px-3 py-2.5 rounded-2xl inline-block max-w-full">
                         <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mb-0.5">
                             <p className="font-semibold text-sm leading-tight">
@@ -216,42 +236,89 @@ export default function CommentItem({
                                     Tác giả
                                 </span>
                             )}
+                            {comment.editedAt && (
+                                <span className="text-xs text-muted-foreground italic">
+                                    (đã chỉnh sửa)
+                                </span>
+                            )}
                         </div>
+
                         {comment.replyToName && isChild && (
                             <span className="text-xs text-blue-500 font-medium">
                                 @{comment.replyToName}{' '}
                             </span>
                         )}
-                        <p className="text-sm text-gray-700 dark:text-gray-300 break-words whitespace-pre-wrap">
-                            {comment.content}
-                        </p>
+
+                        {isEditing ? (
+                            <div className="mt-1 space-y-2">
+                                <Textarea
+                                    value={editContent}
+                                    onChange={(e) => setEditContent(e.target.value)}
+                                    rows={2}
+                                    className="text-sm rounded-xl resize-none bg-white dark:bg-gray-700 min-w-[200px]"
+                                    autoFocus
+                                />
+                                <div className="flex gap-2">
+                                    <Button
+                                        size="sm"
+                                        onClick={handleEditSubmit}
+                                        disabled={editSubmitting || !editContent.trim()}
+                                    >
+                                        {editSubmitting ? 'Đang lưu...' : 'Lưu'}
+                                    </Button>
+                                    <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        onClick={() => {
+                                            setIsEditing(false);
+                                            setEditContent(comment.content);
+                                        }}
+                                    >
+                                        <X size={14} className="mr-1" />
+                                        Hủy
+                                    </Button>
+                                </div>
+                            </div>
+                        ) : (
+                            <p className="text-sm text-gray-700 dark:text-gray-300 break-words whitespace-pre-wrap">
+                                {comment.content}
+                            </p>
+                        )}
                     </div>
 
-                    {/* Reaction summary */}
                     {totalReactions > 0 && (
                         <div className="flex items-center gap-1 mt-1 ml-1">
                             <div className="flex -space-x-1">
-                                {REACTIONS.filter((r) => localReactions[r.type as ReactionKey]?.length > 0)
+                                {REACTIONS.filter(
+                                    (r) => localReactions[r.type as ReactionKey]?.length > 0,
+                                )
                                     .slice(0, 3)
                                     .map((r) => (
-                                        <Image key={r.type} src={r.icon} alt={r.type} width={16} height={16} className="w-4 h-4" />
+                                        <Image
+                                            key={r.type}
+                                            src={r.icon}
+                                            alt={r.type}
+                                            width={16}
+                                            height={16}
+                                            className="w-4 h-4"
+                                        />
                                     ))}
                             </div>
                             <span className="text-xs text-muted-foreground">{totalReactions}</span>
                         </div>
                     )}
 
-                    {/* Action bar - tất cả items cùng hàng, dùng items-center */}
                     <div className="flex items-center gap-2 sm:gap-3 mt-1 ml-1 flex-wrap">
                         <span className="text-xs text-muted-foreground whitespace-nowrap">
                             {formatDate(comment.createdAt)}
                         </span>
 
-                        {/* Reaction button + popup */}
                         <div className="relative flex items-center" ref={reactionRef}>
                             <button
                                 onClick={() => setShowReactionPopup((v) => !v)}
-                                className={`text-xs font-semibold leading-none transition ${userReaction ? 'text-blue-500' : 'text-muted-foreground hover:text-foreground'
+                                className={`text-xs font-semibold leading-none transition ${userReaction
+                                    ? 'text-blue-500'
+                                    : 'text-muted-foreground hover:text-foreground'
                                     }`}
                             >
                                 {userReaction ? userReaction.label : 'Thích'}
@@ -269,7 +336,13 @@ export default function CommentItem({
                                             title={reaction.label}
                                             className="w-8 h-8 hover:scale-125 active:scale-110 transition-transform duration-150 rounded-full flex items-center justify-center touch-manipulation"
                                         >
-                                            <Image src={reaction.icon} alt={reaction.type} width={24} height={24} className="w-6 h-6" />
+                                            <Image
+                                                src={reaction.icon}
+                                                alt={reaction.type}
+                                                width={24}
+                                                height={24}
+                                                className="w-6 h-6"
+                                            />
                                         </button>
                                     ))}
                                 </div>
@@ -283,14 +356,27 @@ export default function CommentItem({
                             Trả lời
                         </button>
 
-                        {/* Dropdown xóa/báo cáo */}
                         <DropdownMenu modal={false}>
                             <DropdownMenuTrigger asChild>
                                 <button className="flex items-center text-muted-foreground hover:text-foreground transition p-0.5 rounded-full hover:bg-muted">
                                     <MoreHorizontal size={15} />
                                 </button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="start" side="top" sideOffset={4} className="w-40 rounded-xl p-1">
+                            <DropdownMenuContent
+                                align="start"
+                                side="top"
+                                sideOffset={4}
+                                className="w-44 rounded-xl p-1"
+                            >
+                                {canEdit && (
+                                    <DropdownMenuItem
+                                        onClick={() => setIsEditing(true)}
+                                        className="flex items-center gap-2 cursor-pointer py-2 rounded-lg"
+                                    >
+                                        <Pencil size={14} />
+                                        <span className="text-xs">Chỉnh sửa</span>
+                                    </DropdownMenuItem>
+                                )}
                                 {canDelete && (
                                     <DropdownMenuItem
                                         onClick={handleDelete}
@@ -311,7 +397,6 @@ export default function CommentItem({
                         </DropdownMenu>
                     </div>
 
-                    {/* Reply input */}
                     {showReplyInput && (
                         <div className="flex gap-2 mt-3">
                             <Avatar className="w-7 h-7 flex-shrink-0">
@@ -327,10 +412,21 @@ export default function CommentItem({
                                     className="text-sm rounded-2xl resize-none w-full"
                                 />
                                 <div className="flex gap-2 mt-2">
-                                    <Button size="sm" onClick={handleReply} disabled={submitting || !replyContent.trim()}>
+                                    <Button
+                                        size="sm"
+                                        onClick={handleReply}
+                                        disabled={submitting || !replyContent.trim()}
+                                    >
                                         {submitting ? 'Đang gửi...' : 'Gửi'}
                                     </Button>
-                                    <Button size="sm" variant="ghost" onClick={() => { setShowReplyInput(false); setReplyContent(''); }}>
+                                    <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        onClick={() => {
+                                            setShowReplyInput(false);
+                                            setReplyContent('');
+                                        }}
+                                    >
                                         Hủy
                                     </Button>
                                 </div>
@@ -338,7 +434,6 @@ export default function CommentItem({
                         </div>
                     )}
 
-                    {/* Children - chỉ render ở level cha */}
                     {!isChild && comment.children && comment.children.length > 0 && (
                         <div className="mt-1 space-y-0">
                             {comment.children.map((child) => (
@@ -347,7 +442,7 @@ export default function CommentItem({
                                     comment={child}
                                     post={post}
                                     onCommentUpdated={onCommentUpdated}
-                                    isChild={true}
+                                    isChild
                                 />
                             ))}
                         </div>
@@ -355,7 +450,6 @@ export default function CommentItem({
                 </div>
             </div>
 
-            {/* Report dialog */}
             <Dialog open={reportOpen} onOpenChange={setReportOpen}>
                 <DialogContent className="sm:max-w-md rounded-2xl">
                     <DialogHeader>
@@ -378,7 +472,9 @@ export default function CommentItem({
                         ))}
                     </div>
                     <DialogFooter className="gap-2">
-                        <Button variant="ghost" onClick={() => setReportOpen(false)}>Hủy</Button>
+                        <Button variant="ghost" onClick={() => setReportOpen(false)}>
+                            Hủy
+                        </Button>
                         <Button onClick={handleReport} disabled={reporting || !selectedReason}>
                             {reporting ? 'Đang gửi...' : 'Gửi báo cáo'}
                         </Button>

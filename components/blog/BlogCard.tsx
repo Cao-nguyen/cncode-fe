@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Clock } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import { stripMarkdown } from '@/lib/utils/strip-markdown';
 
 interface IBlogCardProps {
     title: string;
@@ -27,6 +28,8 @@ export default function BlogCard({
     category,
     link = '/baiviet',
 }: IBlogCardProps): React.ReactElement {
+    const plainDescription = stripMarkdown(description);
+
     return (
         <Link
             href={link}
@@ -50,7 +53,7 @@ export default function BlogCard({
                     {title}
                 </h3>
                 <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-3">
-                    {description}
+                    {plainDescription}
                 </p>
                 <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 mt-1">
                     <Clock size={18} className="text-black dark:text-white" />

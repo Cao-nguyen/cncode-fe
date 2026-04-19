@@ -8,6 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { IPost, IComment } from '@/types/post.type';
 import { postApi } from '@/lib/api/post.api';
 import { useAuthStore } from '@/store/auth.store';
+import { ImagePreview } from '@/components/blog/ImagePreview';
 
 export default function ChiTietBaiVietPage() {
     const { slug } = useParams();
@@ -18,6 +19,7 @@ export default function ChiTietBaiVietPage() {
     const [liked, setLiked] = useState(false);
     const [likeCount, setLikeCount] = useState(0);
     const [bookmarked, setBookmarked] = useState(false);
+    const [previewSrc, setPreviewSrc] = useState<string | null>(null);
     const viewTracked = useRef(false);
 
     const buildCommentTree = (flat: IComment[]): IComment[] => {
@@ -109,13 +111,14 @@ export default function ChiTietBaiVietPage() {
             <div className="container mx-auto px-4 py-8">
                 <div className="max-w-6xl mx-auto">
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                        <div className="lg:col-span-2 space-y-4 min-w-0">
+                        {/* Skeleton chính — min-w-0 + overflow-hidden để không tràn mobile */}
+                        <div className="lg:col-span-2 space-y-4 min-w-0 overflow-hidden w-full">
                             <Skeleton className="h-5 w-32" />
                             <Skeleton className="h-9 w-full" />
                             <Skeleton className="h-9 w-3/4" />
                             <div className="flex items-center gap-3">
                                 <Skeleton className="h-9 w-9 rounded-full flex-shrink-0" />
-                                <div className="space-y-1.5 flex-1">
+                                <div className="space-y-1.5 flex-1 min-w-0">
                                     <Skeleton className="h-3.5 w-28" />
                                     <Skeleton className="h-3 w-20" />
                                 </div>
@@ -141,44 +144,50 @@ export default function ChiTietBaiVietPage() {
     }
 
     return (
-        <div className="container mx-auto px-4 py-8">
-            <div className="max-w-6xl mx-auto">
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    <div className="lg:col-span-2 min-w-0 overflow-hidden">
-                        <BlogDetail
-                            post={post}
-                            comments={comments}
-                            likeCount={likeCount}
-                            liked={liked}
-                            bookmarked={bookmarked}
-                            currentUser={user ?? null}
-                            onLike={handleLike}
-                            onBookmarkChange={setBookmarked}
-                            onSubmitComment={handleSubmitComment}
-                            onDeleteComment={handleDeleteComment}
-                        />
-                    </div>
-                    {/* Sidebar chỉ hiện trên lg+ */}
-                    <div className="hidden lg:block lg:col-span-1">
-                        <div className="sticky top-24">
-                            <BlogSidebar
-                                authorName={post.author.fullName}
-                                authorBio={post.author.bio || ''}
+        <>
+            <div className="container mx-auto px-4 py-8">
+                <div className="max-w-6xl mx-auto">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        <div className="lg:col-span-2 min-w-0 overflow-hidden">
+                            <BlogDetail
+                                post={post}
+                                comments={comments}
                                 likeCount={likeCount}
-                                commentCount={comments.length}
                                 liked={liked}
                                 bookmarked={bookmarked}
+                                currentUser={user ?? null}
                                 onLike={handleLike}
-                                onComment={() => {
-                                    document.getElementById('comment-section')?.scrollIntoView({
-                                        behavior: 'smooth',
-                                    });
-                                }}
+                                onBookmarkChange={setBookmarked}
+                                onSubmitComment={handleSubmitComment}
+                                onDeleteComment={handleDeleteComment}
+                                onImagePreview={setPreviewSrc}
                             />
+                        </div>
+                        <div className="hidden lg:block lg:col-span-1">
+                            <div className="sticky top-24">
+                                <BlogSidebar
+                                    authorName={post.author.fullName}
+                                    authorBio={post.author.bio || ''}
+                                    likeCount={likeCount}
+                                    commentCount={comments.length}
+                                    liked={liked}
+                                    bookmarked={bookmarked}
+                                    onLike={handleLike}
+                                    onComment={() => {
+                                        document
+                                            .getElementById('comment-section')
+                                            ?.scrollIntoView({ behavior: 'smooth' });
+                                    }}
+                                />
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
+
+            {previewSrc && (
+                <ImagePreview src={previewSrc} onClose={() => setPreviewSrc(null)} />
+            )}
+        </>
     );
 }
