@@ -107,6 +107,26 @@ export const postApi = {
         return response.json();
     },
 
+    bookmarkPost: async (id: string, token: string): Promise<IApiResponse<{ bookmarked: boolean }>> => {
+        const response = await fetch(`${API_URL}/api/posts/${id}/bookmark`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        return response.json();
+    },
+
+    reportPost: async (id: string, reason: string, token: string): Promise<IApiResponse<null>> => {
+        const response = await fetch(`${API_URL}/api/posts/${id}/report`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ reason })
+        });
+        return response.json();
+    },
+
     addComment: async (
         id: string,
         content: string,
@@ -128,6 +148,18 @@ export const postApi = {
         const response = await fetch(`${API_URL}/api/posts/${postId}/comment/${commentId}`, {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${token}` }
+        });
+        return response.json();
+    },
+
+    reportComment: async (postId: string, commentId: string, reason: string, token: string): Promise<IApiResponse<null>> => {
+        const response = await fetch(`${API_URL}/api/posts/${postId}/comment/${commentId}/report`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ reason })
         });
         return response.json();
     },

@@ -8,6 +8,8 @@ interface BlogSidebarProps {
     authorName?: string;
     authorBio?: string;
     likeCount?: number;
+    liked?: boolean;
+    bookmarked?: boolean;
     commentCount?: number;
     onLike?: () => void;
     onComment?: () => void;

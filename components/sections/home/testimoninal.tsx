@@ -74,6 +74,8 @@ export default function Testimonial() {
                         <button key={v} onClick={() => setRating(v)} className="transition-transform duration-200 hover:-translate-y-1">
                             <Star
                                 size={28}
+                                data-filled={v <= rating ? "" : undefined}
+                                fill={v <= rating ? "#facc15" : "none"}
                                 className={`transition-all ${v <= rating ? "text-yellow-400 scale-110" : "text-gray-300 dark:text-gray-500"}`}
                             />
                         </button>
@@ -124,21 +126,32 @@ export default function Testimonial() {
                 <div className="flex-1 rounded-[28px] bg-[#f8f8f8] dark:bg-[#111] p-6 shadow-sm">
                     {activeComment ? (
                         <>
-                            <div className="flex items-center gap-4 mb-6">
+                            <div className="flex items-center gap-3 mb-3">
                                 <Avatar className="w-12 h-12">
                                     <AvatarImage src={activeComment.avatar ?? "/images/avatar.png"} />
                                     <AvatarFallback>{activeComment.name.charAt(0)}</AvatarFallback>
                                 </Avatar>
                                 <div>
-                                    <p className="font-semibold">{activeComment.name}</p>
+                                    <p className="font-semibold text-sm">{activeComment.name}</p>
                                     <div className="flex gap-1 mt-1">
-                                        {Array.from({ length: activeComment.rating }).map((_, i) => (
-                                            <Star key={i} size={16} className="text-yellow-400" />
-                                        ))}
+                                        {Array.from({ length: 5 }).map((_, i) => {
+                                            const isFilled = i < activeComment.rating;
+
+                                            return (
+                                                <Star
+                                                    key={i}
+                                                    size={16}
+                                                    data-filled={isFilled ? "" : undefined}
+                                                    color={isFilled ? "#eab308" : "#cbd5e1"}
+                                                    fill={isFilled ? "#eab308" : "#cbd5e1"}
+                                                    className={isFilled ? "text-yellow-500" : "text-slate-300"}
+                                                />
+                                            );
+                                        })}
                                     </div>
                                 </div>
                             </div>
-                            <p className="text-sm leading-6 text-gray-600 dark:text-gray-400 break-words">{activeComment.content}</p>
+                            <p className="text-sm leading-6 text-gray-600 dark:text-gray-400 wrap-break-words">{activeComment.content}</p>
                         </>
                     ) : (
                         <p className="text-sm text-gray-600 dark:text-gray-400">Chưa có đánh giá nào.</p>

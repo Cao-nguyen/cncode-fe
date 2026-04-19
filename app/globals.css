@@ -86,7 +86,7 @@ svg:not(.lucide) {
   fill: currentColor !important;
 }
 
-svg.lucide {
+svg.lucide:not([data-filled]) {
   fill: none !important;
 }
 

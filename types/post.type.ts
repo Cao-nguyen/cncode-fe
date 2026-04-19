@@ -1,9 +1,20 @@
 export interface IUser {
-    _id: string;
+    id: string;
     fullName: string;
     email: string;
     avatar: string;
     bio?: string;
+    role?: string;
+}
+
+export interface IReactions {
+    like: string[];
+    love: string[];
+    care: string[];
+    haha: string[];
+    wow: string[];
+    sad: string[];
+    angry: string[];
 }
 
 export interface IComment {
@@ -12,15 +23,7 @@ export interface IComment {
     content: string;
     parentId: string | null;
     children?: IComment[];
-    reactions: {
-        like: string[];
-        love: string[];
-        care: string[];
-        haha: string[];
-        wow: string[];
-        sad: string[];
-        angry: string[];
-    };
+    reactions: IReactions;
     createdAt: string;
     replyToName?: string;
 }
@@ -38,6 +41,8 @@ export interface IPost {
     views: number;
     likes: number;
     likedBy: string[];
+    bookmarks: string[];
+    reportedBy: string[];
     comments: IComment[];
     readTime: number;
     status: 'draft' | 'published';
