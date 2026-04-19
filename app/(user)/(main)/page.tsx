@@ -81,8 +81,6 @@ export default function Home() {
     useEffect(() => {
         fetchFeaturedPosts()
         fetchStatistics()
-
-        // Refresh thống kê mỗi 30 giây
         const interval = setInterval(fetchStatistics, 30000)
         return () => clearInterval(interval)
     }, [])
@@ -353,12 +351,7 @@ export default function Home() {
                             <Loader2 size={40} className="animate-spin text-blue-600" />
                         </div>
                     ) : (
-                        <Analytics
-                            today={stats.today}
-                            guest={stats.guest}
-                            online={stats.online}
-                            total={stats.total}
-                        />
+                        <Analytics />
                     )}
                 </div>
 
