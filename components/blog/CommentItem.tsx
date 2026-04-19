@@ -100,38 +100,49 @@ export default function CommentItem({
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
+    // Lấy ID từ user (ưu tiên _id trước, fallback sang id)
+    const getUserId = (u: { _id?: string; id?: string } | null | undefined): string | undefined => {
+        if (!u) return undefined;
+        return u._id || u.id;
+    };
+
+    const currentUserId = getUserId(user);
+    const commentUserId = getUserId(comment.user);
+    const postAuthorId = getUserId(post.author);
+
     const userReaction =
         user
-            ? REACTIONS.find((r) => localReactions[r.type as ReactionKey]?.includes(user.id)) ?? null
+            ? REACTIONS.find((r) => localReactions[r.type as ReactionKey]?.includes(currentUserId || '')) ?? null
             : null;
 
     const totalReactions = getTotalReactions(localReactions);
 
-    const canDelete =
-        user &&
-        (user.id === comment.user.id ||
-            user.id === post.author.id ||
-            user.role === 'admin');
+    // Kiểm tra quyền
+    const canDelete = !!(user && (
+        currentUserId === commentUserId ||
+        currentUserId === postAuthorId ||
+        user.role === 'admin'
+    ));
 
-    const canEdit = user && user.id === comment.user.id;
+    const canEdit = !!(user && currentUserId === commentUserId);
 
     const handleReaction = async (type: string) => {
-        if (!token || !user) {
+        if (!token || !user || !currentUserId) {
             toast.error('Vui lòng đăng nhập để thả cảm xúc');
             return;
         }
         const key = type as ReactionKey;
-        const hasReacted = localReactions[key]?.includes(user.id);
+        const hasReacted = localReactions[key]?.includes(currentUserId);
 
         setLocalReactions((prev) => {
             const next = { ...prev };
             if (hasReacted) {
-                next[key] = next[key].filter((id) => id !== user.id);
+                next[key] = next[key].filter((id) => id !== currentUserId);
             } else {
                 (Object.keys(next) as ReactionKey[]).forEach((k) => {
-                    next[k] = next[k].filter((id) => id !== user.id);
+                    next[k] = next[k].filter((id) => id !== currentUserId);
                 });
-                next[key] = [...(next[key] || []), user.id];
+                next[key] = [...(next[key] || []), currentUserId];
             }
             return next;
         });
@@ -171,8 +182,9 @@ export default function CommentItem({
 
     const handleDelete = async () => {
         if (!confirm('Bạn có chắc chắn muốn xóa bình luận này?')) return;
+        if (!token) return;
         try {
-            await postApi.deleteComment(post._id, comment._id, token!);
+            await postApi.deleteComment(post._id, comment._id, token);
             await onCommentUpdated();
             toast.success('Đã xóa bình luận');
         } catch {
@@ -231,7 +243,7 @@ export default function CommentItem({
                             <p className="font-semibold text-sm leading-tight">
                                 {comment.user?.fullName || 'Người dùng'}
                             </p>
-                            {comment.user?.id === post.author.id && (
+                            {commentUserId && postAuthorId && commentUserId === postAuthorId && (
                                 <span className="text-xs bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-full">
                                     Tác giả
                                 </span>
