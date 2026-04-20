@@ -7,6 +7,7 @@ import Image from 'next/image'
 import { digitalProductApi } from '@/lib/api/digital-product.api'
 import { IDigitalProduct } from '@/types/digital-product.type'
 import { useAuthStore } from '@/store/auth.store'
+import CoinsIcon from '@/components/common/CoinsIcon'  // 👈 Import icon xu
 
 const CATEGORIES = [
   { id: 'all', name: 'Tất cả' },
@@ -146,7 +147,6 @@ export default function CuaHangSoPage() {
 
           <div className="lg:w-64 flex-shrink-0">
             <div className="sticky top-20">
-
               <button
                 onClick={() => setShowMobileFilter(!showMobileFilter)}
                 className="lg:hidden w-full flex items-center justify-between px-4 py-3 bg-white dark:bg-[#171717] rounded-xl border border-gray-200 dark:border-gray-800 mb-4"
@@ -157,7 +157,6 @@ export default function CuaHangSoPage() {
                 </div>
                 <ChevronDown className={`transform transition-transform ${showMobileFilter ? 'rotate-180' : ''} text-gray-600 dark:text-gray-400`} size={18} />
               </button>
-
 
               <div className={`${showMobileFilter ? 'block' : 'hidden'} lg:block`}>
                 <div className="bg-white dark:bg-[#171717] rounded-xl shadow-sm p-5 border border-gray-200 dark:border-gray-800">
@@ -184,7 +183,6 @@ export default function CuaHangSoPage() {
               </div>
             </div>
           </div>
-
 
           <div className="flex-1">
 
@@ -238,11 +236,9 @@ export default function CuaHangSoPage() {
               </div>
             </div>
 
-
             <div className="mb-4 px-1">
               <p className="text-sm text-gray-600 dark:text-gray-400">{products.length} sản phẩm</p>
             </div>
-
 
             {loading ? (
               <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
@@ -259,118 +255,141 @@ export default function CuaHangSoPage() {
               </div>
             ) : viewMode === 'grid' ? (
               <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-                {products.map((product) => (
-                  <Link
-                    key={product._id}
-                    href={`/cuahangso/${product.slug}`}
-                    className="group bg-white dark:bg-[#171717] rounded-xl shadow-sm hover:shadow-md transition-all overflow-hidden border border-gray-200 dark:border-gray-800"
-                  >
-                    <div className="relative h-40 sm:h-48 overflow-hidden bg-gray-100 dark:bg-gray-800">
-                      <Image
-                        width={400}
-                        height={250}
-                        src={product.thumbnail}
-                        alt={product.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                      <div className={`absolute top-2 right-2 px-2 py-1 rounded-lg text-xs font-semibold ${getCategoryColor(product.category)}`}>
-                        {getCategoryName(product.category)}
-                      </div>
-                    </div>
-                    <div className="p-4 sm:p-5">
-                      <h3 className="font-semibold text-gray-900 dark:text-white mb-1 line-clamp-1 text-sm sm:text-base">
-                        {product.name}
-                      </h3>
-                      <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-3 line-clamp-2">
-                        {product.description}
-                      </p>
-                      <div className="flex flex-wrap items-center gap-2 mb-3">
-                        <div className="flex items-center gap-1">
-                          <Star size={14} className="text-yellow-400 fill-current" />
-                          <span className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white">
-                            {product.rating.toFixed(1)}
-                          </span>
-                        </div>
-                        <span className="text-xs text-gray-500 dark:text-gray-500">
-                          ({formatNumber(product.reviewCount)} đánh giá)
-                        </span>
-                        <div className="flex items-center gap-1 ml-auto">
-                          <Download size={12} className="text-gray-400" />
-                          <span className="text-xs text-gray-500 dark:text-gray-500">
-                            {formatNumber(product.downloadCount)}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-base sm:text-lg font-bold text-blue-600 dark:text-blue-400">
-                          {formatPrice(product.price)}
-                        </span>
-                        <button className="px-3 py-1.5 bg-black dark:bg-white text-white dark:text-black rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors text-xs sm:text-sm font-medium">
-                          Mua ngay
-                        </button>
-                      </div>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {products.map((product) => (
-                  <Link
-                    key={product._id}
-                    href={`/cuahangso/${product.slug}`}
-                    className="block bg-white dark:bg-[#171717] rounded-xl shadow-sm hover:shadow-md transition-shadow p-4 sm:p-5 border border-gray-200 dark:border-gray-800"
-                  >
-                    <div className="flex flex-col sm:flex-row gap-4">
-                      <div className="w-full sm:w-24 h-32 sm:h-24 flex-shrink-0 bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden">
+                {products.map((product) => {
+                  const xuPrice = Math.floor(product.price / 10)
+                  return (
+                    <Link
+                      key={product._id}
+                      href={`/cuahangso/${product.slug}`}
+                      className="group bg-white dark:bg-[#171717] rounded-xl shadow-sm hover:shadow-md transition-all overflow-hidden border border-gray-200 dark:border-gray-800"
+                    >
+                      <div className="relative h-40 sm:h-48 overflow-hidden bg-gray-100 dark:bg-gray-800">
                         <Image
-                          width={120}
-                          height={120}
+                          width={400}
+                          height={250}
                           src={product.thumbnail}
                           alt={product.name}
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         />
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-2">
-                          <div>
-                            <h3 className="font-semibold text-gray-900 dark:text-white mb-1 text-sm sm:text-base">
-                              {product.name}
-                            </h3>
-                            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
-                              {product.description}
-                            </p>
-                          </div>
-                          <div className="text-left sm:text-right">
-                            <div className="text-base sm:text-lg font-bold text-blue-600 dark:text-blue-400">
-                              {formatPrice(product.price)}
-                            </div>
-                          </div>
+                        <div className={`absolute top-2 right-2 px-2 py-1 rounded-lg text-xs font-semibold ${getCategoryColor(product.category)}`}>
+                          {getCategoryName(product.category)}
                         </div>
-                        <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs sm:text-sm mt-2">
+                      </div>
+                      <div className="p-4 sm:p-5">
+                        <h3 className="font-semibold text-gray-900 dark:text-white mb-1 line-clamp-1 text-sm sm:text-base">
+                          {product.name}
+                        </h3>
+                        {/* Đã bỏ mô tả */}
+                        <div className="flex flex-wrap items-center gap-2 mb-3">
                           <div className="flex items-center gap-1">
-                            <Star size={12} className="text-yellow-400 fill-current" />
-                            <span className="text-gray-700 dark:text-gray-300">
+                            <Star size={14} className="text-yellow-400 fill-current" data-filled={true} />
+                            <span className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white">
                               {product.rating.toFixed(1)}
                             </span>
                           </div>
-                          <div className="flex items-center gap-1">
+                          <span className="text-xs text-gray-500 dark:text-gray-500">
+                            ({formatNumber(product.reviewCount)} đánh giá)
+                          </span>
+                          <div className="flex items-center gap-1 ml-auto">
                             <Download size={12} className="text-gray-400" />
-                            <span className="text-gray-600 dark:text-gray-400">
-                              {formatNumber(product.downloadCount)} lượt tải
+                            <span className="text-xs text-gray-500 dark:text-gray-500">
+                              {formatNumber(product.downloadCount)}
                             </span>
                           </div>
-                          <div className={`px-2 py-0.5 rounded text-xs ${getCategoryColor(product.category)}`}>
-                            {getCategoryName(product.category)}
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <div className="flex flex-col items-start">
+                            <span className="text-xs text-gray-400 line-through">
+                              {formatPrice(product.price)}
+                            </span>
+                            <div className="flex items-center gap-1">
+                              <span className="text-base sm:text-lg font-bold text-red-600 dark:text-red-400">
+                                {formatPrice(product.price)}
+                              </span>
+                              <div className="flex items-center gap-0.5 text-blue-600 dark:text-blue-400 text-xs ml-1">
+                                <CoinsIcon size={14} />
+                                <span>{xuPrice.toLocaleString()}</span>
+                              </div>
+                            </div>
+                          </div>
+                          <button className="px-3 py-1.5 bg-black dark:bg-white text-white dark:text-black rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors text-xs sm:text-sm font-medium">
+                            Mua ngay
+                          </button>
+                        </div>
+                      </div>
+                    </Link>
+                  )
+                })}
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {products.map((product) => {
+                  const xuPrice = Math.floor(product.price / 10)
+                  return (
+                    <Link
+                      key={product._id}
+                      href={`/cuahangso/${product.slug}`}
+                      className="block bg-white dark:bg-[#171717] rounded-xl shadow-sm hover:shadow-md transition-shadow p-4 sm:p-5 border border-gray-200 dark:border-gray-800"
+                    >
+                      <div className="flex flex-col sm:flex-row gap-4">
+                        <div className="w-full sm:w-24 h-32 sm:h-24 flex-shrink-0 bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden">
+                          <Image
+                            width={120}
+                            height={120}
+                            src={product.thumbnail}
+                            alt={product.name}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-2">
+                            <div>
+                              <h3 className="font-semibold text-gray-900 dark:text-white mb-1 text-sm sm:text-base">
+                                {product.name}
+                              </h3>
+                              {/* Đã bỏ mô tả */}
+                            </div>
+                            <div className="text-left sm:text-right">
+                              <div className="flex flex-col items-start sm:items-end">
+                                <span className="text-xs text-gray-400 line-through">
+                                  {formatPrice(product.price)}
+                                </span>
+                                <div className="flex items-center gap-1">
+                                  <span className="text-base sm:text-lg font-bold text-red-600 dark:text-red-400">
+                                    {formatPrice(product.price)}
+                                  </span>
+                                  <div className="flex items-center gap-0.5 text-blue-600 dark:text-blue-400 text-xs ml-1">
+                                    <CoinsIcon size={14} />
+                                    <span>{xuPrice.toLocaleString()}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs sm:text-sm mt-2">
+                            <div className="flex items-center gap-1">
+                              <Star size={12} className="text-yellow-400 fill-current" data-filled={true} />
+                              <span className="text-gray-700 dark:text-gray-300">
+                                {product.rating.toFixed(1)}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Download size={12} className="text-gray-400" />
+                              <span className="text-gray-600 dark:text-gray-400">
+                                {formatNumber(product.downloadCount)} lượt tải
+                              </span>
+                            </div>
+                            <div className={`px-2 py-0.5 rounded text-xs ${getCategoryColor(product.category)}`}>
+                              {getCategoryName(product.category)}
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  </Link>
-                ))}
+                    </Link>
+                  )
+                })}
               </div>
             )}
-
 
             {!loading && products.length === 0 && (
               <div className="text-center py-12">

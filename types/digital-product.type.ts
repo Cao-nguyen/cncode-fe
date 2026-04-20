@@ -7,6 +7,7 @@ export interface IDigitalProduct {
   category: 'powerpoint' | 'code' | 'design' | 'document'
   price: number
   priceInXu: number
+  enableXuPayment: boolean  // 👈 THÊM DÒNG NÀY
   thumbnail: string
   previewImages: string[]
   downloadUrl: string
@@ -34,7 +35,7 @@ export interface ICreateProduct {
   category: 'powerpoint' | 'code' | 'design' | 'document'
   price: number
   priceInXu: number
-  enableXuPayment: boolean
+  enableXuPayment: boolean  // 👈 THÊM DÒNG NÀY
   thumbnail: string
   previewImages: string[]
   downloadUrl: string

@@ -2,25 +2,33 @@
 
 import { useState, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { Upload, X, Plus, Trash2, Save, Eye, DollarSign, Coins, Check, AlertCircle, Image as ImageIcon, Link as LinkIcon, Tag, Package, FileText, Code, Palette, File, Sparkles, Shield, Zap, Cloud, Loader2 } from 'lucide-react'
+import dynamic from 'next/dynamic'
+import { Upload, X, Plus, Trash2, Save, Eye, DollarSign, Coins, Check, AlertCircle, Image as ImageIcon, Link as LinkIcon, Package, FileText, Code, Palette, File, Sparkles, Shield, Zap, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAuthStore } from '@/store/auth.store'
 import { digitalProductApi } from '@/lib/api/digital-product.api'
+import TinyMCEEditor from '@/components/common/TinyMCEEditor'
+
+interface BlobInfo {
+  blob: () => Blob;
+  filename: () => string;
+  base64: () => string;
+  blobUri: () => string;
+  uri: () => string | undefined;
+}
 
 interface ProductForm {
   name: string
-  description: string
   longDescription: string
   category: 'powerpoint' | 'code' | 'design' | 'document'
-  price: number
+  originalPrice: number      // Giá gốc
+  salePrice: number          // Giá giảm (main)
   enableXuPayment: boolean
-  thumbnail: File | null
   previewImages: File[]
   downloadUrl: string
   previewUrl: string
   features: string[]
   requirements: string[]
-  tags: string[]
 }
 
 const CATEGORIES = [
@@ -30,6 +38,9 @@ const CATEGORIES = [
   { id: 'document', name: 'Tài liệu', icon: File, color: 'green', desc: 'Ebook, PDF, tài liệu học tập' }
 ]
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL
+const TINYMCE_API_KEY = process.env.NEXT_PUBLIC_TINYMCE_API_KEY
+
 export default function CreateProductPage() {
   const router = useRouter()
   const { token, user } = useAuthStore()
@@ -38,25 +49,21 @@ export default function CreateProductPage() {
   const [error, setError] = useState<string | null>(null)
   const [featureInput, setFeatureInput] = useState('')
   const [requirementInput, setRequirementInput] = useState('')
-  const [tagInput, setTagInput] = useState('')
-  
-  const thumbnailInputRef = useRef<HTMLInputElement>(null)
+
   const previewInputRef = useRef<HTMLInputElement>(null)
 
   const [formData, setFormData] = useState<ProductForm>({
     name: '',
-    description: '',
     longDescription: '',
     category: 'powerpoint',
-    price: 0,
+    originalPrice: 0,
+    salePrice: 0,
     enableXuPayment: true,
-    thumbnail: null,
     previewImages: [],
     downloadUrl: '',
     previewUrl: '',
     features: [],
-    requirements: [],
-    tags: []
+    requirements: []
   })
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -67,7 +74,8 @@ export default function CreateProductPage() {
 
   const handleNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
-    setFormData(prev => ({ ...prev, [name]: parseInt(value) || 0 }))
+    const numValue = parseInt(value) || 0
+    setFormData(prev => ({ ...prev, [name]: numValue }))
   }
 
   const handleToggleXuPayment = () => {
@@ -79,7 +87,7 @@ export default function CreateProductPage() {
     formDataUpload.append('image', file)
     formDataUpload.append('folder', folder)
 
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/upload/single`, {
+    const response = await fetch(`${API_URL}/api/upload/single`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`
@@ -94,32 +102,11 @@ export default function CreateProductPage() {
     return result.data.url
   }
 
-  const handleThumbnailUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-
-    if (!file.type.startsWith('image/')) {
-      toast.error('Vui lòng chọn file ảnh')
-      return
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('Kích thước ảnh không được vượt quá 5MB')
-      return
-    }
-
-    setIsUploading(true)
-    try {
-      const url = await uploadFileToCloudinary(file, 'thumbnails')
-      setFormData(prev => ({ ...prev, thumbnail: file }))
-      toast.success('Tải ảnh lên thành công')
-    } catch (err) {
-      console.error('Upload failed:', err)
-      toast.error('Tải ảnh lên thất bại')
-    } finally {
-      setIsUploading(false)
-      if (thumbnailInputRef.current) thumbnailInputRef.current.value = ''
-    }
+  // Upload ảnh từ TinyMCE
+  const handleEditorImageUpload = async (blobInfo: BlobInfo): Promise<string> => {
+    const file = blobInfo.blob() as File
+    const url = await uploadFileToCloudinary(file, 'product-details')
+    return url
   }
 
   const handlePreviewUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -142,17 +129,14 @@ export default function CreateProductPage() {
 
     setIsUploading(true)
     try {
-      const uploadPromises = validFiles.map(file => uploadFileToCloudinary(file, 'previews'))
-      const urls = await Promise.all(uploadPromises)
-      
-      setFormData(prev => ({ 
-        ...prev, 
-        previewImages: [...prev.previewImages, ...validFiles] 
+      setFormData(prev => ({
+        ...prev,
+        previewImages: [...prev.previewImages, ...validFiles]
       }))
-      toast.success(`Tải lên ${urls.length} ảnh thành công`)
+      toast.success(`Đã thêm ${validFiles.length} ảnh`)
     } catch (err) {
       console.error('Upload failed:', err)
-      toast.error('Tải ảnh lên thất bại')
+      toast.error('Thêm ảnh thất bại')
     } finally {
       setIsUploading(false)
       if (previewInputRef.current) previewInputRef.current.value = ''
@@ -160,9 +144,9 @@ export default function CreateProductPage() {
   }
 
   const removePreviewImage = (index: number) => {
-    setFormData(prev => ({ 
-      ...prev, 
-      previewImages: prev.previewImages.filter((_, i) => i !== index) 
+    setFormData(prev => ({
+      ...prev,
+      previewImages: prev.previewImages.filter((_, i) => i !== index)
     }))
   }
 
@@ -188,100 +172,91 @@ export default function CreateProductPage() {
     setFormData(prev => ({ ...prev, requirements: prev.requirements.filter((_, i) => i !== index) }))
   }
 
-  const addTag = () => {
-    if (tagInput.trim() && !formData.tags.includes(tagInput.trim())) {
-      setFormData(prev => ({ ...prev, tags: [...prev.tags, tagInput.trim()] }))
-      setTagInput('')
-    }
-  }
-
-  const removeTag = (tag: string) => {
-    setFormData(prev => ({ ...prev, tags: prev.tags.filter(t => t !== tag) }))
-  }
-
   const validateForm = async (): Promise<boolean> => {
     if (!formData.name.trim()) { setError('Vui lòng nhập tên sản phẩm'); return false }
-    if (!formData.description.trim()) { setError('Vui lòng nhập mô tả ngắn'); return false }
     if (!formData.longDescription.trim()) { setError('Vui lòng nhập mô tả chi tiết'); return false }
-    if (formData.price <= 0) { setError('Vui lòng nhập giá tiền hợp lệ'); return false }
-    if (!formData.thumbnail) { setError('Vui lòng chọn ảnh thumbnail'); return false }
-    if (!formData.downloadUrl.trim()) { setError('Vui lòng nhập URL tải sản phẩm'); return false }
-    
+    if (formData.salePrice <= 0) { setError('Vui lòng nhập giá bán hợp lệ'); return false }
     if (formData.previewImages.length === 0) {
       setError('Vui lòng chọn ít nhất 1 ảnh preview')
       return false
     }
-    
+    if (!formData.downloadUrl.trim()) { setError('Vui lòng nhập URL tải sản phẩm'); return false }
     return true
   }
 
   const handleSubmit = async (status: 'draft' | 'published') => {
-  if (!token) {
-    toast.error('Vui lòng đăng nhập để đăng sản phẩm')
-    router.push('/login')
-    return
+    if (!token) {
+      toast.error('Vui lòng đăng nhập để đăng sản phẩm')
+      router.push('/login')
+      return
+    }
+
+    const isValid = await validateForm()
+    if (!isValid) return
+
+    setIsSubmitting(true)
+    setError(null)
+
+    try {
+      setIsUploading(true)
+
+      // Upload tất cả ảnh preview lên Cloudinary
+      const previewUrls: string[] = []
+      for (const file of formData.previewImages) {
+        const url = await uploadFileToCloudinary(file, 'previews')
+        previewUrls.push(url)
+      }
+
+      setIsUploading(false)
+
+      // Ảnh thumbnail là ảnh đầu tiên trong previewImages
+      const thumbnailUrl = previewUrls[0] || ''
+
+      // Tính xu từ giá giảm (salePrice)
+      const xuAmount = formData.enableXuPayment ? Math.floor(formData.salePrice / 10) : 0
+
+      const productData = {
+        name: formData.name,
+        description: formData.longDescription.replace(/<[^>]+>/g, ' ').slice(0, 200), // Tự động lấy từ longDescription
+        longDescription: formData.longDescription,
+        category: formData.category,
+        price: formData.salePrice,           // Giá bán chính là giá giảm
+        originalPrice: formData.originalPrice, // Giá gốc (nếu cần lưu)
+        priceInXu: xuAmount,
+        enableXuPayment: formData.enableXuPayment,
+        thumbnail: thumbnailUrl,
+        previewImages: previewUrls,
+        downloadUrl: formData.downloadUrl,
+        previewUrl: formData.previewUrl,
+        features: formData.features,
+        requirements: formData.requirements,
+        tags: [],  // Bỏ tag
+        status
+      }
+
+      const result = await digitalProductApi.createProduct(productData, token)
+
+      if (result.success) {
+        toast.success(status === 'draft' ? 'Đã lưu sản phẩm vào bản nháp' : 'Đăng sản phẩm thành công')
+        router.push('/me/cuahangso')
+      } else {
+        setError(result.message || 'Có lỗi xảy ra')
+        toast.error(result.message || 'Có lỗi xảy ra')
+      }
+    } catch (err) {
+      console.error('Create product failed:', err)
+      setError('Không thể kết nối đến server')
+      toast.error('Không thể kết nối đến server')
+    } finally {
+      setIsSubmitting(false)
+      setIsUploading(false)
+    }
   }
 
-  const isValid = await validateForm()
-  if (!isValid) return
-
-  setIsSubmitting(true)
-  setError(null)
-
-  try {
-    setIsUploading(true)
-    
-    let thumbnailUrl = ''
-    if (formData.thumbnail) {
-      thumbnailUrl = await uploadFileToCloudinary(formData.thumbnail, 'thumbnails')
-    }
-
-    const previewUrls: string[] = []
-    for (const file of formData.previewImages) {
-      const url = await uploadFileToCloudinary(file, 'previews')
-      previewUrls.push(url)
-    }
-    
-    setIsUploading(false)
-
-    const productData = {
-      name: formData.name,
-      description: formData.description,
-      longDescription: formData.longDescription,
-      category: formData.category,
-      price: formData.price,
-      priceInXu: formData.enableXuPayment ? Math.floor(formData.price / 10) : 0,
-      enableXuPayment: formData.enableXuPayment,
-      thumbnail: thumbnailUrl,
-      previewImages: previewUrls,
-      downloadUrl: formData.downloadUrl,
-      previewUrl: formData.previewUrl,
-      features: formData.features,
-      requirements: formData.requirements,
-      tags: formData.tags,
-      status
-    }
-
-    const result = await digitalProductApi.createProduct(productData, token)
-
-    if (result.success) {
-      toast.success(status === 'draft' ? 'Đã lưu sản phẩm vào bản nháp' : 'Đăng sản phẩm thành công')
-      router.push('/me/cuahangso')
-    } else {
-      setError(result.message || 'Có lỗi xảy ra')
-      toast.error(result.message || 'Có lỗi xảy ra')
-    }
-  } catch (err) {
-    console.error('Create product failed:', err)
-    setError('Không thể kết nối đến server')
-    toast.error('Không thể kết nối đến server')
-  } finally {
-    setIsSubmitting(false)
-    setIsUploading(false)
-  }
-}
-
-  const xuAmount = formData.enableXuPayment ? Math.floor(formData.price / 10) : 0
+  const xuAmount = formData.enableXuPayment ? Math.floor(formData.salePrice / 10) : 0
+  const discountPercent = formData.originalPrice > 0 && formData.salePrice > 0
+    ? Math.round(((formData.originalPrice - formData.salePrice) / formData.originalPrice) * 100)
+    : 0
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-black">
@@ -300,6 +275,7 @@ export default function CreateProductPage() {
             </div>
           )}
 
+          {/* Thông tin cơ bản */}
           <div className="bg-white dark:bg-[#171717] rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden">
             <div className="p-6 border-b border-gray-200 dark:border-gray-800">
               <div className="flex items-center gap-2">
@@ -308,6 +284,7 @@ export default function CreateProductPage() {
               </div>
             </div>
             <div className="p-8 space-y-8">
+              {/* Danh mục */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Danh mục sản phẩm</label>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -319,11 +296,10 @@ export default function CreateProductPage() {
                         key={cat.id}
                         type="button"
                         onClick={() => setFormData(prev => ({ ...prev, category: cat.id as ProductForm['category'] }))}
-                        className={`p-5 rounded-xl border-2 transition-all ${
-                          isSelected
-                            ? `bg-${cat.color}-50 dark:bg-${cat.color}-950/20 border-${cat.color}-500`
-                            : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-black'
-                        }`}
+                        className={`p-5 rounded-xl border-2 transition-all ${isSelected
+                          ? `bg-${cat.color}-50 dark:bg-${cat.color}-950/20 border-${cat.color}-500`
+                          : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-black'
+                          }`}
                       >
                         <Icon size={32} className={`mx-auto mb-3 ${isSelected ? `text-${cat.color}-600` : 'text-gray-400'}`} />
                         <div className={`font-medium text-center ${isSelected ? `text-${cat.color}-600` : 'text-gray-700 dark:text-gray-300'}`}>
@@ -336,6 +312,7 @@ export default function CreateProductPage() {
                 </div>
               </div>
 
+              {/* Tên sản phẩm */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Tên sản phẩm</label>
                 <input
@@ -348,96 +325,63 @@ export default function CreateProductPage() {
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Mô tả ngắn</label>
-                <textarea
-                  name="description"
-                  value={formData.description}
-                  onChange={handleChange}
-                  rows={3}
-                  placeholder="Mô tả ngắn gọn về sản phẩm"
-                  className="w-full px-5 py-3 border border-gray-300 dark:border-gray-700 rounded-xl bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 resize-none"
-                />
-              </div>
-
+              {/* Mô tả chi tiết - TinyMCE Editor */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Mô tả chi tiết</label>
-                <textarea
-                  name="longDescription"
-                  value={formData.longDescription}
-                  onChange={handleChange}
-                  rows={8}
-                  placeholder="Mô tả chi tiết về sản phẩm, tính năng, công dụng..."
-                  className="w-full px-5 py-3 border border-gray-300 dark:border-gray-700 rounded-xl bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 resize-none"
-                />
+                <div className="rounded-xl overflow-hidden border border-gray-200 dark:border-gray-800">
+                  <TinyMCEEditor
+                    value={formData.longDescription}
+                    onChange={(val) => setFormData(prev => ({ ...prev, longDescription: val }))}
+                    height={400}
+                    placeholder="Mô tả chi tiết về sản phẩm..."
+                  />
+                </div>
               </div>
             </div>
           </div>
 
+          {/* Hình ảnh sản phẩm */}
           <div className="bg-white dark:bg-[#171717] rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden mt-6">
             <div className="p-6 border-b border-gray-200 dark:border-gray-800">
               <div className="flex items-center gap-2">
                 <ImageIcon size={20} className="text-blue-600" />
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Hình ảnh sản phẩm</h2>
               </div>
+              <p className="text-sm text-gray-500 mt-1">Ảnh đầu tiên sẽ làm ảnh đại diện (thumbnail)</p>
             </div>
-            <div className="p-8 space-y-8">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Ảnh thumbnail</label>
-                <div className="flex gap-4 items-center">
-                  <button
-                    onClick={() => thumbnailInputRef.current?.click()}
-                    disabled={isUploading}
-                    className="px-5 py-3 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-900 text-gray-600 hover:border-blue-500 transition-colors flex items-center gap-2 disabled:opacity-50"
-                  >
-                    {isUploading ? <Loader2 size={20} className="animate-spin" /> : <Upload size={20} />}
-                    {isUploading ? 'Đang tải...' : 'Tải ảnh lên'}
-                  </button>
-                  <input ref={thumbnailInputRef} type="file" accept="image/*" onChange={handleThumbnailUpload} className="hidden" />
-                  {formData.thumbnail && (
-                    <div className="relative">
-                      <img src={URL.createObjectURL(formData.thumbnail)} alt="Thumbnail" className="w-20 h-20 rounded-xl object-cover border" />
+            <div className="p-8">
+              <button
+                onClick={() => previewInputRef.current?.click()}
+                disabled={isUploading}
+                className="px-5 py-3 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-900 text-gray-600 hover:border-blue-500 transition-colors flex items-center gap-2 disabled:opacity-50"
+              >
+                {isUploading ? <Loader2 size={20} className="animate-spin" /> : <Plus size={20} />}
+                {isUploading ? 'Đang tải...' : 'Thêm ảnh preview'}
+              </button>
+              <input ref={previewInputRef} type="file" accept="image/*" multiple onChange={handlePreviewUpload} className="hidden" />
+
+              {formData.previewImages.length > 0 && (
+                <div className="grid grid-cols-5 gap-3 mt-4">
+                  {formData.previewImages.map((img, idx) => (
+                    <div key={idx} className="relative group">
+                      <img src={URL.createObjectURL(img)} alt="" className="w-full h-24 object-cover rounded-lg border" />
+                      {idx === 0 && (
+                        <span className="absolute top-1 left-1 px-1.5 py-0.5 bg-blue-500 text-white text-xs rounded">Thumbnail</span>
+                      )}
                       <button
-                        onClick={() => setFormData(prev => ({ ...prev, thumbnail: null }))}
-                        className="absolute -top-2 -right-2 p-1 bg-red-500 text-white rounded-full"
+                        onClick={() => removePreviewImage(idx)}
+                        className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
                       >
-                        <X size={14} />
+                        <Trash2 size={14} />
                       </button>
                     </div>
-                  )}
+                  ))}
                 </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Ảnh preview (tối thiểu 1 ảnh)</label>
-                <button
-                  onClick={() => previewInputRef.current?.click()}
-                  disabled={isUploading}
-                  className="px-5 py-3 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-900 text-gray-600 hover:border-blue-500 transition-colors flex items-center gap-2 disabled:opacity-50"
-                >
-                  {isUploading ? <Loader2 size={20} className="animate-spin" /> : <Plus size={20} />}
-                  {isUploading ? 'Đang tải...' : 'Thêm ảnh preview'}
-                </button>
-                <input ref={previewInputRef} type="file" accept="image/*" multiple onChange={handlePreviewUpload} className="hidden" />
-                {formData.previewImages.length > 0 && (
-                  <div className="grid grid-cols-5 gap-3 mt-4">
-                    {formData.previewImages.map((img, idx) => (
-                      <div key={idx} className="relative group">
-                        <img src={URL.createObjectURL(img)} alt="" className="w-full h-24 object-cover rounded-lg border" />
-                        <button
-                          onClick={() => removePreviewImage(idx)}
-                          className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+              )}
             </div>
           </div>
 
+          {/* Giá bán */}
           <div className="bg-white dark:bg-[#171717] rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden mt-6">
             <div className="p-6 border-b border-gray-200 dark:border-gray-800">
               <div className="flex items-center gap-2">
@@ -446,17 +390,40 @@ export default function CreateProductPage() {
               </div>
             </div>
             <div className="p-8 space-y-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Giá tiền (VNĐ)</label>
-                <input
-                  type="number"
-                  name="price"
-                  value={formData.price || ''}
-                  onChange={handleNumberChange}
-                  placeholder="299000"
-                  className="w-full px-5 py-3 border border-gray-300 dark:border-gray-700 rounded-xl bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
-                />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Giá gốc (VNĐ)</label>
+                  <input
+                    type="number"
+                    name="originalPrice"
+                    value={formData.originalPrice || ''}
+                    onChange={handleNumberChange}
+                    placeholder="499000"
+                    className="w-full px-5 py-3 border border-gray-300 dark:border-gray-700 rounded-xl bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Giá bán (VNĐ) <span className="text-red-500">*</span></label>
+                  <input
+                    type="number"
+                    name="salePrice"
+                    value={formData.salePrice || ''}
+                    onChange={handleNumberChange}
+                    placeholder="299000"
+                    className="w-full px-5 py-3 border border-gray-300 dark:border-gray-700 rounded-xl bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
               </div>
+
+              {formData.originalPrice > 0 && formData.salePrice > 0 && discountPercent > 0 && (
+                <div className="p-4 bg-green-50 dark:bg-green-950/20 rounded-xl">
+                  <div className="flex items-center gap-2">
+                    <span className="text-green-600 dark:text-green-400 font-medium">
+                      Giảm {discountPercent}% so với giá gốc
+                    </span>
+                  </div>
+                </div>
+              )}
 
               <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 rounded-xl">
                 <div>
@@ -469,32 +436,31 @@ export default function CreateProductPage() {
                 <button
                   type="button"
                   onClick={handleToggleXuPayment}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                    formData.enableXuPayment ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-700'
-                  }`}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${formData.enableXuPayment ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-700'
+                    }`}
                 >
                   <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                      formData.enableXuPayment ? 'translate-x-6' : 'translate-x-1'
-                    }`}
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${formData.enableXuPayment ? 'translate-x-6' : 'translate-x-1'
+                      }`}
                   />
                 </button>
               </div>
 
-              {formData.enableXuPayment && formData.price > 0 && (
+              {formData.enableXuPayment && formData.salePrice > 0 && (
                 <div className="p-4 bg-blue-50 dark:bg-blue-950/20 rounded-xl">
                   <div className="flex items-center gap-2">
                     <Coins size={18} className="text-blue-600" />
                     <span className="text-blue-600 dark:text-blue-400 font-medium">
-                      Quy đổi: {xuAmount.toLocaleString()} Xu
+                      Quy đổi từ giá bán: {xuAmount.toLocaleString()} Xu
                     </span>
                   </div>
-                  <p className="text-sm text-blue-500 mt-1">Người dùng có thể thanh toán bằng {xuAmount.toLocaleString()} Xu thay vì {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(formData.price)}</p>
+                  <p className="text-sm text-blue-500 mt-1">Người dùng có thể thanh toán bằng {xuAmount.toLocaleString()} Xu thay vì {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(formData.salePrice)}</p>
                 </div>
               )}
             </div>
           </div>
 
+          {/* Tải sản phẩm */}
           <div className="bg-white dark:bg-[#171717] rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden mt-6">
             <div className="p-6 border-b border-gray-200 dark:border-gray-800">
               <div className="flex items-center gap-2">
@@ -532,6 +498,7 @@ export default function CreateProductPage() {
             </div>
           </div>
 
+          {/* Tính năng & Yêu cầu */}
           <div className="bg-white dark:bg-[#171717] rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden mt-6">
             <div className="p-6 border-b border-gray-200 dark:border-gray-800">
               <div className="flex items-center gap-2">
@@ -598,45 +565,7 @@ export default function CreateProductPage() {
             </div>
           </div>
 
-          <div className="bg-white dark:bg-[#171717] rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden mt-6">
-            <div className="p-6 border-b border-gray-200 dark:border-gray-800">
-              <div className="flex items-center gap-2">
-                <Tag size={20} className="text-blue-600" />
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Thẻ tags</h2>
-              </div>
-            </div>
-            <div className="p-8">
-              <div className="flex gap-3 mb-4">
-                <div className="flex-1 relative">
-                  <Tag size={18} className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                  <input
-                    type="text"
-                    value={tagInput}
-                    onChange={(e) => setTagInput(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && addTag()}
-                    placeholder="Nhập tag và nhấn Enter"
-                    className="w-full pl-12 pr-4 py-3 border border-gray-300 dark:border-gray-700 rounded-xl bg-white dark:bg-black"
-                  />
-                </div>
-                <button onClick={addTag} className="px-5 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700">
-                  <Plus size={20} />
-                </button>
-              </div>
-              {formData.tags.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {formData.tags.map((tag) => (
-                    <span key={tag} className="px-3 py-1.5 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg text-sm flex items-center gap-2">
-                      <Tag size={12} />#{tag}
-                      <button onClick={() => removeTag(tag)} className="text-gray-400 hover:text-red-500">
-                        <X size={14} />
-                      </button>
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-
+          {/* Nút submit */}
           <div className="flex gap-4 mt-8">
             <button
               onClick={() => handleSubmit('draft')}
