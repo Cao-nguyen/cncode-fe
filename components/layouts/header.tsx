@@ -27,7 +27,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useAuthStore } from "@/store/auth.store";
 import { toast } from "sonner";
-import { useEffect, useState } from "react";
+import { useLayoutEffect, useState } from "react";
 
 const formatNumber = (num: number) => {
     return new Intl.NumberFormat("en", {
@@ -47,7 +47,7 @@ function UserDropdown({ user, onLogout }: UserDropdownProps) {
             <div className="flex items-center gap-3 px-2 py-2">
                 <Avatar className="w-8 h-8">
                     <AvatarImage src={user.avatar} />
-                    <AvatarFallback>{user.fullname.charAt(0)}</AvatarFallback>
+                    <AvatarFallback>{user.fullname?.charAt(0) || 'U'}</AvatarFallback>
                 </Avatar>
                 <div>
                     <p className="text-sm font-bold">{user.fullname}</p>
@@ -146,7 +146,7 @@ export default function Header() {
     const { user, logout, token } = useAuthStore();
     const [mounted, setMounted] = useState(false);
 
-    useEffect(() => {
+    useLayoutEffect(() => {
         setMounted(true);
     }, []);
 
@@ -181,9 +181,9 @@ export default function Header() {
 
     const displayUser = user && token
         ? {
-            fullname: user.fullName,
+            fullname: user.fullName || 'Người dùng',
             avatar: user.avatar || "/images/avatar.png",
-            role: user.role,
+            role: user.role || 'user',
         }
         : null;
 
@@ -256,7 +256,7 @@ export default function Header() {
                                     <div className="p-0.5 rounded-full cursor-pointer">
                                         <Avatar className="w-8 h-8">
                                             <AvatarImage src={displayUser.avatar} />
-                                            <AvatarFallback>{displayUser.fullname.charAt(0)}</AvatarFallback>
+                                            <AvatarFallback>{displayUser.fullname?.charAt(0) || 'U'}</AvatarFallback>
                                         </Avatar>
                                     </div>
                                 </DropdownMenuTrigger>
@@ -307,7 +307,7 @@ export default function Header() {
                                 <DropdownMenuTrigger asChild>
                                     <Avatar className="w-6 h-6 cursor-pointer">
                                         <AvatarImage src={displayUser.avatar} />
-                                        <AvatarFallback>{displayUser.fullname.charAt(0)}</AvatarFallback>
+                                        <AvatarFallback>{displayUser.fullname?.charAt(0) || 'U'}</AvatarFallback>
                                     </Avatar>
                                 </DropdownMenuTrigger>
                                 <UserDropdown user={displayUser} onLogout={handleLogout} />
