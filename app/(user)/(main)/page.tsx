@@ -323,10 +323,9 @@ export default function Home() {
                                         title={post.title}
                                         description={post.description}
                                         image={post.thumbnail}
-                                        time={getReadingTime(post.content)}
+                                        createdAt={post.createdAt}
                                         author={post.author?.fullName || "CNcode"}
                                         avatar={post.author?.avatar || "/images/avatar.jpg"}
-                                        category={post.category}
                                         link={`/blog/${post.slug}`}
                                         views={post.views}
                                     />
