@@ -1,6 +1,6 @@
 import { IApiResponse, IPost, IComment } from '@/types/post.type';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
 const buildQuery = (params: Record<string, string | number | boolean | undefined | null>): string => {
     const query = new URLSearchParams();
@@ -19,7 +19,12 @@ const apiFetch = async <T>(
     const res = await fetch(url, {
         ...options,
         next: options?.revalidate !== undefined ? { revalidate: options.revalidate } : undefined,
+        headers: {
+            'Content-Type': 'application/json',
+            ...options?.headers,
+        },
     });
+
     if (!res.ok) {
         const err = await res.json().catch(() => ({ message: res.statusText }));
         throw new Error(err.message || 'API Error');
@@ -42,6 +47,7 @@ export const postApi = {
         page?: number;
         limit?: number;
         status?: string;
+        createdAt?: string;
     }): Promise<IApiResponse<IPost[]>> => {
         const qs = params ? buildQuery(params) : '';
         return apiFetch(`${API_URL}/api/posts${qs ? `?${qs}` : ''}`, {
@@ -52,7 +58,6 @@ export const postApi = {
     getPostBySlug: (slug: string): Promise<IApiResponse<IPost>> =>
         apiFetch(`${API_URL}/api/posts/${slug}`, { cache: 'no-store' }),
 
-    // THÊM METHOD NÀY
     getPostById: (id: string, token: string): Promise<IApiResponse<IPost>> =>
         apiFetch(`${API_URL}/api/posts/post/${id}`, {
             headers: { Authorization: `Bearer ${token}` }
@@ -79,7 +84,6 @@ export const postApi = {
             body: JSON.stringify({ ...data, status: 'pending' }),
         }),
 
-    // SỬA: dùng id thay vì slug
     updatePost: (
         id: string,
         data: {
@@ -97,7 +101,6 @@ export const postApi = {
             body: JSON.stringify(data),
         }),
 
-    // SỬA: dùng id thay vì slug
     deletePost: (id: string, token: string): Promise<IApiResponse<null>> =>
         apiFetch(`${API_URL}/api/posts/${id}`, {
             method: 'DELETE',

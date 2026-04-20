@@ -133,10 +133,9 @@ export default function BlogPage(): React.ReactElement {
                             title={post.title}
                             description={post.description}
                             image={post.thumbnail}
-                            time={formatReadTime(post.readTime)}
+                            createdAt={post.createdAt}
                             author={post.author.fullName}
                             avatar={post.author.avatar || '/avatar.png'}
-                            category={post.category}
                             link={`/baiviet/${post.slug}`}
                         />
                     ))

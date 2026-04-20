@@ -4,17 +4,15 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Clock } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
 import { stripMarkdown } from '@/lib/utils/strip-markdown';
 
 interface IBlogCardProps {
     title: string;
     description: string;
     image: string;
-    time: string;
+    createdAt: string;
     author: string;
     avatar: string;
-    category: string;
     link?: string;
     views?: number;
 }
@@ -23,13 +21,21 @@ export default function BlogCard({
     title,
     description,
     image,
-    time,
+    createdAt,
     author,
     avatar,
-    category,
     link = '/baiviet',
 }: IBlogCardProps): React.ReactElement {
     const plainDescription = stripMarkdown(description);
+
+    console.log(createdAt)
+
+    const formatDate = (dateString: string): string =>
+        new Date(dateString).toLocaleDateString('vi-VN', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+        });
 
     return (
         <Link
@@ -43,11 +49,6 @@ export default function BlogCard({
                     fill
                     className="object-cover group-hover:scale-105 transition duration-300"
                 />
-                <div className="absolute top-2 left-2">
-                    <Badge className="bg-black text-white dark:bg-white dark:text-black">
-                        {category}
-                    </Badge>
-                </div>
             </div>
             <div className="p-4 flex flex-col gap-2">
                 <h3 className="font-semibold text-base line-clamp-2 text-gray-900 dark:text-white">
@@ -58,7 +59,7 @@ export default function BlogCard({
                 </p>
                 <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 mt-1">
                     <Clock size={18} className="text-black dark:text-white" />
-                    <span>{time}</span>
+                    <span>{formatDate(createdAt)}</span>
                 </div>
                 <div className="my-2 h-px bg-gray-200 dark:bg-gray-800" />
                 <div className="flex items-center gap-2">
