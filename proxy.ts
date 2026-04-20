@@ -1,11 +1,9 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-// Đổi tên hàm từ "middleware" thành "proxy"
 export async function proxy(request: NextRequest) {
     const path = request.nextUrl.pathname;
 
-    // ... toàn bộ logic xử lý short link của bạn giữ nguyên
     if (path.startsWith('/lk/')) {
         const slug = path.replace('/lk/', '');
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
@@ -24,7 +22,6 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next();
 }
 
-// Cấu hình matcher vẫn giữ nguyên
 export const config = {
-    matcher: '/((?!api|_next|favicon.ico|images).*)',
+    matcher: '/((?!api|_next/static|_next/image|favicon.ico|images|icons).*)',
 };
