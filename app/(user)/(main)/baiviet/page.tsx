@@ -56,7 +56,7 @@ export default function BlogPage(): React.ReactElement {
                 }
             }
         } catch {
-            // bỏ qua lỗi abort
+
         } finally {
             setLoading(false);
         }
@@ -84,7 +84,7 @@ export default function BlogPage(): React.ReactElement {
 
     return (
         <main className="px-4 py-5 sm:px-5 lg:px-10 mx-auto">
-            {/* Header với title bên trái, search + button bên phải */}
+
             <div className="flex flex-col gap-4 mb-8 md:flex-row md:items-center md:justify-between">
                 <div>
                     <h1 className="text-3xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">

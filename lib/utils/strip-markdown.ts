@@ -1,11 +1,11 @@
-// lib/utils/strip-markdown.ts
+
 
 export function stripMarkdown(markdown: string): string {
     if (!markdown) return '';
 
     let text = markdown;
 
-    // Giải mã HTML entities (&aacute;, &tilde;, &ocirc;, ...)
+    
     text = text.replace(/&aacute;/g, 'á');
     text = text.replace(/&agrave;/g, 'à');
     text = text.replace(/&acirc;/g, 'â');
@@ -37,31 +37,31 @@ export function stripMarkdown(markdown: string): string {
     text = text.replace(/&#39;/g, "'");
     text = text.replace(/&nbsp;/g, ' ');
 
-    // Xóa HTML tags <...>
+    
     text = text.replace(/<[^>]+>/g, ' ');
 
-    // Xóa code blocks ```...```
+    
     text = text.replace(/```[\s\S]*?```/g, '');
 
-    // Xóa inline code `...`
+    
     text = text.replace(/`([^`]+)`/g, '$1');
 
-    // Xóa headers (#, ##, ###, ...)
+    
     text = text.replace(/^#{1,6}\s+/gm, '');
 
-    // Xóa bold (**text** hoặc __text__)
+    
     text = text.replace(/(\*\*|__)(.*?)\1/g, '$2');
 
-    // Xóa italic (*text* hoặc _text_)
+    
     text = text.replace(/(\*|_)(.*?)\1/g, '$2');
 
-    // Xóa links [text](url)
+    
     text = text.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
 
-    // Xóa images ![alt](url)
+    
     text = text.replace(/!\[([^\]]*)\]\([^)]+\)/g, '');
 
-    // Xóa blockquotes >
+    
     text = text.replace(/^>\s+/gm, '');
     text = text.replace(/^(\s*[-*_]){3,}\s*$/gm, '');
     text = text.replace(/^(\s*[-+*]\s+|\s*\d+\.\s+)/gm, '');

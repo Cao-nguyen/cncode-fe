@@ -22,7 +22,7 @@ export default function Home() {
     const [featuredPosts, setFeaturedPosts] = useState<IPost[]>([])
     const [loadingPosts, setLoadingPosts] = useState(true)
 
-    // State cho thống kê
+
     const [stats, setStats] = useState({
         today: 0,
         guest: 0,
@@ -120,7 +120,7 @@ export default function Home() {
         }
     }
 
-    // Helper để tính thời gian đọc (ước lượng)
+
     const getReadingTime = (content: string) => {
         const wordsPerMinute = 200
         const wordCount = content?.split(/\s+/).length || 0
@@ -133,7 +133,7 @@ export default function Home() {
             <FloatingButtons />
             <Slideshow />
             <div className="m-5 xl:m-10">
-                {/* Banner giới thiệu */}
+
                 <div className="mt-8">
                     <div className="mb-5" data-aos="fade-up">
                         <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-black dark:text-white">
@@ -162,7 +162,7 @@ export default function Home() {
                     </div>
                 </div>
 
-                {/* Khoá học nổi bật */}
+
                 <div className="mt-8">
                     <div className="mb-5" data-aos="fade-up">
                         <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-black dark:text-white">
@@ -240,7 +240,7 @@ export default function Home() {
                     </div>
                 </div>
 
-                {/* Lộ trình học tập */}
+
                 <div className="mt-8">
                     <div className="mb-5" data-aos="fade-up">
                         <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-black dark:text-white">
@@ -259,7 +259,7 @@ export default function Home() {
                     </div>
                 </div>
 
-                {/* Tại sao lựa chọn chúng tôi */}
+
                 <div className="mt-8">
                     <div className="mb-5" data-aos="fade-up">
                         <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-black dark:text-white">
@@ -274,7 +274,7 @@ export default function Home() {
                     </div>
                 </div>
 
-                {/* Thành tựu */}
+
                 <div className="mt-8">
                     <div className="mb-5" data-aos="fade-up">
                         <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-black dark:text-white">
@@ -293,7 +293,7 @@ export default function Home() {
                     </div>
                 </div>
 
-                {/* Bài viết nổi bật */}
+
                 <div className="mt-8">
                     <div className="mb-5" data-aos="fade-up">
                         <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-black dark:text-white">
@@ -335,7 +335,7 @@ export default function Home() {
                     )}
                 </div>
 
-                {/* Thống kê truy cập - DỮ LIỆU THẬT TỪ API */}
+
                 <div className="mt-8">
                     <div className="mb-5" data-aos="fade-up">
                         <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-black dark:text-white">
@@ -354,7 +354,7 @@ export default function Home() {
                     )}
                 </div>
 
-                {/* Người dùng nói gì về chúng tôi */}
+
                 <div className="mt-8">
                     <div className="mb-5" data-aos="fade-up">
                         <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-black dark:text-white">

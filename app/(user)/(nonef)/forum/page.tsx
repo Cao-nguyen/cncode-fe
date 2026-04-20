@@ -41,7 +41,7 @@ function DiendanContent() {
                 </div>
             </header>
 
-            {/* Nội dung */}
+
             <div>
                 {currentTab === "khampha" && <Feed />}
                 {currentTab === "thongtin" && <Post />}

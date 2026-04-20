@@ -23,7 +23,7 @@ export default function ChiTietBaiVietPage() {
     const [bookmarked, setBookmarked] = useState(false);
     const [previewSrc, setPreviewSrc] = useState<string | null>(null);
     const viewTracked = useRef(false);
-    const postRef = useRef<IPost | null>(null); // ✅ Ref để dùng trong socket handler
+    const postRef = useRef<IPost | null>(null); 
 
     const buildCommentTree = (flat: IComment[]): IComment[] => {
         const map = new Map<string, IComment>();
@@ -46,7 +46,7 @@ export default function ChiTietBaiVietPage() {
             const result = await postApi.getPostBySlug(slug as string);
             if (result.success && result.data) {
                 const p = result.data;
-                postRef.current = p; // ✅ Cập nhật ref
+                postRef.current = p; 
                 setPost(p);
                 setLikeCount(p.likes || 0);
                 setLiked(user ? (p.likedBy?.includes(user.id) ?? false) : false);
@@ -73,7 +73,7 @@ export default function ChiTietBaiVietPage() {
         postApi.trackView(slug as string).catch(() => { });
     }, [slug]);
 
-    // ✅ Lắng nghe realtime comment và reaction
+    
     useEffect(() => {
         if (!socket || !slug) return;
 

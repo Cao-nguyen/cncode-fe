@@ -315,7 +315,7 @@ export default function EditProductPage() {
                             </div>
                         </div>
 
-                        {/* Ảnh thumbnail */}
+
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                 Ảnh thumbnail *
@@ -362,7 +362,7 @@ export default function EditProductPage() {
                             </div>
                         </div>
 
-                        {/* Ảnh preview */}
+
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                 Ảnh preview

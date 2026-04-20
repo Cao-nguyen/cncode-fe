@@ -9,7 +9,7 @@ import { Loader2, ArrowLeft, Globe, Lock } from 'lucide-react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 
-// Định nghĩa type cho BlobInfo của TinyMCE
+
 interface BlobInfo {
     blob: () => Blob;
     filename: () => string;
@@ -18,7 +18,7 @@ interface BlobInfo {
     uri: () => string | undefined;
 }
 
-// Dynamic import TinyMCE
+
 const Editor = dynamic(() => import('@tinymce/tinymce-react').then((mod) => mod.Editor), {
     ssr: false,
     loading: () => (
@@ -31,13 +31,13 @@ const Editor = dynamic(() => import('@tinymce/tinymce-react').then((mod) => mod.
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 const TINYMCE_API_KEY = process.env.NEXT_PUBLIC_TINYMCE_API_KEY;
 
-// Hàm trích xuất ảnh đầu tiên từ nội dung HTML
+
 const extractFirstImage = (html: string): string => {
     const match = html.match(/<img[^>]+src=["']([^"']+)["']/i);
     return match ? match[1] : '';
 };
 
-// Hàm trích xuất mô tả từ nội dung
+
 const extractDescription = (html: string): string => {
     const text = html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
     return text.slice(0, 200).trim();
@@ -124,7 +124,7 @@ export default function EditPostPage() {
             return;
         }
 
-        // Lấy ảnh đầu tiên làm thumbnail
+        
         const thumbnail = extractFirstImage(content);
         if (!thumbnail) {
             toast.error('Nội dung cần có ít nhất 1 ảnh để làm ảnh đại diện');

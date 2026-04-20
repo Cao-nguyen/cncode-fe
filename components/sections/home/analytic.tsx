@@ -30,7 +30,7 @@ export default function Analytics({ today: propToday, guest: propGuest, online: 
 
     const format = (n: number) => new Intl.NumberFormat('vi-VN').format(n);
 
-    // Ưu tiên dùng props nếu có, nếu không thì dùng state từ API
+    
     const today = propToday !== undefined ? propToday : stats.todayVisits;
     const total = propTotal !== undefined ? propTotal : stats.totalVisits;
     const guest = propGuest !== undefined ? propGuest : onlineStats.guests;

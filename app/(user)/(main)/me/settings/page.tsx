@@ -85,7 +85,7 @@ export default function SettingsPage() {
             const result = await userApi.requestRoleChange(token!);
             if (result.success) {
                 toast.success('Đã gửi yêu cầu lên admin');
-                // Cập nhật lại user trong store
+
                 if (user) {
                     setAuth({ ...user, requestedRole: 'teacher' }, token!);
                 }
@@ -246,7 +246,7 @@ export default function SettingsPage() {
                         </div>
                     </form>
 
-                    {/* Phần vai trò */}
+
                     <div className="p-6 border-t border-gray-200 dark:border-gray-800">
                         <div className="flex items-center justify-between flex-wrap gap-4">
                             <div>

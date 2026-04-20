@@ -1,4 +1,4 @@
-// types/auth.type.ts
+
 export interface IUser {
   id: string
   email: string
@@ -6,7 +6,7 @@ export interface IUser {
   fullName: string
   avatar: string
   role: 'user' | 'teacher' | 'admin'
-  requestedRole?: 'teacher' | null  // Thêm dòng này
+  requestedRole?: 'teacher' | null  
   isOnboarded: boolean
   class: string
   province: string

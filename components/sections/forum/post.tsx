@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent } from "@/components/ui/dialog"
 
-// ===== Reaction =====
+
 const reactions = [
     { key: "like", icon: "/icons/like.svg" },
     { key: "love", icon: "/icons/love.svg" },
@@ -71,12 +71,12 @@ export default function PostFeed() {
     const [open, setOpen] = useState(false)
     const [expanded, setExpanded] = useState<Record<number, boolean>>({})
 
-    // ===== FIX SCROLL =====
+
     useEffect(() => {
         document.body.style.overflow = lockScroll ? "hidden" : ""
     }, [lockScroll])
 
-    // ===== CHẶN CHUỘT PHẢI TOÀN TRANG =====
+
     useEffect(() => {
         const preventContext = (e: MouseEvent) => e.preventDefault()
         document.addEventListener("contextmenu", preventContext)
@@ -86,7 +86,7 @@ export default function PostFeed() {
         }
     }, [])
 
-    // ===== MOBILE =====
+
     useEffect(() => {
         const handleMove = (e: TouchEvent) => {
             if (!isLongPress.current || !popupRef.current) return
@@ -131,7 +131,7 @@ export default function PostFeed() {
 
             <div className="w-full max-w-xl lg:max-w-2xl space-y-4 pt-5 pb-10">
 
-                {/* CREATE POST */}
+
                 <div className="bg-white dark:bg-zinc-900 border rounded-2xl p-4 shadow-sm">
                     <div className="flex gap-3 items-center">
                         <Avatar>
@@ -148,7 +148,7 @@ export default function PostFeed() {
                     </div>
                 </div>
 
-                {/* MODAL */}
+
                 <Dialog open={open} onOpenChange={setOpen}>
                     <DialogContent>
                         <textarea
@@ -159,14 +159,14 @@ export default function PostFeed() {
                     </DialogContent>
                 </Dialog>
 
-                {/* POSTS */}
+
                 {posts.map((post) => {
                     const isExpanded = expanded[post.id]
 
                     return (
                         <div key={post.id} className="bg-white dark:bg-zinc-900 border rounded-2xl p-4 shadow-sm space-y-3">
 
-                            {/* Header */}
+
                             <div className="flex justify-between">
                                 <div className="flex gap-3">
                                     <Avatar>
@@ -183,7 +183,7 @@ export default function PostFeed() {
                                 <Ellipsis size={20} />
                             </div>
 
-                            {/* Content */}
+
                             <div className="text-sm">
                                 <div className={`${!isExpanded ? "line-clamp-2" : ""}`}>
                                     {post.content}
@@ -204,7 +204,7 @@ export default function PostFeed() {
                                 )}
                             </div>
 
-                            {/* Image */}
+
                             {post.image && (
                                 <div className="relative w-full h-60 rounded-xl overflow-hidden">
                                     <Image
@@ -216,16 +216,16 @@ export default function PostFeed() {
                                 </div>
                             )}
 
-                            {/* Stats */}
+
                             <div className="text-xs text-zinc-500 flex justify-between">
                                 <span>{post.likes} lượt thích</span>
                                 <span>{post.comments} bình luận · {post.shares} chia sẻ</span>
                             </div>
 
-                            {/* Actions */}
+
                             <div className="flex justify-around border-t pt-2">
 
-                                {/* LIKE */}
+
                                 <div
                                     className="relative"
                                     onMouseEnter={(e) => {
@@ -332,13 +332,13 @@ export default function PostFeed() {
                                     )}
                                 </div>
 
-                                {/* Comment */}
+
                                 <button className="flex items-center gap-2">
                                     <MessageSquareMore size={22} />
                                     {post.comments}
                                 </button>
 
-                                {/* Share */}
+
                                 <button className="flex items-center gap-2">
                                     <Send size={22} />
                                     {post.shares}
@@ -348,7 +348,7 @@ export default function PostFeed() {
                     )
                 })}
 
-                {/* FOOTER */}
+
                 <div className="text-center text-sm text-zinc-500 pt-4 pb-10">
                     Không còn bài đăng nào khác
                 </div>

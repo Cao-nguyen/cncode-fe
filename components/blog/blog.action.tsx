@@ -42,7 +42,7 @@ export default function BlogActions({ postId, isBookmarked = false, onBookmarkCh
     const [selectedReason, setSelectedReason] = useState('');
     const [reporting, setReporting] = useState(false);
 
-    // ✅ Sync lại khi prop isBookmarked thay đổi (sau khi fetchPost xong)
+    
     useEffect(() => {
         setBookmarked(isBookmarked);
     }, [isBookmarked]);

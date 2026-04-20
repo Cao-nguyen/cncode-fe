@@ -121,7 +121,7 @@ export default function CuaHangSoPage() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-black">
       <div className="container mx-auto px-4 sm:px-5 lg:px-10 py-5 md:py-10">
-        {/* Header - Responsive */}
+
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6 md:mb-8">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-1 sm:mb-2">
@@ -143,10 +143,10 @@ export default function CuaHangSoPage() {
         </div>
 
         <div className="flex flex-col lg:flex-row gap-6">
-          {/* Sidebar Filter - Responsive */}
+
           <div className="lg:w-64 flex-shrink-0">
             <div className="sticky top-20">
-              {/* Mobile Filter Button */}
+
               <button
                 onClick={() => setShowMobileFilter(!showMobileFilter)}
                 className="lg:hidden w-full flex items-center justify-between px-4 py-3 bg-white dark:bg-[#171717] rounded-xl border border-gray-200 dark:border-gray-800 mb-4"
@@ -158,7 +158,7 @@ export default function CuaHangSoPage() {
                 <ChevronDown className={`transform transition-transform ${showMobileFilter ? 'rotate-180' : ''} text-gray-600 dark:text-gray-400`} size={18} />
               </button>
 
-              {/* Filter Content */}
+
               <div className={`${showMobileFilter ? 'block' : 'hidden'} lg:block`}>
                 <div className="bg-white dark:bg-[#171717] rounded-xl shadow-sm p-5 border border-gray-200 dark:border-gray-800">
                   <div className="space-y-6">
@@ -185,9 +185,9 @@ export default function CuaHangSoPage() {
             </div>
           </div>
 
-          {/* Main Content */}
+
           <div className="flex-1">
-            {/* Search and Sort Bar - Responsive */}
+
             <div className="bg-white dark:bg-[#171717] rounded-xl shadow-sm p-4 sm:p-5 mb-6 border border-gray-200 dark:border-gray-800">
               <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                 <div className="flex-1 relative">
@@ -238,12 +238,12 @@ export default function CuaHangSoPage() {
               </div>
             </div>
 
-            {/* Result Count */}
+
             <div className="mb-4 px-1">
               <p className="text-sm text-gray-600 dark:text-gray-400">{products.length} sản phẩm</p>
             </div>
 
-            {/* Products Grid/List - Responsive */}
+
             {loading ? (
               <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                 {[1, 2, 3, 4, 5, 6].map((i) => (
@@ -371,7 +371,7 @@ export default function CuaHangSoPage() {
               </div>
             )}
 
-            {/* Empty State */}
+
             {!loading && products.length === 0 && (
               <div className="text-center py-12">
                 <div className="text-5xl sm:text-6xl mb-4">🛒</div>

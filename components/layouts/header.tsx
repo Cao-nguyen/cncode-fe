@@ -194,7 +194,7 @@ export default function Header() {
 
     return (
         <>
-            {/* Desktop Header */}
+
             <div className="hidden lg:block bg-white dark:bg-black w-full h-15 fixed top-0 z-50">
                 <div className="flex h-full justify-between items-center">
                     <div className="ml-1.5 lg:ml-4">
@@ -271,7 +271,7 @@ export default function Header() {
                 </div>
             </div>
 
-            {/* Mobile Header */}
+
             <div className="lg:hidden fixed top-0 w-full h-10 bg-white dark:bg-black z-50 border-b border-gray-200 dark:border-gray-800">
                 <div className="flex h-full justify-between items-center px-1.5">
                     <Link href="/">
@@ -321,7 +321,7 @@ export default function Header() {
                 </div>
             </div>
 
-            {/* Mobile Bottom Nav */}
+
             <div className="lg:hidden fixed bottom-0 left-0 w-full z-50">
                 <div className="w-full h-14 bg-white dark:bg-black border-t border-gray-200 dark:border-gray-800 rounded-t-2xl shadow-[0_-4px_20px_rgba(0,0,0,0.15)] flex items-center px-2">
                     {menuMobile.map((m) => {

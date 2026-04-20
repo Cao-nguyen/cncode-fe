@@ -38,7 +38,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     const [socketId, setSocketId] = useState<string | undefined>(undefined);
 
     useEffect(() => {
-        if (!token || !user) return; // ✅ Không gọi setState trong early return
+        if (!token || !user) return; 
 
         const instance = io(BASE_URL, {
             auth: { token },
@@ -74,7 +74,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
             instance.off('connect_error');
             instance.disconnect();
             socketRef.current = null;
-            // ✅ setState trong cleanup function được phép
+            
             setSocketState(null);
             setIsConnected(false);
             setSocketId(undefined);

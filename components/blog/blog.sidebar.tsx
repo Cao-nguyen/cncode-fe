@@ -45,7 +45,7 @@ export default function BlogSidebar({
         if (onLike) {
             await onLike();
 
-            // ✅ Gửi socket notification khi like (nếu không phải like của chính mình)
+            
             if (socket && socket.connected && postId && authorId && user.id !== authorId) {
                 socket.emit('notification:like_post', {
                     postId,

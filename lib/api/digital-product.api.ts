@@ -14,7 +14,7 @@ export const digitalProductApi = {
     return response.json()
   },
 
-  // THÊM METHOD NÀY
+  
   getProductById: async (id: string, token: string) => {
     const response = await fetch(`${API_URL}/api/digital-products/product/${id}`, {
       headers: { 'Authorization': `Bearer ${token}` }

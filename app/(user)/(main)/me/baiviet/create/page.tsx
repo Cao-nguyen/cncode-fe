@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 import { Loader2, ArrowLeft, Globe, Lock, ImageIcon } from 'lucide-react';
 import Link from 'next/link';
 
-// Định nghĩa type cho BlobInfo
+
 interface BlobInfo {
     blob: () => Blob;
     filename: () => string;
@@ -30,13 +30,13 @@ const Editor = dynamic(() => import('@tinymce/tinymce-react').then((mod) => mod.
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 const TINYMCE_API_KEY = process.env.NEXT_PUBLIC_TINYMCE_API_KEY;
 
-// Hàm trích xuất ảnh đầu tiên từ nội dung HTML
+
 const extractFirstImage = (html: string): string => {
     const match = html.match(/<img[^>]+src=["']([^"']+)["']/i);
     return match ? match[1] : '';
 };
 
-// Hàm trích xuất mô tả từ nội dung
+
 const extractDescription = (html: string): string => {
     const text = html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
     return text.slice(0, 200).trim();
@@ -98,7 +98,7 @@ export default function CreatePostPage() {
 
         setLoading(true);
         try {
-            // Bỏ field slug vì backend sẽ tự tạo
+            
             const result = await postApi.createPost(
                 {
                     title: title.trim(),

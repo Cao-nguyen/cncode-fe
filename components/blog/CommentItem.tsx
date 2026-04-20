@@ -81,7 +81,7 @@ export default function CommentItem({
     const [selectedReason, setSelectedReason] = useState('');
     const [reporting, setReporting] = useState(false);
 
-    // edit state
+    
     const [isEditing, setIsEditing] = useState(false);
     const [editContent, setEditContent] = useState(comment.content);
     const [editSubmitting, setEditSubmitting] = useState(false);
@@ -102,7 +102,7 @@ export default function CommentItem({
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    // Lấy ID từ user (ưu tiên _id trước, fallback sang id)
+    
     const getUserId = (u: { _id?: string; id?: string } | null | undefined): string | undefined => {
         if (!u) return undefined;
         return u._id || u.id;
@@ -119,7 +119,7 @@ export default function CommentItem({
 
     const totalReactions = getTotalReactions(localReactions);
 
-    // Kiểm tra quyền
+    
     const canDelete = !!(user && (
         currentUserId === commentUserId ||
         currentUserId === postAuthorId ||
@@ -155,7 +155,7 @@ export default function CommentItem({
             await postApi.toggleCommentReaction(post._id, comment._id, type, token);
             await onCommentUpdated();
 
-            // ✅ Gửi notification realtime khi reaction comment
+            
             if (socket && socket.connected && commentUserId && commentUserId !== currentUserId) {
                 socket.emit('notification:reaction_comment', {
                     postId: post._id,
@@ -190,7 +190,7 @@ export default function CommentItem({
             await onCommentUpdated();
             toast.success('Đã thêm phản hồi');
 
-            // ✅ Gửi notification realtime khi comment
+            
             if (socket && socket.connected) {
                 const recipientId = comment.parentId ? commentUserId : postAuthorId;
                 if (recipientId && recipientId !== currentUserId) {

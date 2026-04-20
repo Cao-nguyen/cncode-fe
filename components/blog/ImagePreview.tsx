@@ -80,7 +80,7 @@ export function ClickableImage({ src, alt = '', className = '' }: ClickableImage
     );
 }
 
-// Hook dùng trong blog detail để bắt click ảnh trong vùng render markdown
+
 export function useContentImagePreview(containerRef: React.RefObject<HTMLElement | null>) {
     const [previewSrc, setPreviewSrc] = useState<string | null>(null);
 

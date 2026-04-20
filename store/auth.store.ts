@@ -1,4 +1,4 @@
-// store/auth.store.ts
+
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { IUser } from '@/types/auth.type'
@@ -10,7 +10,7 @@ interface AuthState {
   setUser: (user: IUser | null) => void
   setToken: (token: string | null) => void
   setIsOnboarded: (isOnboarded: boolean) => void
-  setAuth: (user: IUser, token: string) => void  // Thêm method mới
+  setAuth: (user: IUser, token: string) => void  
   logout: () => void
 }
 
@@ -23,7 +23,7 @@ export const useAuthStore = create<AuthState>()(
       setUser: (user) => set({ user }),
       setToken: (token) => set({ token }),
       setIsOnboarded: (isOnboarded) => set({ isOnboarded }),
-      setAuth: (user, token) => set({ user, token }),  // Thêm method này
+      setAuth: (user, token) => set({ user, token }),  
       logout: () => {
         localStorage.removeItem('token')
         set({ user: null, token: null, isOnboarded: false })

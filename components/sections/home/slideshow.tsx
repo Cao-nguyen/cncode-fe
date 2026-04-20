@@ -52,7 +52,7 @@ export default function Slideshow() {
                     <ChevronRight size="18" color="#111" />
                 </button>
 
-                {/* dots */}
+
                 <div className="absolute z-20 bottom-3 md:bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
                     {SLIDES.map((_, i) => (
                         <button key={i} onClick={() => handleManual(() => setIndex(i))} className={`w-6 h-2 rounded-full transition ${i === index ? "bg-white" : "bg-white/50"}`} />

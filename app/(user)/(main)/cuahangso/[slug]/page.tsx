@@ -227,32 +227,32 @@ export default function ProductDetailPage() {
   }
 
   const handleSubmitReview = async () => {
-    // Kiểm tra token
+
     if (!token) {
       toast.error('Vui lòng đăng nhập để đánh giá')
       router.push('/login')
       return
     }
 
-    // Kiểm tra product
+
     if (!product) {
       toast.error('Không tìm thấy sản phẩm')
       return
     }
 
-    // Kiểm tra đã mua hàng chưa
+
     if (!purchaseInfo.purchased) {
       toast.error('Bạn cần mua sản phẩm để đánh giá')
       return
     }
 
-    // Kiểm tra đã đánh giá chưa
+
     if (userReview) {
       toast.error('Bạn đã đánh giá sản phẩm này rồi')
       return
     }
 
-    // Kiểm tra nội dung
+
     if (!reviewComment.trim()) {
       toast.error('Vui lòng nhập nội dung đánh giá')
       return
@@ -320,7 +320,7 @@ export default function ProductDetailPage() {
         </Link>
 
         <div className="mb-8 grid grid-cols-1 gap-8 lg:grid-cols-2">
-          {/* Hình ảnh */}
+
           <div>
             <div className="mb-4 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-[#171717]">
               <div className="relative aspect-video cursor-pointer" onClick={() => setShowImageModal(true)}>
@@ -351,7 +351,7 @@ export default function ProductDetailPage() {
             )}
           </div>
 
-          {/* Thông tin + mua */}
+
           <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-[#171717]">
             <div className={`mb-3 inline-flex items-center gap-2 rounded-lg px-3 py-1 text-sm ${getCategoryColor(product.category)}`}>
               {getCategoryName(product.category)}
@@ -436,13 +436,13 @@ export default function ProductDetailPage() {
 
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
           <div className="space-y-8 lg:col-span-2">
-            {/* Mô tả */}
+
             <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-[#171717]">
               <h2 className="mb-4 text-xl font-bold text-gray-900 dark:text-white">Mô tả sản phẩm</h2>
               <p className="whitespace-pre-wrap leading-relaxed text-gray-600 dark:text-gray-400">{product.longDescription}</p>
             </div>
 
-            {/* Xem thử */}
+
             {isPreviewable && product.previewUrl && (
               <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-[#171717]">
                 <h2 className="mb-4 text-xl font-bold text-gray-900 dark:text-white">Xem thử sản phẩm</h2>
@@ -452,7 +452,7 @@ export default function ProductDetailPage() {
               </div>
             )}
 
-            {/* Tính năng */}
+
             {product.features && product.features.length > 0 && (
               <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-[#171717]">
                 <h2 className="mb-4 text-xl font-bold text-gray-900 dark:text-white">Tính năng nổi bật</h2>
@@ -467,7 +467,7 @@ export default function ProductDetailPage() {
               </div>
             )}
 
-            {/* Yêu cầu */}
+
             {product.requirements && product.requirements.length > 0 && (
               <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-[#171717]">
                 <h2 className="mb-4 text-xl font-bold text-gray-900 dark:text-white">Yêu cầu hệ thống</h2>
@@ -482,13 +482,13 @@ export default function ProductDetailPage() {
               </div>
             )}
 
-            {/* Đánh giá */}
+
             <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-[#171717]">
               <h2 className="mb-6 text-xl font-bold text-gray-900 dark:text-white">
                 Đánh giá ({reviews.length})
               </h2>
 
-              {/* Form đánh giá - chỉ hiển thị khi đã mua và chưa đánh giá */}
+
               {canReview && (
                 <div className="mb-6 rounded-xl border border-blue-100 bg-blue-50 p-5 dark:border-blue-900/30 dark:bg-blue-900/10">
                   <p className="mb-4 font-medium text-gray-900 dark:text-white">Chia sẻ đánh giá của bạn</p>
@@ -513,7 +513,7 @@ export default function ProductDetailPage() {
                 </div>
               )}
 
-              {/* Thông báo đã đánh giá */}
+
               {alreadyReviewed && (
                 <div className="mb-6 flex items-center gap-2 rounded-lg bg-green-50 px-4 py-3 text-green-700 dark:bg-green-900/20 dark:text-green-400">
                   <CheckCircle size={16} />
@@ -521,7 +521,7 @@ export default function ProductDetailPage() {
                 </div>
               )}
 
-              {/* Thông báo chưa mua hàng */}
+
               {!purchaseInfo.purchased && !checkingPurchase && (
                 <div className="mb-6 flex items-center gap-2 rounded-lg bg-gray-50 px-4 py-3 text-gray-500 dark:bg-gray-800 dark:text-gray-400">
                   <Lock size={16} />
@@ -529,7 +529,7 @@ export default function ProductDetailPage() {
                 </div>
               )}
 
-              {/* Loading checking */}
+
               {checkingPurchase && (
                 <div className="mb-6 flex items-center gap-2 rounded-lg bg-gray-50 px-4 py-3 text-gray-500 dark:bg-gray-800 dark:text-gray-400">
                   <Loader2 size={16} className="animate-spin" />
@@ -537,7 +537,7 @@ export default function ProductDetailPage() {
                 </div>
               )}
 
-              {/* Danh sách đánh giá */}
+
               {reviews.length === 0 ? (
                 <p className="text-center text-sm text-gray-400">Chưa có đánh giá nào</p>
               ) : (
@@ -562,7 +562,7 @@ export default function ProductDetailPage() {
             </div>
           </div>
 
-          {/* Sidebar */}
+
           <div className="sticky top-20 h-fit space-y-4">
             <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-[#171717]">
               <h3 className="mb-4 font-semibold text-gray-900 dark:text-white">Thông tin tác giả</h3>

@@ -1,4 +1,4 @@
-// lib/api/user.api.ts
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export interface IUser {
@@ -31,7 +31,7 @@ export interface IUploadAvatarResponse {
     data: {
         url: string;
     };
-    message?: string;  // Thêm message optional
+    message?: string;  
 }
 
 export const userApi = {

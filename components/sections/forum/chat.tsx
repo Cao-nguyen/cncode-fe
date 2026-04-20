@@ -105,15 +105,15 @@ export default function ChatPage() {
             <input type="file" ref={imageInputRef} className="hidden" accept="image/*" multiple />
             <input type="file" ref={fileInputRef} className="hidden" multiple />
 
-            {/* SIDEBAR */}
+
             <div
                 className={cn(
                     "flex flex-col border-r",
-                    // Mobile: nếu đang chat thì ẩn sidebar, desktop luôn show
+
                     view === "chat" ? "hidden md:flex md:w-80" : "w-full md:w-80"
                 )}
             >
-                {/* Sidebar content giữ nguyên */}
+
                 <div className="p-[9.6px] border-b">
                     <div className="flex items-center gap-2 bg-muted px-3 py-2 rounded-xl">
                         <Search size={20} />
@@ -147,7 +147,7 @@ export default function ChatPage() {
                 </ScrollArea>
             </div>
 
-            {/* CHAT VIEW */}
+
             {activeChat && (
                 <div
                     className={cn(
@@ -157,7 +157,7 @@ export default function ChatPage() {
                 >
                     <div className="flex-1 flex flex-col">
 
-                        {/* HEADER */}
+
                         <div className="h-14 border-b flex items-center justify-between px-4">
                             <div className="flex items-center gap-3">
                                 <button className="md:hidden" onClick={() => setView("list")}>
@@ -179,13 +179,13 @@ export default function ChatPage() {
                             </button>
                         </div>
 
-                        {/* PIN */}
+
                         <div className="px-4 py-2 text-sm bg-muted border-b flex items-center gap-2">
                             <Paperclip size={20} />
                             Họp lúc 8h - Nguyễn Văn A
                         </div>
 
-                        {/* MESSAGES */}
+
                         <ScrollArea className="flex-1 p-4 space-y-5">
                             {messages.map((msg) => (
                                 <div key={msg.id} className={cn("flex", msg.fromMe ? "justify-end" : "justify-start")}>
@@ -222,7 +222,7 @@ export default function ChatPage() {
                             ))}
                         </ScrollArea>
 
-                        {/* INPUT */}
+
                         <div className="border-t p-3 space-y-2">
                             <div className="flex items-center gap-3 text-muted-foreground relative">
                                 <Galary size={22} onClick={handleSelectImage} />
@@ -274,7 +274,7 @@ export default function ChatPage() {
                 </div>
             )}
 
-            {/* PANEL */}
+
             {showInfo && (
                 <div className="fixed right-0 z-50 bg-background border-l w-full md:w-80 h-[calc(100dvh-130px)] md:h-[calc(100dvh-90px)] flex flex-col">
                     <div className="h-14 border-b flex items-center justify-between px-4 shrink-0">

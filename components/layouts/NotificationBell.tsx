@@ -130,7 +130,7 @@ function NotificationBellInner({ userId }: { userId: string }) {
             const newNotification: Notification = {
                 id: crypto.randomUUID(),
                 type: data.type,
-                postSlug: data.postId || '',  // ✅ BE gửi field tên postId nhưng chứa slug
+                postSlug: data.postId || '',  
                 postTitle: data.postTitle || '',
                 userName: data.userName || 'Người dùng',
                 commentId: data.commentId,
@@ -209,7 +209,7 @@ function NotificationBellInner({ userId }: { userId: string }) {
                             {notifications.map((notification) => (
                                 <Link
                                     key={notification.id}
-                                    href={`/baiviet/${notification.postSlug}`} // ✅ dùng postSlug
+                                    href={`/baiviet/${notification.postSlug}`} 
                                     onClick={() => {
                                         markAsRead(notification.id);
                                         setOpen(false);

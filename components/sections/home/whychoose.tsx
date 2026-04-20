@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { GraduationCap, IdCard, UserRound, Book } from "lucide-react";
 
-// data tĩnh
+
 const DATA = [
     { icon: <Book size={26} className="text-dark dark:text-white" />, title: "Phương pháp giảng dạy hiện đại", desc: "Chương trình học được thiết kế phù hợp với chương trình và năng lực của người học" },
     { icon: <UserRound size={26} className="text-dark dark:text-white" />, title: "Video bài giảng tương tác", desc: "Học online nhưng giống như đang học trên lớp với tính năng tương tác ngay trong lúc học" },
@@ -16,22 +16,22 @@ export default function WhyChoose() {
         <div className="mt-0">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
 
-                {/* ảnh bên trái */}
+
                 <div className="relative w-full h-65 md:h-87.5 lg:h-105 rounded-2xl overflow-hidden">
                     <Image src="/images/whychoose.png" alt="why choose" fill />
                 </div>
 
-                {/* nội dung bên phải */}
+
                 <div className="flex flex-col gap-5">
                     {DATA.map((item, index) => (
                         <div key={index} className="flex items-start gap-4 p-4 rounded-xl border border-[#e6e6e6] dark:border-[#222] bg-white dark:bg-[#171717] hover:shadow-md hover:-translate-y-1 transition">
 
-                            {/* icon */}
+
                             <div className="min-w-10.5 h-10.5 flex items-center justify-center rounded-xl bg-gray-100 dark:bg-[#222]">
                                 {item.icon}
                             </div>
 
-                            {/* text */}
+
                             <div>
                                 <h3 className="font-semibold text-sm md:text-base">{item.title}</h3>
                                 <p className="text-sm text-gray-500 dark:text-gray-400">{item.desc}</p>
