@@ -26,7 +26,7 @@ const LINKS = [
             { href: "/giasuai", label: "Gia sư AI" },
             { href: "/cuahangso", label: "Cửa hàng số" },
             { href: "/forum", label: "Diễn đàn" },
-            { href: "/baiviet", label: "Bài viết" },
+            { href: "/rutgonlink", label: "Rút gọn link" },
         ],
     },
     {

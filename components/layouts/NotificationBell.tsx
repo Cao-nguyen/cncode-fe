@@ -12,6 +12,7 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { INotification } from '@/types/notification.type';
 import Link from 'next/link';
+import { toast } from 'sonner';
 
 interface Notification {
     id: string;
@@ -113,8 +114,7 @@ function loadNotifications(userId: string): Notification[] {
 }
 
 function NotificationBellInner({ userId }: { userId: string }) {
-    const { socket } = useSocket();
-
+    const { socket, isConnected } = useSocket();
     const [notifications, setNotifications] = useState<Notification[]>(() =>
         loadNotifications(userId),
     );
@@ -124,13 +124,24 @@ function NotificationBellInner({ userId }: { userId: string }) {
     const [open, setOpen] = useState(false);
 
     useEffect(() => {
-        if (!socket) return;
+        console.log('NotificationBell - Socket state:', { socket: !!socket, isConnected, userId });
+    }, [socket, isConnected, userId]);
+
+    useEffect(() => {
+        if (!socket || !isConnected) {
+            console.log('NotificationBell - Socket not ready');
+            return;
+        }
+
+        console.log('NotificationBell - Listening for notifications');
 
         const handleNewNotification = (data: INotification) => {
+            console.log('🔔 Received notification:', data);
+
             const newNotification: Notification = {
                 id: crypto.randomUUID(),
                 type: data.type,
-                postSlug: data.postId || '',  
+                postSlug: data.postId || '',
                 postTitle: data.postTitle || '',
                 userName: data.userName || 'Người dùng',
                 commentId: data.commentId,
@@ -146,13 +157,17 @@ function NotificationBellInner({ userId }: { userId: string }) {
                 return updated;
             });
             setUnreadCount((prev) => prev + 1);
+
+            // Hiển thị toast thông báo
+            toast.info(`${newNotification.userName} đã tương tác với bài viết của bạn`);
         };
 
         socket.on('new_notification', handleNewNotification);
+
         return () => {
             socket.off('new_notification', handleNewNotification);
         };
-    }, [socket, userId]);
+    }, [socket, isConnected, userId]);
 
     const markAsRead = (notificationId: string) => {
         setNotifications((prev) => {
@@ -209,7 +224,7 @@ function NotificationBellInner({ userId }: { userId: string }) {
                             {notifications.map((notification) => (
                                 <Link
                                     key={notification.id}
-                                    href={`/baiviet/${notification.postSlug}`} 
+                                    href={`/baiviet/${notification.postSlug}`}
                                     onClick={() => {
                                         markAsRead(notification.id);
                                         setOpen(false);
@@ -232,6 +247,7 @@ function NotificationBellInner({ userId }: { userId: string }) {
 
 export default function NotificationBell() {
     const { user } = useAuthStore();
+    console.log('NotificationBell - User:', user?.id);
     if (!user?.id) return null;
     return <NotificationBellInner userId={user.id} />;
 }

@@ -27,7 +27,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useAuthStore } from "@/store/auth.store";
 import { toast } from "sonner";
-import { useLayoutEffect, useState } from "react";
+import { useLayoutEffect, useState, useEffect } from "react";
 
 const formatNumber = (num: number) => {
     return new Intl.NumberFormat("en", {
@@ -143,12 +143,19 @@ export default function Header() {
     const pathname = usePathname();
     const { setTheme, theme } = useTheme();
     const router = useRouter();
-    const { user, logout, token } = useAuthStore();
+    const { user, logout, token, coins, checkAndSync } = useAuthStore();
     const [mounted, setMounted] = useState(false);
 
     useLayoutEffect(() => {
         setMounted(true);
     }, []);
+
+    // 👇 Thêm useEffect này để sync coins
+    useEffect(() => {
+        if (token) {
+            checkAndSync();
+        }
+    }, [token, checkAndSync]);
 
     const handleLogout = () => {
         logout();
@@ -187,7 +194,7 @@ export default function Header() {
         }
         : null;
 
-    const displayCoins = user?.coins ?? 0;
+    const displayCoins = coins ?? 0;
     const displayStreak = user?.streak ?? 0;
 
     if (!mounted) return null;

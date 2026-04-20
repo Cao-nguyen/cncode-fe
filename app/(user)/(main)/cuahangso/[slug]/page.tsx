@@ -4,14 +4,16 @@ import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Star, Download, ChevronLeft, Eye, Calendar, User } from 'lucide-react'
+import { Star, Download, ChevronLeft, Eye, Calendar, User, X } from 'lucide-react'
 import { digitalProductApi } from '@/lib/api/digital-product.api'
 import { paymentApi } from '@/lib/api/payment.api'
 import { IDigitalProduct } from '@/types/digital-product.type'
 import { useAuthStore } from '@/store/auth.store'
 import { toast } from 'sonner'
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import CoinsIcon from '@/components/common/CoinsIcon'
 import ImagePreview from '@/components/common/ImagePreview'
+import { IReview } from '@/types/digital-product.type'
 
 const formatPrice = (price: number) => {
   return new Intl.NumberFormat('vi-VN', {
@@ -48,7 +50,7 @@ export default function ProductDetailPage() {
   const params = useParams()
   const router = useRouter()
   const slug = params.slug as string
-  const { user, token } = useAuthStore()
+  const { user, token, checkAndSync, setUser } = useAuthStore();
 
   const [product, setProduct] = useState<IDigitalProduct | null>(null)
   const [loading, setLoading] = useState(true)
@@ -58,10 +60,20 @@ export default function ProductDetailPage() {
   const [showFullDescription, setShowFullDescription] = useState(false)
   const [previewOpen, setPreviewOpen] = useState(false)
   const [previewIndex, setPreviewIndex] = useState(0)
-
   const [isOwnProduct, setIsOwnProduct] = useState(false)
 
-  // Tạo mảng tất cả ảnh (thumbnail + previewImages)
+  // Modal states
+  const [showConfirmModal, setShowConfirmModal] = useState(false)
+  const [pendingPurchaseType, setPendingPurchaseType] = useState<'money' | 'xu' | null>(null)
+
+  // Review states
+  const [reviews, setReviews] = useState<IReview[]>([])
+  const [showReviewModal, setShowReviewModal] = useState(false)
+  const [reviewRating, setReviewRating] = useState(5)
+  const [reviewComment, setReviewComment] = useState('')
+  const [submittingReview, setSubmittingReview] = useState(false)
+  const [hasReviewed, setHasReviewed] = useState(false)
+
   const allImages = product
     ? [product.thumbnail, ...(product.previewImages || [])]
     : []
@@ -75,6 +87,8 @@ export default function ProductDetailPage() {
   useEffect(() => {
     if (product && token && user) {
       checkPurchaseStatus()
+      checkReviewStatus()
+      fetchReviews()
       setIsOwnProduct(product.author._id === user.id)
     }
   }, [product, token, user])
@@ -109,6 +123,31 @@ export default function ProductDetailPage() {
     }
   }
 
+  const checkReviewStatus = async () => {
+    if (!token || !product) return
+    try {
+      const result = await digitalProductApi.getReviews(product._id)
+      if (result.success) {
+        const userReview = result.data.find((r: IReview) => r.user._id === user?.id)
+        setHasReviewed(!!userReview)
+      }
+    } catch (error) {
+      console.error('Failed to check review status:', error)
+    }
+  }
+
+  const fetchReviews = async () => {
+    if (!product) return
+    try {
+      const result = await digitalProductApi.getReviews(product._id)
+      if (result.success) {
+        setReviews(result.data)
+      }
+    } catch (error) {
+      console.error('Failed to fetch reviews:', error)
+    }
+  }
+
   const handlePurchaseWithMoney = async () => {
     if (!token) {
       toast.error('Vui lòng đăng nhập để mua sản phẩm')
@@ -121,20 +160,8 @@ export default function ProductDetailPage() {
       return
     }
 
-    setPurchasing(true)
-    try {
-      const result = await paymentApi.purchaseWithPayOS(product!._id, token)
-      if (result.success && result.data.checkoutUrl) {
-        window.location.href = result.data.checkoutUrl
-      } else {
-        toast.error(result.message || 'Không thể tạo thanh toán')
-      }
-    } catch (error) {
-      console.error('Purchase failed:', error)
-      toast.error('Có lỗi xảy ra')
-    } finally {
-      setPurchasing(false)
-    }
+    setPendingPurchaseType('money')
+    setShowConfirmModal(true)
   }
 
   const handlePurchaseWithXu = async () => {
@@ -154,20 +181,54 @@ export default function ProductDetailPage() {
       return
     }
 
+    // Kiểm tra đủ xu không
+    const xuPrice = Math.floor(product.price / 10)
+    if ((user?.coins || 0) < xuPrice) {
+      toast.error(`Không đủ xu! Bạn cần ${xuPrice.toLocaleString()} xu để mua sản phẩm này.`)
+      return
+    }
+
+    setPendingPurchaseType('xu')
+    setShowConfirmModal(true)
+  }
+
+  const confirmPurchase = async () => {
+    if (!product) return
+
     setPurchasing(true)
+    setShowConfirmModal(false)
+
     try {
-      const result = await paymentApi.purchaseWithXu(product!._id, token)
-      if (result.success && result.data.downloadUrl) {
-        toast.success('Mua sản phẩm thành công!')
-        setPurchased(true)
-        window.open(result.data.downloadUrl, '_blank')
-      } else {
-        toast.error(result.message || 'Không thể mua bằng Xu')
+      if (pendingPurchaseType === 'money') {
+        const result = await paymentApi.purchaseWithPayOS(product._id, token!)
+        if (result.success && result.data.checkoutUrl) {
+          window.location.href = result.data.checkoutUrl
+        } else {
+          toast.error(result.message || 'Không thể tạo thanh toán')
+          setPurchasing(false)
+        }
+      } else if (pendingPurchaseType === 'xu') {
+        const result = await paymentApi.purchaseWithXu(product._id, token!)
+        if (result.success) {
+          toast.success('Mua sản phẩm thành công! Xu đã được trừ')
+          setPurchased(true)
+
+          // Chỉ hiển thị thông báo, KHÔNG tự động mở link tải
+          // Hiển thị nút tải xuống để người dùng chủ động click
+
+          // Refresh user data để cập nhật số xu
+          await checkAndSync()
+
+          // Refresh lại trang để cập nhật UI
+          router.refresh()
+        } else {
+          toast.error(result.message || 'Không thể mua bằng Xu')
+        }
+        setPurchasing(false)
       }
     } catch (error) {
-      console.error('Purchase with Xu failed:', error)
+      console.error('Purchase failed:', error)
       toast.error('Có lỗi xảy ra')
-    } finally {
       setPurchasing(false)
     }
   }
@@ -181,6 +242,45 @@ export default function ProductDetailPage() {
   const openPreview = (index: number) => {
     setPreviewIndex(index)
     setPreviewOpen(true)
+  }
+
+  const handleSubmitReview = async () => {
+    if (!token) {
+      toast.error('Vui lòng đăng nhập để đánh giá')
+      router.push('/login')
+      return
+    }
+
+    if (!reviewComment.trim()) {
+      toast.error('Vui lòng nhập nội dung đánh giá')
+      return
+    }
+
+    setSubmittingReview(true)
+    try {
+      const result = await digitalProductApi.submitReview(product!._id, {
+        rating: reviewRating,
+        comment: reviewComment
+      }, token)
+
+      if (result.success) {
+        toast.success('Đánh giá thành công!')
+        setShowReviewModal(false)
+        setReviewRating(5)
+        setReviewComment('')
+        fetchReviews()
+        checkReviewStatus()
+        // Refresh product để cập nhật rating
+        fetchProduct()
+      } else {
+        toast.error(result.message || 'Không thể gửi đánh giá')
+      }
+    } catch (error) {
+      console.error('Submit review failed:', error)
+      toast.error('Có lỗi xảy ra')
+    } finally {
+      setSubmittingReview(false)
+    }
   }
 
   if (loading) {
@@ -211,6 +311,7 @@ export default function ProductDetailPage() {
   const xuPrice = product.enableXuPayment ? Math.floor(product.price / 10) : 0
   const description = product.longDescription || ''
   const isLongDescription = description.length > 300
+  const hasEnoughXu = (user?.coins || 0) >= xuPrice
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-black py-5 md:py-10">
@@ -223,7 +324,6 @@ export default function ProductDetailPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
 
-          {/* Phần ảnh với preview */}
           <div className="space-y-4">
             <div
               className="relative aspect-video bg-white dark:bg-[#171717] rounded-xl overflow-hidden border border-gray-200 dark:border-gray-800 cursor-zoom-in group"
@@ -259,7 +359,6 @@ export default function ProductDetailPage() {
             )}
           </div>
 
-          {/* Thông tin sản phẩm */}
           <div className="space-y-6">
             <div>
               <div className="flex items-center gap-2 mb-3">
@@ -275,8 +374,6 @@ export default function ProductDetailPage() {
               <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-3">
                 {product.name}
               </h1>
-
-              {/* ĐÃ BỎ MÔ TẢ SẢN PHẨM (không hiển thị description ở đây) */}
 
               <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
                 <div className="flex items-center gap-1">
@@ -313,7 +410,6 @@ export default function ProductDetailPage() {
               </div>
             </div>
 
-            {/* Giá và thanh toán */}
             <div className="space-y-4">
               <div>
                 <div className="flex items-center gap-3 mb-2 flex-wrap">
@@ -321,13 +417,21 @@ export default function ProductDetailPage() {
                     {formatPrice(product.price)}
                   </span>
                   {product.enableXuPayment && (
-                    <div className="flex items-center gap-1 text-blue-600 dark:text-blue-400">
+                    <div className={`flex items-center gap-1 ${hasEnoughXu ? 'text-blue-600 dark:text-blue-400' : 'text-red-500'}`}>
                       <CoinsIcon size={20} />
                       <span className="font-semibold">{xuPrice.toLocaleString()} xu</span>
+                      {!hasEnoughXu && user && (
+                        <span className="text-xs ml-1">(Không đủ)</span>
+                      )}
                     </div>
                   )}
                 </div>
                 <p className="text-sm text-gray-500">Đã bao gồm VAT</p>
+                {user && product.enableXuPayment && !hasEnoughXu && (
+                  <p className="text-xs text-red-500 mt-1">
+                    Bạn có {user.coins?.toLocaleString() || 0} xu, cần thêm {(xuPrice - (user?.coins || 0)).toLocaleString()} xu
+                  </p>
+                )}
               </div>
 
               {!isOwnProduct && !purchased ? (
@@ -343,8 +447,11 @@ export default function ProductDetailPage() {
                   {product.enableXuPayment && (
                     <button
                       onClick={handlePurchaseWithXu}
-                      disabled={purchasing}
-                      className="w-full py-3 border-2 border-blue-600 text-blue-600 font-semibold rounded-xl hover:bg-blue-50 dark:hover:bg-blue-950/20 transition disabled:opacity-50"
+                      disabled={purchasing || !hasEnoughXu}
+                      className={`w-full py-3 border-2 font-semibold rounded-xl transition disabled:opacity-50 ${hasEnoughXu
+                        ? 'border-blue-600 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/20'
+                        : 'border-gray-300 text-gray-400 cursor-not-allowed'
+                        }`}
                     >
                       {purchasing ? 'Đang xử lý...' : `Thanh toán Xu (${xuPrice.toLocaleString()} xu)`}
                     </button>
@@ -377,15 +484,15 @@ export default function ProductDetailPage() {
           </div>
         </div>
 
-        {/* Mô tả chi tiết - HIỂN THỊ DESCRIPTION (text thuần, không phải HTML) */}
+        {/* Mô tả chi tiết */}
         {description && (
           <div className="mt-10 lg:mt-12">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Mô tả sản phẩm</h2>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Mô tả chi tiết</h2>
             <div className="bg-white dark:bg-[#171717] rounded-xl p-6 border border-gray-200 dark:border-gray-800">
               <div
                 className="prose prose-sm dark:prose-invert max-w-none leading-relaxed"
                 dangerouslySetInnerHTML={{
-                  __html: (showFullDescription ? description : (isLongDescription ? description.slice(0, 300) + '...' : description))
+                  __html: showFullDescription ? description : (isLongDescription ? description.slice(0, 300) + '...' : description)
                 }}
               />
               {isLongDescription && (
@@ -399,6 +506,67 @@ export default function ProductDetailPage() {
             </div>
           </div>
         )}
+
+        {/* Phần đánh giá */}
+        <div className="mt-10">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Đánh giá sản phẩm</h2>
+            {!isOwnProduct && purchased && !hasReviewed && (
+              <button
+                onClick={() => setShowReviewModal(true)}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+              >
+                Viết đánh giá
+              </button>
+            )}
+          </div>
+
+          {reviews.length === 0 ? (
+            <div className="bg-white dark:bg-[#171717] rounded-xl p-8 text-center border border-gray-200 dark:border-gray-800">
+              <p className="text-gray-500">Chưa có đánh giá nào.</p>
+              {purchased && !hasReviewed && (
+                <button
+                  onClick={() => setShowReviewModal(true)}
+                  className="mt-3 text-blue-600 hover:underline"
+                >
+                  Hãy là người đầu tiên đánh giá sản phẩm này!
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {reviews.map((review) => (
+                <div key={review._id} className="bg-white dark:bg-[#171717] rounded-xl p-5 border border-gray-200 dark:border-gray-800">
+                  <div className="flex items-center gap-3 mb-2">
+                    <Avatar className="w-10 h-10">
+                      <AvatarImage src={review.user?.avatar || '/images/avatar.png'} />
+                      <AvatarFallback>{review.user?.fullName?.charAt(0) || 'U'}</AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="font-semibold text-gray-900 dark:text-white">
+                        {review.user?.fullName || 'Người dùng'}
+                      </p>
+                      <div className="flex items-center gap-1">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <Star
+                            key={star}
+                            size={14}
+                            data-filled={star <= review.rating ? true : false}
+                            className={star <= review.rating ? 'text-yellow-400 fill-current' : 'text-gray-300'}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                    <span className="ml-auto text-xs text-gray-500">
+                      {formatDate(review.createdAt)}
+                    </span>
+                  </div>
+                  <p className="text-gray-700 dark:text-gray-300 mt-2">{review.comment}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
 
         {/* Tính năng nổi bật */}
         {product.features && product.features.length > 0 && (
@@ -429,21 +597,108 @@ export default function ProductDetailPage() {
             </div>
           </div>
         )}
+      </div>
 
-        {/* Tags */}
-        {product.tags && product.tags.length > 0 && (
-          <div className="mt-8">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Thẻ liên quan</h2>
-            <div className="flex flex-wrap gap-2">
-              {product.tags.map((tag, idx) => (
-                <span key={idx} className="px-3 py-1.5 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg text-sm">
-                  #{tag}
-                </span>
-              ))}
+      {/* Modal xác nhận mua hàng */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 z-[10000] bg-black/50 flex items-center justify-center">
+          <div className="bg-white dark:bg-[#171717] rounded-xl w-full max-w-md mx-4 overflow-hidden">
+            <div className="flex justify-between items-center p-5 border-b border-gray-200 dark:border-gray-800">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Xác nhận mua hàng
+              </h3>
+              <button onClick={() => setShowConfirmModal(false)} className="p-1 hover:bg-gray-100 rounded-lg">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-5">
+              <p className="text-gray-700 dark:text-gray-300">
+                Bạn có chắc chắn muốn mua sản phẩm <strong>{product?.name}</strong>?
+              </p>
+              {pendingPurchaseType === 'xu' && (
+                <p className="mt-2 text-blue-600">
+                  Số xu sẽ trừ: <strong>{xuPrice.toLocaleString()} xu</strong>
+                </p>
+              )}
+            </div>
+            <div className="flex gap-3 p-5 pt-0">
+              <button
+                onClick={() => setShowConfirmModal(false)}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={confirmPurchase}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+              >
+                Xác nhận
+              </button>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
+
+      {/* Modal đánh giá */}
+      {showReviewModal && (
+        <div className="fixed inset-0 z-[10000] bg-black/50 flex items-center justify-center">
+          <div className="bg-white dark:bg-[#171717] rounded-xl w-full max-w-md mx-4 overflow-hidden">
+            <div className="flex justify-between items-center p-5 border-b border-gray-200 dark:border-gray-800">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Đánh giá sản phẩm
+              </h3>
+              <button onClick={() => setShowReviewModal(false)} className="p-1 hover:bg-gray-100 rounded-lg">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-5 space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">Đánh giá của bạn</label>
+                <div className="flex gap-2">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      onClick={() => setReviewRating(star)}
+                      className="focus:outline-none"
+                    >
+                      <Star
+                        data-filled={true}
+                        size={28}
+                        className={star <= reviewRating ? 'text-yellow-400 fill-current' : 'text-gray-300'}
+                      />
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">Nội dung đánh giá</label>
+                <textarea
+                  value={reviewComment}
+                  onChange={(e) => setReviewComment(e.target.value)}
+                  rows={4}
+                  placeholder="Chia sẻ cảm nhận của bạn về sản phẩm..."
+                  className="w-full px-4 py-2 border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+            <div className="flex gap-3 p-5 pt-0">
+              <button
+                onClick={() => setShowReviewModal(false)}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={handleSubmitReview}
+                disabled={submittingReview || !reviewComment.trim()}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
+              >
+                {submittingReview ? 'Đang gửi...' : 'Gửi đánh giá'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal preview ảnh */}
       {previewOpen && (

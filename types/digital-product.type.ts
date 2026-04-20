@@ -55,3 +55,17 @@ export interface IPaymentResponse {
   }
   message: string
 }
+
+export interface IReview {
+  _id: string;
+  user: {
+    _id: string;
+    fullName: string;
+    email: string;
+    avatar?: string;
+  };
+  rating: number;
+  comment: string;
+  createdAt: string;
+  updatedAt: string;
+}

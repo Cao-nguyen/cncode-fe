@@ -31,15 +31,26 @@ const BASE_URL =
     'http://localhost:5000';
 
 export function SocketProvider({ children }: { children: ReactNode }) {
-    const { user, token } = useAuthStore();
+    const { user, token, isOnboarded } = useAuthStore();
     const socketRef = useRef<Socket | null>(null);
     const [socketState, setSocketState] = useState<Socket | null>(null);
     const [isConnected, setIsConnected] = useState(false);
     const [socketId, setSocketId] = useState<string | undefined>(undefined);
+    const registeredRef = useRef(false);
 
     useEffect(() => {
-        if (!token || !user) return; 
+        // Chỉ kết nối khi có token VÀ đã onboard VÀ có user.id
+        if (!token || !isOnboarded || !user?.id) {
+            console.log('Socket not connecting - missing requirements');
+            return;
+        }
 
+        if (socketRef.current?.connected) {
+            console.log('Socket already connected');
+            return;
+        }
+
+        console.log('Creating socket connection...');
         const instance = io(BASE_URL, {
             auth: { token },
             transports: ['websocket', 'polling'],
@@ -52,15 +63,18 @@ export function SocketProvider({ children }: { children: ReactNode }) {
         socketRef.current = instance;
 
         instance.on('connect', () => {
+            console.log('Socket connected:', instance.id);
             setIsConnected(true);
             setSocketId(instance.id);
             setSocketState(instance);
-            instance.emit('register', user.id);
+            registeredRef.current = false;
         });
 
         instance.on('disconnect', () => {
+            console.log('Socket disconnected');
             setIsConnected(false);
             setSocketId(undefined);
+            registeredRef.current = false;
         });
 
         instance.on('connect_error', (error) => {
@@ -69,17 +83,27 @@ export function SocketProvider({ children }: { children: ReactNode }) {
         });
 
         return () => {
-            instance.off('connect');
-            instance.off('disconnect');
-            instance.off('connect_error');
-            instance.disconnect();
-            socketRef.current = null;
-            
+            if (socketRef.current) {
+                socketRef.current.disconnect();
+                socketRef.current = null;
+            }
             setSocketState(null);
             setIsConnected(false);
             setSocketId(undefined);
+            registeredRef.current = false;
         };
-    }, [token, user]);
+    }, [token, isOnboarded, user?.id]);
+
+    // Register user sau khi connected
+    useEffect(() => {
+        if (!socketState || !isConnected) return;
+        if (!user?.id) return;
+        if (registeredRef.current) return;
+
+        console.log('Registering user:', user.id);
+        socketState.emit('register', { userId: user.id });
+        registeredRef.current = true;
+    }, [socketState, isConnected, user?.id]);
 
     const value = useMemo<SocketContextType>(
         () => ({ socket: socketState, isConnected, socketId }),
