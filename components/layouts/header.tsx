@@ -27,7 +27,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useAuthStore } from "@/store/auth.store";
 import { toast } from "sonner";
-import { useLayoutEffect, useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 
 const formatNumber = (num: number) => {
     return new Intl.NumberFormat("en", {
@@ -143,19 +143,12 @@ export default function Header() {
     const pathname = usePathname();
     const { setTheme, theme } = useTheme();
     const router = useRouter();
-    const { user, logout, token, coins, checkAndSync } = useAuthStore();
+    const { user, logout, token, coins } = useAuthStore();
     const [mounted, setMounted] = useState(false);
 
-    useLayoutEffect(() => {
+    useEffect(() => {
         setMounted(true);
     }, []);
-
-    // 👇 Thêm useEffect này để sync coins
-    useEffect(() => {
-        if (token) {
-            checkAndSync();
-        }
-    }, [token, checkAndSync]);
 
     const handleLogout = () => {
         logout();
@@ -186,22 +179,18 @@ export default function Header() {
         { title: "Cửa hàng", link: "/cuahangso", icon: Cuahangso },
     ];
 
-    const displayUser = user && token
-        ? {
-            fullname: user.fullName || 'Người dùng',
-            avatar: user.avatar || "/images/avatar.png",
-            role: user.role || 'user',
-        }
-        : null;
+    const displayUser = user && token ? {
+        fullname: user.fullName || 'Người dùng',
+        avatar: user.avatar || "/images/avatar.png",
+        role: user.role || 'user',
+    } : null;
 
-    const displayCoins = coins ?? 0;
-    const displayStreak = user?.streak ?? 0;
-
-    if (!mounted) return null;
+    const displayCoins = displayUser ? (coins ?? 0) : 0;
+    const displayStreak = displayUser ? (user?.streak ?? 0) : 0;
 
     return (
         <>
-
+            {/* Desktop */}
             <div className="hidden lg:block bg-white dark:bg-black w-full h-15 fixed top-0 z-50">
                 <div className="flex h-full justify-between items-center">
                     <div className="ml-1.5 lg:ml-4">
@@ -234,26 +223,41 @@ export default function Header() {
                     </div>
 
                     <div className="mr-1.5 lg:mr-4 flex gap-3 items-center">
-                        <button onClick={() => setTheme(theme === "dark" ? "light" : "dark")} className="p-1">
-                            <Sun size={20} className="hidden dark:block text-white" />
-                            <Moon size={20} className="block dark:hidden" />
+                        {/* Theme toggle — chỉ render sau khi mounted để tránh flicker */}
+                        <button
+                            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                            className="p-1"
+                        >
+                            {mounted ? (
+                                theme === "dark"
+                                    ? <Sun size={20} className="text-white" />
+                                    : <Moon size={20} />
+                            ) : (
+                                <Moon size={20} />
+                            )}
                         </button>
 
-                        <div className="flex items-center gap-5 mr-1">
-                            <div className="relative flex items-center">
-                                <div className="border border-gray-400 dark:border-gray-600 rounded-2xl pl-2 pr-4 py-0.5">
-                                    <p className="text-blue-500 dark:text-blue-300 text-[12px] font-medium">{formatNumber(displayCoins)}</p>
+                        {displayUser && (
+                            <div className="flex items-center gap-5 mr-1">
+                                <div className="relative flex items-center">
+                                    <div className="border border-gray-400 dark:border-gray-600 rounded-2xl pl-2 pr-4 py-0.5">
+                                        <p className="text-blue-500 dark:text-blue-300 text-[12px] font-medium">
+                                            {formatNumber(displayCoins)}
+                                        </p>
+                                    </div>
+                                    <Image src="/icons/coins.svg" alt="Coins" width={25} height={25} className="absolute -right-3" />
                                 </div>
-                                <Image src="/icons/coins.svg" alt="Coins" width={25} height={25} className="absolute -right-3" />
-                            </div>
 
-                            <div className="relative flex items-center">
-                                <div className="border border-gray-400 dark:border-gray-600 rounded-2xl pl-2 pr-5 py-0.5">
-                                    <p className="text-blue-500 dark:text-blue-300 text-[12px] font-medium">{formatNumber(displayStreak)}</p>
+                                <div className="relative flex items-center">
+                                    <div className="border border-gray-400 dark:border-gray-600 rounded-2xl pl-2 pr-5 py-0.5">
+                                        <p className="text-blue-500 dark:text-blue-300 text-[12px] font-medium">
+                                            {formatNumber(displayStreak)}
+                                        </p>
+                                    </div>
+                                    <Image src="/icons/streak.svg" alt="Streak" width={27} height={27} className="absolute -right-3" />
                                 </div>
-                                <Image src="/icons/streak.svg" alt="Streak" width={27} height={27} className="absolute -right-3" />
                             </div>
-                        </div>
+                        )}
 
                         <NotificationBell />
 
@@ -270,7 +274,10 @@ export default function Header() {
                                 <UserDropdown user={displayUser} onLogout={handleLogout} />
                             </DropdownMenu>
                         ) : (
-                            <Link href="/login" className="bg-black text-white dark:bg-white dark:text-black px-3 py-1.5 rounded-[10px] font-bold text-[14px]">
+                            <Link
+                                href="/login"
+                                className="bg-black text-white dark:bg-white dark:text-black px-3 py-1.5 rounded-[10px] font-bold text-[14px]"
+                            >
                                 Đăng nhập
                             </Link>
                         )}
@@ -278,7 +285,7 @@ export default function Header() {
                 </div>
             </div>
 
-
+            {/* Mobile top bar */}
             <div className="lg:hidden fixed top-0 w-full h-10 bg-white dark:bg-black z-50 border-b border-gray-200 dark:border-gray-800">
                 <div className="flex h-full justify-between items-center px-1.5">
                     <Link href="/">
@@ -287,25 +294,36 @@ export default function Header() {
 
                     <div className="flex gap-3 items-center">
                         <button onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
-                            <Sun size={18} className="hidden dark:block text-white" />
-                            <Moon size={18} className="block dark:hidden" />
+                            {mounted ? (
+                                theme === "dark"
+                                    ? <Sun size={18} className="text-white" />
+                                    : <Moon size={18} />
+                            ) : (
+                                <Moon size={18} />
+                            )}
                         </button>
 
-                        <div className="flex items-center gap-3">
-                            <div className="relative flex items-center">
-                                <div className="border border-gray-400 dark:border-gray-600 rounded-2xl pl-2 pr-4 py-0.5">
-                                    <p className="text-blue-500 dark:text-blue-300 text-[10px] font-medium">{formatNumber(displayCoins)}</p>
+                        {displayUser && (
+                            <div className="flex items-center gap-3">
+                                <div className="relative flex items-center">
+                                    <div className="border border-gray-400 dark:border-gray-600 rounded-2xl pl-2 pr-4 py-0.5">
+                                        <p className="text-blue-500 dark:text-blue-300 text-[10px] font-medium">
+                                            {formatNumber(displayCoins)}
+                                        </p>
+                                    </div>
+                                    <Image src="/icons/coins.svg" alt="Coins" width={20} height={20} className="absolute -right-2.5" />
                                 </div>
-                                <Image src="/icons/coins.svg" alt="Coins" width={20} height={20} className="absolute -right-2.5" />
-                            </div>
 
-                            <div className="relative flex items-center">
-                                <div className="border border-gray-400 dark:border-gray-600 rounded-2xl pl-2 pr-5 py-0.5">
-                                    <p className="text-blue-500 dark:text-blue-300 text-[10px] font-medium">{formatNumber(displayStreak)}</p>
+                                <div className="relative flex items-center">
+                                    <div className="border border-gray-400 dark:border-gray-600 rounded-2xl pl-2 pr-5 py-0.5">
+                                        <p className="text-blue-500 dark:text-blue-300 text-[10px] font-medium">
+                                            {formatNumber(displayStreak)}
+                                        </p>
+                                    </div>
+                                    <Image src="/icons/streak.svg" alt="Streak" width={22} height={22} className="absolute -right-2.5" />
                                 </div>
-                                <Image src="/icons/streak.svg" alt="Streak" width={22} height={22} className="absolute -right-2.5" />
                             </div>
-                        </div>
+                        )}
 
                         <NotificationBell />
 
@@ -320,7 +338,10 @@ export default function Header() {
                                 <UserDropdown user={displayUser} onLogout={handleLogout} />
                             </DropdownMenu>
                         ) : (
-                            <Link href="/login" className="bg-black text-white dark:bg-white dark:text-black px-2 py-1 rounded-[10px] font-bold text-[10px]">
+                            <Link
+                                href="/login"
+                                className="bg-black text-white dark:bg-white dark:text-black px-2 py-1 rounded-[10px] font-bold text-[10px]"
+                            >
                                 Đăng nhập
                             </Link>
                         )}
@@ -328,7 +349,7 @@ export default function Header() {
                 </div>
             </div>
 
-
+            {/* Mobile bottom nav */}
             <div className="lg:hidden fixed bottom-0 left-0 w-full z-50">
                 <div className="w-full h-14 bg-white dark:bg-black border-t border-gray-200 dark:border-gray-800 rounded-t-2xl shadow-[0_-4px_20px_rgba(0,0,0,0.15)] flex items-center px-2">
                     {menuMobile.map((m) => {

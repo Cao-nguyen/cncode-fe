@@ -1,26 +1,51 @@
 "use client";
 
+import { useState, useEffect, useLayoutEffect } from "react";
+import { useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
+
+import { useAuthStore } from "@/store/auth.store";
 import Sidebar from "@/components/layouts/sidebar";
 import NavAdmin from "@/components/layouts/nav-admin";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { useSelector } from "react-redux";
-import { selectUser, selectIsLoaded } from "@/store/userSlice";
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
+export default function AdminLayout({
+    children,
+}: {
+    children: React.ReactNode;
+}) {
     const router = useRouter();
-    const user = useSelector(selectUser);
-    const isLoaded = useSelector(selectIsLoaded);
+    const { user, token, checkAndSync } = useAuthStore();
+    const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [mounted, setMounted] = useState(false);
 
-    if (!isLoaded) {
+    // useLayoutEffect chạy đồng bộ trước paint, không vi phạm eslint rule
+    // vì nó không gây cascading render như useEffect
+    useLayoutEffect(() => {
+        setMounted(true);
+    }, []);
+
+    // ── sync user từ token nếu chưa có ──────────────────────────
+    useEffect(() => {
+        if (token && !user) checkAndSync();
+    }, [token, user, checkAndSync]);
+
+    // ── responsive: desktop mở sẵn, mobile đóng ─────────────────
+    useEffect(() => {
+        const handle = () => setSidebarOpen(window.innerWidth >= 1024);
+        handle();
+        window.addEventListener("resize", handle);
+        return () => window.removeEventListener("resize", handle);
+    }, []);
+
+    if (!mounted) {
         return (
-            <div className="flex items-center justify-center h-screen">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+            <div className="flex h-screen items-center justify-center bg-white dark:bg-black">
+                <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
             </div>
         );
     }
 
-    if (!user) {
+    if (!token || !user) {
         router.push("/login");
         return null;
     }
@@ -30,21 +55,23 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         return null;
     }
 
-    return <AdminLayoutUI>{children}</AdminLayoutUI>;
-}
-
-function AdminLayoutUI({ children }: { children: React.ReactNode }) {
-    const [open, setOpen] = useState(false);
-
     return (
-        <div className="relative overflow-x-hidden h-screen">
-            <Sidebar open={open} />
-
-            <div className={`transition-all duration-300 ${open ? "ml-0 w-full" : "ml-[17%] w-[83%]"}`}>
-                <div className="m-2.5 rounded-3xl h-[calc(100vh-20px)] bg-[#EEEEEE] dark:bg-[#171717] p-2.5">
-                    <NavAdmin setOpen={setOpen} open={open} />
-                    <div className="m-[10px_0px] h-[0.5px] w-full bg-black/20 dark:bg-white/30" />
-                    {children}
+        <div className="min-h-screen bg-gray-100 dark:bg-[#0a0a0a]">
+            <Sidebar
+                open={sidebarOpen}
+                onClose={() => setSidebarOpen(false)}
+            />
+            <div
+                className={`flex min-h-screen flex-col transition-[padding-left] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${sidebarOpen ? "lg:pl-64" : "lg:pl-0"
+                    }`}
+            >
+                <div className="m-2.5 flex min-h-[calc(100vh-20px)] flex-col rounded-2xl bg-white shadow-sm ring-1 ring-black/[0.06] dark:bg-[#0f0f0f] dark:ring-white/[0.06]">
+                    <NavAdmin
+                        open={sidebarOpen}
+                        onToggle={() => setSidebarOpen((v) => !v)}
+                    />
+                    <div className="h-px w-full bg-black/[0.06] dark:bg-white/[0.06]" />
+                    <main className="flex-1 p-4 lg:p-6">{children}</main>
                 </div>
             </div>
         </div>

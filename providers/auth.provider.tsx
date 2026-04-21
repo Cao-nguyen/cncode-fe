@@ -1,43 +1,26 @@
 "use client";
 
-import { useEffect } from "react";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { setUser, logout, selectIsLoaded } from "@/store/userSlice";
-import axiosInstance from "@/lib/axiosInstance";
+import { useEffect, useState } from "react";
+import { useAuthStore } from "@/store/auth.store";
 
 export default function AuthProvider({ children }: { children: React.ReactNode }) {
-    const dispatch = useAppDispatch();
-    const isLoaded = useAppSelector(selectIsLoaded);
+    const checkAndSync = useAuthStore((state) => state.checkAndSync)
+    const token = useAuthStore((state) => state.token)
+    const user = useAuthStore((state) => state.user)
+    const [ready, setReady] = useState(false);
 
     useEffect(() => {
-        const fetchUser = async () => {
-            const token = localStorage.getItem("token");
-
-            if (!token) {
-                return;
+        const init = async () => {
+            if (token && !user) {
+                await checkAndSync();
             }
-
-            try {
-                
-                const response = await axiosInstance.get("/api/user/me");
-                if (response.data.success && response.data.data) {
-                    dispatch(setUser({
-                        user: response.data.data,
-                        token: token,
-                    }));
-                } else {
-                    dispatch(logout());
-                }
-            } catch (error) {
-                console.error("Failed to fetch user:", error);
-                dispatch(logout());
-            }
+            setReady(true);
         };
+        init();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []); // Chỉ chạy 1 lần khi mount
 
-        if (!isLoaded) {
-            fetchUser();
-        }
-    }, [dispatch, isLoaded]);
+    if (!ready) return null;
 
     return <>{children}</>;
 }

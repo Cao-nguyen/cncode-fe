@@ -1,11 +1,14 @@
 export interface INotification {
-    type: 'comment' | 'reaction_comment' | 'like_post';
+    type: 'comment' | 'reaction_comment' | 'like_post' | 'reply_comment' | 'bookmark';
     postId: string;
+    postSlug?: string;
     postTitle?: string;
     commentId?: string;
     reactionType?: string;
     userName?: string;
+    userId?: string;
     content?: string;
+    recipientId?: string;
     createdAt?: string;
 }
 

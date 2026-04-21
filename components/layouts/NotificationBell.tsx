@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Bell, MessageCircle, Heart, ThumbsUp } from 'lucide-react';
+import { Bell, MessageCircle, Heart, ThumbsUp, Bookmark } from 'lucide-react';
 import { useSocket } from '@/providers/socket.provider';
 import { useAuthStore } from '@/store/auth.store';
 import {
@@ -12,11 +12,10 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { INotification } from '@/types/notification.type';
 import Link from 'next/link';
-import { toast } from 'sonner';
 
-interface Notification {
+interface NotificationItem {
     id: string;
-    type: 'comment' | 'reaction_comment' | 'like_post';
+    type: 'comment' | 'reaction_comment' | 'like_post' | 'reply_comment' | 'bookmark';
     postSlug: string;
     postTitle: string;
     commentId?: string;
@@ -46,8 +45,8 @@ function formatTime(dateString: string): string {
     return new Date(dateString).toLocaleDateString('vi-VN');
 }
 
-function getNotificationContent(notification: Notification) {
-    if (notification.type === 'comment') {
+function getNotificationContent(notification: NotificationItem) {
+    if (notification.type === 'comment' || notification.type === 'reply_comment') {
         return (
             <div className="flex items-start gap-3">
                 <div className="bg-blue-100 dark:bg-blue-900/30 p-2 rounded-full shrink-0">
@@ -56,7 +55,7 @@ function getNotificationContent(notification: Notification) {
                 <div className="flex-1 min-w-0">
                     <p className="text-sm">
                         <span className="font-semibold">{notification.userName}</span>{' '}
-                        đã bình luận về bài viết{' '}
+                        {notification.type === 'reply_comment' ? 'đã trả lời bình luận của bạn' : 'đã bình luận'} về bài viết{' '}
                         <span className="font-medium">{notification.postTitle}</span>
                     </p>
                     {notification.content && (
@@ -88,26 +87,48 @@ function getNotificationContent(notification: Notification) {
         );
     }
 
-    return (
-        <div className="flex items-start gap-3">
-            <div className="bg-purple-100 dark:bg-purple-900/30 p-2 rounded-full shrink-0">
-                <Heart size={16} className="text-purple-600" />
+    if (notification.type === 'reaction_comment') {
+        return (
+            <div className="flex items-start gap-3">
+                <div className="bg-purple-100 dark:bg-purple-900/30 p-2 rounded-full shrink-0">
+                    <Heart size={16} className="text-purple-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                    <p className="text-sm">
+                        <span className="font-semibold">{notification.userName}</span>{' '}
+                        đã {REACTION_NAMES[notification.reactionType || 'like']} bình luận của bạn
+                    </p>
+                    <p className="text-xs text-gray-400 mt-1">{formatTime(notification.createdAt)}</p>
+                </div>
             </div>
-            <div className="flex-1 min-w-0">
-                <p className="text-sm">
-                    <span className="font-semibold">{notification.userName}</span>{' '}
-                    đã {REACTION_NAMES[notification.reactionType || 'like']} bình luận của bạn
-                </p>
-                <p className="text-xs text-gray-400 mt-1">{formatTime(notification.createdAt)}</p>
+        );
+    }
+
+    if (notification.type === 'bookmark') {
+        return (
+            <div className="flex items-start gap-3">
+                <div className="bg-yellow-100 dark:bg-yellow-900/30 p-2 rounded-full shrink-0">
+                    <Bookmark size={16} className="text-yellow-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                    <p className="text-sm">
+                        <span className="font-semibold">{notification.userName}</span>{' '}
+                        đã lưu bài viết của bạn{' '}
+                        <span className="font-medium">{notification.postTitle}</span>
+                    </p>
+                    <p className="text-xs text-gray-400 mt-1">{formatTime(notification.createdAt)}</p>
+                </div>
             </div>
-        </div>
-    );
+        );
+    }
+
+    return null;
 }
 
-function loadNotifications(userId: string): Notification[] {
+function loadNotifications(userId: string): NotificationItem[] {
     try {
         const saved = localStorage.getItem(`notifications_${userId}`);
-        return saved ? (JSON.parse(saved) as Notification[]) : [];
+        return saved ? JSON.parse(saved) : [];
     } catch {
         return [];
     }
@@ -115,7 +136,7 @@ function loadNotifications(userId: string): Notification[] {
 
 function NotificationBellInner({ userId }: { userId: string }) {
     const { socket, isConnected } = useSocket();
-    const [notifications, setNotifications] = useState<Notification[]>(() =>
+    const [notifications, setNotifications] = useState<NotificationItem[]>(() =>
         loadNotifications(userId),
     );
     const [unreadCount, setUnreadCount] = useState<number>(
@@ -124,24 +145,24 @@ function NotificationBellInner({ userId }: { userId: string }) {
     const [open, setOpen] = useState(false);
 
     useEffect(() => {
-        console.log('NotificationBell - Socket state:', { socket: !!socket, isConnected, userId });
+        console.log('🔔 NotificationBell - Socket state:', { socket: !!socket, isConnected, userId });
     }, [socket, isConnected, userId]);
 
     useEffect(() => {
         if (!socket || !isConnected) {
-            console.log('NotificationBell - Socket not ready');
+            console.log('🔕 NotificationBell - Socket not ready');
             return;
         }
 
-        console.log('NotificationBell - Listening for notifications');
+        console.log('🔔 NotificationBell - Setting up notification listener');
 
         const handleNewNotification = (data: INotification) => {
-            console.log('🔔 Received notification:', data);
+            console.log('🔔🔔🔔 FRONTEND RECEIVED NOTIFICATION:', data);
 
-            const newNotification: Notification = {
+            const newNotification: NotificationItem = {
                 id: crypto.randomUUID(),
                 type: data.type,
-                postSlug: data.postId || '',
+                postSlug: data.postSlug || data.postId || '',
                 postTitle: data.postTitle || '',
                 userName: data.userName || 'Người dùng',
                 commentId: data.commentId,
@@ -158,8 +179,22 @@ function NotificationBellInner({ userId }: { userId: string }) {
             });
             setUnreadCount((prev) => prev + 1);
 
-            // Hiển thị toast thông báo
-            toast.info(`${newNotification.userName} đã tương tác với bài viết của bạn`);
+            let message = '';
+            if (data.type === 'like_post') {
+                message = `${data.userName} đã thích bài viết "${data.postTitle}"`;
+            } else if (data.type === 'comment') {
+                message = `${data.userName} đã bình luận về bài viết "${data.postTitle}"`;
+            } else if (data.type === 'reply_comment') {
+                message = `${data.userName} đã trả lời bình luận của bạn`;
+            } else if (data.type === 'reaction_comment') {
+                message = `${data.userName} đã phản ứng bình luận của bạn`;
+            } else if (data.type === 'bookmark') {
+                message = `${data.userName} đã lưu bài viết "${data.postTitle}"`;
+            }
+
+            if (message) {
+                console.log("success")
+            }
         };
 
         socket.on('new_notification', handleNewNotification);
@@ -247,7 +282,7 @@ function NotificationBellInner({ userId }: { userId: string }) {
 
 export default function NotificationBell() {
     const { user } = useAuthStore();
-    console.log('NotificationBell - User:', user?.id);
+    console.log('🔔 NotificationBell - User:', user?.id);
     if (!user?.id) return null;
     return <NotificationBellInner userId={user.id} />;
 }

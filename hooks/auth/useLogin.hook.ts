@@ -7,7 +7,7 @@ import { IGoogleLoginResponse } from '@/types/auth.type'
 
 export const useLogin = () => {
   const router = useRouter()
-  const { setUser, setToken, setIsOnboarded } = useAuthStore()
+  const { setAuth } = useAuthStore()
   const [checking, setChecking] = useState(true)
 
   useEffect(() => {
@@ -20,8 +20,7 @@ export const useLogin = () => {
           })
           if (response.ok) {
             const result = await response.json()
-            setUser(result.data)
-            setToken(token)
+            setAuth(result.data, token)
             if (!result.data.isOnboarded) {
               router.push('/onboarding')
             } else {
@@ -36,7 +35,7 @@ export const useLogin = () => {
       setChecking(false)
     }
     checkAuth()
-  }, [router, setUser, setToken, setIsOnboarded])
+  }, [router, setAuth])
 
   const handleGoogleSuccess = useCallback(async (response: CredentialResponse) => {
     try {
@@ -49,9 +48,7 @@ export const useLogin = () => {
       const result: IGoogleLoginResponse = await res.json()
 
       if (result.success) {
-        setUser(result.data.user)
-        setToken(result.data.token)
-        localStorage.setItem('token', result.data.token)
+        setAuth(result.data.user, result.data.token)
 
         if (result.data.isNewUser) {
           toast.success('Chào mừng bạn đến với CNcode!', {
@@ -66,10 +63,8 @@ export const useLogin = () => {
         }
 
         if (result.data.isNewUser || !result.data.user.isOnboarded) {
-          setIsOnboarded(false)
           router.push('/onboarding')
         } else {
-          setIsOnboarded(true)
           router.push('/')
         }
       }
@@ -80,7 +75,7 @@ export const useLogin = () => {
         duration: 3000,
       })
     }
-  }, [router, setUser, setToken, setIsOnboarded])
+  }, [router, setAuth])
 
   const handleGoogleError = useCallback(() => {
     toast.error('Đăng nhập thất bại', {

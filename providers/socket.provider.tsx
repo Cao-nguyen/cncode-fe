@@ -39,50 +39,63 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     const registeredRef = useRef(false);
 
     useEffect(() => {
-        // Chỉ kết nối khi có token VÀ đã onboard VÀ có user.id
         if (!token || !isOnboarded || !user?.id) {
-            console.log('Socket not connecting - missing requirements');
+            console.log('🔌 Socket not connecting - missing requirements', {
+                hasToken: !!token,
+                isOnboarded,
+                hasUserId: !!user?.id
+            });
             return;
         }
 
         if (socketRef.current?.connected) {
-            console.log('Socket already connected');
+            console.log('🔌 Socket already connected');
             return;
         }
 
-        console.log('Creating socket connection...');
+        console.log('🔌 Creating socket connection...', BASE_URL);
+
         const instance = io(BASE_URL, {
             auth: { token },
             transports: ['websocket', 'polling'],
             autoConnect: true,
             reconnection: true,
-            reconnectionAttempts: 5,
-            reconnectionDelay: 2000,
+            reconnectionAttempts: 10,
+            reconnectionDelay: 1000,
+            reconnectionDelayMax: 5000,
+            timeout: 20000,
         });
 
         socketRef.current = instance;
 
         instance.on('connect', () => {
-            console.log('Socket connected:', instance.id);
+            console.log('✅ Socket connected:', instance.id);
             setIsConnected(true);
             setSocketId(instance.id);
             setSocketState(instance);
             registeredRef.current = false;
         });
 
-        instance.on('disconnect', () => {
-            console.log('Socket disconnected');
+        instance.on('disconnect', (reason) => {
+            console.log('❌ Socket disconnected:', reason);
             setIsConnected(false);
             setSocketId(undefined);
             registeredRef.current = false;
         });
 
         instance.on('connect_error', (error) => {
-            console.error('Socket error:', error.message);
+            console.error('⚠️ Socket connection error:', error.message);
             setIsConnected(false);
         });
 
+        instance.on('reconnect', (attemptNumber) => {
+            console.log('🔄 Socket reconnected after', attemptNumber, 'attempts');
+            setIsConnected(true);
+            registeredRef.current = false;
+        });
+
         return () => {
+            console.log('🔌 Cleaning up socket connection');
             if (socketRef.current) {
                 socketRef.current.disconnect();
                 socketRef.current = null;
@@ -94,15 +107,26 @@ export function SocketProvider({ children }: { children: ReactNode }) {
         };
     }, [token, isOnboarded, user?.id]);
 
-    // Register user sau khi connected
     useEffect(() => {
         if (!socketState || !isConnected) return;
-        if (!user?.id) return;
+        if (!user?.id) {
+            console.log('⚠️ Cannot register: no user.id');
+            return;
+        }
         if (registeredRef.current) return;
 
-        console.log('Registering user:', user.id);
-        socketState.emit('register', { userId: user.id });
+        console.log('📝 Registering user with socket:', user.id);
+
+        // ✅ Gửi userId, sessionId có thể null — server không chặn nữa
+        socketState.emit('register', {
+            userId: user.id,
+            sessionId: null  // httpOnly cookie không đọc được từ JS, server xử lý ok
+        });
         registeredRef.current = true;
+
+        socketState.once('registered', (data) => {
+            console.log('✅ User registered successfully:', data);
+        });
     }, [socketState, isConnected, user?.id]);
 
     const value = useMemo<SocketContextType>(

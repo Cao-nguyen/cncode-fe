@@ -4,7 +4,6 @@ import { useState, useRef, useEffect } from 'react';
 import { Check, MoreHorizontal, Trash2, Flag, Pencil, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/store/auth.store';
-import { useSocket } from '@/providers/socket.provider';
 import { IComment, IPost, IReactions } from '@/types/post.type';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -71,7 +70,6 @@ export default function CommentItem({
     isChild = false,
 }: CommentItemProps) {
     const { user, token } = useAuthStore();
-    const { socket } = useSocket();
     const [showReplyInput, setShowReplyInput] = useState(false);
     const [replyContent, setReplyContent] = useState('');
     const [showReactionPopup, setShowReactionPopup] = useState(false);
@@ -81,7 +79,6 @@ export default function CommentItem({
     const [selectedReason, setSelectedReason] = useState('');
     const [reporting, setReporting] = useState(false);
 
-    
     const [isEditing, setIsEditing] = useState(false);
     const [editContent, setEditContent] = useState(comment.content);
     const [editSubmitting, setEditSubmitting] = useState(false);
@@ -102,7 +99,6 @@ export default function CommentItem({
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    
     const getUserId = (u: { _id?: string; id?: string } | null | undefined): string | undefined => {
         if (!u) return undefined;
         return u._id || u.id;
@@ -119,7 +115,6 @@ export default function CommentItem({
 
     const totalReactions = getTotalReactions(localReactions);
 
-    
     const canDelete = !!(user && (
         currentUserId === commentUserId ||
         currentUserId === postAuthorId ||
@@ -136,6 +131,7 @@ export default function CommentItem({
         const key = type as ReactionKey;
         const hasReacted = localReactions[key]?.includes(currentUserId);
 
+        // Optimistic update
         setLocalReactions((prev) => {
             const next = { ...prev };
             if (hasReacted) {
@@ -152,22 +148,9 @@ export default function CommentItem({
         setShowReactionPopup(false);
 
         try {
+            // ✅ Chỉ gọi REST API - backend tự emit socket notification
             await postApi.toggleCommentReaction(post._id, comment._id, type, token);
             await onCommentUpdated();
-
-            
-            if (socket && socket.connected && commentUserId && commentUserId !== currentUserId) {
-                socket.emit('notification:reaction_comment', {
-                    postId: post._id,
-                    postTitle: post.title,
-                    recipientId: commentUserId,
-                    userId: currentUserId,
-                    userName: user.fullName,
-                    reactionType: type,
-                    commentId: comment._id
-                });
-                console.log('📤 Emitted reaction notification');
-            }
         } catch {
             toast.error('Có lỗi xảy ra');
             setLocalReactions(comment.reactions);
@@ -184,28 +167,12 @@ export default function CommentItem({
         setSubmitting(true);
         try {
             const rootId = comment.parentId ?? comment._id;
+            // ✅ Chỉ gọi REST API - backend tự emit socket notification
             await postApi.addComment(post._id, replyContent, token, rootId);
             setReplyContent('');
             setShowReplyInput(false);
             await onCommentUpdated();
             toast.success('Đã thêm phản hồi');
-
-            
-            if (socket && socket.connected) {
-                const recipientId = comment.parentId ? commentUserId : postAuthorId;
-                if (recipientId && recipientId !== currentUserId) {
-                    socket.emit('notification:comment', {
-                        postId: post._id,
-                        postTitle: post.title,
-                        recipientId: recipientId,
-                        userId: currentUserId,
-                        userName: user?.fullName,
-                        content: replyContent,
-                        commentId: rootId
-                    });
-                    console.log('📤 Emitted comment notification');
-                }
-            }
         } catch {
             toast.error('Có lỗi xảy ra');
         } finally {

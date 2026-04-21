@@ -4,7 +4,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Heart, MessageCircle, Bookmark } from 'lucide-react';
 import { toast } from 'sonner';
-import { useSocket } from '@/providers/socket.provider';
 import { useAuthStore } from '@/store/auth.store';
 
 interface BlogSidebarProps {
@@ -34,7 +33,6 @@ export default function BlogSidebar({
     onLike,
     onComment,
 }: BlogSidebarProps) {
-    const { socket } = useSocket();
     const { user } = useAuthStore();
 
     const handleLike = async () => {
@@ -43,19 +41,8 @@ export default function BlogSidebar({
             return;
         }
         if (onLike) {
+            // ✅ Chỉ gọi REST API - backend tự emit socket notification
             await onLike();
-
-            
-            if (socket && socket.connected && postId && authorId && user.id !== authorId) {
-                socket.emit('notification:like_post', {
-                    postId,
-                    postTitle: postTitle || 'bài viết',
-                    recipientId: authorId,
-                    userId: user.id,
-                    userName: user.fullName
-                });
-                console.log('📤 Emitted like notification');
-            }
         }
     };
 
