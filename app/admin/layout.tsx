@@ -18,18 +18,14 @@ export default function AdminLayout({
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [mounted, setMounted] = useState(false);
 
-    // useLayoutEffect chạy đồng bộ trước paint, không vi phạm eslint rule
-    // vì nó không gây cascading render như useEffect
     useLayoutEffect(() => {
         setMounted(true);
     }, []);
 
-    // ── sync user từ token nếu chưa có ──────────────────────────
     useEffect(() => {
         if (token && !user) checkAndSync();
     }, [token, user, checkAndSync]);
 
-    // ── responsive: desktop mở sẵn, mobile đóng ─────────────────
     useEffect(() => {
         const handle = () => setSidebarOpen(window.innerWidth >= 1024);
         handle();
@@ -57,21 +53,21 @@ export default function AdminLayout({
 
     return (
         <div className="min-h-screen bg-gray-100 dark:bg-[#0a0a0a]">
-            <Sidebar
-                open={sidebarOpen}
-                onClose={() => setSidebarOpen(false)}
-            />
+            <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+
             <div
                 className={`flex min-h-screen flex-col transition-[padding-left] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${sidebarOpen ? "lg:pl-64" : "lg:pl-0"
                     }`}
             >
-                <div className="m-2.5 flex min-h-[calc(100vh-20px)] flex-col rounded-2xl bg-white shadow-sm ring-1 ring-black/[0.06] dark:bg-[#0f0f0f] dark:ring-white/[0.06]">
+                <div className="m-2.5 flex h-[calc(100vh-20px)] flex-col rounded-2xl bg-white shadow-sm ring-1 ring-black/[0.06] dark:bg-[#0f0f0f] dark:ring-white/[0.06]">
                     <NavAdmin
                         open={sidebarOpen}
                         onToggle={() => setSidebarOpen((v) => !v)}
                     />
                     <div className="h-px w-full bg-black/[0.06] dark:bg-white/[0.06]" />
-                    <main className="flex-1 p-4 lg:p-6">{children}</main>
+                    <main className="flex-1 overflow-y-auto p-4 lg:p-6 scroll-auto no-scrollbar">
+                        {children}
+                    </main>
                 </div>
             </div>
         </div>

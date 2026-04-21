@@ -7,6 +7,19 @@ body {
   overscroll-behavior: none;
 }
 
+.transition-sidebar {
+  transition-property: padding-left;
+  transition-duration: 300ms;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Hardware acceleration cho mượt hơn */
+.sidebar-container {
+  will-change: padding-left;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
 .no-download {
   user-select: none;
   -webkit-user-drag: none;
