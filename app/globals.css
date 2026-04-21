@@ -7,6 +7,75 @@ body {
   overscroll-behavior: none;
 }
 
+/* app/globals.css - thêm vào cuối file */
+
+/* MathJax styling */
+.MathJax {
+  font-size: 1.1em;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 8px 0;
+}
+
+mjx-container {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 8px 0;
+}
+
+/* Dark mode cho MathJax */
+.dark mjx-container {
+  color: #e5e7eb;
+}
+
+/* Responsive cho công thức toán */
+@media (max-width: 768px) {
+  mjx-container {
+    font-size: 0.9em;
+  }
+}
+
+pre[class*="language-"] {
+  background: #1e1e1e !important;
+  border-radius: 8px !important;
+  padding: 16px !important;
+  font-family: 'Fira Code', 'Cascadia Code', 'Consolas', monospace !important;
+  font-size: 13px !important;
+  line-height: 1.5 !important;
+  overflow-x: auto !important;
+}
+
+code[class*="language-"] {
+  font-family: 'Fira Code', 'Cascadia Code', 'Consolas', monospace !important;
+  font-size: 13px !important;
+  tab-size: 2 !important;
+}
+
+/* Dark mode cho code */
+.dark pre[class*="language-"] {
+  background: #0d1117 !important;
+  border: 1px solid #30363d !important;
+}
+
+/* Light mode cho code */
+:root:not(.dark) pre[class*="language-"] {
+  background: #f6f8fa !important;
+  border: 1px solid #e1e4e8 !important;
+}
+
+/* Toolbar icons màu sắc */
+.tox-toolbar__group button {
+  border-radius: 4px !important;
+}
+
+.tox-toolbar__group button:hover {
+  background-color: #e2e8f0 !important;
+}
+
+.dark .tox-toolbar__group button:hover {
+  background-color: #334155 !important;
+}
+
 .transition-sidebar {
   transition-property: padding-left;
   transition-duration: 300ms;

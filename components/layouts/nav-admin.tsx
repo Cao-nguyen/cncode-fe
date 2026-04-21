@@ -13,6 +13,12 @@ const PAGE_TITLES: Record<string, string> = {
     "/admin/roles": "Phân quyền",
     "/admin/violate": "Vi phạm",
     "/admin/coins": "Quản lí xu",
+    "/admin/gioithieu": "Giới thiệu",
+    "/admin/chinhsachbaohanh": "Chính sách bảo hành",
+    "/admin/huongdanthanhtoan": "Hướng dẫn thanh toán",
+    "/admin/quytrinhsudung": "Quy trình sử dụng",
+    "/admin/antoanbaomat": "An toàn bảo mật",
+    "/admin/dieukhoansudung": "Điều khoản sử dụng",
 };
 
 interface NavAdminProps {

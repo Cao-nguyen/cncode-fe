@@ -17,7 +17,7 @@ const LINKS = [
             { href: "/chatwithadmin", label: "Liên hệ admin" },
             { href: "/chinhsachbaohanh", label: "Chính sách bảo hành" },
             { href: "/huongdanthanhtoan", label: "Hướng dẫn thanh toán" },
-            { href: "/quytrinhsudungdichvu", label: "Quy trình sử dụng" },
+            { href: "/quytrinhsudung", label: "Quy trình sử dụng" },
         ],
     },
     {

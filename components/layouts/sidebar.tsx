@@ -14,6 +14,7 @@ import {
     ChevronDown,
     X,
     EllipsisVertical,
+    Settings,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -81,6 +82,42 @@ const menuItems = [
                         className="h-[18px] w-[18px]"
                     />
                 ),
+            },
+        ],
+    },
+    {
+        category: "Chính sách",
+        categoryId: "chinhsach",
+        listLink: [
+            {
+                title: "Giới thiệu",
+                link: "/admin/gioithieu",
+                icon: <Settings size={18} />,
+            },
+            {
+                title: "Chính sách bảo hành",
+                link: "/admin/chinhsachbaohanh",
+                icon: <Settings size={18} />,
+            },
+            {
+                title: "Hướng dẫn thanh toán",
+                link: "/admin/huongdanthanhtoan",
+                icon: <Settings size={18} />,
+            },
+            {
+                title: "Quy trình sử dụng",
+                link: "/admin/quytrinhsudung",
+                icon: <Settings size={18} />,
+            },
+            {
+                title: "An toàn bảo mật",
+                link: "/admin/antoanbaomat",
+                icon: <Settings size={18} />,
+            },
+            {
+                title: "Điều khoản sử dụng",
+                link: "/admin/dieukhoansudung",
+                icon: <Settings size={18} />,
             },
         ],
     },
