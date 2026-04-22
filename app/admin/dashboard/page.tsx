@@ -16,9 +16,7 @@ import {
     Eye,
     TrendingUp,
     Star,
-    Download,
-    ChevronLeft,
-    ChevronRight
+    Download
 } from 'lucide-react';
 import {
     LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
@@ -30,7 +28,8 @@ import { IAdminDashboard, ICategoryStat } from '@/types/dashboard.type';
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'];
 
-// Định nghĩa type cho payload của tooltip
+type TimeRange = 'today' | 'week' | 'month' | 'year';
+
 interface TooltipPayloadItem {
     name: string;
     value: number;
@@ -57,7 +56,6 @@ interface CustomTooltipProps {
     label?: string;
 }
 
-// Custom tooltip component
 const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
     if (active && payload && payload.length) {
         return (
@@ -81,7 +79,6 @@ const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
     return null;
 };
 
-// Custom tooltip cho PieChart
 const CustomPieTooltip = ({ active, payload }: CustomTooltipProps) => {
     if (active && payload && payload.length) {
         const data = payload[0]?.payload;
@@ -106,7 +103,6 @@ const CustomPieTooltip = ({ active, payload }: CustomTooltipProps) => {
     return null;
 };
 
-// Custom label cho PieChart
 const renderCustomizedLabel = (props: PieLabelRenderProps) => {
     const { cx, cy, midAngle, outerRadius, payload } = props;
 
@@ -124,7 +120,6 @@ const renderCustomizedLabel = (props: PieLabelRenderProps) => {
     const x = Number(cx) + radius * Math.cos(-Number(midAngle) * RADIAN);
     const y = Number(cy) + radius * Math.sin(-Number(midAngle) * RADIAN);
 
-    // Ẩn label trên mobile nếu không đủ chỗ
     if (typeof window !== 'undefined' && window.innerWidth < 768) {
         return null;
     }
@@ -148,6 +143,7 @@ export default function AdminDashboardPage() {
     const [dashboard, setDashboard] = useState<IAdminDashboard | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
     const [isMobile, setIsMobile] = useState<boolean>(false);
+    const [timeRange, setTimeRange] = useState<TimeRange>('month');
 
     useEffect(() => {
         const checkMobile = () => {
@@ -178,12 +174,66 @@ export default function AdminDashboardPage() {
         fetchDashboard();
     }, [fetchDashboard]);
 
+    // Lọc dữ liệu theo thời gian
+    const getFilteredData = () => {
+        if (!dashboard) return null;
+
+        const now = new Date();
+        let filteredRevenue = dashboard.charts.revenue;
+        let filteredUserGrowth = dashboard.charts.userGrowth;
+        let filteredContent = dashboard.charts.content;
+
+        if (timeRange === 'today') {
+            // Chỉ lấy dữ liệu hôm nay
+            const todayStr = now.toLocaleDateString('vi-VN');
+            filteredRevenue = dashboard.charts.revenue.filter(item => item.month.includes(todayStr));
+            filteredUserGrowth = dashboard.charts.userGrowth.filter(item => item.month.includes(todayStr));
+            filteredContent = dashboard.charts.content.filter(item => item.month.includes(todayStr));
+        } else if (timeRange === 'week') {
+            // Lấy 7 ngày gần nhất
+            filteredRevenue = dashboard.charts.revenue.slice(-7);
+            filteredUserGrowth = dashboard.charts.userGrowth.slice(-7);
+            filteredContent = dashboard.charts.content.slice(-7);
+        } else if (timeRange === 'month') {
+            // Lấy 30 ngày gần nhất
+            filteredRevenue = dashboard.charts.revenue.slice(-30);
+            filteredUserGrowth = dashboard.charts.userGrowth.slice(-30);
+            filteredContent = dashboard.charts.content.slice(-30);
+        } else if (timeRange === 'year') {
+            // Lấy 12 tháng
+            filteredRevenue = dashboard.charts.revenue;
+            filteredUserGrowth = dashboard.charts.userGrowth;
+            filteredContent = dashboard.charts.content;
+        }
+
+        return {
+            ...dashboard,
+            charts: {
+                revenue: filteredRevenue,
+                userGrowth: filteredUserGrowth,
+                content: filteredContent
+            }
+        };
+    };
+
+    const filteredDashboard = getFilteredData();
+
     const formatCurrency = (value: number): string => {
         return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
     };
 
     const formatNumber = (value: number): string => {
         return new Intl.NumberFormat('vi-VN').format(value);
+    };
+
+    const getTimeRangeLabel = (range: TimeRange): string => {
+        switch (range) {
+            case 'today': return 'Hôm nay';
+            case 'week': return 'Tuần này';
+            case 'month': return 'Tháng này';
+            case 'year': return 'Năm này';
+            default: return 'Tháng này';
+        }
     };
 
     if (loading) {
@@ -194,7 +244,7 @@ export default function AdminDashboardPage() {
         );
     }
 
-    if (!dashboard) {
+    if (!dashboard || !filteredDashboard) {
         return (
             <div className="text-center py-12">
                 <p className="text-gray-500 dark:text-gray-400 text-sm sm:text-base">Không thể tải dữ liệu</p>
@@ -209,83 +259,82 @@ export default function AdminDashboardPage() {
     }
 
     return (
-        <div className="space-y-4 sm:space-y-6">
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="space-y-4 sm:space-y-6 pb-20">
+            {/* Header với bộ lọc thời gian */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sticky top-0 bg-gray-100 dark:bg-[#0a0a0a] z-10 py-2">
                 <div>
                     <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Tổng quan</h1>
                     <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-0.5 sm:mt-1">
                         Phân tích toàn bộ hoạt động của nền tảng
                     </p>
                 </div>
-                <div className="flex items-center gap-2">
-                    <button className="px-2 py-1 sm:px-3 sm:py-1.5 text-xs sm:text-sm bg-gray-100 dark:bg-gray-800 rounded-lg">
-                        Hôm nay
-                    </button>
-                    <button className="px-2 py-1 sm:px-3 sm:py-1.5 text-xs sm:text-sm bg-gray-100 dark:bg-gray-800 rounded-lg">
-                        Tuần này
-                    </button>
-                    <button className="px-2 py-1 sm:px-3 sm:py-1.5 text-xs sm:text-sm bg-blue-600 text-white rounded-lg">
-                        Tháng này
-                    </button>
+                <div className="flex items-center gap-1 sm:gap-2 bg-white dark:bg-[#1c1c1c] rounded-lg p-1 shadow-sm">
+                    {(['today', 'week', 'month', 'year'] as TimeRange[]).map((range) => (
+                        <button
+                            key={range}
+                            onClick={() => setTimeRange(range)}
+                            className={`px-2 py-1 sm:px-3 sm:py-1.5 text-xs sm:text-sm rounded-md transition ${timeRange === range
+                                ? 'bg-blue-600 text-white'
+                                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                                }`}
+                        >
+                            {getTimeRangeLabel(range)}
+                        </button>
+                    ))}
                 </div>
             </div>
 
-            {/* Stats Cards - Responsive Grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
+            {/* Stats Cards - Grid 2 cột trên mobile */}
+            <div className="grid grid-cols-2 gap-3 sm:gap-5">
                 <StatsCard
                     title="Tổng người dùng"
-                    value={dashboard.overview.users.total}
+                    value={filteredDashboard.overview.users.total}
                     icon={Users}
-                    subtitle={`+${formatNumber(dashboard.overview.users.thisMonth)} tháng này`}
+                    subtitle={`+${formatNumber(filteredDashboard.overview.users.thisMonth)} tháng này`}
                     subtitleColor="green"
                     color="blue"
                 />
                 <StatsCard
                     title="Doanh thu"
-                    value={dashboard.overview.revenue.total}
+                    value={filteredDashboard.overview.revenue.total}
                     icon={DollarSign}
-                    subtitle={`+${formatCurrency(dashboard.overview.revenue.thisMonth)} tháng này`}
+                    subtitle={`+${formatCurrency(filteredDashboard.overview.revenue.thisMonth)} tháng này`}
                     subtitleColor="green"
                     color="green"
                 />
                 <StatsCard
                     title="Sản phẩm"
-                    value={dashboard.overview.content.products.published}
+                    value={filteredDashboard.overview.content.products.published}
                     icon={Package}
-                    subtitle={`+${dashboard.overview.content.products.newThisMonth} mới`}
+                    subtitle={`+${filteredDashboard.overview.content.products.newThisMonth} mới`}
                     subtitleColor="blue"
                     color="purple"
                 />
                 <StatsCard
                     title="Bài viết"
-                    value={dashboard.overview.content.posts.published}
+                    value={filteredDashboard.overview.content.posts.published}
                     icon={FileText}
-                    subtitle={`+${dashboard.overview.content.posts.newThisMonth} mới`}
+                    subtitle={`+${filteredDashboard.overview.content.posts.newThisMonth} mới`}
                     subtitleColor="blue"
                     color="orange"
                 />
-            </div>
-
-            {/* Stats Cards Row 2 */}
-            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
                 <StatsCard
                     title="Giáo viên"
-                    value={dashboard.overview.users.teachers}
+                    value={filteredDashboard.overview.users.teachers}
                     icon={UserPlus}
                     color="teal"
                 />
                 <StatsCard
                     title="Đơn hàng"
-                    value={dashboard.overview.revenue.totalOrders}
+                    value={filteredDashboard.overview.revenue.totalOrders}
                     icon={ShoppingBag}
-                    subtitle={`+${formatNumber(dashboard.overview.revenue.ordersThisMonth)} tháng này`}
+                    subtitle={`+${formatNumber(filteredDashboard.overview.revenue.ordersThisMonth)} tháng này`}
                     subtitleColor="green"
                     color="indigo"
                 />
                 <StatsCard
                     title="Người dùng hoạt động"
-                    value={dashboard.overview.users.activeToday}
+                    value={filteredDashboard.overview.users.activeToday}
                     icon={Activity}
                     subtitle="Hôm nay"
                     subtitleColor="blue"
@@ -293,7 +342,7 @@ export default function AdminDashboardPage() {
                 />
                 <StatsCard
                     title="Xu tiêu thụ"
-                    value={dashboard.overview.revenue.xuSpentThisMonth}
+                    value={filteredDashboard.overview.revenue.xuSpentThisMonth}
                     icon={TrendingUp}
                     subtitle="Tháng này"
                     subtitleColor="blue"
@@ -301,7 +350,7 @@ export default function AdminDashboardPage() {
                 />
             </div>
 
-            {/* Biểu đồ doanh thu - Responsive */}
+            {/* Biểu đồ doanh thu */}
             <div className="bg-white dark:bg-[#1c1c1c] rounded-xl p-3 sm:p-5 shadow-sm border border-gray-200 dark:border-gray-800">
                 <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-3 sm:mb-4">
                     Biểu đồ doanh thu
@@ -309,7 +358,7 @@ export default function AdminDashboardPage() {
                 <div className="w-full overflow-x-auto">
                     <div className="min-w-[500px] sm:min-w-full">
                         <ResponsiveContainer width="100%" height={300}>
-                            <LineChart data={dashboard.charts.revenue}>
+                            <LineChart data={filteredDashboard.charts.revenue}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                                 <XAxis
                                     dataKey="month"
@@ -361,7 +410,7 @@ export default function AdminDashboardPage() {
                 </div>
             </div>
 
-            {/* Biểu đồ tăng trưởng người dùng và nội dung - Stack on mobile */}
+            {/* Biểu đồ tăng trưởng người dùng và nội dung */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                 <div className="bg-white dark:bg-[#1c1c1c] rounded-xl p-3 sm:p-5 shadow-sm border border-gray-200 dark:border-gray-800">
                     <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-3 sm:mb-4">
@@ -370,7 +419,7 @@ export default function AdminDashboardPage() {
                     <div className="w-full overflow-x-auto">
                         <div className="min-w-[400px] sm:min-w-full">
                             <ResponsiveContainer width="100%" height={280}>
-                                <AreaChart data={dashboard.charts.userGrowth}>
+                                <AreaChart data={filteredDashboard.charts.userGrowth}>
                                     <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                                     <XAxis
                                         dataKey="month"
@@ -419,7 +468,7 @@ export default function AdminDashboardPage() {
                     <div className="w-full overflow-x-auto">
                         <div className="min-w-[400px] sm:min-w-full">
                             <ResponsiveContainer width="100%" height={280}>
-                                <BarChart data={dashboard.charts.content}>
+                                <BarChart data={filteredDashboard.charts.content}>
                                     <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                                     <XAxis
                                         dataKey="month"
@@ -480,7 +529,7 @@ export default function AdminDashboardPage() {
                         </ResponsiveContainer>
                     </div>
 
-                    <div className="space-y-2 sm:space-y-3 overflow-x-auto">
+                    <div className="space-y-2 sm:space-y-3">
                         {dashboard.categoryStats.map((cat: ICategoryStat, idx: number) => (
                             <div key={cat._id} className="flex items-center justify-between p-2 sm:p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
                                 <div className="flex items-center gap-2 sm:gap-3">
@@ -506,11 +555,11 @@ export default function AdminDashboardPage() {
                 </div>
             </div>
 
-            {/* Top sản phẩm và bài viết - Stack on mobile */}
+            {/* Top sản phẩm và bài viết - HIỂN THỊ ĐẦY ĐỦ TÊN */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                 {/* Top sản phẩm */}
                 <div className="bg-white dark:bg-[#1c1c1c] rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden">
-                    <div className="p-3 sm:p-5 border-b border-gray-200 dark:border-gray-800">
+                    <div className="p-3 sm:p-5 border-b border-gray-200 dark:border-gray-800 sticky top-0 bg-white dark:bg-[#1c1c1c] z-10">
                         <div className="flex items-center gap-2">
                             <Package size={isMobile ? 16 : 20} className="text-purple-500" />
                             <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
@@ -518,25 +567,25 @@ export default function AdminDashboardPage() {
                             </h2>
                         </div>
                     </div>
-                    <div className="divide-y divide-gray-200 dark:divide-gray-800 max-h-[400px] overflow-y-auto">
-                        {dashboard.topProducts.slice(0, isMobile ? 5 : 10).map((product, idx: number) => (
+                    <div className="divide-y divide-gray-200 dark:divide-gray-800 max-h-[500px] overflow-y-auto">
+                        {dashboard.topProducts.map((product, idx: number) => (
                             <div key={product._id} className="p-3 sm:p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition">
-                                <div className="flex items-center gap-2 sm:gap-3">
-                                    <div className="w-6 h-6 sm:w-8 sm:h-8 bg-blue-100 dark:bg-blue-950 rounded-full flex items-center justify-center font-bold text-blue-600 dark:text-blue-400 text-xs sm:text-sm">
+                                <div className="flex items-start gap-2 sm:gap-3">
+                                    <div className="w-6 h-6 sm:w-8 sm:h-8 bg-blue-100 dark:bg-blue-950 rounded-full flex items-center justify-center font-bold text-blue-600 dark:text-blue-400 text-xs sm:text-sm flex-shrink-0">
                                         {idx + 1}
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <p className="font-medium text-gray-900 dark:text-white text-sm sm:text-base line-clamp-1">
+                                        <p className="font-medium text-gray-900 dark:text-white text-sm sm:text-base break-words">
                                             {product.name}
                                         </p>
                                         <div className="flex flex-wrap gap-2 sm:gap-3 text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5 sm:mt-1">
-                                            <span className="flex items-center gap-0.5 sm:gap-1">
+                                            <span className="flex items-center gap-0.5 sm:gap-1 whitespace-nowrap">
                                                 <Download size={isMobile ? 10 : 12} /> {formatNumber(product.downloadCount)} lượt tải
                                             </span>
-                                            <span className="flex items-center gap-0.5 sm:gap-1">
+                                            <span className="flex items-center gap-0.5 sm:gap-1 whitespace-nowrap">
                                                 <Star size={isMobile ? 10 : 12} /> {product.rating.toFixed(1)}
                                             </span>
-                                            <span>{formatCurrency(product.price)}</span>
+                                            <span className="whitespace-nowrap">{formatCurrency(product.price)}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -550,7 +599,7 @@ export default function AdminDashboardPage() {
 
                 {/* Top bài viết */}
                 <div className="bg-white dark:bg-[#1c1c1c] rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden">
-                    <div className="p-3 sm:p-5 border-b border-gray-200 dark:border-gray-800">
+                    <div className="p-3 sm:p-5 border-b border-gray-200 dark:border-gray-800 sticky top-0 bg-white dark:bg-[#1c1c1c] z-10">
                         <div className="flex items-center gap-2">
                             <FileText size={isMobile ? 16 : 20} className="text-orange-500" />
                             <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
@@ -558,25 +607,25 @@ export default function AdminDashboardPage() {
                             </h2>
                         </div>
                     </div>
-                    <div className="divide-y divide-gray-200 dark:divide-gray-800 max-h-[400px] overflow-y-auto">
-                        {dashboard.topPosts.slice(0, isMobile ? 5 : 10).map((post, idx: number) => (
+                    <div className="divide-y divide-gray-200 dark:divide-gray-800 max-h-[500px] overflow-y-auto">
+                        {dashboard.topPosts.map((post, idx: number) => (
                             <div key={post._id} className="p-3 sm:p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition">
                                 <div className="flex items-start gap-2 sm:gap-3">
-                                    <div className="w-6 h-6 sm:w-8 sm:h-8 bg-orange-100 dark:bg-orange-950 rounded-full flex items-center justify-center font-bold text-orange-600 dark:text-orange-400 text-xs sm:text-sm">
+                                    <div className="w-6 h-6 sm:w-8 sm:h-8 bg-orange-100 dark:bg-orange-950 rounded-full flex items-center justify-center font-bold text-orange-600 dark:text-orange-400 text-xs sm:text-sm flex-shrink-0">
                                         {idx + 1}
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <p className="font-medium text-gray-900 dark:text-white text-sm sm:text-base line-clamp-1">
+                                        <p className="font-medium text-gray-900 dark:text-white text-sm sm:text-base break-words">
                                             {post.title}
                                         </p>
                                         <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5 sm:mt-1">
                                             Bởi {post.author?.fullName || 'Unknown'}
                                         </p>
                                         <div className="flex flex-wrap gap-2 sm:gap-3 text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5 sm:mt-1">
-                                            <span className="flex items-center gap-0.5 sm:gap-1">
+                                            <span className="flex items-center gap-0.5 sm:gap-1 whitespace-nowrap">
                                                 <Eye size={isMobile ? 10 : 12} /> {formatNumber(post.views)} lượt xem
                                             </span>
-                                            <span className="flex items-center gap-0.5 sm:gap-1">
+                                            <span className="flex items-center gap-0.5 sm:gap-1 whitespace-nowrap">
                                                 <Activity size={isMobile ? 10 : 12} /> {formatNumber(post.likes)} thích
                                             </span>
                                         </div>
