@@ -1,7 +1,15 @@
 'use client';
 
-import { useEffect } from 'react';
-import { X } from 'lucide-react';
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogDescription,
+    DialogFooter,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Loader2 } from 'lucide-react';
 
 interface ConfirmDialogProps {
     isOpen: boolean;
@@ -11,7 +19,8 @@ interface ConfirmDialogProps {
     message: string;
     confirmText?: string;
     cancelText?: string;
-    confirmVariant?: 'danger' | 'primary';
+    isConfirmLoading?: boolean;
+    isDestructive?: boolean;
 }
 
 export default function ConfirmDialog({
@@ -22,57 +31,40 @@ export default function ConfirmDialog({
     message,
     confirmText = 'Xóa',
     cancelText = 'Hủy',
-    confirmVariant = 'danger'
+    isConfirmLoading = false,
+    isDestructive = true,
 }: ConfirmDialogProps) {
-    useEffect(() => {
-        if (isOpen) {
-            document.body.style.overflow = 'hidden';
-        } else {
-            document.body.style.overflow = 'unset';
-        }
-        return () => {
-            document.body.style.overflow = 'unset';
-        };
-    }, [isOpen]);
-
-    if (!isOpen) return null;
-
-    const confirmButtonClass = confirmVariant === 'danger'
-        ? 'flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors'
-        : 'flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors';
-
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 animate-in fade-in duration-200">
-            <div className="bg-white dark:bg-[#171717] rounded-xl w-full max-w-md mx-4 overflow-hidden animate-in zoom-in-95 duration-200">
-                <div className="flex justify-between items-center p-5 border-b border-gray-200 dark:border-gray-800">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{title}</h3>
-                    <button
+        <Dialog open={isOpen} onOpenChange={onClose}>
+            <DialogContent className="sm:max-w-md rounded-2xl">
+                <DialogHeader>
+                    <DialogTitle>{title}</DialogTitle>
+                    <DialogDescription>{message}</DialogDescription>
+                </DialogHeader>
+                <DialogFooter className="gap-2 sm:gap-2">
+                    <Button
+                        variant="outline"
                         onClick={onClose}
-                        className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-                    >
-                        <X size={20} className="text-gray-500" />
-                    </button>
-                </div>
-
-                <div className="p-5">
-                    <p className="text-gray-600 dark:text-gray-400">{message}</p>
-                </div>
-
-                <div className="flex gap-3 p-5 pt-0">
-                    <button
-                        onClick={onClose}
-                        className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                        disabled={isConfirmLoading}
                     >
                         {cancelText}
-                    </button>
-                    <button
+                    </Button>
+                    <Button
+                        variant={isDestructive ? 'destructive' : 'default'}
                         onClick={onConfirm}
-                        className={confirmButtonClass}
+                        disabled={isConfirmLoading}
                     >
-                        {confirmText}
-                    </button>
-                </div>
-            </div>
-        </div>
+                        {isConfirmLoading ? (
+                            <>
+                                <Loader2 size={16} className="animate-spin mr-2" />
+                                Đang xử lý...
+                            </>
+                        ) : (
+                            confirmText
+                        )}
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     );
 }

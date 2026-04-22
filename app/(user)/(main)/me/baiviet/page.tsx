@@ -26,7 +26,7 @@ const getStatusBadge = (status: string) => {
 };
 
 export default function MyPostsPage() {
-    const { token, user } = useAuthStore();
+    const { token } = useAuthStore();
     const [posts, setPosts] = useState<IPost[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -197,6 +197,7 @@ export default function MyPostsPage() {
                                             <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500 dark:text-gray-400 mt-3">
                                                 <span>Lượt xem: {post.views?.toLocaleString() || 0}</span>
                                                 <span>Lượt thích: {post.likes?.toLocaleString() || 0}</span>
+                                                <span>Danh mục: {post.category || 'Chưa phân loại'}</span>
                                                 <span>Ngày đăng: {post.createdAt ? new Date(post.createdAt).toLocaleDateString('vi-VN') : 'Không rõ'}</span>
                                             </div>
 
