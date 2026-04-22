@@ -23,6 +23,7 @@ import {
     XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
     AreaChart, Area
 } from 'recharts';
+import type { PieLabelRenderProps } from 'recharts';
 import { IAdminDashboard, ICategoryStat } from '@/types/dashboard.type';
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'];
@@ -52,23 +53,6 @@ interface CustomTooltipProps {
     active?: boolean;
     payload?: TooltipPayloadItem[];
     label?: string;
-}
-
-// Định nghĩa type cho props của renderCustomizedLabel
-interface PieLabelRenderProps {
-    cx: number;
-    cy: number;
-    midAngle: number;
-    innerRadius: number;
-    outerRadius: number;
-    percent: number;
-    index: number;
-    payload: {
-        _id: string;
-        count: number;
-        totalDownloads: number;
-        avgRating: number;
-    };
 }
 
 // Custom tooltip component cho LineChart, AreaChart, BarChart
@@ -120,24 +104,36 @@ const CustomPieTooltip = ({ active, payload }: CustomTooltipProps) => {
     return null;
 };
 
-// Custom label cho PieChart - ĐÃ FIX LỖI TYPE
+// Custom label cho PieChart - SỬ DỤNG ĐÚNG TYPE TỪ RECHARTS
 const renderCustomizedLabel = (props: PieLabelRenderProps) => {
     const { cx, cy, midAngle, outerRadius, payload } = props;
+
+    // Kiểm tra các giá trị có tồn tại không
+    if (cx === undefined || cy === undefined || midAngle === undefined || outerRadius === undefined) {
+        return null;
+    }
+
+    // Kiểm tra payload có đúng format không
+    const data = payload as unknown as { _id: string; count: number };
+    if (!data || !data._id) {
+        return null;
+    }
+
     const RADIAN = Math.PI / 180;
-    const radius = outerRadius * 1.1;
-    const x = cx + radius * Math.cos(-midAngle * RADIAN);
-    const y = cy + radius * Math.sin(-midAngle * RADIAN);
+    const radius = Number(outerRadius) * 1.1;
+    const x = Number(cx) + radius * Math.cos(-Number(midAngle) * RADIAN);
+    const y = Number(cy) + radius * Math.sin(-Number(midAngle) * RADIAN);
 
     return (
         <text
             x={x}
             y={y}
             fill="#888888"
-            textAnchor={x > cx ? 'start' : 'end'}
+            textAnchor={x > Number(cx) ? 'start' : 'end'}
             dominantBaseline="central"
             className="text-xs"
         >
-            {`${payload._id}: ${payload.count}`}
+            {`${data._id}: ${data.count}`}
         </text>
     );
 };
