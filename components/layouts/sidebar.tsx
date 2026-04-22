@@ -72,8 +72,8 @@ const menuItems = [
                 icon: <ShieldX size={18} />,
             },
             {
-                title: "Quản lí xu",
-                link: "/admin/coins",
+                title: "Quản lí giao dịch",
+                link: "/admin/chitietgiaodich",
                 icon: (
                     <img
                         src="/icons/coins.svg"

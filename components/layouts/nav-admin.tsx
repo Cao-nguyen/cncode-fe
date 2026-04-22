@@ -21,6 +21,7 @@ const PAGE_TITLES: Record<string, string> = {
     "/admin/antoanbaomat": "An toàn bảo mật",
     "/admin/dieukhoansudung": "Điều khoản sử dụng",
     "/admin/blog": "Bài viết",
+    "/admin/chitietgiaodich": "Giao dịch",
 };
 
 interface NavAdminProps {
