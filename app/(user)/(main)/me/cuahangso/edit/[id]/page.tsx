@@ -12,7 +12,9 @@ import Image from 'next/image';
 import TinyMCEEditor from '@/components/common/TinyMCEEditor';
 import ConfirmDialog from '@/components/common/ConfirmDialog';
 
-const CATEGORIES = [
+type ProductCategory = 'powerpoint' | 'code' | 'design' | 'document';
+
+const CATEGORIES: { id: ProductCategory; name: string; color: string }[] = [
     { id: 'powerpoint', name: 'PowerPoint', color: 'orange' },
     { id: 'code', name: 'Code', color: 'blue' },
     { id: 'design', name: 'Design', color: 'purple' },
@@ -22,7 +24,7 @@ const CATEGORIES = [
 interface ProductForm {
     name: string;
     longDescription: string;
-    category: string;
+    category: ProductCategory;
     originalPrice: number;
     salePrice: number;
     enableXuPayment: boolean;
@@ -79,7 +81,7 @@ export default function EditProductPage() {
                 setFormData({
                     name: product.name || '',
                     longDescription: product.longDescription || '',
-                    category: product.category || 'powerpoint',
+                    category: (product.category as ProductCategory) || 'powerpoint',
                     originalPrice: product.originalPrice || 0,
                     salePrice: product.price || 0,
                     enableXuPayment: product.enableXuPayment ?? true,
@@ -153,7 +155,6 @@ export default function EditProductPage() {
             toast.error('Upload ảnh thất bại');
         } finally {
             setUploadingImage(false);
-            e.target.value = '';
         }
     };
 
@@ -384,7 +385,7 @@ export default function EditProductPage() {
                         </div>
                     </div>
 
-                    {/* Hình ảnh sản phẩm - Ảnh đầu tiên là thumbnail */}
+                    {/* Hình ảnh sản phẩm */}
                     <div className="bg-white dark:bg-[#171717] rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden">
                         <div className="p-6 border-b border-gray-200 dark:border-gray-800">
                             <div className="flex items-center gap-2">
