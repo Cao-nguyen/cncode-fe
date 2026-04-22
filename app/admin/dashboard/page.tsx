@@ -16,7 +16,9 @@ import {
     Eye,
     TrendingUp,
     Star,
-    Download
+    Download,
+    ChevronLeft,
+    ChevronRight
 } from 'lucide-react';
 import {
     LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
@@ -55,12 +57,12 @@ interface CustomTooltipProps {
     label?: string;
 }
 
-// Custom tooltip component cho LineChart, AreaChart, BarChart
+// Custom tooltip component
 const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
     if (active && payload && payload.length) {
         return (
-            <div className="bg-white dark:bg-gray-800 p-3 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
-                <p className="font-semibold text-sm mb-1">{label}</p>
+            <div className="bg-white dark:bg-gray-800 p-2 sm:p-3 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 text-xs sm:text-sm">
+                <p className="font-semibold mb-1">{label}</p>
                 {payload.map((item, idx) => {
                     const isRevenue = item.name === 'revenue' || item.name === 'Doanh thu';
                     const formattedValue = isRevenue
@@ -68,7 +70,7 @@ const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
                         : new Intl.NumberFormat('vi-VN').format(item.value);
 
                     return (
-                        <p key={idx} className="text-sm" style={{ color: item.color }}>
+                        <p key={idx} className="text-xs sm:text-sm" style={{ color: item.color }}>
                             {item.name}: {formattedValue}
                         </p>
                     );
@@ -86,9 +88,9 @@ const CustomPieTooltip = ({ active, payload }: CustomTooltipProps) => {
         const value = payload[0]?.value;
         if (data && value !== undefined) {
             return (
-                <div className="bg-white dark:bg-gray-800 p-3 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
-                    <p className="font-semibold text-sm mb-1 capitalize">{String(data._id || '')}</p>
-                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                <div className="bg-white dark:bg-gray-800 p-2 sm:p-3 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
+                    <p className="font-semibold text-xs sm:text-sm mb-1 capitalize">{String(data._id || '')}</p>
+                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300">
                         Số lượng: {new Intl.NumberFormat('vi-VN').format(value)} sản phẩm
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
@@ -104,16 +106,14 @@ const CustomPieTooltip = ({ active, payload }: CustomTooltipProps) => {
     return null;
 };
 
-// Custom label cho PieChart - SỬ DỤNG ĐÚNG TYPE TỪ RECHARTS
+// Custom label cho PieChart
 const renderCustomizedLabel = (props: PieLabelRenderProps) => {
     const { cx, cy, midAngle, outerRadius, payload } = props;
 
-    // Kiểm tra các giá trị có tồn tại không
     if (cx === undefined || cy === undefined || midAngle === undefined || outerRadius === undefined) {
         return null;
     }
 
-    // Kiểm tra payload có đúng format không
     const data = payload as unknown as { _id: string; count: number };
     if (!data || !data._id) {
         return null;
@@ -124,6 +124,11 @@ const renderCustomizedLabel = (props: PieLabelRenderProps) => {
     const x = Number(cx) + radius * Math.cos(-Number(midAngle) * RADIAN);
     const y = Number(cy) + radius * Math.sin(-Number(midAngle) * RADIAN);
 
+    // Ẩn label trên mobile nếu không đủ chỗ
+    if (typeof window !== 'undefined' && window.innerWidth < 768) {
+        return null;
+    }
+
     return (
         <text
             x={x}
@@ -131,7 +136,7 @@ const renderCustomizedLabel = (props: PieLabelRenderProps) => {
             fill="#888888"
             textAnchor={x > Number(cx) ? 'start' : 'end'}
             dominantBaseline="central"
-            className="text-xs"
+            className="text-[10px] sm:text-xs"
         >
             {`${data._id}: ${data.count}`}
         </text>
@@ -142,6 +147,16 @@ export default function AdminDashboardPage() {
     const { token } = useAuthStore();
     const [dashboard, setDashboard] = useState<IAdminDashboard | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
+    const [isMobile, setIsMobile] = useState<boolean>(false);
+
+    useEffect(() => {
+        const checkMobile = () => {
+            setIsMobile(window.innerWidth < 768);
+        };
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
 
     const fetchDashboard = useCallback(async () => {
         if (!token) return;
@@ -174,7 +189,7 @@ export default function AdminDashboardPage() {
     if (loading) {
         return (
             <div className="flex items-center justify-center h-96">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                <div className="animate-spin rounded-full h-8 w-8 sm:h-12 sm:w-12 border-b-2 border-blue-600"></div>
             </div>
         );
     }
@@ -182,10 +197,10 @@ export default function AdminDashboardPage() {
     if (!dashboard) {
         return (
             <div className="text-center py-12">
-                <p className="text-gray-500 dark:text-gray-400">Không thể tải dữ liệu</p>
+                <p className="text-gray-500 dark:text-gray-400 text-sm sm:text-base">Không thể tải dữ liệu</p>
                 <button
                     onClick={fetchDashboard}
-                    className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                    className="mt-4 px-3 py-1.5 sm:px-4 sm:py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm sm:text-base"
                 >
                     Thử lại
                 </button>
@@ -194,15 +209,30 @@ export default function AdminDashboardPage() {
     }
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
             {/* Header */}
-            <div>
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Tổng quan</h1>
-                <p className="text-gray-600 dark:text-gray-400 mt-1">Phân tích toàn bộ hoạt động của nền tảng</p>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                    <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Tổng quan</h1>
+                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-0.5 sm:mt-1">
+                        Phân tích toàn bộ hoạt động của nền tảng
+                    </p>
+                </div>
+                <div className="flex items-center gap-2">
+                    <button className="px-2 py-1 sm:px-3 sm:py-1.5 text-xs sm:text-sm bg-gray-100 dark:bg-gray-800 rounded-lg">
+                        Hôm nay
+                    </button>
+                    <button className="px-2 py-1 sm:px-3 sm:py-1.5 text-xs sm:text-sm bg-gray-100 dark:bg-gray-800 rounded-lg">
+                        Tuần này
+                    </button>
+                    <button className="px-2 py-1 sm:px-3 sm:py-1.5 text-xs sm:text-sm bg-blue-600 text-white rounded-lg">
+                        Tháng này
+                    </button>
+                </div>
             </div>
 
-            {/* Stats Cards - Hàng 1: Người dùng & Doanh thu */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            {/* Stats Cards - Responsive Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
                 <StatsCard
                     title="Tổng người dùng"
                     value={dashboard.overview.users.total}
@@ -237,8 +267,8 @@ export default function AdminDashboardPage() {
                 />
             </div>
 
-            {/* Stats Cards - Hàng 2: Giáo viên & Đơn hàng */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            {/* Stats Cards Row 2 */}
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
                 <StatsCard
                     title="Giáo viên"
                     value={dashboard.overview.users.teachers}
@@ -271,127 +301,202 @@ export default function AdminDashboardPage() {
                 />
             </div>
 
-            {/* Biểu đồ doanh thu */}
-            <div className="bg-white dark:bg-[#1c1c1c] rounded-xl p-5 shadow-sm border border-gray-200 dark:border-gray-800">
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Biểu đồ doanh thu</h2>
-                <ResponsiveContainer width="100%" height={350}>
-                    <LineChart data={dashboard.charts.revenue}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                        <XAxis dataKey="month" stroke="#6b7280" fontSize={12} />
-                        <YAxis yAxisId="left" tickFormatter={(v: number) => `${v / 1000000}M`} stroke="#6b7280" fontSize={12} />
-                        <YAxis yAxisId="right" orientation="right" stroke="#6b7280" fontSize={12} />
-                        <Tooltip content={<CustomTooltip />} />
-                        <Legend />
-                        <Line
-                            yAxisId="left"
-                            type="monotone"
-                            dataKey="revenue"
-                            stroke="#3b82f6"
-                            name="Doanh thu"
-                            strokeWidth={2}
-                            dot={{ r: 4 }}
-                            activeDot={{ r: 6 }}
-                        />
-                        <Line
-                            yAxisId="right"
-                            type="monotone"
-                            dataKey="orders"
-                            stroke="#10b981"
-                            name="Số đơn hàng"
-                            strokeWidth={2}
-                            dot={{ r: 4 }}
-                        />
-                    </LineChart>
-                </ResponsiveContainer>
+            {/* Biểu đồ doanh thu - Responsive */}
+            <div className="bg-white dark:bg-[#1c1c1c] rounded-xl p-3 sm:p-5 shadow-sm border border-gray-200 dark:border-gray-800">
+                <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-3 sm:mb-4">
+                    Biểu đồ doanh thu
+                </h2>
+                <div className="w-full overflow-x-auto">
+                    <div className="min-w-[500px] sm:min-w-full">
+                        <ResponsiveContainer width="100%" height={300}>
+                            <LineChart data={dashboard.charts.revenue}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                                <XAxis
+                                    dataKey="month"
+                                    stroke="#6b7280"
+                                    fontSize={isMobile ? 10 : 12}
+                                    interval={isMobile ? 1 : 0}
+                                    angle={isMobile ? -45 : 0}
+                                    textAnchor={isMobile ? "end" : "middle"}
+                                    height={isMobile ? 50 : 30}
+                                />
+                                <YAxis
+                                    yAxisId="left"
+                                    tickFormatter={(v: number) => isMobile ? `${v / 1000000}M` : `${v / 1000000}M`}
+                                    stroke="#6b7280"
+                                    fontSize={isMobile ? 10 : 12}
+                                    width={isMobile ? 40 : 60}
+                                />
+                                <YAxis
+                                    yAxisId="right"
+                                    orientation="right"
+                                    stroke="#6b7280"
+                                    fontSize={isMobile ? 10 : 12}
+                                    width={isMobile ? 40 : 60}
+                                />
+                                <Tooltip content={<CustomTooltip />} />
+                                <Legend wrapperStyle={{ fontSize: isMobile ? 10 : 12 }} />
+                                <Line
+                                    yAxisId="left"
+                                    type="monotone"
+                                    dataKey="revenue"
+                                    stroke="#3b82f6"
+                                    name="Doanh thu"
+                                    strokeWidth={2}
+                                    dot={{ r: isMobile ? 2 : 4 }}
+                                    activeDot={{ r: isMobile ? 4 : 6 }}
+                                />
+                                <Line
+                                    yAxisId="right"
+                                    type="monotone"
+                                    dataKey="orders"
+                                    stroke="#10b981"
+                                    name="Số đơn hàng"
+                                    strokeWidth={2}
+                                    dot={{ r: isMobile ? 2 : 4 }}
+                                />
+                            </LineChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
             </div>
 
-            {/* Biểu đồ tăng trưởng người dùng và nội dung */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="bg-white dark:bg-[#1c1c1c] rounded-xl p-5 shadow-sm border border-gray-200 dark:border-gray-800">
-                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Tăng trưởng người dùng</h2>
-                    <ResponsiveContainer width="100%" height={300}>
-                        <AreaChart data={dashboard.charts.userGrowth}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                            <XAxis dataKey="month" stroke="#6b7280" fontSize={12} />
-                            <YAxis stroke="#6b7280" fontSize={12} />
-                            <Tooltip content={<CustomTooltip />} />
-                            <Legend />
-                            <Area
-                                type="monotone"
-                                dataKey="users"
-                                stackId="1"
-                                stroke="#3b82f6"
-                                fill="#3b82f6"
-                                name="Người dùng"
-                                fillOpacity={0.6}
-                            />
-                            <Area
-                                type="monotone"
-                                dataKey="teachers"
-                                stackId="1"
-                                stroke="#10b981"
-                                fill="#10b981"
-                                name="Giáo viên"
-                                fillOpacity={0.6}
-                            />
-                        </AreaChart>
-                    </ResponsiveContainer>
+            {/* Biểu đồ tăng trưởng người dùng và nội dung - Stack on mobile */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+                <div className="bg-white dark:bg-[#1c1c1c] rounded-xl p-3 sm:p-5 shadow-sm border border-gray-200 dark:border-gray-800">
+                    <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-3 sm:mb-4">
+                        Tăng trưởng người dùng
+                    </h2>
+                    <div className="w-full overflow-x-auto">
+                        <div className="min-w-[400px] sm:min-w-full">
+                            <ResponsiveContainer width="100%" height={280}>
+                                <AreaChart data={dashboard.charts.userGrowth}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                                    <XAxis
+                                        dataKey="month"
+                                        stroke="#6b7280"
+                                        fontSize={isMobile ? 10 : 12}
+                                        interval={isMobile ? 1 : 0}
+                                        angle={isMobile ? -45 : 0}
+                                        textAnchor={isMobile ? "end" : "middle"}
+                                        height={isMobile ? 50 : 30}
+                                    />
+                                    <YAxis
+                                        stroke="#6b7280"
+                                        fontSize={isMobile ? 10 : 12}
+                                        width={isMobile ? 40 : 60}
+                                    />
+                                    <Tooltip content={<CustomTooltip />} />
+                                    <Legend wrapperStyle={{ fontSize: isMobile ? 10 : 12 }} />
+                                    <Area
+                                        type="monotone"
+                                        dataKey="users"
+                                        stackId="1"
+                                        stroke="#3b82f6"
+                                        fill="#3b82f6"
+                                        name="Người dùng"
+                                        fillOpacity={0.6}
+                                    />
+                                    <Area
+                                        type="monotone"
+                                        dataKey="teachers"
+                                        stackId="1"
+                                        stroke="#10b981"
+                                        fill="#10b981"
+                                        name="Giáo viên"
+                                        fillOpacity={0.6}
+                                    />
+                                </AreaChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
                 </div>
 
-                <div className="bg-white dark:bg-[#1c1c1c] rounded-xl p-5 shadow-sm border border-gray-200 dark:border-gray-800">
-                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Nội dung mới</h2>
-                    <ResponsiveContainer width="100%" height={300}>
-                        <BarChart data={dashboard.charts.content}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                            <XAxis dataKey="month" stroke="#6b7280" fontSize={12} />
-                            <YAxis stroke="#6b7280" fontSize={12} />
-                            <Tooltip content={<CustomTooltip />} />
-                            <Legend />
-                            <Bar dataKey="products" fill="#8b5cf6" name="Sản phẩm" radius={[4, 4, 0, 0]} />
-                            <Bar dataKey="posts" fill="#f59e0b" name="Bài viết" radius={[4, 4, 0, 0]} />
-                        </BarChart>
-                    </ResponsiveContainer>
+                <div className="bg-white dark:bg-[#1c1c1c] rounded-xl p-3 sm:p-5 shadow-sm border border-gray-200 dark:border-gray-800">
+                    <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-3 sm:mb-4">
+                        Nội dung mới
+                    </h2>
+                    <div className="w-full overflow-x-auto">
+                        <div className="min-w-[400px] sm:min-w-full">
+                            <ResponsiveContainer width="100%" height={280}>
+                                <BarChart data={dashboard.charts.content}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                                    <XAxis
+                                        dataKey="month"
+                                        stroke="#6b7280"
+                                        fontSize={isMobile ? 10 : 12}
+                                        interval={isMobile ? 1 : 0}
+                                        angle={isMobile ? -45 : 0}
+                                        textAnchor={isMobile ? "end" : "middle"}
+                                        height={isMobile ? 50 : 30}
+                                    />
+                                    <YAxis
+                                        stroke="#6b7280"
+                                        fontSize={isMobile ? 10 : 12}
+                                        width={isMobile ? 40 : 60}
+                                    />
+                                    <Tooltip content={<CustomTooltip />} />
+                                    <Legend wrapperStyle={{ fontSize: isMobile ? 10 : 12 }} />
+                                    <Bar dataKey="products" fill="#8b5cf6" name="Sản phẩm" radius={[4, 4, 0, 0]} />
+                                    <Bar dataKey="posts" fill="#f59e0b" name="Bài viết" radius={[4, 4, 0, 0]} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
                 </div>
             </div>
 
             {/* Thống kê theo danh mục */}
-            <div className="bg-white dark:bg-[#1c1c1c] rounded-xl p-5 shadow-sm border border-gray-200 dark:border-gray-800">
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Thống kê theo danh mục</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <ResponsiveContainer width="100%" height={280}>
-                        <PieChart>
-                            <Pie
-                                data={dashboard.categoryStats}
-                                cx="50%"
-                                cy="50%"
-                                labelLine={true}
-                                label={renderCustomizedLabel}
-                                outerRadius={100}
-                                dataKey="count"
-                                nameKey="_id"
-                            >
-                                {dashboard.categoryStats.map((_, index: number) => (
-                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                ))}
-                            </Pie>
-                            <Tooltip content={<CustomPieTooltip />} />
-                            <Legend />
-                        </PieChart>
-                    </ResponsiveContainer>
+            <div className="bg-white dark:bg-[#1c1c1c] rounded-xl p-3 sm:p-5 shadow-sm border border-gray-200 dark:border-gray-800">
+                <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-3 sm:mb-4">
+                    Thống kê theo danh mục
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                    <div className="w-full h-[250px] sm:h-[280px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                                <Pie
+                                    data={dashboard.categoryStats}
+                                    cx="50%"
+                                    cy="50%"
+                                    labelLine={!isMobile}
+                                    label={!isMobile ? renderCustomizedLabel : undefined}
+                                    outerRadius={isMobile ? 70 : 100}
+                                    dataKey="count"
+                                    nameKey="_id"
+                                >
+                                    {dashboard.categoryStats.map((_, index: number) => (
+                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                    ))}
+                                </Pie>
+                                <Tooltip content={<CustomPieTooltip />} />
+                                <Legend
+                                    wrapperStyle={{ fontSize: isMobile ? 10 : 12 }}
+                                    layout={isMobile ? "horizontal" : "vertical"}
+                                    align={isMobile ? "center" : "right"}
+                                    verticalAlign={isMobile ? "bottom" : "middle"}
+                                />
+                            </PieChart>
+                        </ResponsiveContainer>
+                    </div>
 
-                    <div className="space-y-3">
+                    <div className="space-y-2 sm:space-y-3 overflow-x-auto">
                         {dashboard.categoryStats.map((cat: ICategoryStat, idx: number) => (
-                            <div key={cat._id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                                <div className="flex items-center gap-3">
+                            <div key={cat._id} className="flex items-center justify-between p-2 sm:p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                                <div className="flex items-center gap-2 sm:gap-3">
                                     <div
-                                        className="w-3 h-3 rounded-full"
+                                        className="w-2 h-2 sm:w-3 sm:h-3 rounded-full"
                                         style={{ backgroundColor: COLORS[idx % COLORS.length] }}
                                     />
-                                    <span className="font-medium capitalize text-gray-900 dark:text-white">{cat._id}</span>
+                                    <span className="text-xs sm:text-sm font-medium capitalize text-gray-900 dark:text-white">
+                                        {cat._id}
+                                    </span>
                                 </div>
                                 <div className="text-right">
-                                    <p className="font-semibold text-gray-900 dark:text-white">{formatNumber(cat.count)} sản phẩm</p>
-                                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                                    <p className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white">
+                                        {formatNumber(cat.count)} sản phẩm
+                                    </p>
+                                    <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">
                                         {formatNumber(cat.totalDownloads)} lượt tải • ⭐ {cat.avgRating.toFixed(1)}
                                     </p>
                                 </div>
@@ -401,31 +506,35 @@ export default function AdminDashboardPage() {
                 </div>
             </div>
 
-            {/* Top sản phẩm và bài viết */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Top sản phẩm và bài viết - Stack on mobile */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                 {/* Top sản phẩm */}
                 <div className="bg-white dark:bg-[#1c1c1c] rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden">
-                    <div className="p-5 border-b border-gray-200 dark:border-gray-800">
+                    <div className="p-3 sm:p-5 border-b border-gray-200 dark:border-gray-800">
                         <div className="flex items-center gap-2">
-                            <Package size={20} className="text-purple-500" />
-                            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Top sản phẩm bán chạy</h2>
+                            <Package size={isMobile ? 16 : 20} className="text-purple-500" />
+                            <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
+                                Top sản phẩm bán chạy
+                            </h2>
                         </div>
                     </div>
-                    <div className="divide-y divide-gray-200 dark:divide-gray-800">
-                        {dashboard.topProducts.map((product, idx: number) => (
-                            <div key={product._id} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 bg-blue-100 dark:bg-blue-950 rounded-full flex items-center justify-center font-bold text-blue-600 dark:text-blue-400">
+                    <div className="divide-y divide-gray-200 dark:divide-gray-800 max-h-[400px] overflow-y-auto">
+                        {dashboard.topProducts.slice(0, isMobile ? 5 : 10).map((product, idx: number) => (
+                            <div key={product._id} className="p-3 sm:p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition">
+                                <div className="flex items-center gap-2 sm:gap-3">
+                                    <div className="w-6 h-6 sm:w-8 sm:h-8 bg-blue-100 dark:bg-blue-950 rounded-full flex items-center justify-center font-bold text-blue-600 dark:text-blue-400 text-xs sm:text-sm">
                                         {idx + 1}
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <p className="font-medium text-gray-900 dark:text-white line-clamp-1">{product.name}</p>
-                                        <div className="flex flex-wrap gap-3 text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                            <span className="flex items-center gap-1">
-                                                <Download size={12} /> {formatNumber(product.downloadCount)} lượt tải
+                                        <p className="font-medium text-gray-900 dark:text-white text-sm sm:text-base line-clamp-1">
+                                            {product.name}
+                                        </p>
+                                        <div className="flex flex-wrap gap-2 sm:gap-3 text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5 sm:mt-1">
+                                            <span className="flex items-center gap-0.5 sm:gap-1">
+                                                <Download size={isMobile ? 10 : 12} /> {formatNumber(product.downloadCount)} lượt tải
                                             </span>
-                                            <span className="flex items-center gap-1">
-                                                <Star size={12} /> {product.rating.toFixed(1)}
+                                            <span className="flex items-center gap-0.5 sm:gap-1">
+                                                <Star size={isMobile ? 10 : 12} /> {product.rating.toFixed(1)}
                                             </span>
                                             <span>{formatCurrency(product.price)}</span>
                                         </div>
@@ -434,37 +543,41 @@ export default function AdminDashboardPage() {
                             </div>
                         ))}
                         {dashboard.topProducts.length === 0 && (
-                            <div className="p-8 text-center text-gray-500">Chưa có sản phẩm nào</div>
+                            <div className="p-6 sm:p-8 text-center text-gray-500 text-sm">Chưa có sản phẩm nào</div>
                         )}
                     </div>
                 </div>
 
                 {/* Top bài viết */}
                 <div className="bg-white dark:bg-[#1c1c1c] rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden">
-                    <div className="p-5 border-b border-gray-200 dark:border-gray-800">
+                    <div className="p-3 sm:p-5 border-b border-gray-200 dark:border-gray-800">
                         <div className="flex items-center gap-2">
-                            <FileText size={20} className="text-orange-500" />
-                            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Top bài viết nổi bật</h2>
+                            <FileText size={isMobile ? 16 : 20} className="text-orange-500" />
+                            <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
+                                Top bài viết nổi bật
+                            </h2>
                         </div>
                     </div>
-                    <div className="divide-y divide-gray-200 dark:divide-gray-800">
-                        {dashboard.topPosts.map((post, idx: number) => (
-                            <div key={post._id} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition">
-                                <div className="flex items-start gap-3">
-                                    <div className="w-8 h-8 bg-orange-100 dark:bg-orange-950 rounded-full flex items-center justify-center font-bold text-orange-600 dark:text-orange-400">
+                    <div className="divide-y divide-gray-200 dark:divide-gray-800 max-h-[400px] overflow-y-auto">
+                        {dashboard.topPosts.slice(0, isMobile ? 5 : 10).map((post, idx: number) => (
+                            <div key={post._id} className="p-3 sm:p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition">
+                                <div className="flex items-start gap-2 sm:gap-3">
+                                    <div className="w-6 h-6 sm:w-8 sm:h-8 bg-orange-100 dark:bg-orange-950 rounded-full flex items-center justify-center font-bold text-orange-600 dark:text-orange-400 text-xs sm:text-sm">
                                         {idx + 1}
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <p className="font-medium text-gray-900 dark:text-white line-clamp-1">{post.title}</p>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                        <p className="font-medium text-gray-900 dark:text-white text-sm sm:text-base line-clamp-1">
+                                            {post.title}
+                                        </p>
+                                        <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5 sm:mt-1">
                                             Bởi {post.author?.fullName || 'Unknown'}
                                         </p>
-                                        <div className="flex flex-wrap gap-3 text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                            <span className="flex items-center gap-1">
-                                                <Eye size={12} /> {formatNumber(post.views)} lượt xem
+                                        <div className="flex flex-wrap gap-2 sm:gap-3 text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5 sm:mt-1">
+                                            <span className="flex items-center gap-0.5 sm:gap-1">
+                                                <Eye size={isMobile ? 10 : 12} /> {formatNumber(post.views)} lượt xem
                                             </span>
-                                            <span className="flex items-center gap-1">
-                                                <Activity size={12} /> {formatNumber(post.likes)} thích
+                                            <span className="flex items-center gap-0.5 sm:gap-1">
+                                                <Activity size={isMobile ? 10 : 12} /> {formatNumber(post.likes)} thích
                                             </span>
                                         </div>
                                     </div>
@@ -472,7 +585,7 @@ export default function AdminDashboardPage() {
                             </div>
                         ))}
                         {dashboard.topPosts.length === 0 && (
-                            <div className="p-8 text-center text-gray-500">Chưa có bài viết nào</div>
+                            <div className="p-6 sm:p-8 text-center text-gray-500 text-sm">Chưa có bài viết nào</div>
                         )}
                     </div>
                 </div>
