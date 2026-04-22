@@ -18,7 +18,6 @@ body {
 }
 
 /* ========== SCROLLBAR STYLES ========== */
-/* Chrome, Edge, Safari */
 .custom-scroll::-webkit-scrollbar {
   width: 6px;
 }
@@ -36,7 +35,6 @@ body {
   background: rgba(100, 100, 100, 0.7);
 }
 
-/* Firefox */
 * {
   scrollbar-width: thin;
   scrollbar-color: rgba(100, 100, 100, 0.4) transparent;
@@ -81,7 +79,6 @@ svg.lucide:not([data-filled]) {
 }
 
 /* ========== TINYMCE EDITOR STYLES ========== */
-/* MathJax styling trong TinyMCE */
 .tox .tox-edit-area iframe body mjx-container {
   display: inline-block !important;
   margin: 0 0.2em !important;
@@ -102,7 +99,6 @@ svg.lucide:not([data-filled]) {
   text-align: center !important;
 }
 
-/* TinyMCE Toolbar */
 .tox-toolbar__group button {
   border-radius: 4px !important;
 }
@@ -115,7 +111,7 @@ svg.lucide:not([data-filled]) {
   background-color: #334155 !important;
 }
 
-/* ========== STATIC CONTENT STYLES (cho trang giới thiệu, chính sách...) ========== */
+/* ========== STATIC CONTENT STYLES ========== */
 .static-content {
   max-width: 100%;
   color: #1a1a1a;
@@ -171,13 +167,11 @@ svg.lucide:not([data-filled]) {
   margin-bottom: 0.5rem;
 }
 
-/* Paragraphs */
 .static-content p {
   margin-bottom: 1rem;
   line-height: 1.7;
 }
 
-/* Lists */
 .static-content ul,
 .static-content ol {
   margin: 0.75rem 0;
@@ -189,7 +183,6 @@ svg.lucide:not([data-filled]) {
   line-height: 1.6;
 }
 
-/* Links */
 .static-content a {
   color: #2563eb;
   text-decoration: underline;
@@ -203,7 +196,6 @@ svg.lucide:not([data-filled]) {
   color: #60a5fa;
 }
 
-/* Images */
 .static-content img {
   max-width: 100%;
   height: auto;
@@ -211,7 +203,6 @@ svg.lucide:not([data-filled]) {
   margin: 1rem 0;
 }
 
-/* Blockquote */
 .static-content blockquote {
   border-left: 4px solid #d1d5db;
   margin: 1rem 0;
@@ -225,75 +216,79 @@ svg.lucide:not([data-filled]) {
   color: #9ca3af;
 }
 
-/* ===== TABLE STYLES - FIX BORDER ĐẦY ĐỦ 4 CẠNH ===== */
+/* ========== TABLE STYLES - HOÀN CHỈNH ========== */
 .static-content table {
   width: 100%;
   border-collapse: collapse !important;
   margin: 1rem 0;
   font-size: 14px;
-  background-color: #ffffff;
   border: 1px solid #d1d5db !important;
   border-radius: 8px;
   overflow: hidden;
 }
 
 .dark .static-content table {
-  background-color: #1f2937;
-  border: 1px solid #4b5563 !important;
+  border-color: #4b5563 !important;
 }
 
-/* Header của table - màu xám nhạt */
-.static-content thead {
-  background-color: #f3f4f6;
+/* Header table - màu xám */
+.static-content thead tr {
+  background-color: #f3f4f6 !important;
 }
 
-.dark .static-content thead {
-  background-color: #374151;
+.dark .static-content thead tr {
+  background-color: #374151 !important;
 }
 
-/* Border cho th */
 .static-content th {
   padding: 12px 16px;
   text-align: left;
   font-weight: 600;
   border: 1px solid #d1d5db !important;
   color: #1a1a1a;
-  background-color: #f3f4f6;
 }
 
 .dark .static-content th {
   border-color: #4b5563 !important;
   color: #f3f4f6;
-  background-color: #374151;
 }
 
-/* Border cho td */
 .static-content td {
   padding: 10px 16px;
   border: 1px solid #d1d5db !important;
   color: #1a1a1a;
-  background-color: #ffffff;
 }
 
 .dark .static-content td {
   border-color: #4b5563 !important;
   color: #e5e7eb;
-  background-color: #1f2937;
 }
 
-/* Xóa border trùng ở các cạnh giáp ranh */
-.static-content th:first-child {
-  border-left: none !important;
+/* Xen kẽ màu cho row */
+.static-content tbody tr:nth-child(even) {
+  background-color: #f9fafb;
 }
 
-.static-content th:last-child {
-  border-right: none !important;
+.dark .static-content tbody tr:nth-child(even) {
+  background-color: #111827;
 }
 
+/* Hover effect */
+.static-content tbody tr:hover {
+  background-color: #f3f4f6;
+}
+
+.dark .static-content tbody tr:hover {
+  background-color: #374151;
+}
+
+/* Xóa border thừa ở các cạnh */
+.static-content th:first-child,
 .static-content td:first-child {
   border-left: none !important;
 }
 
+.static-content th:last-child,
 .static-content td:last-child {
   border-right: none !important;
 }
@@ -306,25 +301,7 @@ svg.lucide:not([data-filled]) {
   border-bottom: none !important;
 }
 
-/* Background cho row chẵn - xen kẽ màu xám nhạt */
-.static-content tbody tr:nth-child(even) td {
-  background-color: #f9fafb;
-}
-
-.dark .static-content tbody tr:nth-child(even) td {
-  background-color: #111827;
-}
-
-/* Hover effect */
-.static-content tbody tr:hover td {
-  background-color: #f3f4f6;
-}
-
-.dark .static-content tbody tr:hover td {
-  background-color: #374151;
-}
-
-/* Border radius cho các góc */
+/* Border radius */
 .static-content tr:first-child th:first-child {
   border-top-left-radius: 8px;
 }
@@ -341,7 +318,7 @@ svg.lucide:not([data-filled]) {
   border-bottom-right-radius: 8px;
 }
 
-/* Responsive table - cho mobile */
+/* Responsive table */
 @media (max-width: 768px) {
   .static-content table {
     display: block;
@@ -350,27 +327,50 @@ svg.lucide:not([data-filled]) {
   }
 }
 
-/* Responsive table - cho mobile */
-@media (max-width: 768px) {
-  .static-content table {
-    display: block;
-    overflow-x: auto;
-    white-space: nowrap;
-  }
+/* ========== CODE BLOCK STYLES ========== */
+/* Code block container */
+.static-content pre {
+  background: #1e1e1e !important;
+  border-radius: 8px !important;
+  padding: 16px !important;
+  margin: 1rem 0 !important;
+  overflow-x: auto !important;
 }
 
-/* Horizontal rule */
-.static-content hr {
-  margin: 1.5rem 0;
-  border: 0;
-  border-top: 1px solid #e5e7eb;
+/* Light mode code block */
+:root:not(.dark) .static-content pre {
+  background: #f6f8fa !important;
+  border: 1px solid #e1e4e8 !important;
 }
 
-.dark .static-content hr {
-  border-top-color: #374151;
+/* Dark mode code block */
+.dark .static-content pre {
+  background: #0d1117 !important;
+  border: 1px solid #30363d !important;
 }
 
-/* ========== CODE BLOCK STYLES (PrismJS) ========== */
+/* Code text styling */
+.static-content code {
+  font-family: 'Fira Code', 'Cascadia Code', 'Consolas', monospace !important;
+  font-size: 13px !important;
+  line-height: 1.5 !important;
+}
+
+/* Inline code */
+.static-content :not(pre)>code {
+  background: #f3f4f6 !important;
+  padding: 2px 6px !important;
+  border-radius: 4px !important;
+  color: #d14 !important;
+  font-size: 0.875em !important;
+}
+
+.dark .static-content :not(pre)>code {
+  background: #1e1e1e !important;
+  color: #58a6ff !important;
+}
+
+/* PrismJS theme overrides */
 pre[class*="language-"] {
   background: #1e1e1e !important;
   border-radius: 8px !important;
@@ -388,34 +388,139 @@ code[class*="language-"] {
   tab-size: 2 !important;
 }
 
-/* Inline code */
-.static-content :not(pre)>code {
-  background: #f3f4f6;
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-size: 0.875em;
-  color: #d14;
-  font-family: 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
-}
-
-.dark .static-content :not(pre)>code {
-  background: #1e1e1e;
-  color: #58a6ff;
-}
-
-/* Dark mode cho code */
-.dark pre[class*="language-"] {
-  background: #0d1117 !important;
-  border: 1px solid #30363d !important;
-}
-
-/* Light mode cho code */
+/* Light mode PrismJS */
 :root:not(.dark) pre[class*="language-"] {
   background: #f6f8fa !important;
   border: 1px solid #e1e4e8 !important;
 }
 
-/* ========== MATH FORMULA STYLES (MathJax) ========== */
+:root:not(.dark) code[class*="language-"] {
+  color: #24292e !important;
+}
+
+/* Dark mode PrismJS */
+.dark pre[class*="language-"] {
+  background: #0d1117 !important;
+  border: 1px solid #30363d !important;
+}
+
+.dark code[class*="language-"] {
+  color: #e5e7eb !important;
+}
+
+/* Token colors - Light mode */
+:root:not(.dark) .token.comment,
+:root:not(.dark) .token.prolog,
+:root:not(.dark) .token.doctype,
+:root:not(.dark) .token.cdata {
+  color: #6e7781;
+}
+
+:root:not(.dark) .token.punctuation {
+  color: #24292e;
+}
+
+:root:not(.dark) .token.property,
+:root:not(.dark) .token.tag,
+:root:not(.dark) .token.boolean,
+:root:not(.dark) .token.number,
+:root:not(.dark) .token.constant,
+:root:not(.dark) .token.symbol,
+:root:not(.dark) .token.deleted {
+  color: #0550ae;
+}
+
+:root:not(.dark) .token.selector,
+:root:not(.dark) .token.attr-name,
+:root:not(.dark) .token.string,
+:root:not(.dark) .token.char,
+:root:not(.dark) .token.builtin,
+:root:not(.dark) .token.inserted {
+  color: #0a3069;
+}
+
+:root:not(.dark) .token.operator,
+:root:not(.dark) .token.entity,
+:root:not(.dark) .token.url,
+:root:not(.dark) .language-css .token.string,
+:root:not(.dark) .style .token.string {
+  color: #0550ae;
+}
+
+:root:not(.dark) .token.atrule,
+:root:not(.dark) .token.attr-value,
+:root:not(.dark) .token.keyword {
+  color: #cf222e;
+}
+
+:root:not(.dark) .token.function,
+:root:not(.dark) .token.class-name {
+  color: #8250df;
+}
+
+:root:not(.dark) .token.regex,
+:root:not(.dark) .token.important,
+:root:not(.dark) .token.variable {
+  color: #953800;
+}
+
+/* Token colors - Dark mode */
+.dark .token.comment,
+.dark .token.prolog,
+.dark .token.doctype,
+.dark .token.cdata {
+  color: #8b949e;
+}
+
+.dark .token.punctuation {
+  color: #e5e7eb;
+}
+
+.dark .token.property,
+.dark .token.tag,
+.dark .token.boolean,
+.dark .token.number,
+.dark .token.constant,
+.dark .token.symbol,
+.dark .token.deleted {
+  color: #79c0ff;
+}
+
+.dark .token.selector,
+.dark .token.attr-name,
+.dark .token.string,
+.dark .token.char,
+.dark .token.builtin,
+.dark .token.inserted {
+  color: #a5d6ff;
+}
+
+.dark .token.operator,
+.dark .token.entity,
+.dark .token.url,
+.dark .language-css .token.string,
+.dark .style .token.string {
+  color: #79c0ff;
+}
+
+.dark .token.atrule,
+.dark .token.attr-value,
+.dark .token.keyword {
+  color: #ff7b72;
+}
+
+.dark .token.function,
+.dark .token.class-name {
+  color: #d2a8ff;
+}
+
+.dark .token.regex,
+.dark .token.important,
+.dark .token.variable {
+  color: #ffa657;
+}
+
+/* ========== MATH FORMULA STYLES ========== */
 .MathJax,
 .static-content .MathJax {
   font-size: 1.1em;
@@ -432,13 +537,11 @@ mjx-container,
   margin: 8px 0;
 }
 
-/* Dark mode cho MathJax */
 .dark mjx-container,
 .dark .static-content mjx-container {
   color: #e5e7eb;
 }
 
-/* Responsive cho công thức toán */
 @media (max-width: 768px) {
 
   mjx-container,
