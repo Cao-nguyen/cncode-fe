@@ -107,7 +107,7 @@ export default function TransactionPage() {
     const [endDate, setEndDate] = useState<string>('');
     const [selectedTransaction, setSelectedTransaction] = useState<ITransaction | null>(null);
     const [showDetailModal, setShowDetailModal] = useState<boolean>(false);
-    const [copied, setCopied] = useState<boolean>(false);
+    const [copiedId, setCopiedId] = useState<string | null>(null);
 
     const fetchTransactions = useCallback(async () => {
         if (!token) return;
@@ -150,10 +150,10 @@ export default function TransactionPage() {
         setPage(1);
     };
 
-    const handleCopyId = async (text: string) => {
+    const handleCopyId = async (text: string, id: string) => {
         await navigator.clipboard.writeText(text);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
+        setCopiedId(id);
+        setTimeout(() => setCopiedId(null), 2000);
         toast.success('Đã sao chép');
     };
 
@@ -187,7 +187,7 @@ export default function TransactionPage() {
                 </button>
             </div>
 
-            {/* Stats Cards - Responsive Grid */}
+            {/* Stats Cards */}
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
                 <div className="bg-white dark:bg-[#1c1c1c] rounded-xl p-3 sm:p-4 shadow-sm border border-gray-200 dark:border-gray-800">
                     <div className="flex items-center gap-1.5 sm:gap-2 text-green-500 mb-1 sm:mb-2">
@@ -287,15 +287,14 @@ export default function TransactionPage() {
                 </div>
             )}
 
-            {/* Transactions Table - Responsive */}
+            {/* Transactions Table - Bỏ cột sản phẩm */}
             <div className="bg-white dark:bg-[#1c1c1c] rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden">
                 <div className="overflow-x-auto">
-                    <table className="w-full min-w-[800px] lg:min-w-full">
+                    <table className="w-full min-w-[700px] lg:min-w-full">
                         <thead className="bg-gray-50 dark:bg-gray-800/50 border-b">
                             <tr>
                                 <th className="text-left px-3 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-semibold">Mã GD</th>
                                 <th className="text-left px-3 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-semibold">Người dùng</th>
-                                <th className="text-left px-3 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-semibold">Sản phẩm</th>
                                 <th className="text-left px-3 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-semibold">Số tiền</th>
                                 <th className="text-left px-3 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-semibold">Phương thức</th>
                                 <th className="text-left px-3 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-semibold">Trạng thái</th>
@@ -307,18 +306,19 @@ export default function TransactionPage() {
                             {transactions.map((transaction) => {
                                 const StatusBadge = getStatusBadge(transaction.status);
                                 const StatusIcon = StatusBadge.icon;
+                                const displayId = transaction.transactionId?.slice(-8) || transaction.payosOrderId || 'N/A';
                                 return (
                                     <tr key={transaction._id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition">
                                         <td className="px-3 sm:px-6 py-3 sm:py-4">
                                             <div className="flex items-center gap-1">
                                                 <span className="text-xs sm:text-sm font-mono">
-                                                    {transaction.transactionId?.slice(-8) || transaction.payosOrderId || 'N/A'}
+                                                    {displayId}
                                                 </span>
                                                 <button
-                                                    onClick={() => handleCopyId(transaction.transactionId || transaction.payosOrderId || '')}
+                                                    onClick={() => handleCopyId(displayId, transaction._id)}
                                                     className="p-0.5 text-gray-400 hover:text-gray-600"
                                                 >
-                                                    {copied ? <Check size={12} /> : <Copy size={12} />}
+                                                    {copiedId === transaction._id ? <Check size={12} /> : <Copy size={12} />}
                                                 </button>
                                             </div>
                                         </td>
@@ -334,25 +334,13 @@ export default function TransactionPage() {
                                                     )}
                                                 </div>
                                                 <div className="min-w-0">
-                                                    <p className="font-medium text-xs sm:text-sm truncate max-w-[100px] sm:max-w-none">
+                                                    <p className="font-medium text-xs sm:text-sm truncate max-w-[100px] sm:max-w-[150px]">
                                                         {transaction.user?.fullName}
                                                     </p>
-                                                    <p className="text-[10px] sm:text-xs text-gray-500 truncate max-w-[100px] sm:max-w-none">
+                                                    <p className="text-[10px] sm:text-xs text-gray-500 truncate max-w-[100px] sm:max-w-[150px]">
                                                         {transaction.user?.email}
                                                     </p>
                                                 </div>
-                                            </div>
-                                        </td>
-                                        <td className="px-3 sm:px-6 py-3 sm:py-4">
-                                            <div className="flex items-center gap-2">
-                                                <div className="w-6 h-6 sm:w-8 sm:h-8 rounded bg-gray-100 dark:bg-gray-800 overflow-hidden flex-shrink-0">
-                                                    {transaction.product?.thumbnail && (
-                                                        <Image src={transaction.product.thumbnail} alt="" width={32} height={32} className="object-cover" />
-                                                    )}
-                                                </div>
-                                                <span className="text-xs sm:text-sm truncate max-w-[120px] sm:max-w-[200px]">
-                                                    {transaction.product?.name}
-                                                </span>
                                             </div>
                                         </td>
                                         <td className="px-3 sm:px-6 py-3 sm:py-4">
@@ -407,7 +395,7 @@ export default function TransactionPage() {
                     </table>
                 </div>
 
-                {/* Pagination - Responsive */}
+                {/* Pagination */}
                 {totalPages > 1 && (
                     <div className="flex justify-center items-center gap-1 sm:gap-2 p-3 sm:p-5 border-t border-gray-200 dark:border-gray-800">
                         <button
@@ -431,7 +419,7 @@ export default function TransactionPage() {
                 )}
             </div>
 
-            {/* Transaction Detail Modal - Responsive */}
+            {/* Transaction Detail Modal - Hiển thị đầy đủ thông tin kèm sản phẩm */}
             {showDetailModal && selectedTransaction && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowDetailModal(false)}>
                     <div className="bg-white dark:bg-[#1c1c1c] rounded-xl w-full max-w-[95%] sm:max-w-2xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
@@ -451,7 +439,7 @@ export default function TransactionPage() {
                                         <div className="flex items-center gap-2 mt-0.5 sm:mt-1">
                                             <p className="font-mono text-xs sm:text-sm break-all">{selectedTransaction.transactionId || selectedTransaction.payosOrderId || 'N/A'}</p>
                                             <button
-                                                onClick={() => handleCopyId(selectedTransaction.transactionId || selectedTransaction.payosOrderId || '')}
+                                                onClick={() => handleCopyId(selectedTransaction.transactionId || selectedTransaction.payosOrderId || '', 'modal')}
                                                 className="p-1 text-gray-400 hover:text-gray-600"
                                             >
                                                 <Copy size={14} />
@@ -505,18 +493,27 @@ export default function TransactionPage() {
                                 </div>
                             </div>
 
-                            {/* Thông tin sản phẩm */}
+                            {/* Thông tin sản phẩm - CHỈ HIỂN THỊ TRONG MODAL */}
                             <div className="border-t border-gray-200 dark:border-gray-800 pt-4 sm:pt-6">
                                 <h3 className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white mb-3">Thông tin sản phẩm</h3>
                                 <div className="flex gap-3">
                                     <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-lg bg-gray-100 dark:bg-gray-800 overflow-hidden flex-shrink-0">
-                                        {selectedTransaction.product?.thumbnail && (
+                                        {selectedTransaction.product?.thumbnail ? (
                                             <Image src={selectedTransaction.product.thumbnail} alt="" width={64} height={64} className="object-cover" />
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center text-gray-400">
+                                                <Package size={24} />
+                                            </div>
                                         )}
                                     </div>
                                     <div>
-                                        <p className="font-semibold text-sm sm:text-base">{selectedTransaction.product?.name}</p>
-                                        <p className="text-xs sm:text-sm text-gray-500">Giá: {formatCurrency(selectedTransaction.product?.price || 0)}</p>
+                                        <p className="font-semibold text-sm sm:text-base">{selectedTransaction.product?.name || 'Không xác định'}</p>
+                                        <p className="text-xs sm:text-sm text-gray-500 mt-1">
+                                            Giá: {formatCurrency(selectedTransaction.product?.price || 0)}
+                                        </p>
+                                        <p className="text-xs text-gray-400 mt-0.5">
+                                            Mã SP: {selectedTransaction.product?._id || 'N/A'}
+                                        </p>
                                     </div>
                                 </div>
                             </div>
