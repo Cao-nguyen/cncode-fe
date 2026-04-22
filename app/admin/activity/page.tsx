@@ -19,7 +19,6 @@ import {
     CreditCard,
     Calendar,
     Filter,
-    X,
     TrendingUp,
     Star
 } from 'lucide-react';
@@ -63,6 +62,7 @@ export default function AdminActivityPage() {
     const [page, setPage] = useState<number>(1);
     const [totalPages, setTotalPages] = useState<number>(1);
     const [showFilters, setShowFilters] = useState<boolean>(false);
+    const [isMobile, setIsMobile] = useState<boolean>(false);
     const [filters, setFilters] = useState<IActivityFilters>({
         type: '',
         status: '',
@@ -70,6 +70,15 @@ export default function AdminActivityPage() {
         startDate: '',
         endDate: ''
     });
+
+    useEffect(() => {
+        const checkMobile = () => {
+            setIsMobile(window.innerWidth < 768);
+        };
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
 
     const fetchActivities = useCallback(async () => {
         if (!token) return;
@@ -131,18 +140,18 @@ export default function AdminActivityPage() {
     }
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
             {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Hoạt động hệ thống</h1>
-                    <p className="text-gray-600 dark:text-gray-400 mt-1">Theo dõi toàn bộ hoạt động trên nền tảng</p>
+                    <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Hoạt động hệ thống</h1>
+                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-0.5 sm:mt-1">Theo dõi toàn bộ hoạt động trên nền tảng</p>
                 </div>
                 <button
                     onClick={() => setShowFilters(!showFilters)}
-                    className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-800 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition"
+                    className="flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 text-sm sm:text-base bg-gray-100 dark:bg-gray-800 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition"
                 >
-                    <Filter size={18} />
+                    <Filter size={isMobile ? 16 : 18} />
                     <span>Bộ lọc</span>
                     {hasActiveFilters && (
                         <span className="w-2 h-2 bg-blue-500 rounded-full" />
@@ -150,34 +159,34 @@ export default function AdminActivityPage() {
                 </button>
             </div>
 
-            {/* Filters Panel */}
+            {/* Filters Panel - Responsive */}
             {showFilters && (
-                <div className="bg-white dark:bg-[#1c1c1c] rounded-xl p-5 shadow-sm border border-gray-200 dark:border-gray-800">
-                    <div className="flex justify-between items-center mb-4">
-                        <h3 className="font-semibold text-gray-900 dark:text-white">Bộ lọc nâng cao</h3>
+                <div className="bg-white dark:bg-[#1c1c1c] rounded-xl p-4 sm:p-5 shadow-sm border border-gray-200 dark:border-gray-800">
+                    <div className="flex justify-between items-center mb-3 sm:mb-4">
+                        <h3 className="font-semibold text-sm sm:text-base text-gray-900 dark:text-white">Bộ lọc nâng cao</h3>
                         <button
                             onClick={clearFilters}
-                            className="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                            className="text-xs sm:text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                         >
                             Xóa tất cả
                         </button>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
                         <div className="relative">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={isMobile ? 16 : 18} />
                             <input
                                 type="text"
                                 placeholder="Tìm kiếm..."
                                 value={filters.search}
                                 onChange={(e) => handleFilterChange('search', e.target.value)}
-                                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                className="w-full pl-9 sm:pl-10 pr-3 sm:pr-4 py-1.5 sm:py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             />
                         </div>
 
                         <select
                             value={filters.type}
                             onChange={(e) => handleFilterChange('type', e.target.value)}
-                            className="px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                            className="px-3 sm:px-4 py-1.5 sm:py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
                         >
                             <option value="">Tất cả loại</option>
                             <option value="post">📝 Bài viết</option>
@@ -188,7 +197,7 @@ export default function AdminActivityPage() {
                         <select
                             value={filters.status}
                             onChange={(e) => handleFilterChange('status', e.target.value)}
-                            className="px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                            className="px-3 sm:px-4 py-1.5 sm:py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
                         >
                             <option value="">Tất cả trạng thái</option>
                             <option value="published">✅ Đã duyệt</option>
@@ -203,7 +212,7 @@ export default function AdminActivityPage() {
                             type="date"
                             value={filters.startDate}
                             onChange={(e) => handleFilterChange('startDate', e.target.value)}
-                            className="px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                            className="px-3 sm:px-4 py-1.5 sm:py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
                             placeholder="Từ ngày"
                         />
 
@@ -211,48 +220,48 @@ export default function AdminActivityPage() {
                             type="date"
                             value={filters.endDate}
                             onChange={(e) => handleFilterChange('endDate', e.target.value)}
-                            className="px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                            className="px-3 sm:px-4 py-1.5 sm:py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
                             placeholder="Đến ngày"
                         />
                     </div>
                 </div>
             )}
 
-            {/* Stats Summary */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                <div className="bg-white dark:bg-[#1c1c1c] rounded-xl p-4 shadow-sm border border-gray-200 dark:border-gray-800">
-                    <div className="flex items-center gap-2 text-blue-500 mb-2">
-                        <FileText size={18} />
-                        <span className="text-sm">Bài viết</span>
+            {/* Stats Summary - Responsive grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+                <div className="bg-white dark:bg-[#1c1c1c] rounded-xl p-3 sm:p-4 shadow-sm border border-gray-200 dark:border-gray-800">
+                    <div className="flex items-center gap-2 text-blue-500 mb-1 sm:mb-2">
+                        <FileText size={isMobile ? 14 : 18} />
+                        <span className="text-xs sm:text-sm">Bài viết</span>
                     </div>
-                    <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                    <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
                         {activities.filter(a => a.type === 'post').length}
                     </p>
                 </div>
-                <div className="bg-white dark:bg-[#1c1c1c] rounded-xl p-4 shadow-sm border border-gray-200 dark:border-gray-800">
-                    <div className="flex items-center gap-2 text-purple-500 mb-2">
-                        <Package size={18} />
-                        <span className="text-sm">Sản phẩm</span>
+                <div className="bg-white dark:bg-[#1c1c1c] rounded-xl p-3 sm:p-4 shadow-sm border border-gray-200 dark:border-gray-800">
+                    <div className="flex items-center gap-2 text-purple-500 mb-1 sm:mb-2">
+                        <Package size={isMobile ? 14 : 18} />
+                        <span className="text-xs sm:text-sm">Sản phẩm</span>
                     </div>
-                    <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                    <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
                         {activities.filter(a => a.type === 'product').length}
                     </p>
                 </div>
-                <div className="bg-white dark:bg-[#1c1c1c] rounded-xl p-4 shadow-sm border border-gray-200 dark:border-gray-800">
-                    <div className="flex items-center gap-2 text-green-500 mb-2">
-                        <DollarSign size={18} />
-                        <span className="text-sm">Giao dịch</span>
+                <div className="bg-white dark:bg-[#1c1c1c] rounded-xl p-3 sm:p-4 shadow-sm border border-gray-200 dark:border-gray-800">
+                    <div className="flex items-center gap-2 text-green-500 mb-1 sm:mb-2">
+                        <DollarSign size={isMobile ? 14 : 18} />
+                        <span className="text-xs sm:text-sm">Giao dịch</span>
                     </div>
-                    <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                    <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
                         {activities.filter(a => a.type === 'payment').length}
                     </p>
                 </div>
-                <div className="bg-white dark:bg-[#1c1c1c] rounded-xl p-4 shadow-sm border border-gray-200 dark:border-gray-800">
-                    <div className="flex items-center gap-2 text-orange-500 mb-2">
-                        <TrendingUp size={18} />
-                        <span className="text-sm">Doanh thu</span>
+                <div className="bg-white dark:bg-[#1c1c1c] rounded-xl p-3 sm:p-4 shadow-sm border border-gray-200 dark:border-gray-800">
+                    <div className="flex items-center gap-2 text-orange-500 mb-1 sm:mb-2">
+                        <TrendingUp size={isMobile ? 14 : 18} />
+                        <span className="text-xs sm:text-sm">Doanh thu</span>
                     </div>
-                    <p className="text-xl font-bold text-gray-900 dark:text-white">
+                    <p className="text-sm sm:text-xl font-bold text-gray-900 dark:text-white truncate">
                         {formatCurrency(
                             activities
                                 .filter(a => a.type === 'payment' && a.metadata?.method === 'banking')
@@ -265,15 +274,15 @@ export default function AdminActivityPage() {
             {/* Activities List */}
             <div className="bg-white dark:bg-[#1c1c1c] rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden">
                 {activities.length === 0 ? (
-                    <div className="text-center py-12">
-                        <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center">
-                            <Eye size={32} className="text-gray-400" />
+                    <div className="text-center py-8 sm:py-12">
+                        <div className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-3 sm:mb-4 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center">
+                            <Eye size={isMobile ? 24 : 32} className="text-gray-400" />
                         </div>
-                        <p className="text-gray-500 dark:text-gray-400">Không có hoạt động nào</p>
+                        <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">Không có hoạt động nào</p>
                         {hasActiveFilters && (
                             <button
                                 onClick={clearFilters}
-                                className="mt-4 text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400"
+                                className="mt-3 sm:mt-4 text-xs sm:text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400"
                             >
                                 Xóa bộ lọc
                             </button>
@@ -285,28 +294,28 @@ export default function AdminActivityPage() {
                             {activities.map((activity) => {
                                 const statusBadge = getStatusBadge(activity.status);
                                 return (
-                                    <div key={activity.id} className="p-5 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition">
-                                        <div className="flex items-start gap-4">
+                                    <div key={activity.id} className="p-3 sm:p-5 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition">
+                                        <div className="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4">
                                             {/* Icon */}
-                                            <div className="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center flex-shrink-0">
+                                            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center flex-shrink-0">
                                                 {getActivityIcon(activity.type)}
                                             </div>
 
                                             {/* Content */}
                                             <div className="flex-1 min-w-0">
-                                                {/* Header */}
-                                                <div className="flex flex-wrap items-center gap-2 mb-1">
-                                                    <span className="font-semibold text-gray-900 dark:text-white">
+                                                {/* Header - Wrap trên mobile */}
+                                                <div className="flex flex-wrap items-center gap-1 sm:gap-2 mb-1">
+                                                    <span className="font-semibold text-sm sm:text-base text-gray-900 dark:text-white">
                                                         {activity.user?.fullName || 'Hệ thống'}
                                                     </span>
-                                                    <span className="text-gray-500 dark:text-gray-400">
+                                                    <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
                                                         {getActionText(activity)}
                                                     </span>
-                                                    <span className="font-medium text-gray-900 dark:text-white">
+                                                    <span className="font-medium text-sm sm:text-base text-gray-900 dark:text-white break-words">
                                                         {activity.title}
                                                     </span>
                                                     {activity.status && (
-                                                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusBadge.color}`}>
+                                                        <span className={`px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium ${statusBadge.color}`}>
                                                             {statusBadge.text}
                                                         </span>
                                                     )}
@@ -314,39 +323,39 @@ export default function AdminActivityPage() {
 
                                                 {/* Metadata - Bài viết */}
                                                 {activity.type === 'post' && activity.metadata && (
-                                                    <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500 dark:text-gray-400 mt-2">
-                                                        <span className="flex items-center gap-1">
-                                                            <Eye size={12} /> {formatNumber(activity.metadata.views || 0)} lượt xem
+                                                    <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 mt-1 sm:mt-2">
+                                                        <span className="flex items-center gap-0.5 sm:gap-1">
+                                                            <Eye size={isMobile ? 10 : 12} /> {formatNumber(activity.metadata.views || 0)} lượt xem
                                                         </span>
-                                                        <span className="flex items-center gap-1">
-                                                            <ThumbsUp size={12} /> {formatNumber(activity.metadata.likes || 0)} thích
+                                                        <span className="flex items-center gap-0.5 sm:gap-1">
+                                                            <ThumbsUp size={isMobile ? 10 : 12} /> {formatNumber(activity.metadata.likes || 0)} thích
                                                         </span>
-                                                        <span className="flex items-center gap-1">
-                                                            <FileText size={12} /> {formatNumber(activity.metadata.comments || 0)} bình luận
+                                                        <span className="flex items-center gap-0.5 sm:gap-1">
+                                                            <FileText size={isMobile ? 10 : 12} /> {formatNumber(activity.metadata.comments || 0)} bình luận
                                                         </span>
                                                     </div>
                                                 )}
 
                                                 {/* Metadata - Sản phẩm */}
                                                 {activity.type === 'product' && activity.metadata && (
-                                                    <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500 dark:text-gray-400 mt-2">
-                                                        <span className="flex items-center gap-1">
-                                                            <Download size={12} /> {formatNumber(activity.metadata.downloads || 0)} lượt tải
+                                                    <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 mt-1 sm:mt-2">
+                                                        <span className="flex items-center gap-0.5 sm:gap-1">
+                                                            <Download size={isMobile ? 10 : 12} /> {formatNumber(activity.metadata.downloads || 0)} lượt tải
                                                         </span>
-                                                        <span className="flex items-center gap-1">
-                                                            <Star size={12} /> {activity.metadata.rating?.toFixed(1) || 0}
+                                                        <span className="flex items-center gap-0.5 sm:gap-1">
+                                                            <Star size={isMobile ? 10 : 12} /> {activity.metadata.rating?.toFixed(1) || 0}
                                                         </span>
-                                                        <span className="flex items-center gap-1">
-                                                            <DollarSign size={12} /> {formatCurrency(activity.metadata.price || 0)}
+                                                        <span className="flex items-center gap-0.5 sm:gap-1">
+                                                            <DollarSign size={isMobile ? 10 : 12} /> {formatCurrency(activity.metadata.price || 0)}
                                                         </span>
                                                     </div>
                                                 )}
 
-                                                {/* Metadata - Giao dịch (hiển thị rõ Xu hay Ngân hàng) */}
+                                                {/* Metadata - Giao dịch */}
                                                 {activity.type === 'payment' && activity.metadata && (
-                                                    <div className="flex flex-wrap items-center gap-4 text-xs mt-2">
-                                                        <span className="flex items-center gap-1">
-                                                            <DollarSign size={12} />
+                                                    <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-[10px] sm:text-xs mt-1 sm:mt-2">
+                                                        <span className="flex items-center gap-0.5 sm:gap-1">
+                                                            <DollarSign size={isMobile ? 10 : 12} />
                                                             {activity.metadata.method === 'xu' ? (
                                                                 <span className="text-blue-600 dark:text-blue-400 font-medium">
                                                                     {formatNumber(activity.metadata.xuAmount || 0)} Xu
@@ -357,21 +366,21 @@ export default function AdminActivityPage() {
                                                                 </span>
                                                             )}
                                                         </span>
-                                                        <span className="flex items-center gap-1">
-                                                            <CreditCard size={12} />
+                                                        <span className="flex items-center gap-0.5 sm:gap-1">
+                                                            <CreditCard size={isMobile ? 10 : 12} />
                                                             <span className={activity.metadata.method === 'xu'
                                                                 ? 'text-blue-600 dark:text-blue-400'
                                                                 : 'text-green-600 dark:text-green-400'
                                                             }>
-                                                                {activity.metadata.method === 'xu' ? 'Thanh toán bằng Xu' : 'Thanh toán qua ngân hàng (PayOS)'}
+                                                                {activity.metadata.method === 'xu' ? 'Thanh toán bằng Xu' : 'Thanh toán qua ngân hàng'}
                                                             </span>
                                                         </span>
                                                     </div>
                                                 )}
 
                                                 {/* Time */}
-                                                <div className="flex items-center gap-2 text-xs text-gray-400 dark:text-gray-500 mt-2">
-                                                    <Calendar size={12} />
+                                                <div className="flex items-center gap-1 sm:gap-2 text-[10px] sm:text-xs text-gray-400 dark:text-gray-500 mt-1 sm:mt-2">
+                                                    <Calendar size={isMobile ? 10 : 12} />
                                                     <span>{formatDate(activity.createdAt)}</span>
                                                 </div>
                                             </div>
@@ -382,7 +391,7 @@ export default function AdminActivityPage() {
                                                     href={activity.link}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
-                                                    className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 text-sm flex-shrink-0 hover:underline"
+                                                    className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 text-xs sm:text-sm flex-shrink-0 hover:underline mt-2 sm:mt-0"
                                                 >
                                                     Xem chi tiết →
                                                 </a>
@@ -393,32 +402,32 @@ export default function AdminActivityPage() {
                             })}
                         </div>
 
-                        {/* Pagination */}
+                        {/* Pagination - Responsive */}
                         {totalPages > 1 && (
-                            <div className="flex justify-between items-center p-5 border-t border-gray-200 dark:border-gray-800">
+                            <div className="flex flex-col sm:flex-row justify-between items-center gap-3 p-4 sm:p-5 border-t border-gray-200 dark:border-gray-800">
                                 <button
                                     onClick={() => setPage(p => Math.max(1, p - 1))}
                                     disabled={page === 1}
-                                    className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-800 transition"
+                                    className="flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-800 transition"
                                 >
-                                    <ChevronLeft size={18} />
-                                    Trước
+                                    <ChevronLeft size={isMobile ? 14 : 18} />
+                                    <span className="hidden sm:inline">Trước</span>
                                 </button>
                                 <div className="flex items-center gap-2">
-                                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                                    <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
                                         Trang {page} / {totalPages}
                                     </span>
-                                    <div className="flex gap-1">
-                                        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                                    <div className="flex gap-0.5 sm:gap-1">
+                                        {Array.from({ length: Math.min(isMobile ? 3 : 5, totalPages) }, (_, i) => {
                                             let pageNum = page;
-                                            if (totalPages <= 5) {
+                                            if (totalPages <= (isMobile ? 3 : 5)) {
                                                 pageNum = i + 1;
-                                            } else if (page <= 3) {
+                                            } else if (page <= (isMobile ? 2 : 3)) {
                                                 pageNum = i + 1;
-                                            } else if (page >= totalPages - 2) {
-                                                pageNum = totalPages - 4 + i;
+                                            } else if (page >= totalPages - (isMobile ? 1 : 2)) {
+                                                pageNum = totalPages - (isMobile ? 2 : 4) + i;
                                             } else {
-                                                pageNum = page - 2 + i;
+                                                pageNum = page - (isMobile ? 1 : 2) + i;
                                             }
 
                                             if (pageNum < 1 || pageNum > totalPages) return null;
@@ -427,7 +436,7 @@ export default function AdminActivityPage() {
                                                 <button
                                                     key={pageNum}
                                                     onClick={() => setPage(pageNum)}
-                                                    className={`w-8 h-8 rounded-lg text-sm transition ${page === pageNum
+                                                    className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg text-xs sm:text-sm transition ${page === pageNum
                                                         ? 'bg-blue-600 text-white'
                                                         : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400'
                                                         }`}
@@ -441,10 +450,10 @@ export default function AdminActivityPage() {
                                 <button
                                     onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                                     disabled={page === totalPages}
-                                    className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-800 transition"
+                                    className="flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-800 transition"
                                 >
-                                    Sau
-                                    <ChevronRight size={18} />
+                                    <span className="hidden sm:inline">Sau</span>
+                                    <ChevronRight size={isMobile ? 14 : 18} />
                                 </button>
                             </div>
                         )}
