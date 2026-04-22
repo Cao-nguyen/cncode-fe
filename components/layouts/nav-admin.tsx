@@ -5,6 +5,7 @@ import { useTheme } from "next-themes";
 import { Moon, Sun, PanelLeft, LogOut, Menu, House } from "lucide-react";
 import { useAuthStore } from "@/store/auth.store";
 import NotificationBell from "./NotificationBell";
+import { useState, useEffect } from "react";
 
 const PAGE_TITLES: Record<string, string> = {
     "/admin/dashboard": "Trang tổng quan",
@@ -31,6 +32,16 @@ export default function NavAdmin({ open, onToggle }: NavAdminProps) {
     const { logout } = useAuthStore();
     const router = useRouter();
     const path = usePathname();
+    const [isMobile, setIsMobile] = useState(false);
+
+    useEffect(() => {
+        const checkMobile = () => {
+            setIsMobile(window.innerWidth < 768);
+        };
+        checkMobile();
+        window.addEventListener("resize", checkMobile);
+        return () => window.removeEventListener("resize", checkMobile);
+    }, []);
 
     const pageTitle = PAGE_TITLES[path] ?? "Admin";
 
@@ -44,8 +55,10 @@ export default function NavAdmin({ open, onToggle }: NavAdminProps) {
 
     return (
         <div className="rounded-t-2xl bg-white dark:bg-[#0f0f0f]">
-            <header className="flex h-14 items-center justify-between px-4">
-                <div className="flex items-center gap-2">
+            <header className="flex h-14 items-center justify-between px-2 sm:px-4">
+                {/* Left section */}
+                <div className="flex items-center gap-1 sm:gap-2">
+                    {/* Menu button - luôn hiển thị trên mobile */}
                     <button
                         onClick={onToggle}
                         className={btnBase}
@@ -59,18 +72,24 @@ export default function NavAdmin({ open, onToggle }: NavAdminProps) {
                         />
                     </button>
 
-                    <div className="mx-1 h-5 w-px bg-black/[0.1] dark:bg-white/[0.1]" />
+                    {/* Divider - ẩn trên mobile khi không đủ chỗ */}
+                    {!isMobile && <div className="mx-1 h-5 w-px bg-black/[0.1] dark:bg-white/[0.1]" />}
 
-                    <div className="flex items-center gap-1.5 text-[12.5px]">
-                        <span className="text-gray-400 dark:text-gray-500">Admin</span>
-                        <span className="text-gray-300 dark:text-gray-600">/</span>
-                        <span className="font-semibold text-gray-800 dark:text-gray-100">
-                            {pageTitle}
+                    {/* Breadcrumb - rút gọn trên mobile */}
+                    <div className="flex items-center gap-1 sm:gap-1.5 text-[10px] sm:text-[12.5px]">
+                        <span className="text-gray-400 dark:text-gray-500 hidden sm:inline">Admin</span>
+                        <span className="text-gray-400 dark:text-gray-500 sm:hidden">A</span>
+                        <span className="text-gray-300 dark:text-gray-600 hidden sm:inline">/</span>
+                        <span className="text-gray-300 dark:text-gray-600 sm:hidden">/</span>
+                        <span className="font-semibold text-gray-800 dark:text-gray-100 truncate max-w-[120px] sm:max-w-none">
+                            {isMobile && pageTitle.length > 15 ? pageTitle.slice(0, 12) + "..." : pageTitle}
                         </span>
                     </div>
                 </div>
 
-                <div className="flex items-center gap-1">
+                {/* Right section */}
+                <div className="flex items-center gap-0.5 sm:gap-1">
+                    {/* Home button - ẩn text trên mobile */}
                     <button
                         onClick={() => router.push("/")}
                         className={btnBase}
@@ -79,10 +98,13 @@ export default function NavAdmin({ open, onToggle }: NavAdminProps) {
                         <House size={18} />
                     </button>
 
-                    <div className="mx-1 h-5 w-px bg-black/[0.1] dark:bg-white/[0.1]" />
+                    {/* Divider - ẩn trên mobile */}
+                    {!isMobile && <div className="mx-1 h-5 w-px bg-black/[0.1] dark:bg-white/[0.1]" />}
 
+                    {/* Notification */}
                     <NotificationBell />
 
+                    {/* Theme toggle */}
                     <button
                         onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
                         className={btnBase}
@@ -92,14 +114,16 @@ export default function NavAdmin({ open, onToggle }: NavAdminProps) {
                         <Moon size={18} className="block dark:hidden" />
                     </button>
 
-                    <div className="mx-1 h-5 w-px bg-black/[0.1] dark:bg-white/[0.1]" />
+                    {/* Divider - ẩn trên mobile */}
+                    {!isMobile && <div className="mx-1 h-5 w-px bg-black/[0.1] dark:bg-white/[0.1]" />}
 
+                    {/* Logout button - rút gọn trên mobile */}
                     <button
                         onClick={handleLogout}
-                        className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-[12.5px] font-medium text-red-500 transition-colors hover:bg-red-50 dark:hover:bg-red-500/10"
+                        className="flex items-center gap-1 sm:gap-1.5 rounded-lg px-2 sm:px-3 py-2 text-[10px] sm:text-[12.5px] font-medium text-red-500 transition-colors hover:bg-red-50 dark:hover:bg-red-500/10"
                     >
+                        <LogOut size={isMobile ? 14 : 16} />
                         <span className="hidden sm:inline">Đăng xuất</span>
-                        <LogOut size={16} />
                     </button>
                 </div>
             </header>
