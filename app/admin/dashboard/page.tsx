@@ -38,6 +38,13 @@ interface TooltipPayloadItem {
         count?: number;
         totalDownloads?: number;
         avgRating?: number;
+        month?: string;
+        revenue?: number;
+        orders?: number;
+        users?: number;
+        teachers?: number;
+        products?: number;
+        posts?: number;
     };
 }
 
@@ -45,6 +52,23 @@ interface CustomTooltipProps {
     active?: boolean;
     payload?: TooltipPayloadItem[];
     label?: string;
+}
+
+// Định nghĩa type cho props của renderCustomizedLabel
+interface PieLabelRenderProps {
+    cx: number;
+    cy: number;
+    midAngle: number;
+    innerRadius: number;
+    outerRadius: number;
+    percent: number;
+    index: number;
+    payload: {
+        _id: string;
+        count: number;
+        totalDownloads: number;
+        avgRating: number;
+    };
 }
 
 // Custom tooltip component cho LineChart, AreaChart, BarChart
@@ -74,29 +98,31 @@ const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
 // Custom tooltip cho PieChart
 const CustomPieTooltip = ({ active, payload }: CustomTooltipProps) => {
     if (active && payload && payload.length) {
-        const data = payload[0].payload;
-        const value = payload[0].value;
-        return (
-            <div className="bg-white dark:bg-gray-800 p-3 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
-                <p className="font-semibold text-sm mb-1 capitalize">{data._id}</p>
-                <p className="text-sm text-gray-600 dark:text-gray-300">
-                    Số lượng: {new Intl.NumberFormat('vi-VN').format(value)} sản phẩm
-                </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    Lượt tải: {new Intl.NumberFormat('vi-VN').format(data.totalDownloads || 0)}
-                </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                    Đánh giá: ⭐ {data.avgRating?.toFixed(1) || 0}
-                </p>
-            </div>
-        );
+        const data = payload[0]?.payload;
+        const value = payload[0]?.value;
+        if (data && value !== undefined) {
+            return (
+                <div className="bg-white dark:bg-gray-800 p-3 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
+                    <p className="font-semibold text-sm mb-1 capitalize">{String(data._id || '')}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                        Số lượng: {new Intl.NumberFormat('vi-VN').format(value)} sản phẩm
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        Lượt tải: {new Intl.NumberFormat('vi-VN').format(data.totalDownloads || 0)}
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                        Đánh giá: ⭐ {data.avgRating?.toFixed(1) || 0}
+                    </p>
+                </div>
+            );
+        }
     }
     return null;
 };
 
-// Custom label cho PieChart
-const renderCustomizedLabel = (props) => {
-    const { cx, cy, midAngle, innerRadius, outerRadius, percent, index, payload } = props;
+// Custom label cho PieChart - ĐÃ FIX LỖI TYPE
+const renderCustomizedLabel = (props: PieLabelRenderProps) => {
+    const { cx, cy, midAngle, outerRadius, payload } = props;
     const RADIAN = Math.PI / 180;
     const radius = outerRadius * 1.1;
     const x = cx + radius * Math.cos(-midAngle * RADIAN);
