@@ -32,13 +32,11 @@ export default function ImagePreview({ images, initialIndex, onClose }: ImagePre
         if (e.key === 'Escape') onClose();
         if (e.key === 'ArrowLeft') {
             setCurrentIndex(prev => Math.max(0, prev - 1));
-            // Reset zoom khi chuyển ảnh
             setScale(1);
             setPosition({ x: 0, y: 0 });
         }
         if (e.key === 'ArrowRight') {
             setCurrentIndex(prev => Math.min(images.length - 1, prev + 1));
-            // Reset zoom khi chuyển ảnh
             setScale(1);
             setPosition({ x: 0, y: 0 });
         }

@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { Edit, Trash2, Eye, Plus, FileText, AlertCircle, CheckCircle, Clock, Flag } from 'lucide-react';
+import { Edit, Trash2, Eye, Plus, FileText, AlertCircle, CheckCircle, Clock, Flag, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import Image from 'next/image';
 import { postApi } from '@/lib/api/post.api';
@@ -26,45 +26,60 @@ const getStatusBadge = (status: string) => {
 };
 
 export default function MyPostsPage() {
-    const { token } = useAuthStore();
+    const { token, user } = useAuthStore();
     const [posts, setPosts] = useState<IPost[]>([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
     const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
-    useEffect(() => {
-        if (token) {
-            fetchPosts();
+    const fetchPosts = useCallback(async () => {
+        if (!token) {
+            setLoading(false);
+            return;
         }
-    }, [token]);
 
-    const fetchPosts = async () => {
         try {
             setLoading(true);
-            const result = await postApi.getUserPosts(token!);
+            setError(null);
+            const result = await postApi.getUserPosts(token);
+
             if (result.success) {
-                setPosts(result.data);
+                setPosts(result.data || []);
+            } else {
+                setError(result.message || 'Không thể tải bài viết');
+                toast.error(result.message || 'Lỗi khi tải bài viết');
             }
-        } catch (error) {
+        } catch (error: any) {
+            console.error('Fetch posts error:', error);
+            setError(error.message || 'Có lỗi xảy ra khi tải bài viết');
             toast.error('Lỗi khi tải bài viết');
         } finally {
             setLoading(false);
         }
-    };
+    }, [token]);
+
+    useEffect(() => {
+        fetchPosts();
+    }, [fetchPosts]);
 
     const handleDelete = async () => {
-        if (!deleteTarget) return;
+        if (!deleteTarget || !token) return;
 
+        setIsDeleting(true);
         try {
-            const result = await postApi.deletePost(deleteTarget.id, token!);
+            const result = await postApi.deletePost(deleteTarget.id, token);
             if (result.success) {
                 toast.success('Xóa bài viết thành công');
-                setPosts(posts.filter(p => p._id !== deleteTarget.id));
+                setPosts(prev => prev.filter(p => p._id !== deleteTarget.id));
             } else {
                 toast.error(result.message || 'Xóa thất bại');
             }
-        } catch {
-            toast.error('Có lỗi xảy ra');
+        } catch (error: any) {
+            console.error('Delete error:', error);
+            toast.error(error.message || 'Có lỗi xảy ra khi xóa');
         } finally {
+            setIsDeleting(false);
             setDeleteTarget(null);
         }
     };
@@ -73,8 +88,29 @@ export default function MyPostsPage() {
         return (
             <div className="min-h-screen bg-gray-50 dark:bg-black py-10">
                 <div className="container mx-auto px-5 lg:px-10">
-                    <div className="flex justify-center items-center h-64">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                    <div className="flex flex-col justify-center items-center h-64 gap-4">
+                        <Loader2 className="animate-spin h-12 w-12 text-blue-600" />
+                        <p className="text-gray-500">Đang tải bài viết...</p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="min-h-screen bg-gray-50 dark:bg-black py-10">
+                <div className="container mx-auto px-5 lg:px-10">
+                    <div className="bg-white dark:bg-[#171717] rounded-xl p-12 text-center border border-gray-200 dark:border-gray-800">
+                        <AlertCircle size={64} className="mx-auto text-red-400 mb-4" />
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Lỗi tải bài viết</h3>
+                        <p className="text-gray-600 dark:text-gray-400 mb-4">{error}</p>
+                        <button
+                            onClick={fetchPosts}
+                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                        >
+                            Thử lại
+                        </button>
                     </div>
                 </div>
             </div>
@@ -127,46 +163,46 @@ export default function MyPostsPage() {
                                             <Image
                                                 width={128}
                                                 height={128}
-                                                src={post.thumbnail}
+                                                src={post.thumbnail || '/placeholder.jpg'}
                                                 alt={post.title}
                                                 className="w-full h-full object-cover"
+                                                onError={(e) => {
+                                                    const target = e.target as HTMLImageElement;
+                                                    target.src = '/placeholder.jpg';
+                                                }}
                                             />
                                         </div>
 
                                         <div className="flex-1">
                                             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-2">
                                                 <div>
-                                                    <h3 className="font-semibold text-gray-900 dark:text-white text-lg mb-1">
+                                                    <h3 className="font-semibold text-gray-900 dark:text-white text-lg mb-1 line-clamp-1">
                                                         {post.title}
                                                     </h3>
-                                                    <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
-                                                        {post.description}
-                                                    </p>
                                                 </div>
                                                 <div className="text-left sm:text-right">
                                                     <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium ${StatusBadge.color}`}>
                                                         <StatusIcon size={12} />
                                                         <span>{StatusBadge.label}</span>
                                                     </div>
-                                                    {(post as { reportCount: number }).reportCount > 0 && (
+                                                    {post.reportCount > 0 && (
                                                         <div className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 ml-2">
                                                             <Flag size={12} />
-                                                            <span>{(post as { reportCount: number }).reportCount} báo cáo</span>
+                                                            <span>{post.reportCount} báo cáo</span>
                                                         </div>
                                                     )}
                                                 </div>
                                             </div>
 
                                             <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500 dark:text-gray-400 mt-3">
-                                                <span>Lượt xem: {post.views.toLocaleString()}</span>
-                                                <span>Lượt thích: {post.likes.toLocaleString()}</span>
-                                                <span>Danh mục: {post.category}</span>
-                                                <span>Ngày đăng: {new Date(post.createdAt).toLocaleDateString('vi-VN')}</span>
+                                                <span>Lượt xem: {post.views?.toLocaleString() || 0}</span>
+                                                <span>Lượt thích: {post.likes?.toLocaleString() || 0}</span>
+                                                <span>Ngày đăng: {post.createdAt ? new Date(post.createdAt).toLocaleDateString('vi-VN') : 'Không rõ'}</span>
                                             </div>
 
                                             <div className="flex flex-wrap gap-2 mt-4">
                                                 <Link
-                                                    href={`/blog/${post.slug}`}
+                                                    href={`/baiviet/${post.slug}`}
                                                     target="_blank"
                                                     className="flex items-center gap-1 px-3 py-1.5 text-sm bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
                                                 >
@@ -182,17 +218,27 @@ export default function MyPostsPage() {
                                                 </Link>
                                                 <button
                                                     onClick={() => setDeleteTarget({ id: post._id, title: post.title })}
-                                                    className="flex items-center gap-1 px-3 py-1.5 text-sm bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
+                                                    disabled={isDeleting && deleteTarget?.id === post._id}
+                                                    className="flex items-center gap-1 px-3 py-1.5 text-sm bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                                 >
-                                                    <Trash2 size={14} />
-                                                    Xóa
+                                                    {isDeleting && deleteTarget?.id === post._id ? (
+                                                        <>
+                                                            <Loader2 size={14} className="animate-spin" />
+                                                            Đang xóa...
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <Trash2 size={14} />
+                                                            Xóa
+                                                        </>
+                                                    )}
                                                 </button>
                                             </div>
 
-                                            {post.status === 'rejected' && (
+                                            {post.status === 'rejected' && (post as any).rejectionReason && (
                                                 <div className="mt-3 p-3 bg-red-50 dark:bg-red-900/10 rounded-lg">
                                                     <p className="text-sm text-red-700 dark:text-red-400">
-                                                        <strong>Lý do từ chối:</strong> Bài viết chưa đáp ứng tiêu chuẩn chất lượng. Vui lòng chỉnh sửa và gửi lại.
+                                                        <strong>Lý do từ chối:</strong> {(post as any).rejectionReason}
                                                     </p>
                                                 </div>
                                             )}
@@ -207,12 +253,13 @@ export default function MyPostsPage() {
 
             <ConfirmDialog
                 isOpen={!!deleteTarget}
-                onClose={() => setDeleteTarget(null)}
+                onClose={() => !isDeleting && setDeleteTarget(null)}
                 onConfirm={handleDelete}
                 title="Xóa bài viết"
                 message={`Bạn có chắc chắn muốn xóa bài viết "${deleteTarget?.title}"? Hành động này không thể hoàn tác.`}
-                confirmText="Xóa"
+                confirmText={isDeleting ? "Đang xóa..." : "Xóa"}
                 cancelText="Hủy"
+                isConfirmLoading={isDeleting}
             />
         </div>
     );

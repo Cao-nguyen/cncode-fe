@@ -1,15 +1,17 @@
 'use client';
 
-import { useRef } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import BlogBreadcrumb from './blog.breadcrumb';
 import BlogActions from './blog.action';
 import BlogComment from './blog.comment';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import BlogSidebarMobile from './blog.sidebar.m';
 import { IPost, IComment, IUser } from '@/types/post.type';
-import { Eye } from 'lucide-react';
-import { useContentImagePreview } from './ImagePreview';
-import { ImagePreview } from './ImagePreview';
+import { Eye, Heart } from 'lucide-react';
+import ImagePreview from '@/components/common/ImagePreview';
+import { toast } from 'sonner';
+import { useAuthStore } from '@/store/auth.store';
+import { postApi } from '@/lib/api/post.api';
 
 interface BlogDetailProps {
     post: IPost;
@@ -32,11 +34,22 @@ const formatDate = (dateString: string): string =>
         year: 'numeric',
     });
 
+// Hàm lấy tất cả ảnh từ nội dung HTML
+const extractAllImages = (html: string): string[] => {
+    const matches = html.match(/<img[^>]+src=["']([^"']+)["']/gi);
+    if (!matches) return [];
+
+    return matches.map(match => {
+        const srcMatch = match.match(/src=["']([^"']+)["']/);
+        return srcMatch ? srcMatch[1] : '';
+    }).filter(src => src);
+};
+
 export default function BlogDetail({
     post,
     comments,
-    likeCount,
-    liked,
+    likeCount: initialLikeCount,
+    liked: initialLiked,
     bookmarked,
     currentUser,
     onLike,
@@ -45,7 +58,88 @@ export default function BlogDetail({
     onDeleteComment,
 }: BlogDetailProps) {
     const articleRef = useRef<HTMLElement>(null);
-    const { previewSrc, closePreview } = useContentImagePreview(articleRef);
+    const { token } = useAuthStore();
+
+    // State cho image preview
+    const [previewImages, setPreviewImages] = useState<string[]>([]);
+    const [previewIndex, setPreviewIndex] = useState<number>(0);
+    const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+
+    // Local state for optimistic updates
+    const [liked, setLiked] = useState(initialLiked);
+    const [likeCount, setLikeCount] = useState(initialLikeCount);
+    const [isLiking, setIsLiking] = useState(false);
+
+    // Lấy tất cả ảnh từ nội dung bài viết
+    const allImages = extractAllImages(post.content);
+
+    // Xử lý click vào ảnh trong bài viết
+    useEffect(() => {
+        const container = articleRef.current;
+        if (!container) return;
+
+        const handleImageClick = (e: MouseEvent) => {
+            const target = e.target as HTMLElement;
+            if (target.tagName === 'IMG') {
+                const clickedSrc = (target as HTMLImageElement).src;
+                const index = allImages.findIndex(img => img === clickedSrc);
+                if (index !== -1) {
+                    setPreviewImages(allImages);
+                    setPreviewIndex(index);
+                    setIsPreviewOpen(true);
+                } else {
+                    // Nếu ảnh không nằm trong danh sách (có thể do lazy load), mở ảnh đơn
+                    setPreviewImages([clickedSrc]);
+                    setPreviewIndex(0);
+                    setIsPreviewOpen(true);
+                }
+            }
+        };
+
+        container.addEventListener('click', handleImageClick);
+
+        // Thêm cursor zoom-in cho tất cả ảnh
+        container.querySelectorAll('img').forEach((img) => {
+            img.style.cursor = 'zoom-in';
+        });
+
+        return () => container.removeEventListener('click', handleImageClick);
+    }, [allImages, post.content]);
+
+    const handleLikeClick = async () => {
+        if (!token || !currentUser) {
+            toast.error('Vui lòng đăng nhập để thích bài viết');
+            return;
+        }
+
+        if (isLiking) return;
+        setIsLiking(true);
+
+        const newLiked = !liked;
+        setLiked(newLiked);
+        setLikeCount(prev => newLiked ? prev + 1 : prev - 1);
+
+        try {
+            const result = await postApi.likePost(post._id, token);
+            if (result.success) {
+                if (result.data.liked !== newLiked) {
+                    setLiked(result.data.liked);
+                    setLikeCount(result.data.likes);
+                }
+                onLike();
+            } else {
+                setLiked(!newLiked);
+                setLikeCount(prev => newLiked ? prev - 1 : prev + 1);
+                toast.error('Có lỗi xảy ra');
+            }
+        } catch (error) {
+            setLiked(!newLiked);
+            setLikeCount(prev => newLiked ? prev - 1 : prev + 1);
+            toast.error('Có lỗi xảy ra');
+        } finally {
+            setIsLiking(false);
+        }
+    };
 
     return (
         <>
@@ -71,6 +165,20 @@ export default function BlogDetail({
                                     <Eye size={11} />
                                     {post.views.toLocaleString('vi-VN')}
                                 </span>
+                                <span>·</span>
+                                <button
+                                    onClick={handleLikeClick}
+                                    disabled={isLiking}
+                                    className={`flex items-center gap-0.5 transition disabled:opacity-50 ${liked ? 'text-red-500' : 'hover:text-red-500'
+                                        }`}
+                                >
+                                    <Heart
+                                        size={12}
+                                        fill={liked ? '#ef4444' : 'none'}
+                                        className={liked ? 'text-red-500' : ''}
+                                    />
+                                    <span>{likeCount.toLocaleString('vi-VN')} lượt thích</span>
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -102,7 +210,7 @@ export default function BlogDetail({
                         commentCount={comments.length}
                         liked={liked}
                         bookmarked={bookmarked}
-                        onLike={onLike}
+                        onLike={handleLikeClick}
                         onComment={() => {
                             document
                                 .getElementById('comment-section')
@@ -121,7 +229,18 @@ export default function BlogDetail({
                 />
             </div>
 
-            {previewSrc && <ImagePreview src={previewSrc} onClose={closePreview} />}
+            {/* Image Preview với hỗ trợ nhiều ảnh */}
+            {isPreviewOpen && previewImages.length > 0 && (
+                <ImagePreview
+                    images={previewImages}
+                    initialIndex={previewIndex}
+                    onClose={() => {
+                        setIsPreviewOpen(false);
+                        setPreviewImages([]);
+                        setPreviewIndex(0);
+                    }}
+                />
+            )}
         </>
     );
 }

@@ -16,12 +16,16 @@ interface SocketContextType {
     socket: Socket | null;
     isConnected: boolean;
     socketId: string | undefined;
+    joinPostRoom: (postSlug: string) => void;
+    leavePostRoom: (postSlug: string) => void;
 }
 
 const SocketContext = createContext<SocketContextType>({
     socket: null,
     isConnected: false,
     socketId: undefined,
+    joinPostRoom: () => { },
+    leavePostRoom: () => { },
 });
 
 export const useSocket = () => useContext(SocketContext);
@@ -37,6 +41,20 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     const [isConnected, setIsConnected] = useState(false);
     const [socketId, setSocketId] = useState<string | undefined>(undefined);
     const registeredRef = useRef(false);
+
+    const joinPostRoom = (postSlug: string) => {
+        if (socketState && isConnected) {
+            console.log(`📢 Joining post room: post_${postSlug}`);
+            socketState.emit('join_post_room', { postSlug });
+        }
+    };
+
+    const leavePostRoom = (postSlug: string) => {
+        if (socketState && isConnected) {
+            console.log(`📢 Leaving post room: post_${postSlug}`);
+            socketState.emit('leave_post_room', { postSlug });
+        }
+    };
 
     useEffect(() => {
         if (!token || !isOnboarded || !user?.id) {
@@ -117,10 +135,9 @@ export function SocketProvider({ children }: { children: ReactNode }) {
 
         console.log('📝 Registering user with socket:', user.id);
 
-        // ✅ Gửi userId, sessionId có thể null — server không chặn nữa
         socketState.emit('register', {
             userId: user.id,
-            sessionId: null  // httpOnly cookie không đọc được từ JS, server xử lý ok
+            sessionId: null
         });
         registeredRef.current = true;
 
@@ -129,9 +146,36 @@ export function SocketProvider({ children }: { children: ReactNode }) {
         });
     }, [socketState, isConnected, user?.id]);
 
+    // Thêm listener cho socket events
+    useEffect(() => {
+        if (!socketState) return;
+
+        const handleJoinedPostRoom = (data: { postSlug: string; room: string }) => {
+            console.log('✅ Joined post room:', data);
+        };
+
+        const handleLeftPostRoom = (data: { postSlug: string; room: string }) => {
+            console.log('✅ Left post room:', data);
+        };
+
+        socketState.on('joined_post_room', handleJoinedPostRoom);
+        socketState.on('left_post_room', handleLeftPostRoom);
+
+        return () => {
+            socketState.off('joined_post_room', handleJoinedPostRoom);
+            socketState.off('left_post_room', handleLeftPostRoom);
+        };
+    }, [socketState]);
+
     const value = useMemo<SocketContextType>(
-        () => ({ socket: socketState, isConnected, socketId }),
-        [socketState, isConnected, socketId],
+        () => ({
+            socket: socketState,
+            isConnected,
+            socketId,
+            joinPostRoom,
+            leavePostRoom
+        }),
+        [socketState, isConnected, socketId, joinPostRoom, leavePostRoom]
     );
 
     return (

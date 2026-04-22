@@ -41,8 +41,8 @@ export default function BlogActions({ postId, isBookmarked = false, onBookmarkCh
     const [reportOpen, setReportOpen] = useState(false);
     const [selectedReason, setSelectedReason] = useState('');
     const [reporting, setReporting] = useState(false);
+    const [isProcessing, setIsProcessing] = useState(false);
 
-    
     useEffect(() => {
         setBookmarked(isBookmarked);
     }, [isBookmarked]);
@@ -52,15 +52,37 @@ export default function BlogActions({ postId, isBookmarked = false, onBookmarkCh
             toast.error('Vui lòng đăng nhập để lưu bài viết');
             return;
         }
+
+        if (isProcessing) return;
+        setIsProcessing(true);
+
+        // Optimistic update - cập nhật UI ngay lập tức
+        const newBookmarked = !bookmarked;
+        setBookmarked(newBookmarked);
+        onBookmarkChange?.(newBookmarked);
+
         try {
             const result = await postApi.bookmarkPost(postId, token);
             if (result.success) {
-                setBookmarked(result.data.bookmarked);
-                onBookmarkChange?.(result.data.bookmarked);
                 toast.success(result.data.bookmarked ? 'Đã lưu bài viết' : 'Đã bỏ lưu bài viết');
+                // Đồng bộ lại với response từ server
+                if (result.data.bookmarked !== newBookmarked) {
+                    setBookmarked(result.data.bookmarked);
+                    onBookmarkChange?.(result.data.bookmarked);
+                }
+            } else {
+                // Rollback nếu có lỗi
+                setBookmarked(!newBookmarked);
+                onBookmarkChange?.(!newBookmarked);
+                toast.error('Có lỗi xảy ra');
             }
-        } catch {
+        } catch (error) {
+            // Rollback nếu có lỗi
+            setBookmarked(!newBookmarked);
+            onBookmarkChange?.(!newBookmarked);
             toast.error('Có lỗi xảy ra');
+        } finally {
+            setIsProcessing(false);
         }
     };
 
@@ -113,11 +135,12 @@ export default function BlogActions({ postId, isBookmarked = false, onBookmarkCh
             <div className="flex items-center gap-3 md:gap-4">
                 <button
                     onClick={handleBookmark}
-                    className="transition cursor-pointer p-1 rounded-full hover:bg-muted"
+                    disabled={isProcessing}
+                    className="transition cursor-pointer p-1 rounded-full hover:bg-muted disabled:opacity-50"
                     aria-label="Lưu bài viết"
                 >
                     <Bookmark
-                        data-filled={bookmarked ? "" : undefined}
+                        data-filled={true}
                         size={22}
                         fill={bookmarked ? '#eab308' : 'none'}
                         className={bookmarked ? 'text-yellow-500' : ''}

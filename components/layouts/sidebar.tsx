@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { Document } from "iconsax-react";
 import { usePathname, useRouter } from "next/navigation";
 import {
     LayoutDashboard,
@@ -82,6 +83,17 @@ const menuItems = [
                         className="h-[18px] w-[18px]"
                     />
                 ),
+            },
+        ],
+    },
+    {
+        category: "Quản lí nội dung",
+        categoryId: "content",
+        listLink: [
+            {
+                title: "Bài viết",
+                link: "/admin/blog",
+                icon: <Document size={18} variant="Outline" />,
             },
         ],
     },

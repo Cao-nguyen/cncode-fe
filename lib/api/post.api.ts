@@ -186,4 +186,64 @@ export const postApi = {
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
             body: JSON.stringify({ type }),
         }),
+
+    // ============= ADMIN API =============
+
+    adminGetAllPosts: (
+        token: string,
+        params?: {
+            status?: string;
+            search?: string;
+            page?: number;
+            limit?: number;
+        }
+    ): Promise<IApiResponse<IPost[]>> => {
+        const qs = params ? buildQuery(params) : '';
+        return apiFetch(`${API_URL}/api/posts/admin/posts${qs ? `?${qs}` : ''}`, {
+            headers: { Authorization: `Bearer ${token}` },
+            cache: 'no-store',
+        });
+    },
+
+    adminGetPostById: (id: string, token: string): Promise<IApiResponse<IPost>> =>
+        apiFetch(`${API_URL}/api/posts/admin/posts/${id}`, {
+            headers: { Authorization: `Bearer ${token}` },
+        }),
+
+    adminUpdatePost: (
+        id: string,
+        data: {
+            title?: string;
+            description?: string;
+            content?: string;
+            thumbnail?: string;
+            status?: 'draft' | 'published' | 'pending' | 'rejected';
+        },
+        token: string,
+    ): Promise<IApiResponse<IPost>> =>
+        apiFetch(`${API_URL}/api/posts/admin/posts/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify(data),
+        }),
+
+    adminReviewPost: (
+        id: string,
+        data: {
+            status: 'published' | 'rejected';
+            rejectionReason?: string;
+        },
+        token: string,
+    ): Promise<IApiResponse<null>> =>
+        apiFetch(`${API_URL}/api/posts/admin/posts/${id}/review`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify(data),
+        }),
+
+    adminDeletePost: (id: string, token: string): Promise<IApiResponse<null>> =>
+        apiFetch(`${API_URL}/api/posts/${id}`, {
+            method: 'DELETE',
+            headers: { Authorization: `Bearer ${token}` },
+        }),
 };

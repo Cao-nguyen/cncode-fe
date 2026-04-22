@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/dialog';
 import Image from 'next/image';
 import { postApi } from '@/lib/api/post.api';
+import { useSocket } from '@/providers/socket.provider';
 
 const REACTIONS = [
     { type: 'like', icon: '/icons/like.svg', label: 'Thích' },
@@ -70,6 +71,7 @@ export default function CommentItem({
     isChild = false,
 }: CommentItemProps) {
     const { user, token } = useAuthStore();
+    const { socket } = useSocket();
     const [showReplyInput, setShowReplyInput] = useState(false);
     const [replyContent, setReplyContent] = useState('');
     const [showReactionPopup, setShowReactionPopup] = useState(false);
@@ -84,6 +86,27 @@ export default function CommentItem({
     const [editSubmitting, setEditSubmitting] = useState(false);
 
     const reactionRef = useRef<HTMLDivElement>(null);
+
+    // Lắng nghe reaction realtime từ socket
+    useEffect(() => {
+        if (!socket) return;
+
+        const handleCommentReactionUpdate = (data: {
+            commentId: string;
+            reactions: IReactions;
+            postSlug: string;
+        }) => {
+            if (data.commentId === comment._id) {
+                setLocalReactions(data.reactions);
+            }
+        };
+
+        socket.on('comment:reaction_updated', handleCommentReactionUpdate);
+
+        return () => {
+            socket.off('comment:reaction_updated', handleCommentReactionUpdate);
+        };
+    }, [socket, comment._id]);
 
     useEffect(() => {
         setLocalReactions(comment.reactions);
@@ -108,11 +131,18 @@ export default function CommentItem({
     const commentUserId = getUserId(comment.user);
     const postAuthorId = getUserId(post.author);
 
-    const userReaction =
-        user
-            ? REACTIONS.find((r) => localReactions[r.type as ReactionKey]?.includes(currentUserId || '')) ?? null
-            : null;
+    // Lấy reaction hiện tại của user
+    const getUserCurrentReaction = (): { type: string; label: string } | null => {
+        if (!currentUserId) return null;
+        for (const r of REACTIONS) {
+            if (localReactions[r.type as ReactionKey]?.includes(currentUserId)) {
+                return { type: r.type, label: r.label };
+            }
+        }
+        return null;
+    };
 
+    const userReaction = getUserCurrentReaction();
     const totalReactions = getTotalReactions(localReactions);
 
     const canDelete = !!(user && (
@@ -123,35 +153,38 @@ export default function CommentItem({
 
     const canEdit = !!(user && currentUserId === commentUserId);
 
+    // Xử lý reaction với optimistic update
     const handleReaction = async (type: string) => {
         if (!token || !user || !currentUserId) {
             toast.error('Vui lòng đăng nhập để thả cảm xúc');
             return;
         }
+
         const key = type as ReactionKey;
-        const hasReacted = localReactions[key]?.includes(currentUserId);
+        const currentReaction = userReaction;
+        const isSameReaction = currentReaction?.type === type;
 
         // Optimistic update
-        setLocalReactions((prev) => {
-            const next = { ...prev };
-            if (hasReacted) {
-                next[key] = next[key].filter((id) => id !== currentUserId);
-            } else {
-                (Object.keys(next) as ReactionKey[]).forEach((k) => {
-                    next[k] = next[k].filter((id) => id !== currentUserId);
-                });
-                next[key] = [...(next[key] || []), currentUserId];
-            }
-            return next;
-        });
+        const newReactions = { ...localReactions };
 
+        if (isSameReaction) {
+            newReactions[key] = newReactions[key].filter((id) => id !== currentUserId);
+        } else {
+            REACTIONS.forEach(r => {
+                newReactions[r.type as ReactionKey] = newReactions[r.type as ReactionKey].filter(
+                    (id) => id !== currentUserId
+                );
+            });
+            newReactions[key] = [...(newReactions[key] || []), currentUserId];
+        }
+
+        setLocalReactions(newReactions);
         setShowReactionPopup(false);
 
         try {
-            // ✅ Chỉ gọi REST API - backend tự emit socket notification
             await postApi.toggleCommentReaction(post._id, comment._id, type, token);
-            await onCommentUpdated();
-        } catch {
+            // Không cần gọi onCommentUpdated, socket sẽ tự cập nhật
+        } catch (error) {
             toast.error('Có lỗi xảy ra');
             setLocalReactions(comment.reactions);
         }
@@ -167,7 +200,6 @@ export default function CommentItem({
         setSubmitting(true);
         try {
             const rootId = comment.parentId ?? comment._id;
-            // ✅ Chỉ gọi REST API - backend tự emit socket notification
             await postApi.addComment(post._id, replyContent, token, rootId);
             setReplyContent('');
             setShowReplyInput(false);
@@ -298,6 +330,7 @@ export default function CommentItem({
                         )}
                     </div>
 
+                    {/* Hiển thị reactions - chỉ hiển thị icon và số lượng */}
                     {totalReactions > 0 && (
                         <div className="flex items-center gap-1 mt-1 ml-1">
                             <div className="flex -space-x-1">
@@ -328,9 +361,9 @@ export default function CommentItem({
                         <div className="relative flex items-center" ref={reactionRef}>
                             <button
                                 onClick={() => setShowReactionPopup((v) => !v)}
-                                className={`text-xs font-semibold leading-none transition ${userReaction
-                                    ? 'text-blue-500'
-                                    : 'text-muted-foreground hover:text-foreground'
+                                className={`text-xs font-semibold leading-none transition px-2 py-0.5 rounded-full ${userReaction
+                                    ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+                                    : 'text-muted-foreground hover:bg-gray-200 dark:hover:bg-gray-700'
                                     }`}
                             >
                                 {userReaction ? userReaction.label : 'Thích'}
@@ -363,7 +396,7 @@ export default function CommentItem({
 
                         <button
                             onClick={() => setShowReplyInput((v) => !v)}
-                            className="text-xs font-semibold leading-none text-muted-foreground hover:text-foreground transition"
+                            className="text-xs font-semibold leading-none text-muted-foreground hover:text-foreground transition px-2 py-0.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
                         >
                             Trả lời
                         </button>

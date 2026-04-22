@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation';
 import BlogDetail from '@/components/blog/blog.detail';
 import BlogSidebar from '@/components/blog/blog.sidebar';
 import { Skeleton } from '@/components/ui/skeleton';
-import { IPost, IComment } from '@/types/post.type';
+import { IPost, IComment, IReactions } from '@/types/post.type';
 import { postApi } from '@/lib/api/post.api';
 import { useAuthStore } from '@/store/auth.store';
 import { useSocket } from '@/providers/socket.provider';
@@ -23,7 +23,6 @@ export default function ChiTietBaiVietPage() {
     const [bookmarked, setBookmarked] = useState(false);
     const [previewSrc, setPreviewSrc] = useState<string | null>(null);
     const viewTracked = useRef(false);
-    const postRef = useRef<IPost | null>(null); 
 
     const buildCommentTree = (flat: IComment[]): IComment[] => {
         const map = new Map<string, IComment>();
@@ -32,12 +31,26 @@ export default function ChiTietBaiVietPage() {
         flat.forEach((c) => {
             const node = map.get(c._id)!;
             if (c.parentId && map.has(c.parentId)) {
-                map.get(c.parentId)!.children!.push(node);
+                const parent = map.get(c.parentId)!;
+                parent.children = parent.children || [];
+                parent.children.push(node);
             } else {
                 roots.push(node);
             }
         });
         return roots;
+    };
+
+    const flattenComments = (tree: IComment[]): IComment[] => {
+        const result: IComment[] = [];
+        const traverse = (node: IComment) => {
+            result.push(node);
+            if (node.children) {
+                node.children.forEach(traverse);
+            }
+        };
+        tree.forEach(traverse);
+        return result;
     };
 
     const fetchPost = useCallback(async () => {
@@ -46,7 +59,6 @@ export default function ChiTietBaiVietPage() {
             const result = await postApi.getPostBySlug(slug as string);
             if (result.success && result.data) {
                 const p = result.data;
-                postRef.current = p; 
                 setPost(p);
                 setLikeCount(p.likes || 0);
                 setLiked(user ? (p.likedBy?.includes(user.id) ?? false) : false);
@@ -73,38 +85,146 @@ export default function ChiTietBaiVietPage() {
         postApi.trackView(slug as string).catch(() => { });
     }, [slug]);
 
-    
+    // Socket realtime handlers
+    // Chỉ giữ lại useEffect này cho socket events
     useEffect(() => {
         if (!socket || !slug) return;
 
-        const handleNewComment = (data: { postSlug: string }) => {
+        // Handle new comment
+        const handleNewComment = (data: { comment: IComment; postSlug: string }) => {
             if (data.postSlug !== slug) return;
-            fetchPost();
+
+            setComments(prevComments => {
+                const newComment = data.comment;
+
+                if (newComment.parentId) {
+                    const addChildToParent = (nodes: IComment[]): IComment[] => {
+                        return nodes.map(node => {
+                            if (node._id === newComment.parentId) {
+                                return {
+                                    ...node,
+                                    children: [...(node.children || []), newComment]
+                                };
+                            }
+                            if (node.children && node.children.length > 0) {
+                                return {
+                                    ...node,
+                                    children: addChildToParent(node.children)
+                                };
+                            }
+                            return node;
+                        });
+                    };
+                    return addChildToParent(prevComments);
+                } else {
+                    return [...prevComments, newComment];
+                }
+            });
         };
 
-        const handleNewReaction = (data: { postSlug: string }) => {
+        // Handle delete comment
+        const handleDeleteComment = (data: { commentId: string; postSlug: string }) => {
             if (data.postSlug !== slug) return;
-            fetchPost();
+
+            setComments(prevComments => {
+                const removeComment = (nodes: IComment[]): IComment[] => {
+                    return nodes.filter(node => {
+                        if (node._id === data.commentId) return false;
+                        if (node.children && node.children.length > 0) {
+                            node.children = removeComment(node.children);
+                        }
+                        return true;
+                    });
+                };
+                return removeComment(prevComments);
+            });
         };
 
-        socket.on('post:new_comment', handleNewComment);
-        socket.on('post:new_reaction', handleNewReaction);
+        // Handle update comment
+        const handleUpdateComment = (data: { comment: IComment; postSlug: string }) => {
+            if (data.postSlug !== slug) return;
+
+            setComments(prevComments => {
+                const updateCommentInTree = (nodes: IComment[]): IComment[] => {
+                    return nodes.map(node => {
+                        if (node._id === data.comment._id) {
+                            return { ...node, ...data.comment };
+                        }
+                        if (node.children && node.children.length > 0) {
+                            return {
+                                ...node,
+                                children: updateCommentInTree(node.children)
+                            };
+                        }
+                        return node;
+                    });
+                };
+                return updateCommentInTree(prevComments);
+            });
+        };
+
+        // Handle reaction update
+        const handleReactionUpdate = (data: {
+            commentId: string;
+            reactions: IReactions;
+            postSlug: string;
+        }) => {
+            if (data.postSlug !== slug) return;
+
+            setComments(prevComments => {
+                const updateReactionInTree = (nodes: IComment[]): IComment[] => {
+                    return nodes.map(node => {
+                        if (node._id === data.commentId) {
+                            return { ...node, reactions: data.reactions };
+                        }
+                        if (node.children && node.children.length > 0) {
+                            return {
+                                ...node,
+                                children: updateReactionInTree(node.children)
+                            };
+                        }
+                        return node;
+                    });
+                };
+                return updateReactionInTree(prevComments);
+            });
+        };
+
+        socket.on('comment:new', handleNewComment);
+        socket.on('comment:deleted', handleDeleteComment);
+        socket.on('comment:updated', handleUpdateComment);
+        socket.on('comment:reaction_updated', handleReactionUpdate);
 
         return () => {
-            socket.off('post:new_comment', handleNewComment);
-            socket.off('post:new_reaction', handleNewReaction);
+            socket.off('comment:new', handleNewComment);
+            socket.off('comment:deleted', handleDeleteComment);
+            socket.off('comment:updated', handleUpdateComment);
+            socket.off('comment:reaction_updated', handleReactionUpdate);
         };
-    }, [socket, slug, fetchPost]);
+    }, [socket, slug]);
 
     const handleLike = async () => {
         if (!token || !post) return;
+
+        // Optimistic update
+        const newLiked = !liked;
+        setLiked(newLiked);
+        setLikeCount(prev => newLiked ? prev + 1 : prev - 1);
+
         try {
             const result = await postApi.likePost(post._id, token);
             if (result.success) {
                 setLiked(result.data.liked);
                 setLikeCount(result.data.likes);
+            } else {
+                // Rollback
+                setLiked(!newLiked);
+                setLikeCount(prev => newLiked ? prev - 1 : prev + 1);
             }
         } catch (error) {
+            // Rollback
+            setLiked(!newLiked);
+            setLikeCount(prev => newLiked ? prev - 1 : prev + 1);
             console.error('Like error:', error);
         }
     };
@@ -113,9 +233,10 @@ export default function ChiTietBaiVietPage() {
         if (!token || !post) return;
         try {
             await postApi.addComment(post._id, content, token, parentId ?? null);
-            await fetchPost();
+            // Không cần fetch lại, socket sẽ tự cập nhật
         } catch (error) {
             console.error('Add comment error:', error);
+            throw error;
         }
     };
 
@@ -127,7 +248,7 @@ export default function ChiTietBaiVietPage() {
         if (!token || !post) return;
         try {
             await postApi.deleteComment(post._id, commentId, token);
-            await fetchPost();
+            // Không cần fetch lại, socket sẽ tự cập nhật
         } catch (error) {
             console.error('Delete comment error:', error);
         }

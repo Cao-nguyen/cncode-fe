@@ -1,0 +1,2304 @@
+=========================================
+EXPORT FRONTEND BLOG - CNCODE
+Generated: 04/22/2026 15:24:25
+=========================================
+
+========== API & TYPES ==========
+
+========================================
+FILE: lib/api/post.api.ts
+========================================
+import { IApiResponse, IPost, IComment } from '@/types/post.type';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+
+const buildQuery = (params: Record<string, string | number | boolean | undefined | null>): string => {
+    const query = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+            query.append(key, String(value));
+        }
+    });
+    return query.toString();
+};
+
+const apiFetch = async <T>(
+    url: string,
+    options?: RequestInit & { cache?: RequestCache; revalidate?: number },
+): Promise<T> => {
+    const res = await fetch(url, {
+        ...options,
+        next: options?.revalidate !== undefined ? { revalidate: options.revalidate } : undefined,
+        headers: {
+            'Content-Type': 'application/json',
+            ...options?.headers,
+        },
+    });
+
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({ message: res.statusText }));
+        throw new Error(err.message || 'API Error');
+    }
+    return res.json();
+};
+
+export const postApi = {
+    getFeaturedPosts: async (limit: number = 3): Promise<IApiResponse<IPost[]>> => {
+        const response = await fetch(`${API_URL}/api/posts/featured?limit=${limit}`, {
+            cache: 'no-store'
+        });
+        return response.json();
+    },
+
+    getPosts: (params?: {
+        category?: string;
+        search?: string;
+        sort?: string;
+        page?: number;
+        limit?: number;
+        status?: string;
+        createdAt?: string;
+    }): Promise<IApiResponse<IPost[]>> => {
+        const qs = params ? buildQuery(params) : '';
+        return apiFetch(`${API_URL}/api/posts${qs ? `?${qs}` : ''}`, {
+            cache: 'no-store',
+        });
+    },
+
+    getPostBySlug: (slug: string): Promise<IApiResponse<IPost>> =>
+        apiFetch(`${API_URL}/api/posts/${slug}`, { cache: 'no-store' }),
+
+    getPostById: (id: string, token: string): Promise<IApiResponse<IPost>> =>
+        apiFetch(`${API_URL}/api/posts/post/${id}`, {
+            headers: { Authorization: `Bearer ${token}` }
+        }),
+
+    trackView: (slug: string): Promise<void> =>
+        fetch(`${API_URL}/api/posts/${slug}/view`, { method: 'POST' }).then(() => undefined),
+
+    createPost: (
+        data: {
+            title: string;
+            description: string;
+            content: string;
+            category: string;
+            thumbnail: string;
+            tags?: string[];
+            status?: 'draft' | 'published';
+        },
+        token: string,
+    ): Promise<IApiResponse<IPost>> =>
+        apiFetch(`${API_URL}/api/posts`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ ...data, status: 'pending' }),
+        }),
+
+    updatePost: (
+        id: string,
+        data: {
+            title?: string;
+            description?: string;
+            content?: string;
+            thumbnail?: string;
+            status?: 'draft' | 'published';
+        },
+        token: string,
+    ): Promise<IApiResponse<IPost>> =>
+        apiFetch(`${API_URL}/api/posts/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify(data),
+        }),
+
+    deletePost: (id: string, token: string): Promise<IApiResponse<null>> =>
+        apiFetch(`${API_URL}/api/posts/${id}`, {
+            method: 'DELETE',
+            headers: { Authorization: `Bearer ${token}` },
+        }),
+
+    getUserPosts: (token: string): Promise<IApiResponse<IPost[]>> => {
+        return apiFetch(`${API_URL}/api/posts/user`, {
+            headers: { Authorization: `Bearer ${token}` },
+            cache: 'no-store',
+        });
+    },
+
+    likePost: (id: string, token: string): Promise<IApiResponse<{ liked: boolean; likes: number }>> =>
+        apiFetch(`${API_URL}/api/posts/${id}/like`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}` },
+        }),
+
+    bookmarkPost: (id: string, token: string): Promise<IApiResponse<{ bookmarked: boolean }>> =>
+        apiFetch(`${API_URL}/api/posts/${id}/bookmark`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}` },
+        }),
+
+    reportPost: (id: string, reason: string, token: string): Promise<IApiResponse<null>> =>
+        apiFetch(`${API_URL}/api/posts/${id}/report`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ reason }),
+        }),
+
+    addComment: (
+        id: string,
+        content: string,
+        token: string,
+        parentId: string | null = null,
+    ): Promise<IApiResponse<IComment[]>> =>
+        apiFetch(`${API_URL}/api/posts/${id}/comment`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ content, parentId }),
+        }),
+
+    deleteComment: (postId: string, commentId: string, token: string): Promise<IApiResponse<IComment[]>> =>
+        apiFetch(`${API_URL}/api/posts/${postId}/comment/${commentId}`, {
+            method: 'DELETE',
+            headers: { Authorization: `Bearer ${token}` },
+        }),
+
+    editComment: (
+        postId: string,
+        commentId: string,
+        content: string,
+        token: string,
+    ): Promise<IApiResponse<IComment[]>> =>
+        apiFetch(`${API_URL}/api/posts/${postId}/comment/${commentId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ content }),
+        }),
+
+    reportComment: (
+        postId: string,
+        commentId: string,
+        reason: string,
+        token: string,
+    ): Promise<IApiResponse<null>> =>
+        apiFetch(`${API_URL}/api/posts/${postId}/comment/${commentId}/report`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ reason }),
+        }),
+
+    toggleCommentReaction: (
+        postId: string,
+        commentId: string,
+        type: string,
+        token: string,
+    ): Promise<IApiResponse<{ type: string; hasReacted: boolean }>> =>
+        apiFetch(`${API_URL}/api/posts/${postId}/comment/${commentId}/reaction`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ type }),
+        }),
+};
+
+========================================
+FILE: types/post.type.ts
+========================================
+export interface IUser {
+    id: string;
+    fullName: string;
+    email: string;
+    avatar: string;
+    bio?: string;
+    role?: string;
+}
+
+export interface IReactions {
+    like: string[];
+    love: string[];
+    care: string[];
+    haha: string[];
+    wow: string[];
+    sad: string[];
+    angry: string[];
+}
+
+export interface IComment {
+    _id: string;
+    user: IUser;
+    content: string;
+    parentId: string | null;
+    children?: IComment[];
+    reactions: IReactions;
+    createdAt: string;
+    editedAt?: string;
+    replyToName?: string;
+}
+
+export interface IPost {
+    _id: string;
+    title: string;
+    slug: string;
+    description: string;
+    content: string;
+    thumbnail: string;
+    category: string;
+    tags: string[];
+    author: IUser;
+    views: number;
+    likes: number;
+    likedBy: string[];
+    bookmarks: string[];
+    reportedBy: Array<{ user: string; reason: string }>;
+    reportCount: number;
+    comments: IComment[];
+    readTime: number;
+    status: 'draft' | 'pending' | 'published' | 'rejected';
+    publishedAt?: string | null;
+    createdAt: string;
+    updatedAt: string;
+    relatedPosts?: IPost[];
+}
+
+export interface IApiResponse<T> {
+    success: boolean;
+    data: T;
+    message?: string;
+    pagination?: {
+        page: number;
+        limit: number;
+        total: number;
+        totalPages: number;
+    };
+}
+
+export interface IBlogDetailProps {
+    post: IPost;
+    comments: IComment[];
+    likeCount: number;
+    liked: boolean;
+    bookmarked: boolean;
+    currentUser: IUser | null;
+    onLike: () => Promise<void>;
+    onBookmarkChange: (bookmarked: boolean) => void;
+    onSubmitComment: (content: string, parentId?: string | null) => Promise<void>;
+    onDeleteComment: (commentId: string) => Promise<void>;
+    onImagePreview: (src: string) => void;
+}
+
+========== PAGES ==========
+
+========================================
+FILE: app/(user)/(main)/baiviet/page.tsx
+========================================
+'use client';
+
+import { useMemo, useState, useEffect, useCallback, useRef } from 'react';
+import Link from 'next/link';
+import { Plus, Search } from 'lucide-react';
+import BlogCard from '@/components/blog/BlogCard';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { postApi } from '@/lib/api/post.api';
+import { IPost } from '@/types/post.type';
+
+const LIMIT = 8;
+
+function BlogCardSkeleton() {
+    return (
+        <div className="rounded-2xl overflow-hidden border">
+            <Skeleton className="h-48 w-full" />
+            <div className="p-4 space-y-3">
+                <Skeleton className="h-5 w-20" />
+                <Skeleton className="h-6 w-3/4" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-2/3" />
+                <Skeleton className="h-8 w-32" />
+            </div>
+        </div>
+    );
+}
+
+export default function BlogPage(): React.ReactElement {
+    const [searchTerm, setSearchTerm] = useState<string>('');
+    const [posts, setPosts] = useState<IPost[]>([]);
+    const [loading, setLoading] = useState<boolean>(true);
+    const [page, setPage] = useState<number>(1);
+    const [totalPages, setTotalPages] = useState<number>(1);
+    const [totalPosts, setTotalPosts] = useState<number>(0);
+    const abortRef = useRef<AbortController | null>(null);
+
+    const fetchPosts = useCallback(async (currentPage: number): Promise<void> => {
+        abortRef.current?.abort();
+        abortRef.current = new AbortController();
+
+        setLoading(true);
+        try {
+            const result = await postApi.getPosts({
+                page: currentPage,
+                limit: LIMIT,
+                status: 'published',
+            });
+
+            if (result.success) {
+                setPosts(result.data);
+                if (result.pagination) {
+                    setTotalPosts(result.pagination.total);
+                    setTotalPages(result.pagination.totalPages);
+                }
+            }
+        } catch {
+
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchPosts(page);
+    }, [fetchPosts, page]);
+
+    const filteredPosts = useMemo((): IPost[] => {
+        const query = searchTerm.trim().toLowerCase();
+        if (!query) return posts;
+        return posts.filter(
+            (post) =>
+                post.title.toLowerCase().includes(query) ||
+                post.description.toLowerCase().includes(query) ||
+                post.author.fullName.toLowerCase().includes(query),
+        );
+    }, [searchTerm, posts]);
+
+    const formatReadTime = (minutes: number): string => {
+        if (minutes < 1) return '1 phút đọc';
+        return `${minutes} phút đọc`;
+    };
+
+    return (
+        <main className="px-4 py-5 sm:px-5 lg:px-10 mx-auto">
+
+            <div className="flex flex-col gap-4 mb-8 md:flex-row md:items-center md:justify-between">
+                <div>
+                    <h1 className="text-3xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">
+                        Tất cả bài viết
+                    </h1>
+                    <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                        Khám phá kiến thức công nghệ và đổi mới sáng tạo
+                    </p>
+                </div>
+
+                <div className="flex items-center gap-3">
+                    <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" size={18} />
+                        <Input
+                            type="search"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            placeholder="Tìm kiếm bài viết..."
+                            className="w-full md:w-80 pl-10 rounded-full border-slate-200 dark:border-slate-700 focus:border-black dark:focus:border-white"
+                        />
+                    </div>
+                    <Link href="/me/baiviet/create">
+                        <Button className="rounded-full bg-black text-white dark:bg-white dark:text-black hover:opacity-90">
+                            <Plus size={18} className="mr-1" />
+                            Tạo blog
+                        </Button>
+                    </Link>
+                </div>
+            </div>
+
+            <div className="mb-6 text-sm text-slate-500 dark:text-slate-400">
+                {loading ? (
+                    <Skeleton className="h-4 w-24" />
+                ) : (
+                    `${filteredPosts.length} bài viết`
+                )}
+            </div>
+
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                {loading ? (
+                    [...Array(LIMIT)].map((_, i) => <BlogCardSkeleton key={i} />)
+                ) : filteredPosts.length > 0 ? (
+                    filteredPosts.map((post) => (
+                        <BlogCard
+                            key={post._id}
+                            title={post.title}
+                            description={post.description}
+                            image={post.thumbnail}
+                            createdAt={post.createdAt}
+                            author={post.author.fullName}
+                            avatar={post.author.avatar || '/avatar.png'}
+                            link={`/baiviet/${post.slug}`}
+                        />
+                    ))
+                ) : (
+                    <div className="col-span-full rounded-[28px] border border-slate-200 bg-slate-50 p-8 text-center text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400">
+                        {searchTerm
+                            ? 'Không tìm thấy bài viết phù hợp. Thử thay đổi từ khóa tìm kiếm.'
+                            : 'Chưa có bài viết nào.'}
+                    </div>
+                )}
+            </div>
+
+            {totalPages > 1 && !loading && (
+                <div className="flex justify-center gap-2 mt-8">
+                    <button
+                        onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+                        disabled={page === 1}
+                        className="px-4 py-2 rounded-lg border disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+                    >
+                        Trước
+                    </button>
+                    <span className="px-4 py-2 text-sm text-slate-500 dark:text-slate-400">
+                        Trang {page} / {totalPages}
+                    </span>
+                    <button
+                        onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
+                        disabled={page >= totalPages}
+                        className="px-4 py-2 rounded-lg border disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+                    >
+                        Sau
+                    </button>
+                </div>
+            )}
+        </main>
+    );
+}
+
+========================================
+FILE: app/(user)/(main)/baiviet/[slug]/page.tsx
+========================================
+File not found
+
+========================================
+FILE: app/(user)/(main)/me/baiviet/page.tsx
+========================================
+'use client';
+
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { Edit, Trash2, Eye, Plus, FileText, AlertCircle, CheckCircle, Clock, Flag } from 'lucide-react';
+import { toast } from 'sonner';
+import Image from 'next/image';
+import { postApi } from '@/lib/api/post.api';
+import { useAuthStore } from '@/store/auth.store';
+import { IPost } from '@/types/post.type';
+import ConfirmDialog from '@/components/common/ConfirmDialog';
+
+const getStatusBadge = (status: string) => {
+    switch (status) {
+        case 'published':
+            return { label: 'Đã duyệt', color: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400', icon: CheckCircle };
+        case 'pending':
+            return { label: 'Chờ duyệt', color: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400', icon: Clock };
+        case 'rejected':
+            return { label: 'Bị từ chối', color: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400', icon: AlertCircle };
+        case 'draft':
+            return { label: 'Bản nháp', color: 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-400', icon: FileText };
+        default:
+            return { label: status, color: 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-400', icon: AlertCircle };
+    }
+};
+
+export default function MyPostsPage() {
+    const { token } = useAuthStore();
+    const [posts, setPosts] = useState<IPost[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null);
+
+    useEffect(() => {
+        if (token) {
+            fetchPosts();
+        }
+    }, [token]);
+
+    const fetchPosts = async () => {
+        try {
+            setLoading(true);
+            const result = await postApi.getUserPosts(token!);
+            if (result.success) {
+                setPosts(result.data);
+            }
+        } catch (error) {
+            toast.error('Lỗi khi tải bài viết');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleDelete = async () => {
+        if (!deleteTarget) return;
+
+        try {
+            const result = await postApi.deletePost(deleteTarget.id, token!);
+            if (result.success) {
+                toast.success('Xóa bài viết thành công');
+                setPosts(posts.filter(p => p._id !== deleteTarget.id));
+            } else {
+                toast.error(result.message || 'Xóa thất bại');
+            }
+        } catch {
+            toast.error('Có lỗi xảy ra');
+        } finally {
+            setDeleteTarget(null);
+        }
+    };
+
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-gray-50 dark:bg-black py-10">
+                <div className="container mx-auto px-5 lg:px-10">
+                    <div className="flex justify-center items-center h-64">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="min-h-screen bg-gray-50 dark:bg-black py-10">
+            <div className="container mx-auto px-5 lg:px-10">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-8">
+                    <div>
+                        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Bài viết của tôi</h1>
+                        <p className="text-gray-600 dark:text-gray-400 mt-1">Quản lý các bài viết bạn đã đăng</p>
+                    </div>
+                    <Link
+                        href="/me/baiviet/create"
+                        className="flex items-center justify-center gap-2 px-4 py-2.5 bg-black dark:bg-white text-white dark:text-black rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors font-medium"
+                    >
+                        <Plus size={18} />
+                        <span>Viết bài mới</span>
+                    </Link>
+                </div>
+
+                {posts.length === 0 ? (
+                    <div className="bg-white dark:bg-[#171717] rounded-xl p-12 text-center border border-gray-200 dark:border-gray-800">
+                        <FileText size={64} className="mx-auto text-gray-400 mb-4" />
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Chưa có bài viết</h3>
+                        <p className="text-gray-600 dark:text-gray-400 mb-4">Bạn chưa viết bài nào</p>
+                        <Link
+                            href="/me/baiviet/create"
+                            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                        >
+                            <Plus size={18} />
+                            Viết bài ngay
+                        </Link>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 gap-4">
+                        {posts.map((post) => {
+                            const StatusBadge = getStatusBadge(post.status);
+                            const StatusIcon = StatusBadge.icon;
+
+                            return (
+                                <div
+                                    key={post._id}
+                                    className="bg-white dark:bg-[#171717] rounded-xl shadow-sm hover:shadow-md transition-shadow overflow-hidden border border-gray-200 dark:border-gray-800"
+                                >
+                                    <div className="flex flex-col sm:flex-row gap-4 p-5">
+                                        <div className="w-full sm:w-32 h-32 flex-shrink-0 bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden">
+                                            <Image
+                                                width={128}
+                                                height={128}
+                                                src={post.thumbnail}
+                                                alt={post.title}
+                                                className="w-full h-full object-cover"
+                                            />
+                                        </div>
+
+                                        <div className="flex-1">
+                                            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-2">
+                                                <div>
+                                                    <h3 className="font-semibold text-gray-900 dark:text-white text-lg mb-1">
+                                                        {post.title}
+                                                    </h3>
+                                                    <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
+                                                        {post.description}
+                                                    </p>
+                                                </div>
+                                                <div className="text-left sm:text-right">
+                                                    <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium ${StatusBadge.color}`}>
+                                                        <StatusIcon size={12} />
+                                                        <span>{StatusBadge.label}</span>
+                                                    </div>
+                                                    {(post as { reportCount: number }).reportCount > 0 && (
+                                                        <div className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 ml-2">
+                                                            <Flag size={12} />
+                                                            <span>{(post as { reportCount: number }).reportCount} báo cáo</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500 dark:text-gray-400 mt-3">
+                                                <span>Lượt xem: {post.views.toLocaleString()}</span>
+                                                <span>Lượt thích: {post.likes.toLocaleString()}</span>
+                                                <span>Danh mục: {post.category}</span>
+                                                <span>Ngày đăng: {new Date(post.createdAt).toLocaleDateString('vi-VN')}</span>
+                                            </div>
+
+                                            <div className="flex flex-wrap gap-2 mt-4">
+                                                <Link
+                                                    href={`/blog/${post.slug}`}
+                                                    target="_blank"
+                                                    className="flex items-center gap-1 px-3 py-1.5 text-sm bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                                                >
+                                                    <Eye size={14} />
+                                                    Xem
+                                                </Link>
+                                                <Link
+                                                    href={`/me/baiviet/edit/${post._id}`}
+                                                    className="flex items-center gap-1 px-3 py-1.5 text-sm bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
+                                                >
+                                                    <Edit size={14} />
+                                                    Sửa
+                                                </Link>
+                                                <button
+                                                    onClick={() => setDeleteTarget({ id: post._id, title: post.title })}
+                                                    className="flex items-center gap-1 px-3 py-1.5 text-sm bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
+                                                >
+                                                    <Trash2 size={14} />
+                                                    Xóa
+                                                </button>
+                                            </div>
+
+                                            {post.status === 'rejected' && (
+                                                <div className="mt-3 p-3 bg-red-50 dark:bg-red-900/10 rounded-lg">
+                                                    <p className="text-sm text-red-700 dark:text-red-400">
+                                                        <strong>Lý do từ chối:</strong> Bài viết chưa đáp ứng tiêu chuẩn chất lượng. Vui lòng chỉnh sửa và gửi lại.
+                                                    </p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
+            </div>
+
+            <ConfirmDialog
+                isOpen={!!deleteTarget}
+                onClose={() => setDeleteTarget(null)}
+                onConfirm={handleDelete}
+                title="Xóa bài viết"
+                message={`Bạn có chắc chắn muốn xóa bài viết "${deleteTarget?.title}"? Hành động này không thể hoàn tác.`}
+                confirmText="Xóa"
+                cancelText="Hủy"
+            />
+        </div>
+    );
+}
+
+========================================
+FILE: app/(user)/(main)/me/baiviet/create/page.tsx
+========================================
+'use client';
+
+import { useState, useCallback, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
+import { useAuthStore } from '@/store/auth.store';
+import { postApi } from '@/lib/api/post.api';
+import { toast } from 'sonner';
+import { Loader2, ArrowLeft, Globe, Lock, ImageIcon } from 'lucide-react';
+import Link from 'next/link';
+
+
+interface BlobInfo {
+    blob: () => Blob;
+    filename: () => string;
+    base64: () => string;
+    blobUri: () => string;
+    uri: () => string | undefined;
+}
+
+const Editor = dynamic(() => import('@tinymce/tinymce-react').then((mod) => mod.Editor), {
+    ssr: false,
+    loading: () => (
+        <div className="h-[500px] w-full rounded-xl border bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+            <Loader2 className="w-5 h-5 animate-spin text-gray-500" />
+        </div>
+    ),
+});
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+const TINYMCE_API_KEY = process.env.NEXT_PUBLIC_TINYMCE_API_KEY;
+
+
+const extractFirstImage = (html: string): string => {
+    const match = html.match(/<img[^>]+src=["']([^"']+)["']/i);
+    return match ? match[1] : '';
+};
+
+
+const extractDescription = (html: string): string => {
+    const text = html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+    return text.slice(0, 200).trim();
+};
+
+export default function CreatePostPage() {
+    const router = useRouter();
+    const { token } = useAuthStore();
+    const [loading, setLoading] = useState(false);
+    const [title, setTitle] = useState('');
+    const [content, setContent] = useState('');
+    const [status, setStatus] = useState<'published' | 'draft'>('published');
+
+    useEffect(() => {
+        if (!token) {
+            toast.error('Vui lòng đăng nhập để đăng bài');
+            router.push('/login');
+        }
+    }, [token, router]);
+
+    const uploadImageToCloudinary = useCallback(
+        async (file: File): Promise<string> => {
+            const formData = new FormData();
+            formData.append('image', file);
+            formData.append('folder', 'blogs');
+
+            const response = await fetch(`${API_URL}/api/upload/single`, {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${token}` },
+                body: formData,
+            });
+
+            const data = await response.json();
+            if (!data.success) throw new Error(data.message || 'Upload thất bại');
+            return data.data.url;
+        },
+        [token],
+    );
+
+    const handleSubmit = async () => {
+        if (!title.trim()) {
+            toast.error('Vui lòng nhập tiêu đề');
+            return;
+        }
+        if (!content.trim()) {
+            toast.error('Vui lòng nhập nội dung');
+            return;
+        }
+        if (!token) {
+            toast.error('Vui lòng đăng nhập lại');
+            return;
+        }
+
+        const thumbnail = extractFirstImage(content);
+        if (!thumbnail) {
+            toast.error('Nội dung cần có ít nhất 1 ảnh để làm ảnh đại diện');
+            return;
+        }
+
+        setLoading(true);
+        try {
+            
+            const result = await postApi.createPost(
+                {
+                    title: title.trim(),
+                    description: extractDescription(content),
+                    content,
+                    category: 'general',
+                    thumbnail,
+                    tags: [],
+                    status: status === 'published' ? 'published' : 'draft'
+                },
+                token,
+            );
+
+            if (result.success) {
+                toast.success(status === 'draft' ? 'Đã lưu bài nháp' : 'Đăng bài thành công!');
+                router.push('/me/baiviet');
+            } else {
+                toast.error(result.message || 'Đăng bài thất bại');
+            }
+        } catch (error) {
+            console.error('Create post error:', error);
+            toast.error('Lỗi khi đăng bài');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    if (!token) {
+        return (
+            <div className="min-h-[60vh] flex items-center justify-center">
+                <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+            </div>
+        );
+    }
+
+    return (
+        <div className="min-h-screen bg-gray-50 dark:bg-black py-10">
+            <div className="container mx-auto px-5 lg:px-10 max-w-5xl">
+                <div className="flex items-center justify-between mb-6 gap-3 flex-wrap">
+                    <Link
+                        href="/me/baiviet"
+                        className="inline-flex items-center gap-2 text-gray-600 hover:text-blue-600"
+                    >
+                        <ArrowLeft size={20} />
+                        Quay lại
+                    </Link>
+                    <div className="flex items-center gap-2">
+                        <button
+                            type="button"
+                            onClick={() => setStatus(s => s === 'published' ? 'draft' : 'published')}
+                            className={`inline-flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-full border transition ${status === 'published'
+                                ? 'bg-green-50 border-green-200 text-green-700 dark:bg-green-950 dark:border-green-800 dark:text-green-400'
+                                : 'bg-gray-100 border-gray-300 text-gray-700 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400'
+                                }`}
+                        >
+                            {status === 'published' ? <Globe size={14} /> : <Lock size={14} />}
+                            {status === 'published' ? 'Công khai' : 'Nháp'}
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => router.push('/me/baiviet')}
+                            className="px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg text-center hover:bg-gray-50 dark:hover:bg-gray-800"
+                        >
+                            Hủy
+                        </button>
+                        <button
+                            type="button"
+                            onClick={handleSubmit}
+                            disabled={loading}
+                            className="px-6 py-2 bg-black text-white dark:bg-white dark:text-black rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50"
+                        >
+                            {loading ? (
+                                <>
+                                    <Loader2 size={14} className="animate-spin inline mr-1.5" />
+                                    Đang đăng...
+                                </>
+                            ) : status === 'published' ? (
+                                'Đăng bài'
+                            ) : (
+                                'Lưu nháp'
+                            )}
+                        </button>
+                    </div>
+                </div>
+
+                <div className="space-y-6">
+                    <div>
+                        <input
+                            type="text"
+                            value={title}
+                            onChange={(e) => setTitle(e.target.value)}
+                            placeholder="Tiêu đề bài viết..."
+                            className="w-full text-xl font-semibold h-14 rounded-xl border-0 border-b border-gray-200 dark:border-gray-800 bg-transparent px-0 focus:outline-none focus:border-blue-500 transition"
+                        />
+                    </div>
+
+                    <div>
+                        <p className="text-xs text-gray-500 flex items-center gap-1.5 mb-2">
+                            <ImageIcon size={13} />
+                            Ảnh đầu tiên trong bài sẽ làm ảnh đại diện
+                        </p>
+
+                        <div className="rounded-xl overflow-hidden border border-gray-200 dark:border-gray-800">
+                            <Editor
+                                apiKey={TINYMCE_API_KEY}
+                                value={content}
+                                onEditorChange={(val: string) => setContent(val)}
+                                init={{
+                                    height: 600,
+                                    menubar: false,
+                                    mobile: { menubar: false, toolbar_mode: 'scrolling' },
+                                    plugins: [
+                                        'advlist', 'autolink', 'lists', 'link', 'image',
+                                        'charmap', 'preview', 'searchreplace', 'visualblocks',
+                                        'code', 'fullscreen', 'media', 'table', 'wordcount',
+                                    ],
+                                    toolbar: 'undo redo | blocks | bold italic underline | ' +
+                                        'forecolor backcolor | alignleft aligncenter alignright | ' +
+                                        'bullist numlist | link image media | code fullscreen',
+                                    toolbar_mode: 'sliding',
+                                    content_style: `
+                                        body {
+                                            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+                                            font-size: 15px;
+                                            line-height: 1.7;
+                                            padding: 16px;
+                                            max-width: 100%;
+                                        }
+                                        img { max-width: 100%; height: auto; border-radius: 8px; }
+                                        pre { overflow-x: auto; background: #f4f4f4; padding: 12px; border-radius: 6px; }
+                                    `,
+                                    images_upload_handler: async (blobInfo: BlobInfo): Promise<string> => {
+                                        const file = blobInfo.blob() as File;
+                                        const url = await uploadImageToCloudinary(file);
+                                        return url;
+                                    },
+                                    automatic_uploads: true,
+                                    file_picker_types: 'image',
+                                    branding: false,
+                                    resize: false,
+                                }}
+                            />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+========================================
+FILE: app/(user)/(main)/me/baiviet/edit/[id]/page.tsx
+========================================
+File not found
+
+========== COMPONENTS ==========
+
+========================================
+FILE: components/blog/BlogCard.tsx
+========================================
+'use client';
+
+import Image from 'next/image';
+import Link from 'next/link';
+import { Clock } from 'lucide-react';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { stripMarkdown } from '@/lib/utils/strip-markdown';
+
+interface IBlogCardProps {
+    title: string;
+    description: string;
+    image: string;
+    createdAt: string;
+    author: string;
+    avatar: string;
+    link?: string;
+    views?: number;
+}
+
+export default function BlogCard({
+    title,
+    description,
+    image,
+    createdAt,
+    author,
+    avatar,
+    link = '/baiviet',
+}: IBlogCardProps): React.ReactElement {
+    const plainDescription = stripMarkdown(description);
+
+    console.log(createdAt)
+
+    const formatDate = (dateString: string): string =>
+        new Date(dateString).toLocaleDateString('vi-VN', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+        });
+
+    return (
+        <Link
+            href={link}
+            className="group block rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#171717] hover:shadow-md hover:-translate-y-1 transition-all duration-300"
+        >
+            <div className="relative w-full h-48 overflow-hidden">
+                <Image
+                    src={image}
+                    alt={title}
+                    fill
+                    className="object-cover group-hover:scale-105 transition duration-300"
+                />
+            </div>
+            <div className="p-4 flex flex-col gap-2">
+                <h3 className="font-semibold text-base line-clamp-2 text-gray-900 dark:text-white">
+                    {title}
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-3">
+                    {plainDescription}
+                </p>
+                <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    <Clock size={18} className="text-black dark:text-white" />
+                    <span>{formatDate(createdAt)}</span>
+                </div>
+                <div className="my-2 h-px bg-gray-200 dark:bg-gray-800" />
+                <div className="flex items-center gap-2">
+                    <Avatar className="w-8 h-8">
+                        <AvatarImage src={avatar} alt={author} />
+                        <AvatarFallback>{author.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    <span className="text-sm text-gray-900 dark:text-white">{author}</span>
+                </div>
+            </div>
+        </Link>
+    );
+}
+
+========================================
+FILE: components/blog/blog.detail.tsx
+========================================
+'use client';
+
+import { useRef } from 'react';
+import BlogBreadcrumb from './blog.breadcrumb';
+import BlogActions from './blog.action';
+import BlogComment from './blog.comment';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import BlogSidebarMobile from './blog.sidebar.m';
+import { IPost, IComment, IUser } from '@/types/post.type';
+import { Eye } from 'lucide-react';
+import { useContentImagePreview } from './ImagePreview';
+import { ImagePreview } from './ImagePreview';
+
+interface BlogDetailProps {
+    post: IPost;
+    comments: IComment[];
+    likeCount: number;
+    liked: boolean;
+    bookmarked: boolean;
+    currentUser: IUser | null;
+    onLike: () => void;
+    onBookmarkChange: (bookmarked: boolean) => void;
+    onSubmitComment: (content: string, parentId?: string | null) => Promise<void>;
+    onDeleteComment: (commentId: string) => Promise<void>;
+    onImagePreview?: (src: string) => void;
+}
+
+const formatDate = (dateString: string): string =>
+    new Date(dateString).toLocaleDateString('vi-VN', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+    });
+
+export default function BlogDetail({
+    post,
+    comments,
+    likeCount,
+    liked,
+    bookmarked,
+    currentUser,
+    onLike,
+    onBookmarkChange,
+    onSubmitComment,
+    onDeleteComment,
+}: BlogDetailProps) {
+    const articleRef = useRef<HTMLElement>(null);
+    const { previewSrc, closePreview } = useContentImagePreview(articleRef);
+
+    return (
+        <>
+            <div className="w-full max-w-3xl mx-auto space-y-6 min-w-0">
+                <BlogBreadcrumb title={post.title} />
+
+                <h1 className="text-2xl md:text-[32px] font-bold leading-[1.3] break-words">
+                    {post.title}
+                </h1>
+
+                <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                        <Avatar className="w-8 h-8 sm:w-9 sm:h-9 flex-shrink-0">
+                            <AvatarImage src={post.author.avatar || '/avatar.png'} />
+                            <AvatarFallback>{post.author.fullName.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        <div className="min-w-0">
+                            <p className="text-sm font-medium truncate">{post.author.fullName}</p>
+                            <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0 text-xs text-muted-foreground">
+                                <span className="whitespace-nowrap">{formatDate(post.createdAt)}</span>
+                                <span>·</span>
+                                <span className="flex items-center gap-0.5 whitespace-nowrap">
+                                    <Eye size={11} />
+                                    {post.views.toLocaleString('vi-VN')}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="flex-shrink-0">
+                        <BlogActions
+                            postId={post._id}
+                            isBookmarked={bookmarked}
+                            onBookmarkChange={onBookmarkChange}
+                        />
+                    </div>
+                </div>
+
+                <article
+                    ref={articleRef}
+                    className="prose prose-sm sm:prose-base dark:prose-invert max-w-none
+                               prose-img:rounded-xl prose-img:w-full prose-img:max-w-full
+                               prose-img:cursor-zoom-in
+                               prose-pre:overflow-x-auto prose-pre:max-w-full prose-pre:text-sm
+                               prose-table:block prose-table:overflow-x-auto
+                               overflow-hidden break-words"
+                    dangerouslySetInnerHTML={{ __html: post.content }}
+                />
+
+                <div className="lg:hidden">
+                    <BlogSidebarMobile
+                        authorName={post.author.fullName}
+                        authorBio={post.author.bio || ''}
+                        likeCount={likeCount}
+                        commentCount={comments.length}
+                        liked={liked}
+                        bookmarked={bookmarked}
+                        onLike={onLike}
+                        onComment={() => {
+                            document
+                                .getElementById('comment-section')
+                                ?.scrollIntoView({ behavior: 'smooth' });
+                        }}
+                        onBookmark={() => onBookmarkChange(!bookmarked)}
+                    />
+                </div>
+
+                <BlogComment
+                    post={post}
+                    comments={comments}
+                    currentUser={currentUser}
+                    onSubmitComment={onSubmitComment}
+                    onDeleteComment={onDeleteComment}
+                />
+            </div>
+
+            {previewSrc && <ImagePreview src={previewSrc} onClose={closePreview} />}
+        </>
+    );
+}
+
+========================================
+FILE: components/blog/blog.comment.tsx
+========================================
+'use client';
+
+import { useState } from 'react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { IComment, IPost, IUser } from '@/types/post.type';
+import CommentItem from './CommentItem';
+
+interface BlogCommentProps {
+    post: IPost;
+    comments: IComment[];
+    currentUser: IUser | null;
+    onSubmitComment: (content: string, parentId?: string | null) => Promise<void>;
+    onDeleteComment: (commentId: string) => Promise<void>;
+}
+
+export default function BlogComment({
+    post,
+    comments,
+    currentUser,
+    onSubmitComment,
+    onDeleteComment,
+}: BlogCommentProps) {
+    const [value, setValue] = useState('');
+    const [submitting, setSubmitting] = useState(false);
+
+    const handleSubmit = async () => {
+        if (!value.trim()) return;
+        setSubmitting(true);
+        await onSubmitComment(value, null);
+        setValue('');
+        setSubmitting(false);
+    };
+
+    const handleUpdated = async () => {
+        await onDeleteComment('__refresh__');
+    };
+
+    return (
+        <div id="comment-section" className="mt-10 space-y-6">
+            <h3 className="text-lg font-semibold">Bình luận ({comments.length})</h3>
+
+            <div className="flex gap-3">
+                <Avatar className="w-9 h-9 flex-shrink-0">
+                    <AvatarImage src={currentUser?.avatar || '/avatar.png'} />
+                    <AvatarFallback>{currentUser?.fullName?.charAt(0) || 'U'}</AvatarFallback>
+                </Avatar>
+                <div className="flex-1 space-y-2">
+                    <Textarea
+                        id="comment-input"
+                        placeholder="Viết bình luận..."
+                        value={value}
+                        onChange={(e) => setValue(e.target.value)}
+                        rows={3}
+                        className="rounded-2xl resize-none"
+                    />
+                    <div className="flex justify-end">
+                        <Button onClick={handleSubmit} disabled={submitting || !value.trim()}>
+                            {submitting ? 'Đang gửi...' : 'Gửi'}
+                        </Button>
+                    </div>
+                </div>
+            </div>
+
+            <div className="space-y-2">
+                {comments.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                        Chưa có bình luận nào. Hãy là người đầu tiên bình luận!
+                    </div>
+                ) : (
+                    comments.map((comment) => (
+                        <CommentItem
+                            key={comment._id}
+                            comment={comment}
+                            post={post}
+                            onCommentUpdated={handleUpdated}
+                            isChild={false}
+                        />
+                    ))
+                )}
+            </div>
+        </div>
+    );
+}
+
+========================================
+FILE: components/blog/CommentItem.tsx
+========================================
+'use client';
+
+import { useState, useRef, useEffect } from 'react';
+import { Check, MoreHorizontal, Trash2, Flag, Pencil, X } from 'lucide-react';
+import { toast } from 'sonner';
+import { useAuthStore } from '@/store/auth.store';
+import { IComment, IPost, IReactions } from '@/types/post.type';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogFooter,
+} from '@/components/ui/dialog';
+import Image from 'next/image';
+import { postApi } from '@/lib/api/post.api';
+
+const REACTIONS = [
+    { type: 'like', icon: '/icons/like.svg', label: 'Thích' },
+    { type: 'love', icon: '/icons/love.svg', label: 'Yêu thích' },
+    { type: 'care', icon: '/icons/care.svg', label: 'Quan tâm' },
+    { type: 'haha', icon: '/icons/haha.svg', label: 'Haha' },
+    { type: 'wow', icon: '/icons/wow.svg', label: 'Wow' },
+    { type: 'sad', icon: '/icons/sad.svg', label: 'Buồn' },
+    { type: 'angry', icon: '/icons/angry.svg', label: 'Phẫn nộ' },
+];
+
+const REPORT_REASONS = [
+    'Nội dung spam',
+    'Ngôn ngữ thù địch',
+    'Quấy rối hoặc bắt nạt',
+    'Thông tin sai lệch',
+    'Lý do khác',
+];
+
+type ReactionKey = keyof IReactions;
+
+const formatDate = (dateString: string): string =>
+    new Date(dateString).toLocaleDateString('vi-VN', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+    });
+
+const getTotalReactions = (reactions: IReactions): number =>
+    Object.values(reactions).reduce((sum, arr) => sum + arr.length, 0);
+
+interface CommentItemProps {
+    comment: IComment;
+    post: IPost;
+    onCommentUpdated: () => Promise<void>;
+    isChild?: boolean;
+}
+
+export default function CommentItem({
+    comment,
+    post,
+    onCommentUpdated,
+    isChild = false,
+}: CommentItemProps) {
+    const { user, token } = useAuthStore();
+    const [showReplyInput, setShowReplyInput] = useState(false);
+    const [replyContent, setReplyContent] = useState('');
+    const [showReactionPopup, setShowReactionPopup] = useState(false);
+    const [submitting, setSubmitting] = useState(false);
+    const [localReactions, setLocalReactions] = useState<IReactions>(comment.reactions);
+    const [reportOpen, setReportOpen] = useState(false);
+    const [selectedReason, setSelectedReason] = useState('');
+    const [reporting, setReporting] = useState(false);
+
+    const [isEditing, setIsEditing] = useState(false);
+    const [editContent, setEditContent] = useState(comment.content);
+    const [editSubmitting, setEditSubmitting] = useState(false);
+
+    const reactionRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        setLocalReactions(comment.reactions);
+    }, [comment.reactions]);
+
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            if (reactionRef.current && !reactionRef.current.contains(e.target as Node)) {
+                setShowReactionPopup(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    const getUserId = (u: { _id?: string; id?: string } | null | undefined): string | undefined => {
+        if (!u) return undefined;
+        return u._id || u.id;
+    };
+
+    const currentUserId = getUserId(user);
+    const commentUserId = getUserId(comment.user);
+    const postAuthorId = getUserId(post.author);
+
+    const userReaction =
+        user
+            ? REACTIONS.find((r) => localReactions[r.type as ReactionKey]?.includes(currentUserId || '')) ?? null
+            : null;
+
+    const totalReactions = getTotalReactions(localReactions);
+
+    const canDelete = !!(user && (
+        currentUserId === commentUserId ||
+        currentUserId === postAuthorId ||
+        user.role === 'admin'
+    ));
+
+    const canEdit = !!(user && currentUserId === commentUserId);
+
+    const handleReaction = async (type: string) => {
+        if (!token || !user || !currentUserId) {
+            toast.error('Vui lòng đăng nhập để thả cảm xúc');
+            return;
+        }
+        const key = type as ReactionKey;
+        const hasReacted = localReactions[key]?.includes(currentUserId);
+
+        // Optimistic update
+        setLocalReactions((prev) => {
+            const next = { ...prev };
+            if (hasReacted) {
+                next[key] = next[key].filter((id) => id !== currentUserId);
+            } else {
+                (Object.keys(next) as ReactionKey[]).forEach((k) => {
+                    next[k] = next[k].filter((id) => id !== currentUserId);
+                });
+                next[key] = [...(next[key] || []), currentUserId];
+            }
+            return next;
+        });
+
+        setShowReactionPopup(false);
+
+        try {
+            // ✅ Chỉ gọi REST API - backend tự emit socket notification
+            await postApi.toggleCommentReaction(post._id, comment._id, type, token);
+            await onCommentUpdated();
+        } catch {
+            toast.error('Có lỗi xảy ra');
+            setLocalReactions(comment.reactions);
+        }
+    };
+
+    const handleReply = async () => {
+        if (!token) {
+            toast.error('Vui lòng đăng nhập để trả lời');
+            return;
+        }
+        if (!replyContent.trim()) return;
+
+        setSubmitting(true);
+        try {
+            const rootId = comment.parentId ?? comment._id;
+            // ✅ Chỉ gọi REST API - backend tự emit socket notification
+            await postApi.addComment(post._id, replyContent, token, rootId);
+            setReplyContent('');
+            setShowReplyInput(false);
+            await onCommentUpdated();
+            toast.success('Đã thêm phản hồi');
+        } catch {
+            toast.error('Có lỗi xảy ra');
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    const handleDelete = async () => {
+        if (!confirm('Bạn có chắc chắn muốn xóa bình luận này?')) return;
+        if (!token) return;
+        try {
+            await postApi.deleteComment(post._id, comment._id, token);
+            await onCommentUpdated();
+            toast.success('Đã xóa bình luận');
+        } catch {
+            toast.error('Có lỗi xảy ra');
+        }
+    };
+
+    const handleEditSubmit = async () => {
+        if (!token || !editContent.trim()) return;
+        setEditSubmitting(true);
+        try {
+            await postApi.editComment(post._id, comment._id, editContent, token);
+            await onCommentUpdated();
+            setIsEditing(false);
+            toast.success('Đã cập nhật bình luận');
+        } catch {
+            toast.error('Có lỗi xảy ra');
+        } finally {
+            setEditSubmitting(false);
+        }
+    };
+
+    const handleReport = async () => {
+        if (!token) {
+            toast.error('Vui lòng đăng nhập để báo cáo');
+            return;
+        }
+        if (!selectedReason) {
+            toast.error('Vui lòng chọn lý do');
+            return;
+        }
+        setReporting(true);
+        try {
+            await postApi.reportComment(post._id, comment._id, selectedReason, token);
+            toast.success('Đã gửi báo cáo');
+            setReportOpen(false);
+            setSelectedReason('');
+        } catch {
+            toast.error('Có lỗi xảy ra');
+        } finally {
+            setReporting(false);
+        }
+    };
+
+    return (
+        <>
+            <div className={`flex gap-2 sm:gap-3 ${isChild ? 'ml-6 sm:ml-8 mt-2' : 'mt-4'}`}>
+                <Avatar className="w-7 h-7 sm:w-8 sm:h-8 flex-shrink-0 mt-0.5">
+                    <AvatarImage src={comment.user?.avatar} />
+                    <AvatarFallback>{comment.user?.fullName?.charAt(0) || 'U'}</AvatarFallback>
+                </Avatar>
+
+                <div className="flex-1 min-w-0">
+                    <div className="bg-gray-100 dark:bg-gray-800 px-3 py-2.5 rounded-2xl inline-block max-w-full">
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mb-0.5">
+                            <p className="font-semibold text-sm leading-tight">
+                                {comment.user?.fullName || 'Người dùng'}
+                            </p>
+                            {commentUserId && postAuthorId && commentUserId === postAuthorId && (
+                                <span className="text-xs bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-full">
+                                    Tác giả
+                                </span>
+                            )}
+                            {comment.editedAt && (
+                                <span className="text-xs text-muted-foreground italic">
+                                    (đã chỉnh sửa)
+                                </span>
+                            )}
+                        </div>
+
+                        {comment.replyToName && isChild && (
+                            <span className="text-xs text-blue-500 font-medium">
+                                @{comment.replyToName}{' '}
+                            </span>
+                        )}
+
+                        {isEditing ? (
+                            <div className="mt-1 space-y-2">
+                                <Textarea
+                                    value={editContent}
+                                    onChange={(e) => setEditContent(e.target.value)}
+                                    rows={2}
+                                    className="text-sm rounded-xl resize-none bg-white dark:bg-gray-700 min-w-[200px]"
+                                    autoFocus
+                                />
+                                <div className="flex gap-2">
+                                    <Button
+                                        size="sm"
+                                        onClick={handleEditSubmit}
+                                        disabled={editSubmitting || !editContent.trim()}
+                                    >
+                                        {editSubmitting ? 'Đang lưu...' : 'Lưu'}
+                                    </Button>
+                                    <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        onClick={() => {
+                                            setIsEditing(false);
+                                            setEditContent(comment.content);
+                                        }}
+                                    >
+                                        <X size={14} className="mr-1" />
+                                        Hủy
+                                    </Button>
+                                </div>
+                            </div>
+                        ) : (
+                            <p className="text-sm text-gray-700 dark:text-gray-300 break-words whitespace-pre-wrap">
+                                {comment.content}
+                            </p>
+                        )}
+                    </div>
+
+                    {totalReactions > 0 && (
+                        <div className="flex items-center gap-1 mt-1 ml-1">
+                            <div className="flex -space-x-1">
+                                {REACTIONS.filter(
+                                    (r) => localReactions[r.type as ReactionKey]?.length > 0,
+                                )
+                                    .slice(0, 3)
+                                    .map((r) => (
+                                        <Image
+                                            key={r.type}
+                                            src={r.icon}
+                                            alt={r.type}
+                                            width={16}
+                                            height={16}
+                                            className="w-4 h-4"
+                                        />
+                                    ))}
+                            </div>
+                            <span className="text-xs text-muted-foreground">{totalReactions}</span>
+                        </div>
+                    )}
+
+                    <div className="flex items-center gap-2 sm:gap-3 mt-1 ml-1 flex-wrap">
+                        <span className="text-xs text-muted-foreground whitespace-nowrap">
+                            {formatDate(comment.createdAt)}
+                        </span>
+
+                        <div className="relative flex items-center" ref={reactionRef}>
+                            <button
+                                onClick={() => setShowReactionPopup((v) => !v)}
+                                className={`text-xs font-semibold leading-none transition ${userReaction
+                                    ? 'text-blue-500'
+                                    : 'text-muted-foreground hover:text-foreground'
+                                    }`}
+                            >
+                                {userReaction ? userReaction.label : 'Thích'}
+                            </button>
+
+                            {showReactionPopup && (
+                                <div className="absolute bottom-full left-0 mb-2 bg-white dark:bg-gray-800 rounded-full shadow-xl border border-gray-200 dark:border-gray-700 px-2 py-1.5 flex gap-0.5 z-50">
+                                    {REACTIONS.map((reaction) => (
+                                        <button
+                                            key={reaction.type}
+                                            onPointerDown={(e) => {
+                                                e.preventDefault();
+                                                handleReaction(reaction.type);
+                                            }}
+                                            title={reaction.label}
+                                            className="w-8 h-8 hover:scale-125 active:scale-110 transition-transform duration-150 rounded-full flex items-center justify-center touch-manipulation"
+                                        >
+                                            <Image
+                                                src={reaction.icon}
+                                                alt={reaction.type}
+                                                width={24}
+                                                height={24}
+                                                className="w-6 h-6"
+                                            />
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        <button
+                            onClick={() => setShowReplyInput((v) => !v)}
+                            className="text-xs font-semibold leading-none text-muted-foreground hover:text-foreground transition"
+                        >
+                            Trả lời
+                        </button>
+
+                        <DropdownMenu modal={false}>
+                            <DropdownMenuTrigger asChild>
+                                <button className="flex items-center text-muted-foreground hover:text-foreground transition p-0.5 rounded-full hover:bg-muted">
+                                    <MoreHorizontal size={15} />
+                                </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent
+                                align="start"
+                                side="top"
+                                sideOffset={4}
+                                className="w-44 rounded-xl p-1"
+                            >
+                                {canEdit && (
+                                    <DropdownMenuItem
+                                        onClick={() => setIsEditing(true)}
+                                        className="flex items-center gap-2 cursor-pointer py-2 rounded-lg"
+                                    >
+                                        <Pencil size={14} />
+                                        <span className="text-xs">Chỉnh sửa</span>
+                                    </DropdownMenuItem>
+                                )}
+                                {canDelete && (
+                                    <DropdownMenuItem
+                                        onClick={handleDelete}
+                                        className="flex items-center gap-2 text-red-500 cursor-pointer py-2 rounded-lg"
+                                    >
+                                        <Trash2 size={14} />
+                                        <span className="text-xs">Xóa bình luận</span>
+                                    </DropdownMenuItem>
+                                )}
+                                <DropdownMenuItem
+                                    onClick={() => setReportOpen(true)}
+                                    className="flex items-center gap-2 cursor-pointer py-2 rounded-lg"
+                                >
+                                    <Flag size={14} />
+                                    <span className="text-xs">Báo cáo</span>
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </div>
+
+                    {showReplyInput && (
+                        <div className="flex gap-2 mt-3">
+                            <Avatar className="w-7 h-7 flex-shrink-0">
+                                <AvatarImage src={user?.avatar} />
+                                <AvatarFallback>{user?.fullName?.charAt(0) || 'U'}</AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1 min-w-0">
+                                <Textarea
+                                    placeholder={`Trả lời ${comment.user?.fullName}...`}
+                                    value={replyContent}
+                                    onChange={(e) => setReplyContent(e.target.value)}
+                                    rows={2}
+                                    className="text-sm rounded-2xl resize-none w-full"
+                                />
+                                <div className="flex gap-2 mt-2">
+                                    <Button
+                                        size="sm"
+                                        onClick={handleReply}
+                                        disabled={submitting || !replyContent.trim()}
+                                    >
+                                        {submitting ? 'Đang gửi...' : 'Gửi'}
+                                    </Button>
+                                    <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        onClick={() => {
+                                            setShowReplyInput(false);
+                                            setReplyContent('');
+                                        }}
+                                    >
+                                        Hủy
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {!isChild && comment.children && comment.children.length > 0 && (
+                        <div className="mt-1 space-y-0">
+                            {comment.children.map((child) => (
+                                <CommentItem
+                                    key={child._id}
+                                    comment={child}
+                                    post={post}
+                                    onCommentUpdated={onCommentUpdated}
+                                    isChild
+                                />
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            <Dialog open={reportOpen} onOpenChange={setReportOpen}>
+                <DialogContent className="sm:max-w-md rounded-2xl">
+                    <DialogHeader>
+                        <DialogTitle>Báo cáo bình luận</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-2 py-2">
+                        <p className="text-sm text-muted-foreground">Chọn lý do báo cáo:</p>
+                        {REPORT_REASONS.map((reason) => (
+                            <button
+                                key={reason}
+                                onClick={() => setSelectedReason(reason)}
+                                className={`w-full text-left px-4 py-2.5 rounded-xl text-sm transition flex items-center justify-between border ${selectedReason === reason
+                                    ? 'border-black dark:border-white bg-muted font-medium'
+                                    : 'border-transparent hover:bg-muted'
+                                    }`}
+                            >
+                                {reason}
+                                {selectedReason === reason && <Check size={15} />}
+                            </button>
+                        ))}
+                    </div>
+                    <DialogFooter className="gap-2">
+                        <Button variant="ghost" onClick={() => setReportOpen(false)}>
+                            Hủy
+                        </Button>
+                        <Button onClick={handleReport} disabled={reporting || !selectedReason}>
+                            {reporting ? 'Đang gửi...' : 'Gửi báo cáo'}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+        </>
+    );
+}
+
+========================================
+FILE: components/blog/blog.action.tsx
+========================================
+'use client';
+
+import { useState, useEffect } from 'react';
+import { Bookmark, Copy, Flag, Facebook, MoreHorizontal, Check } from 'lucide-react';
+import { toast } from 'sonner';
+import {
+    DropdownMenu,
+    DropdownMenuTrigger,
+    DropdownMenuContent,
+    DropdownMenuItem,
+} from '@/components/ui/dropdown-menu';
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogFooter,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { postApi } from '@/lib/api/post.api';
+import { useAuthStore } from '@/store/auth.store';
+
+const REPORT_REASONS = [
+    'Nội dung spam hoặc quảng cáo',
+    'Nội dung không phù hợp',
+    'Thông tin sai lệch',
+    'Vi phạm bản quyền',
+    'Ngôn ngữ thù địch',
+    'Lý do khác',
+];
+
+interface BlogActionsProps {
+    postId: string;
+    isBookmarked?: boolean;
+    onBookmarkChange?: (bookmarked: boolean) => void;
+}
+
+export default function BlogActions({ postId, isBookmarked = false, onBookmarkChange }: BlogActionsProps) {
+    const { token } = useAuthStore();
+    const [bookmarked, setBookmarked] = useState(isBookmarked);
+    const [reportOpen, setReportOpen] = useState(false);
+    const [selectedReason, setSelectedReason] = useState('');
+    const [reporting, setReporting] = useState(false);
+
+    
+    useEffect(() => {
+        setBookmarked(isBookmarked);
+    }, [isBookmarked]);
+
+    const handleBookmark = async () => {
+        if (!token) {
+            toast.error('Vui lòng đăng nhập để lưu bài viết');
+            return;
+        }
+        try {
+            const result = await postApi.bookmarkPost(postId, token);
+            if (result.success) {
+                setBookmarked(result.data.bookmarked);
+                onBookmarkChange?.(result.data.bookmarked);
+                toast.success(result.data.bookmarked ? 'Đã lưu bài viết' : 'Đã bỏ lưu bài viết');
+            }
+        } catch {
+            toast.error('Có lỗi xảy ra');
+        }
+    };
+
+    const handleCopy = async () => {
+        try {
+            await navigator.clipboard.writeText(window.location.href);
+            toast.success('Đã sao chép liên kết');
+        } catch {
+            toast.error('Không thể sao chép');
+        }
+    };
+
+    const shareFacebook = () => {
+        const appId = '1660889691575547';
+        const postUrl = encodeURIComponent(window.location.href);
+        const redirectUri = encodeURIComponent(window.location.href);
+        window.open(
+            `https://www.facebook.com/dialog/feed?app_id=${appId}&display=popup&link=${postUrl}&redirect_uri=${redirectUri}`,
+            '_blank',
+            'width=600,height=400,noopener,noreferrer',
+        );
+    };
+
+    const handleReport = async () => {
+        if (!token) {
+            toast.error('Vui lòng đăng nhập để báo cáo');
+            return;
+        }
+        if (!selectedReason) {
+            toast.error('Vui lòng chọn lý do báo cáo');
+            return;
+        }
+        setReporting(true);
+        try {
+            const result = await postApi.reportPost(postId, selectedReason, token);
+            if (result.success) {
+                toast.success('Đã gửi báo cáo, cảm ơn bạn!');
+                setReportOpen(false);
+                setSelectedReason('');
+            }
+        } catch {
+            toast.error('Có lỗi xảy ra');
+        } finally {
+            setReporting(false);
+        }
+    };
+
+    return (
+        <>
+            <div className="flex items-center gap-3 md:gap-4">
+                <button
+                    onClick={handleBookmark}
+                    className="transition cursor-pointer p-1 rounded-full hover:bg-muted"
+                    aria-label="Lưu bài viết"
+                >
+                    <Bookmark
+                        data-filled={bookmarked ? "" : undefined}
+                        size={22}
+                        fill={bookmarked ? '#eab308' : 'none'}
+                        className={bookmarked ? 'text-yellow-500' : ''}
+                    />
+                </button>
+
+                <DropdownMenu modal={false}>
+                    <DropdownMenuTrigger asChild>
+                        <button
+                            className="p-1 rounded-full hover:bg-muted transition cursor-pointer"
+                            aria-label="Thêm tùy chọn"
+                        >
+                            <MoreHorizontal size={22} />
+                        </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent
+                        align="end"
+                        side="bottom"
+                        sideOffset={8}
+                        className="w-56 rounded-xl p-1 flex flex-col gap-1 z-50"
+                    >
+                        <DropdownMenuItem
+                            onClick={shareFacebook}
+                            className="py-2 flex items-center gap-2 cursor-pointer"
+                        >
+                            <Facebook size={20} className="text-blue-500" />
+                            <span>Chia sẻ lên Facebook</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                            onClick={handleCopy}
+                            className="py-2 flex items-center gap-3 cursor-pointer"
+                        >
+                            <Copy size={20} />
+                            <span>Sao chép liên kết</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                            onClick={() => setReportOpen(true)}
+                            className="py-2 flex items-center gap-3 text-red-500 cursor-pointer"
+                        >
+                            <Flag size={20} />
+                            <span>Báo cáo bài viết</span>
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            </div>
+
+            <Dialog open={reportOpen} onOpenChange={setReportOpen}>
+                <DialogContent className="sm:max-w-md rounded-2xl">
+                    <DialogHeader>
+                        <DialogTitle>Báo cáo bài viết</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-2 py-2">
+                        <p className="text-sm text-muted-foreground">Chọn lý do báo cáo:</p>
+                        {REPORT_REASONS.map((reason) => (
+                            <button
+                                key={reason}
+                                onClick={() => setSelectedReason(reason)}
+                                className={`w-full text-left px-4 py-2.5 rounded-xl text-sm transition flex items-center justify-between border ${selectedReason === reason
+                                    ? 'border-black dark:border-white bg-muted font-medium'
+                                    : 'border-transparent hover:bg-muted'
+                                    }`}
+                            >
+                                {reason}
+                                {selectedReason === reason && <Check size={15} />}
+                            </button>
+                        ))}
+                    </div>
+                    <DialogFooter className="gap-2">
+                        <Button variant="ghost" onClick={() => setReportOpen(false)}>
+                            Hủy
+                        </Button>
+                        <Button onClick={handleReport} disabled={reporting || !selectedReason}>
+                            {reporting ? 'Đang gửi...' : 'Gửi báo cáo'}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+        </>
+    );
+}
+
+========================================
+FILE: components/blog/blog.breadcrumb.tsx
+========================================
+'use client'
+
+import Link from "next/link";
+import {
+    Breadcrumb,
+    BreadcrumbItem,
+    BreadcrumbLink,
+    BreadcrumbList,
+    BreadcrumbSeparator,
+    BreadcrumbPage,
+} from "@/components/ui/breadcrumb";
+import { ChevronRight } from "lucide-react";
+
+interface BlogBreadcrumbProps {
+    title?: string;
+}
+
+export default function BlogBreadcrumb({ title = "Bài viết" }: BlogBreadcrumbProps) {
+    return (
+        <Breadcrumb>
+            <BreadcrumbList className="text-sm text-muted-foreground flex-nowrap overflow-hidden">
+                <BreadcrumbItem className="shrink-0">
+                    <BreadcrumbLink asChild>
+                        <Link href="/" className="hover:text-foreground transition">
+                            Trang chủ
+                        </Link>
+                    </BreadcrumbLink>
+                </BreadcrumbItem>
+
+                <BreadcrumbSeparator>
+                    <ChevronRight size={14} className="opacity-50" />
+                </BreadcrumbSeparator>
+
+                <BreadcrumbItem className="shrink-0">
+                    <BreadcrumbLink asChild>
+                        <Link href="/baiviet" className="hover:text-foreground transition">
+                            Bài viết
+                        </Link>
+                    </BreadcrumbLink>
+                </BreadcrumbItem>
+
+                <BreadcrumbSeparator>
+                    <ChevronRight size={14} className="opacity-50" />
+                </BreadcrumbSeparator>
+
+                <BreadcrumbItem className="min-w-0 flex-1">
+                    <BreadcrumbPage className="block truncate max-w-full text-foreground font-medium">
+                        {title}
+                    </BreadcrumbPage>
+                </BreadcrumbItem>
+            </BreadcrumbList>
+        </Breadcrumb>
+    );
+}
+
+========================================
+FILE: components/blog/blog.sidebar.tsx
+========================================
+'use client';
+
+import { Card, CardContent } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
+import { Heart, MessageCircle, Bookmark } from 'lucide-react';
+import { toast } from 'sonner';
+import { useAuthStore } from '@/store/auth.store';
+
+interface BlogSidebarProps {
+    authorName?: string;
+    authorId?: string;
+    authorBio?: string;
+    likeCount?: number;
+    commentCount?: number;
+    liked?: boolean;
+    bookmarked?: boolean;
+    postId?: string;
+    postTitle?: string;
+    onLike?: () => Promise<void>;
+    onComment?: () => void;
+}
+
+export default function BlogSidebar({
+    authorName = 'Tác giả',
+    authorId,
+    authorBio = '',
+    likeCount = 0,
+    commentCount = 0,
+    liked = false,
+    bookmarked = false,
+    postId,
+    postTitle,
+    onLike,
+    onComment,
+}: BlogSidebarProps) {
+    const { user } = useAuthStore();
+
+    const handleLike = async () => {
+        if (!user) {
+            toast.error('Vui lòng đăng nhập để thích bài viết');
+            return;
+        }
+        if (onLike) {
+            // ✅ Chỉ gọi REST API - backend tự emit socket notification
+            await onLike();
+        }
+    };
+
+    return (
+        <Card className="rounded-2xl shadow-sm">
+            <CardContent className="space-y-3">
+                <div>
+                    <h3 className="font-semibold text-[16px]">{authorName}</h3>
+                    {authorBio && (
+                        <p className="text-sm text-muted-foreground mt-2 leading-relaxed">{authorBio}</p>
+                    )}
+                </div>
+                <Separator />
+                <div className="flex gap-6 text-muted-foreground">
+                    <button
+                        onClick={handleLike}
+                        className="flex items-center gap-2 cursor-pointer transition"
+                    >
+                        <Heart
+                            data-filled={liked ? "" : undefined}
+                            size={22}
+                            fill={liked ? '#ef4444' : 'none'}
+                            className={liked ? 'text-red-500' : 'hover:text-red-500 transition'}
+                        />
+                        <span className={liked ? 'text-red-500' : ''}>{likeCount}</span>
+                    </button>
+                    <button
+                        onClick={onComment}
+                        className="flex items-center gap-2 hover:text-blue-500 cursor-pointer transition"
+                    >
+                        <MessageCircle size={22} />
+                        <span>{commentCount}</span>
+                    </button>
+                    <div className="ml-auto flex items-center">
+                        <Bookmark
+                            data-filled={bookmarked ? "" : undefined}
+                            size={22}
+                            fill={bookmarked ? '#eab308' : 'none'}
+                            className={bookmarked ? 'text-yellow-500' : 'text-muted-foreground'}
+                        />
+                    </div>
+                </div>
+            </CardContent>
+        </Card>
+    );
+}
+
+========================================
+FILE: components/blog/blog.sidebar.m.tsx
+========================================
+'use client';
+
+import { Heart, MessageCircle, Bookmark } from 'lucide-react';
+
+interface BlogSidebarMobileProps {
+    authorName?: string;
+    authorBio?: string;
+    likeCount?: number;
+    commentCount?: number;
+    liked?: boolean;
+    bookmarked?: boolean;
+    onLike?: () => void;
+    onComment?: () => void;
+    onBookmark?: () => void;
+}
+
+export default function BlogSidebarMobile({
+    authorName,
+    authorBio,
+    likeCount = 0,
+    commentCount = 0,
+    liked = false,
+    bookmarked = false,
+    onLike,
+    onComment,
+    onBookmark,
+}: BlogSidebarMobileProps) {
+    return (
+        <div className="space-y-3 py-4 border-t border-b">
+            {(authorName || authorBio) && (
+                <div className="px-1">
+                    {authorName && (
+                        <p className="text-sm font-semibold">{authorName}</p>
+                    )}
+                    {authorBio && (
+                        <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{authorBio}</p>
+                    )}
+                </div>
+            )}
+
+            <div className="flex items-center gap-6">
+                <button
+                    onClick={onLike}
+                    className="flex items-center gap-1.5 transition"
+                >
+                    <Heart
+                        data-filled={liked ? "" : undefined}
+                        size={22}
+                        fill={liked ? '#ef4444' : 'none'}
+                        className={liked ? 'text-red-500' : 'text-muted-foreground'}
+                    />
+                    <span className={`text-sm ${liked ? 'text-red-500' : 'text-muted-foreground'}`}>
+                        {likeCount}
+                    </span>
+                </button>
+
+                <button
+                    onClick={onComment}
+                    className="flex items-center gap-1.5 text-muted-foreground"
+                >
+                    <MessageCircle size={22} />
+                    <span className="text-sm">{commentCount}</span>
+                </button>
+
+                <button
+                    onClick={onBookmark}
+                    className="flex items-center gap-1.5 ml-auto transition"
+                >
+                    <Bookmark
+                        data-filled={bookmarked ? "" : undefined}
+                        size={22}
+                        fill={bookmarked ? '#eab308' : 'none'}
+                        className={bookmarked ? 'text-yellow-500' : 'text-muted-foreground'}
+                    />
+                </button>
+            </div>
+        </div>
+    );
+}
+
+========================================
+FILE: components/blog/ImagePreview.tsx
+========================================
+'use client';
+
+import { useEffect, useState, useCallback } from 'react';
+import Image from 'next/image';
+import { X, ZoomIn } from 'lucide-react';
+
+interface ImagePreviewProps {
+    src: string;
+    alt?: string;
+    onClose: () => void;
+}
+
+export function ImagePreview({ src, alt = '', onClose }: ImagePreviewProps) {
+    const handleKeyDown = useCallback(
+        (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); },
+        [onClose],
+    );
+
+    useEffect(() => {
+        document.addEventListener('keydown', handleKeyDown);
+        document.body.style.overflow = 'hidden';
+        return () => {
+            document.removeEventListener('keydown', handleKeyDown);
+            document.body.style.overflow = '';
+        };
+    }, [handleKeyDown]);
+
+    return (
+        <div
+            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+            onClick={onClose}
+        >
+            <button
+                onClick={onClose}
+                className="absolute top-4 right-4 text-white bg-white/10 hover:bg-white/20 rounded-full p-2 transition"
+                aria-label="Đóng"
+            >
+                <X size={20} />
+            </button>
+            <div
+                className="relative max-w-[90vw] max-h-[90vh] rounded-xl overflow-hidden shadow-2xl"
+                onClick={(e) => e.stopPropagation()}
+            >
+                <Image
+                    src={src}
+                    alt={alt}
+                    width={1280}
+                    height={800}
+                    className="object-contain max-h-[90vh] w-auto"
+                    priority
+                />
+            </div>
+        </div>
+    );
+}
+
+interface ClickableImageProps {
+    src: string;
+    alt?: string;
+    className?: string;
+}
+
+export function ClickableImage({ src, alt = '', className = '' }: ClickableImageProps) {
+    const [open, setOpen] = useState(false);
+
+    return (
+        <>
+            <button
+                className={`relative group cursor-zoom-in ${className}`}
+                onClick={() => setOpen(true)}
+                aria-label="Xem ảnh lớn hơn"
+            >
+                <Image src={src} alt={alt} fill className="object-cover transition group-hover:brightness-90" />
+                <span className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
+                    <ZoomIn className="text-white drop-shadow" size={28} />
+                </span>
+            </button>
+            {open && <ImagePreview src={src} alt={alt} onClose={() => setOpen(false)} />}
+        </>
+    );
+}
+
+
+export function useContentImagePreview(containerRef: React.RefObject<HTMLElement | null>) {
+    const [previewSrc, setPreviewSrc] = useState<string | null>(null);
+
+    useEffect(() => {
+        const container = containerRef.current;
+        if (!container) return;
+
+        const handleClick = (e: MouseEvent) => {
+            const target = e.target as HTMLElement;
+            if (target.tagName === 'IMG') setPreviewSrc((target as HTMLImageElement).src);
+        };
+
+        container.addEventListener('click', handleClick);
+        container.querySelectorAll<HTMLImageElement>('img').forEach((img) => {
+            img.style.cursor = 'zoom-in';
+        });
+
+        return () => container.removeEventListener('click', handleClick);
+    }, [containerRef]);
+
+    return { previewSrc, closePreview: () => setPreviewSrc(null) };
+}
+
