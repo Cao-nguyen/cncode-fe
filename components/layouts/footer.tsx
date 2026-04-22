@@ -34,7 +34,7 @@ const LINKS = [
         items: [
             { href: "/gioithieu", label: "Giới thiệu" },
             { href: "/hotro", label: "Trung tâm hỗ trợ" },
-            { href: "/hanhtrinhiyeuthuong", label: "Hành trình yêu thương" },
+            { href: "/hanhtrinhyeuthuong", label: "Hành trình yêu thương" },
         ],
     },
     {

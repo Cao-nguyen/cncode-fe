@@ -14,7 +14,7 @@ export const digitalProductApi = {
     return response.json()
   },
 
-  
+
   getProductById: async (id: string, token: string) => {
     const response = await fetch(`${API_URL}/api/digital-products/product/${id}`, {
       headers: { 'Authorization': `Bearer ${token}` }
@@ -41,6 +41,7 @@ export const digitalProductApi = {
     return response.json()
   },
 
+
   updateProduct: async (id: string, data: Partial<ICreateProduct>, token: string) => {
     const response = await fetch(`${API_URL}/api/digital-products/${id}`, {
       method: 'PUT',
@@ -49,16 +50,16 @@ export const digitalProductApi = {
         'Authorization': `Bearer ${token}`
       },
       body: JSON.stringify(data)
-    })
-    return response.json()
+    });
+    return response.json();
   },
 
   deleteProduct: async (id: string, token: string) => {
     const response = await fetch(`${API_URL}/api/digital-products/${id}`, {
       method: 'DELETE',
       headers: { 'Authorization': `Bearer ${token}` }
-    })
-    return response.json()
+    });
+    return response.json();
   },
 
   getReviews: async (productId: string) => {
