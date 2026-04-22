@@ -6,13 +6,14 @@ import { useRouter, useParams } from 'next/navigation';
 import { useAuthStore } from '@/store/auth.store';
 import { digitalProductApi } from '@/lib/api/digital-product.api';
 import { toast } from 'sonner';
-import { Loader2, ArrowLeft, Save, Eye, Trash2, X, Plus, Image as ImageIcon } from 'lucide-react';
+import { Loader2, ArrowLeft, Save, Trash2, X, Plus, Image as ImageIcon } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import TinyMCEEditor from '@/components/common/TinyMCEEditor';
 import ConfirmDialog from '@/components/common/ConfirmDialog';
 
 type ProductCategory = 'powerpoint' | 'code' | 'design' | 'document';
+type ProductStatus = 'draft' | 'published';
 
 const CATEGORIES: { id: ProductCategory; name: string; color: string }[] = [
     { id: 'powerpoint', name: 'PowerPoint', color: 'orange' },
@@ -253,7 +254,7 @@ export default function EditProductPage() {
                 features: formData.features,
                 requirements: formData.requirements,
                 tags: [],
-                status: 'published'
+                status: 'published' as ProductStatus
             };
 
             const result = await digitalProductApi.updateProduct(id, productData, token);
