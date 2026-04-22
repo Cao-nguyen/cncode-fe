@@ -248,7 +248,7 @@ export default function AdminEditPostPage() {
                             onChange={setContent}
                             height={600}
                             placeholder="Nội dung bài viết..."
-                            uploadImage={uploadImageToCloudinary}
+
                         />
                     </div>
                 </div>

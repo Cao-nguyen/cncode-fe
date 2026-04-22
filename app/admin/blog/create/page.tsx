@@ -184,7 +184,6 @@ export default function CreatePostPage() {
                             onChange={setContent}
                             height={600}
                             placeholder="Nội dung bài viết..."
-                            uploadImage={uploadImageToCloudinary}
                         />
                     </div>
                 </div>
