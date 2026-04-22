@@ -1,10 +1,18 @@
 // components/common/TinyMCEEditor.tsx
 'use client'
 
-import { useRef } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import dynamic from 'next/dynamic'
-import { Loader2 } from 'lucide-react'
+import { Loader2, X, Sigma } from 'lucide-react'
 import { useAuthStore } from '@/store/auth.store'
+import { MathfieldElement } from 'mathlive'
+
+// Đăng ký custom element cho mathlive
+if (typeof window !== 'undefined') {
+    if (!customElements.get('math-field')) {
+        customElements.define('math-field', MathfieldElement)
+    }
+}
 
 const Editor = dynamic(() => import('@tinymce/tinymce-react').then((mod) => mod.Editor), {
     ssr: false,
@@ -30,7 +38,6 @@ interface TinyMCEEditorProps {
     placeholder?: string
 }
 
-// Mở rộng interface EditorInstance với các method cần thiết
 interface EditorInstance {
     on: (event: string, callback: () => void) => void
     getBody: () => HTMLElement
@@ -51,12 +58,200 @@ interface CodeSampleLanguage {
     value: string
 }
 
+interface MathFieldElement extends HTMLElement {
+    value: string
+}
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL
 const TINYMCE_API_KEY = process.env.NEXT_PUBLIC_TINYMCE_API_KEY
+
+const quickSymbols: Array<{ symbol: string; latex: string; label: string }> = [
+    { symbol: '+', latex: '+', label: 'Cộng' },
+    { symbol: '-', latex: '-', label: 'Trừ' },
+    { symbol: '×', latex: '\\times', label: 'Nhân' },
+    { symbol: '÷', latex: '\\div', label: 'Chia' },
+    { symbol: '=', latex: '=', label: 'Bằng' },
+    { symbol: '≠', latex: '\\neq', label: 'Khác' },
+    { symbol: '<', latex: '<', label: 'Nhỏ hơn' },
+    { symbol: '>', latex: '>', label: 'Lớn hơn' },
+    { symbol: '≤', latex: '\\leq', label: '≤' },
+    { symbol: '≥', latex: '\\geq', label: '≥' },
+    { symbol: '±', latex: '\\pm', label: '±' },
+    { symbol: '∞', latex: '\\infty', label: '∞' },
+    { symbol: '∑', latex: '\\sum', label: '∑' },
+    { symbol: '∫', latex: '\\int', label: '∫' },
+    { symbol: '√', latex: '\\sqrt', label: '√' },
+    { symbol: 'π', latex: '\\pi', label: 'π' },
+    { symbol: 'θ', latex: '\\theta', label: 'θ' },
+    { symbol: 'α', latex: '\\alpha', label: 'α' },
+    { symbol: 'β', latex: '\\beta', label: 'β' },
+    { symbol: 'γ', latex: '\\gamma', label: 'γ' },
+]
+
+interface MathModalProps {
+    isOpen: boolean
+    onClose: () => void
+    onInsert: (formula: string) => void
+    isMobile: boolean
+    isDark: boolean
+    initialValue?: string
+}
+
+const MathModal = ({ isOpen, onClose, onInsert, isMobile, isDark, initialValue = '' }: MathModalProps) => {
+    const [mathValue, setMathValue] = useState<string>(initialValue)
+    const mathFieldRef = useRef<MathFieldElement | null>(null)
+
+    useEffect(() => {
+        if (isOpen) {
+            setMathValue(initialValue)
+        }
+    }, [isOpen, initialValue])
+
+    const handleInsert = (): void => {
+        if (mathValue.trim()) {
+            onInsert(mathValue)
+            onClose()
+            setMathValue('')
+        }
+    }
+
+    const insertSymbol = (latex: string): void => {
+        setMathValue(prev => prev + latex)
+        setTimeout(() => {
+            mathFieldRef.current?.focus()
+        }, 0)
+    }
+
+    if (!isOpen) return null
+
+    return (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
+            <div className={`bg-white dark:bg-gray-900 rounded-xl w-full max-w-4xl max-h-[90vh] overflow-hidden ${isMobile ? 'mx-2' : ''}`} onClick={(e) => e.stopPropagation()}>
+                <div className="sticky top-0 bg-white dark:bg-gray-900 p-4 border-b dark:border-gray-700 flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                        <Sigma size={20} className="text-blue-500" />
+                        <h2 className="text-lg font-semibold">Chèn công thức toán học</h2>
+                    </div>
+                    <button onClick={onClose} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg">
+                        <X size={20} />
+                    </button>
+                </div>
+
+                <div className="p-4 overflow-y-auto max-h-[calc(90vh-120px)]">
+                    <div className="mb-4">
+                        <label className="block text-sm font-medium mb-2">Nhập công thức</label>
+                        <div className="border rounded-lg overflow-hidden bg-white dark:bg-gray-800">
+                            {/* @ts-expect-error - math-field is a custom element from mathlive */}
+                            <math-field
+                                ref={mathFieldRef}
+                                value={mathValue}
+                                onInput={(e: Event) => {
+                                    const target = e.target as MathFieldElement
+                                    setMathValue(target.value)
+                                }}
+                                style={{
+                                    width: '100%',
+                                    minHeight: '60px',
+                                    padding: '12px',
+                                    fontSize: '16px',
+                                    backgroundColor: isDark ? '#1f2937' : '#ffffff',
+                                    color: isDark ? '#f3f4f6' : '#111827',
+                                }}
+                                virtualKeyboardMode="manual"
+                            />
+                        </div>
+                        <p className="text-xs text-gray-500 mt-1">Nhập trực tiếp hoặc chọn ký hiệu bên dưới</p>
+                    </div>
+
+                    {mathValue && (
+                        <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                            <p className="text-sm font-medium mb-2">Công thức LaTeX:</p>
+                            <code className="text-xs break-all">{mathValue}</code>
+                        </div>
+                    )}
+
+                    <div className="flex gap-2 mb-6">
+                        <button
+                            onClick={handleInsert}
+                            className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
+                            disabled={!mathValue.trim()}
+                        >
+                            Chèn công thức
+                        </button>
+                    </div>
+
+                    <div className="mb-4">
+                        <h3 className="text-sm font-medium mb-3">Ký hiệu nhanh</h3>
+                        <div className="grid grid-cols-5 sm:grid-cols-8 md:grid-cols-10 gap-2">
+                            {quickSymbols.map((item, idx) => (
+                                <button
+                                    key={idx}
+                                    onClick={() => insertSymbol(item.latex)}
+                                    className="p-2 text-center border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition"
+                                    title={item.label}
+                                >
+                                    <span className="text-lg font-mono">{item.symbol}</span>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 className="text-sm font-medium mb-3">Mẫu công thức</h3>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            {[
+                                { label: 'Phân số', latex: '\\frac{a}{b}' },
+                                { label: 'Căn bậc hai', latex: '\\sqrt{x}' },
+                                { label: 'Lũy thừa', latex: 'x^{n}' },
+                                { label: 'Chỉ số dưới', latex: 'x_{n}' },
+                                { label: 'Tích phân', latex: '\\int_{a}^{b} f(x) dx' },
+                                { label: 'Tổng', latex: '\\sum_{i=1}^{n} i' },
+                                { label: 'Giới hạn', latex: '\\lim_{x \\to 0} f(x)' },
+                                { label: 'Ma trận 2x2', latex: '\\begin{pmatrix} a & b \\\\ c & d \\end{pmatrix}' },
+                            ].map((template, idx) => (
+                                <button
+                                    key={idx}
+                                    onClick={() => insertSymbol(template.latex)}
+                                    className="p-2 text-left border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition text-sm"
+                                >
+                                    <span className="font-medium">{template.label}</span>
+                                    <code className="text-xs text-gray-500 block mt-1">{template.latex}</code>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    )
+}
 
 export default function TinyMCEEditor({ value, onChange, height = 400, placeholder }: TinyMCEEditorProps) {
     const { token } = useAuthStore()
     const editorRef = useRef<EditorInstance | null>(null)
+    const [isMobile, setIsMobile] = useState<boolean>(false)
+    const [isDark, setIsDark] = useState<boolean>(false)
+    const [showMathModal, setShowMathModal] = useState<boolean>(false)
+
+    useEffect(() => {
+        const checkMobile = (): void => {
+            setIsMobile(window.innerWidth < 768)
+        }
+        checkMobile()
+        window.addEventListener('resize', checkMobile)
+
+        const checkDark = (): void => {
+            setIsDark(document.documentElement.classList.contains('dark'))
+        }
+        checkDark()
+        const observer = new MutationObserver(checkDark)
+        observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
+
+        return () => {
+            window.removeEventListener('resize', checkMobile)
+            observer.disconnect()
+        }
+    }, [])
 
     const uploadImageToCloudinary = async (file: File, folder: string): Promise<string> => {
         const formData = new FormData()
@@ -102,258 +297,127 @@ export default function TinyMCEEditor({ value, onChange, height = 400, placehold
         { text: 'JSON', value: 'json' },
     ]
 
-    // Hàm chèn công thức toán học
-    const insertMathFormula = (editor: EditorInstance) => {
-        const mathFormula = prompt('Nhập công thức toán học (LaTeX):\n\nVí dụ:\n- E = mc^2\n- \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}\n- \\int_0^\\infty e^{-x^2} dx', 'E = mc^2')
-        if (mathFormula && mathFormula.trim()) {
-            editor.insertContent(`\\(${mathFormula}\\)`)
-        }
-    }
-
-    // Hàm chèn công thức toán học dạng hiển thị lớn
-    const insertDisplayMathFormula = (editor: EditorInstance) => {
-        const mathFormula = prompt('Nhập công thức toán học dạng hiển thị (LaTeX):\n\nVí dụ:\n- \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}\n- \\int_0^\\infty e^{-x^2} dx = \\frac{\\sqrt{\\pi}}{2}', '\\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}')
-        if (mathFormula && mathFormula.trim()) {
-            editor.insertContent(`\\[${mathFormula}\\]`)
+    const handleInsertMathFormula = (formula: string): void => {
+        if (editorRef.current && formula.trim()) {
+            // Dùng $$ cho display math
+            editorRef.current.insertContent(`$$${formula}$$`)
         }
     }
 
     return (
-        <Editor
-            apiKey={TINYMCE_API_KEY}
-            value={value}
-            onEditorChange={(val: string) => onChange(val)}
-            onInit={(_evt: unknown, editor: EditorInstance) => {
-                editorRef.current = editor
+        <>
+            <Editor
+                apiKey={TINYMCE_API_KEY}
+                value={value}
+                onEditorChange={(val: string) => onChange(val)}
+                onInit={(_evt: unknown, editor: EditorInstance) => {
+                    editorRef.current = editor
 
-                // Thêm button công thức toán học inline
-                editor.ui.registry.addButton('mathInline', {
-                    icon: 'sigma',
-                    tooltip: 'Chèn công thức toán học (inline) - $...$',
-                    onAction: () => insertMathFormula(editor)
-                })
-
-                // Thêm button công thức toán học display
-                editor.ui.registry.addButton('mathDisplay', {
-                    icon: 'sigma',
-                    tooltip: 'Chèn công thức toán học (display) - $$...$$',
-                    onAction: () => insertDisplayMathFormula(editor)
-                })
-            }}
-            init={{
-                height,
-                menubar: false,
-                placeholder: placeholder || 'Nhập nội dung...',
-
-                plugins: [
-                    'advlist', 'autolink', 'link', 'image', 'charmap', 'preview',
-                    'searchreplace', 'visualblocks', 'fullscreen', 'table',
-                    'wordcount', 'codesample'
-                ],
-
-                // Toolbar - thêm 2 button toán học
-                toolbar: [
-                    'undo redo |',
-                    'blocks |',
-                    'bold italic underline strikethrough |',
-                    'alignleft aligncenter alignright alignjustify |',
-                    'forecolor backcolor |',
-                    'codesample |',
-                    'mathInline mathDisplay |',
-                    'table |',
-                    'link image |',
-                    'removeformat'
-                ].join(''),
-
-                toolbar_mode: 'sliding',
-
-                block_formats: 'Heading 1=h1; Heading 2=h2; Heading 3=h3; Heading 4=h4;',
-
-                font_formats: '',
-                fontsize_formats: '',
-
-                codesample_languages: codeSampleLanguages,
-
-                table_toolbar: 'tableprops tabledelete | tableinsertrowbefore tableinsertrowafter tabledeleterow | tableinsertcolbefore tableinsertcolafter tabledeletecol',
-                table_default_attributes: {
-                    border: '1',
-                    cellspacing: '0',
-                    cellpadding: '8',
-                    style: 'border-collapse: collapse; width: 100%;'
-                },
-                table_default_styles: {
-                    borderCollapse: 'collapse',
-                    width: '100%'
-                },
-
-                images_upload_handler: handleEditorImageUpload,
-                automatic_uploads: true,
-                file_picker_types: 'image',
-
-                branding: false,
-                resize: false,
-
-                // Cấu hình cho công thức toán học với MathJax
-                math: {
-                    engine: 'mathjax',
-                    mathjax: {
-                        src: 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js',
-                        config: {
-                            tex: {
-                                inlineMath: [['$', '$'], ['\\(', '\\)']],
-                                displayMath: [['$$', '$$'], ['\\[', '\\]']],
-                                processEscapes: true
-                            },
-                            options: {
-                                enableMenu: false
-                            }
-                        }
-                    }
-                },
-
-                content_style: `
-                    body { 
-                        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif; 
-                        font-size: 14px; 
-                        line-height: 1.6; 
-                        padding: 12px; 
-                        margin: 0;
-                    }
-                    
-                    /* Code sample styling */
-                    pre {
-                        background: #1e1e1e;
-                        color: #d4d4d4;
-                        padding: 16px;
-                        border-radius: 8px;
-                        overflow-x: auto;
-                        font-family: 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
-                        font-size: 13px;
-                        line-height: 1.5;
-                    }
-                    
-                    code {
-                        background: #f4f4f4;
-                        padding: 2px 6px;
-                        border-radius: 4px;
-                        font-family: 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
-                        font-size: 0.875em;
-                        color: #d14;
-                    }
-                    
-                    .dark pre {
-                        background: #0d1117;
-                        border: 1px solid #30363d;
-                    }
-                    
-                    .dark code {
-                        background: #1e1e1e;
-                        color: #58a6ff;
-                    }
-                    
-                    /* Math styling - Công thức toán học */
-                    .MathJax {
-                        font-size: 1.1em;
-                        overflow-x: auto;
-                        overflow-y: hidden;
-                    }
-                    
-                    mjx-container {
-                        overflow-x: auto;
-                        overflow-y: hidden;
-                        padding: 8px 0;
-                    }
-                    
-                    /* Table styling */
-                    table {
-                        border-collapse: collapse;
-                        width: 100%;
-                        margin: 16px 0;
-                    }
-                    
-                    th, td {
-                        border: 1px solid #ddd;
-                        padding: 8px 12px;
-                        text-align: left;
-                    }
-                    
-                    th {
-                        background-color: #f2f2f2;
-                        font-weight: 600;
-                    }
-                    
-                    .dark th {
-                        background-color: #1e1e1e;
-                        border-color: #30363d;
-                    }
-                    
-                    .dark td {
-                        border-color: #30363d;
-                    }
-                    
-                    /* Image styling */
-                    img {
-                        max-width: 100%;
-                        height: auto;
-                        border-radius: 8px;
-                        margin: 16px 0;
-                    }
-                    
-                    /* Heading styling */
-                    h1 { font-size: 2em; margin: 0.67em 0; font-weight: 600; }
-                    h2 { font-size: 1.5em; margin: 0.75em 0; font-weight: 600; }
-                    h3 { font-size: 1.25em; margin: 0.83em 0; font-weight: 600; }
-                    h4 { font-size: 1.1em; margin: 1em 0; font-weight: 600; }
-                    
-                    /* Text alignment */
-                    .text-left { text-align: left; }
-                    .text-center { text-align: center; }
-                    .text-right { text-align: right; }
-                    .text-justify { text-align: justify; }
-                    
-                    /* Blockquote */
-                    blockquote {
-                        border-left: 4px solid #ddd;
-                        margin: 16px 0;
-                        padding-left: 16px;
-                        color: #666;
-                        font-style: italic;
-                    }
-                    
-                    .dark blockquote {
-                        border-left-color: #30363d;
-                        color: #8b949e;
-                    }
-                    
-                    /* Lists */
-                    ul, ol {
-                        margin: 8px 0;
-                        padding-left: 24px;
-                    }
-                    
-                    li {
-                        margin: 4px 0;
-                    }
-                `,
-
-                skin: typeof window !== 'undefined' && document.documentElement.classList.contains('dark') ? 'oxide-dark' : 'oxide',
-                content_css: typeof window !== 'undefined' && document.documentElement.classList.contains('dark') ? 'dark' : 'default',
-
-                style_formats: [
-                    { title: 'Code Inline', inline: 'code' },
-                    { title: 'Code Block', block: 'pre' },
-                    { title: 'Highlight', inline: 'mark' },
-                ],
-
-                setup: (editor: EditorInstance) => {
-                    editor.on('init', () => {
-                        const body = editor.getBody()
-                        if (body) {
-                            body.classList.add('tiny-editor-body')
-                        }
+                    editor.ui.registry.addButton('mathFormula', {
+                        icon: 'sigma',
+                        tooltip: 'Chèn công thức toán học',
+                        onAction: () => setShowMathModal(true)
                     })
-                },
-            }}
-        />
+                }}
+                init={{
+                    height: isMobile ? height - 100 : height,
+                    menubar: false,
+                    placeholder: placeholder || 'Nhập nội dung...',
+                    mobile: {
+                        menubar: false,
+                        toolbar_mode: 'scrolling',
+                    },
+
+                    plugins: [
+                        'advlist', 'autolink', 'link', 'image', 'charmap', 'preview',
+                        'searchreplace', 'visualblocks', 'fullscreen', 'table',
+                        'wordcount', 'codesample'
+                    ],
+
+                    toolbar: isMobile ? [
+                        'undo redo | bold italic underline | alignleft aligncenter alignright | mathFormula | link image'
+                    ].join('') : [
+                        'undo redo |',
+                        'blocks |',
+                        'bold italic underline strikethrough |',
+                        'alignleft aligncenter alignright alignjustify |',
+                        'forecolor backcolor |',
+                        'codesample |',
+                        'mathFormula |',
+                        'table |',
+                        'link image |',
+                        'removeformat'
+                    ].join(''),
+
+                    toolbar_mode: isMobile ? 'sliding' : 'sliding',
+                    toolbar_sticky: true,
+
+                    block_formats: 'Heading 1=h1; Heading 2=h2; Heading 3=h3; Heading 4=h4;',
+
+                    font_formats: '',
+                    fontsize_formats: '',
+
+                    codesample_languages: codeSampleLanguages,
+
+                    table_toolbar: 'tableprops tabledelete | tableinsertrowbefore tableinsertrowafter tabledeleterow | tableinsertcolbefore tableinsertcolafter tabledeletecol',
+                    table_default_attributes: {
+                        border: '1',
+                        cellspacing: '0',
+                        cellpadding: '8',
+                        style: 'border-collapse: collapse; width: 100%;'
+                    },
+                    table_default_styles: {
+                        borderCollapse: 'collapse',
+                        width: '100%'
+                    },
+
+                    images_upload_handler: handleEditorImageUpload,
+                    automatic_uploads: true,
+                    file_picker_types: 'image',
+
+                    branding: false,
+                    resize: false,
+                    statusbar: !isMobile,
+
+                    // Thêm style cho công thức toán
+                    content_style: `
+                        body { 
+                            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+                            font-size: ${isMobile ? '13px' : '14px'}; 
+                            line-height: 1.6; 
+                            padding: ${isMobile ? '8px' : '12px'}; 
+                            margin: 0;
+                        }
+                        img {
+                            max-width: 100%;
+                            height: auto;
+                        }
+                        pre {
+                            background: ${isDark ? '#0d1117' : '#f6f8fa'};
+                            padding: 12px;
+                            border-radius: 8px;
+                            overflow-x: auto;
+                        }
+                        code {
+                            background: ${isDark ? '#1e1e1e' : '#f4f4f4'};
+                            padding: 2px 5px;
+                            border-radius: 4px;
+                            font-size: 0.875em;
+                        }
+                    `,
+
+                    skin: isDark ? 'oxide-dark' : 'oxide',
+                    content_css: isDark ? 'dark' : 'default',
+                }}
+            />
+
+            <MathModal
+                isOpen={showMathModal}
+                onClose={() => setShowMathModal(false)}
+                onInsert={handleInsertMathFormula}
+                isMobile={isMobile}
+                isDark={isDark}
+            />
+        </>
     )
 }

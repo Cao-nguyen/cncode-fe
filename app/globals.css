@@ -1,40 +1,376 @@
+/* app/globals.css */
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
+/* ========== BASE STYLES ========== */
 html,
 body {
   overscroll-behavior: none;
 }
 
-/* app/globals.css - thêm vào cuối file */
+body {
+  @apply bg-white text-black;
+}
 
-/* MathJax styling */
-.MathJax {
+.dark body {
+  @apply bg-black text-white;
+}
+
+/* ========== SCROLLBAR STYLES ========== */
+/* Chrome, Edge, Safari */
+.custom-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scroll::-webkit-scrollbar-thumb {
+  background: rgba(100, 100, 100, 0.4);
+  border-radius: 999px;
+}
+
+.custom-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 100, 100, 0.7);
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(100, 100, 100, 0.4) transparent;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  width: 0px !important;
+  height: 0px !important;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+}
+
+/* ========== UTILITY CLASSES ========== */
+.no-download {
+  user-select: none;
+  -webkit-user-drag: none;
+  -webkit-touch-callout: none;
+}
+
+.transition-sidebar {
+  transition-property: padding-left;
+  transition-duration: 300ms;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar-container {
+  will-change: padding-left;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+/* ========== SVG STYLES ========== */
+svg:not(.lucide) {
+  fill: currentColor !important;
+}
+
+svg.lucide:not([data-filled]) {
+  fill: none !important;
+}
+
+/* ========== TINYMCE EDITOR STYLES ========== */
+/* MathJax styling trong TinyMCE */
+.tox .tox-edit-area iframe body mjx-container {
+  display: inline-block !important;
+  margin: 0 0.2em !important;
+  vertical-align: middle !important;
+}
+
+.tox .tox-edit-area iframe body .MathJax {
   font-size: 1.1em;
-  overflow-x: auto;
-  overflow-y: hidden;
-  padding: 8px 0;
 }
 
-mjx-container {
-  overflow-x: auto;
-  overflow-y: hidden;
-  padding: 8px 0;
+.tox .tox-edit-area iframe body {
+  overflow-x: auto !important;
 }
 
-/* Dark mode cho MathJax */
-.dark mjx-container {
+.tox .tox-edit-area iframe body mjx-container[display="true"] {
+  display: block !important;
+  margin: 1em 0 !important;
+  text-align: center !important;
+}
+
+/* TinyMCE Toolbar */
+.tox-toolbar__group button {
+  border-radius: 4px !important;
+}
+
+.tox-toolbar__group button:hover {
+  background-color: #e2e8f0 !important;
+}
+
+.dark .tox-toolbar__group button:hover {
+  background-color: #334155 !important;
+}
+
+/* ========== STATIC CONTENT STYLES (cho trang giới thiệu, chính sách...) ========== */
+.static-content {
+  max-width: 100%;
+  color: #1a1a1a;
+  line-height: 1.6;
+  font-size: 16px;
+}
+
+.dark .static-content {
   color: #e5e7eb;
 }
 
-/* Responsive cho công thức toán */
+/* Headings */
+.static-content h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-top: 1.5rem;
+  margin-bottom: 1rem;
+  color: #1a1a1a;
+}
+
+.dark .static-content h1 {
+  color: #f3f4f6;
+}
+
+.static-content h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-top: 1.25rem;
+  margin-bottom: 0.75rem;
+  color: #1a1a1a;
+}
+
+.dark .static-content h2 {
+  color: #f3f4f6;
+}
+
+.static-content h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+  color: #1a1a1a;
+}
+
+.dark .static-content h3 {
+  color: #f3f4f6;
+}
+
+.static-content h4 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-top: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+/* Paragraphs */
+.static-content p {
+  margin-bottom: 1rem;
+  line-height: 1.7;
+}
+
+/* Lists */
+.static-content ul,
+.static-content ol {
+  margin: 0.75rem 0;
+  padding-left: 1.5rem;
+}
+
+.static-content li {
+  margin: 0.25rem 0;
+  line-height: 1.6;
+}
+
+/* Links */
+.static-content a {
+  color: #2563eb;
+  text-decoration: underline;
+}
+
+.static-content a:hover {
+  color: #1d4ed8;
+}
+
+.dark .static-content a {
+  color: #60a5fa;
+}
+
+/* Images */
+.static-content img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.5rem;
+  margin: 1rem 0;
+}
+
+/* Blockquote */
+.static-content blockquote {
+  border-left: 4px solid #d1d5db;
+  margin: 1rem 0;
+  padding: 0.5rem 0 0.5rem 1rem;
+  color: #6b7280;
+  font-style: italic;
+}
+
+.dark .static-content blockquote {
+  border-left-color: #4b5563;
+  color: #9ca3af;
+}
+
+/* ===== TABLE STYLES - FIX BORDER ĐẦY ĐỦ 4 CẠNH ===== */
+.static-content table {
+  width: 100%;
+  border-collapse: collapse !important;
+  margin: 1rem 0;
+  font-size: 14px;
+  background-color: #ffffff;
+  border: 1px solid #d1d5db !important;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.dark .static-content table {
+  background-color: #1f2937;
+  border: 1px solid #4b5563 !important;
+}
+
+/* Header của table - màu xám nhạt */
+.static-content thead {
+  background-color: #f3f4f6;
+}
+
+.dark .static-content thead {
+  background-color: #374151;
+}
+
+/* Border cho th */
+.static-content th {
+  padding: 12px 16px;
+  text-align: left;
+  font-weight: 600;
+  border: 1px solid #d1d5db !important;
+  color: #1a1a1a;
+  background-color: #f3f4f6;
+}
+
+.dark .static-content th {
+  border-color: #4b5563 !important;
+  color: #f3f4f6;
+  background-color: #374151;
+}
+
+/* Border cho td */
+.static-content td {
+  padding: 10px 16px;
+  border: 1px solid #d1d5db !important;
+  color: #1a1a1a;
+  background-color: #ffffff;
+}
+
+.dark .static-content td {
+  border-color: #4b5563 !important;
+  color: #e5e7eb;
+  background-color: #1f2937;
+}
+
+/* Xóa border trùng ở các cạnh giáp ranh */
+.static-content th:first-child {
+  border-left: none !important;
+}
+
+.static-content th:last-child {
+  border-right: none !important;
+}
+
+.static-content td:first-child {
+  border-left: none !important;
+}
+
+.static-content td:last-child {
+  border-right: none !important;
+}
+
+.static-content tr:first-child th {
+  border-top: none !important;
+}
+
+.static-content tr:last-child td {
+  border-bottom: none !important;
+}
+
+/* Background cho row chẵn - xen kẽ màu xám nhạt */
+.static-content tbody tr:nth-child(even) td {
+  background-color: #f9fafb;
+}
+
+.dark .static-content tbody tr:nth-child(even) td {
+  background-color: #111827;
+}
+
+/* Hover effect */
+.static-content tbody tr:hover td {
+  background-color: #f3f4f6;
+}
+
+.dark .static-content tbody tr:hover td {
+  background-color: #374151;
+}
+
+/* Border radius cho các góc */
+.static-content tr:first-child th:first-child {
+  border-top-left-radius: 8px;
+}
+
+.static-content tr:first-child th:last-child {
+  border-top-right-radius: 8px;
+}
+
+.static-content tr:last-child td:first-child {
+  border-bottom-left-radius: 8px;
+}
+
+.static-content tr:last-child td:last-child {
+  border-bottom-right-radius: 8px;
+}
+
+/* Responsive table - cho mobile */
 @media (max-width: 768px) {
-  mjx-container {
-    font-size: 0.9em;
+  .static-content table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
   }
 }
 
+/* Responsive table - cho mobile */
+@media (max-width: 768px) {
+  .static-content table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+}
+
+/* Horizontal rule */
+.static-content hr {
+  margin: 1.5rem 0;
+  border: 0;
+  border-top: 1px solid #e5e7eb;
+}
+
+.dark .static-content hr {
+  border-top-color: #374151;
+}
+
+/* ========== CODE BLOCK STYLES (PrismJS) ========== */
 pre[class*="language-"] {
   background: #1e1e1e !important;
   border-radius: 8px !important;
@@ -43,12 +379,28 @@ pre[class*="language-"] {
   font-size: 13px !important;
   line-height: 1.5 !important;
   overflow-x: auto !important;
+  margin: 1rem 0 !important;
 }
 
 code[class*="language-"] {
   font-family: 'Fira Code', 'Cascadia Code', 'Consolas', monospace !important;
   font-size: 13px !important;
   tab-size: 2 !important;
+}
+
+/* Inline code */
+.static-content :not(pre)>code {
+  background: #f3f4f6;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.875em;
+  color: #d14;
+  font-family: 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+}
+
+.dark .static-content :not(pre)>code {
+  background: #1e1e1e;
+  color: #58a6ff;
 }
 
 /* Dark mode cho code */
@@ -63,38 +415,39 @@ code[class*="language-"] {
   border: 1px solid #e1e4e8 !important;
 }
 
-/* Toolbar icons màu sắc */
-.tox-toolbar__group button {
-  border-radius: 4px !important;
+/* ========== MATH FORMULA STYLES (MathJax) ========== */
+.MathJax,
+.static-content .MathJax {
+  font-size: 1.1em;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 8px 0;
 }
 
-.tox-toolbar__group button:hover {
-  background-color: #e2e8f0 !important;
+mjx-container,
+.static-content mjx-container {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 8px 0;
+  margin: 8px 0;
 }
 
-.dark .tox-toolbar__group button:hover {
-  background-color: #334155 !important;
+/* Dark mode cho MathJax */
+.dark mjx-container,
+.dark .static-content mjx-container {
+  color: #e5e7eb;
 }
 
-.transition-sidebar {
-  transition-property: padding-left;
-  transition-duration: 300ms;
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+/* Responsive cho công thức toán */
+@media (max-width: 768px) {
+
+  mjx-container,
+  .static-content mjx-container {
+    font-size: 0.9em;
+  }
 }
 
-/* Hardware acceleration cho mượt hơn */
-.sidebar-container {
-  will-change: padding-left;
-  transform: translateZ(0);
-  backface-visibility: hidden;
-}
-
-.no-download {
-  user-select: none;
-  -webkit-user-drag: none;
-  -webkit-touch-callout: none;
-}
-
+/* ========== THEME VARIABLES ========== */
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
@@ -138,56 +491,6 @@ code[class*="language-"] {
   --radius-2xl: calc(var(--radius) + 8px);
   --radius-3xl: calc(var(--radius) + 12px);
   --radius-4xl: calc(var(--radius) + 16px);
-}
-
-/* Chrome, Edge, Safari */
-.custom-scroll::-webkit-scrollbar {
-  width: 6px;
-}
-
-.custom-scroll::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.custom-scroll::-webkit-scrollbar-thumb {
-  background: rgba(100, 100, 100, 0.4);
-  border-radius: 999px;
-}
-
-.custom-scroll::-webkit-scrollbar-thumb:hover {
-  background: rgba(100, 100, 100, 0.7);
-}
-
-/* Firefox */
-* {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(100, 100, 100, 0.4) transparent;
-}
-
-svg:not(.lucide) {
-  fill: currentColor !important;
-}
-
-svg.lucide:not([data-filled]) {
-  fill: none !important;
-}
-
-.no-scrollbar::-webkit-scrollbar {
-  width: 0px !important;
-  height: 0px !important;
-}
-
-.no-scrollbar {
-  -ms-overflow-style: none !important;
-  scrollbar-width: none !important;
-}
-
-body {
-  @apply bg-white text-black;
-}
-
-.dark body {
-  @apply bg-black text-white;
 }
 
 :root {
