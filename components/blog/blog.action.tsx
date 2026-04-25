@@ -56,7 +56,6 @@ export default function BlogActions({ postId, isBookmarked = false, onBookmarkCh
         if (isProcessing) return;
         setIsProcessing(true);
 
-        // Optimistic update - cập nhật UI ngay lập tức
         const newBookmarked = !bookmarked;
         setBookmarked(newBookmarked);
         onBookmarkChange?.(newBookmarked);
@@ -65,19 +64,16 @@ export default function BlogActions({ postId, isBookmarked = false, onBookmarkCh
             const result = await postApi.bookmarkPost(postId, token);
             if (result.success) {
                 toast.success(result.data.bookmarked ? 'Đã lưu bài viết' : 'Đã bỏ lưu bài viết');
-                // Đồng bộ lại với response từ server
                 if (result.data.bookmarked !== newBookmarked) {
                     setBookmarked(result.data.bookmarked);
                     onBookmarkChange?.(result.data.bookmarked);
                 }
             } else {
-                // Rollback nếu có lỗi
                 setBookmarked(!newBookmarked);
                 onBookmarkChange?.(!newBookmarked);
                 toast.error('Có lỗi xảy ra');
             }
         } catch (error) {
-            // Rollback nếu có lỗi
             setBookmarked(!newBookmarked);
             onBookmarkChange?.(!newBookmarked);
             toast.error('Có lỗi xảy ra');
@@ -136,24 +132,23 @@ export default function BlogActions({ postId, isBookmarked = false, onBookmarkCh
                 <button
                     onClick={handleBookmark}
                     disabled={isProcessing}
-                    className="transition cursor-pointer p-1 rounded-full hover:bg-muted disabled:opacity-50"
+                    className="transition cursor-pointer p-1 rounded-full hover:bg-main/10 disabled:opacity-50"
                     aria-label="Lưu bài viết"
                 >
                     <Bookmark
-                        data-filled={true}
                         size={22}
                         fill={bookmarked ? '#eab308' : 'none'}
-                        className={bookmarked ? 'text-yellow-500' : ''}
+                        className={bookmarked ? 'text-yellow-500' : 'text-gray-500 dark:text-gray-400'}
                     />
                 </button>
 
                 <DropdownMenu modal={false}>
                     <DropdownMenuTrigger asChild>
                         <button
-                            className="p-1 rounded-full hover:bg-muted transition cursor-pointer"
+                            className="p-1 rounded-full hover:bg-main/10 transition cursor-pointer"
                             aria-label="Thêm tùy chọn"
                         >
-                            <MoreHorizontal size={22} />
+                            <MoreHorizontal size={22} className="text-gray-500 dark:text-gray-400" />
                         </button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent
@@ -164,21 +159,21 @@ export default function BlogActions({ postId, isBookmarked = false, onBookmarkCh
                     >
                         <DropdownMenuItem
                             onClick={shareFacebook}
-                            className="py-2 flex items-center gap-2 cursor-pointer"
+                            className="py-2 flex items-center gap-2 cursor-pointer hover:bg-main/10 focus:bg-main/10"
                         >
-                            <Facebook size={20} className="text-blue-500" />
+                            <Facebook size={20} className="text-main" />
                             <span>Chia sẻ lên Facebook</span>
                         </DropdownMenuItem>
                         <DropdownMenuItem
                             onClick={handleCopy}
-                            className="py-2 flex items-center gap-3 cursor-pointer"
+                            className="py-2 flex items-center gap-3 cursor-pointer hover:bg-main/10 focus:bg-main/10"
                         >
-                            <Copy size={20} />
+                            <Copy size={20} className="text-main" />
                             <span>Sao chép liên kết</span>
                         </DropdownMenuItem>
                         <DropdownMenuItem
                             onClick={() => setReportOpen(true)}
-                            className="py-2 flex items-center gap-3 text-red-500 cursor-pointer"
+                            className="py-2 flex items-center gap-3 text-red-500 cursor-pointer hover:bg-red-50 focus:bg-red-50"
                         >
                             <Flag size={20} />
                             <span>Báo cáo bài viết</span>
@@ -190,21 +185,21 @@ export default function BlogActions({ postId, isBookmarked = false, onBookmarkCh
             <Dialog open={reportOpen} onOpenChange={setReportOpen}>
                 <DialogContent className="sm:max-w-md rounded-2xl">
                     <DialogHeader>
-                        <DialogTitle>Báo cáo bài viết</DialogTitle>
+                        <DialogTitle className="text-main">Báo cáo bài viết</DialogTitle>
                     </DialogHeader>
                     <div className="space-y-2 py-2">
-                        <p className="text-sm text-muted-foreground">Chọn lý do báo cáo:</p>
+                        <p className="text-sm text-gray-500">Chọn lý do báo cáo:</p>
                         {REPORT_REASONS.map((reason) => (
                             <button
                                 key={reason}
                                 onClick={() => setSelectedReason(reason)}
                                 className={`w-full text-left px-4 py-2.5 rounded-xl text-sm transition flex items-center justify-between border ${selectedReason === reason
-                                    ? 'border-black dark:border-white bg-muted font-medium'
-                                    : 'border-transparent hover:bg-muted'
+                                    ? 'border-main bg-main/10 text-main font-medium'
+                                    : 'border-gray-200 dark:border-gray-800 hover:bg-main/5'
                                     }`}
                             >
                                 {reason}
-                                {selectedReason === reason && <Check size={15} />}
+                                {selectedReason === reason && <Check size={15} className="text-main" />}
                             </button>
                         ))}
                     </div>
@@ -212,7 +207,11 @@ export default function BlogActions({ postId, isBookmarked = false, onBookmarkCh
                         <Button variant="ghost" onClick={() => setReportOpen(false)}>
                             Hủy
                         </Button>
-                        <Button onClick={handleReport} disabled={reporting || !selectedReason}>
+                        <Button
+                            onClick={handleReport}
+                            disabled={reporting || !selectedReason}
+                            className="bg-main hover:bg-main-dark text-white"
+                        >
                             {reporting ? 'Đang gửi...' : 'Gửi báo cáo'}
                         </Button>
                     </DialogFooter>

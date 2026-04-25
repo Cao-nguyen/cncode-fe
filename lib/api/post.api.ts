@@ -180,12 +180,17 @@ export const postApi = {
         commentId: string,
         type: string,
         token: string,
-    ): Promise<IApiResponse<{ type: string; hasReacted: boolean }>> =>
-        apiFetch(`${API_URL}/api/posts/${postId}/comment/${commentId}/reaction`, {
+    ): Promise<IApiResponse<{ type: string; hasReacted: boolean }>> => {
+        console.log('📤 [API] toggleCommentReaction called with token:', token ? `${token.substring(0, 30)}...` : 'NO TOKEN');
+        return apiFetch(`${API_URL}/api/posts/${postId}/comment/${commentId}/reaction`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
             body: JSON.stringify({ type }),
-        }),
+        });
+    },
 
     // ============= ADMIN API =============
 

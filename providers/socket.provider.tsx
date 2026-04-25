@@ -146,7 +146,6 @@ export function SocketProvider({ children }: { children: ReactNode }) {
         });
     }, [socketState, isConnected, user?.id]);
 
-    // Thêm listener cho socket events
     useEffect(() => {
         if (!socketState) return;
 

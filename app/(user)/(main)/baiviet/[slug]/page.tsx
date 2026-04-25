@@ -14,7 +14,7 @@ import { ImagePreview } from '@/components/blog/ImagePreview';
 export default function ChiTietBaiVietPage() {
     const { slug } = useParams();
     const { user, token } = useAuthStore();
-    const { socket } = useSocket();
+    const { socket, joinPostRoom, leavePostRoom, isConnected } = useSocket();
     const [post, setPost] = useState<IPost | null>(null);
     const [comments, setComments] = useState<IComment[]>([]);
     const [loading, setLoading] = useState(true);
@@ -23,6 +23,7 @@ export default function ChiTietBaiVietPage() {
     const [bookmarked, setBookmarked] = useState(false);
     const [previewSrc, setPreviewSrc] = useState<string | null>(null);
     const viewTracked = useRef(false);
+    const postSlug = slug as string;
 
     const buildCommentTree = (flat: IComment[]): IComment[] => {
         const map = new Map<string, IComment>();
@@ -41,22 +42,10 @@ export default function ChiTietBaiVietPage() {
         return roots;
     };
 
-    const flattenComments = (tree: IComment[]): IComment[] => {
-        const result: IComment[] = [];
-        const traverse = (node: IComment) => {
-            result.push(node);
-            if (node.children) {
-                node.children.forEach(traverse);
-            }
-        };
-        tree.forEach(traverse);
-        return result;
-    };
-
     const fetchPost = useCallback(async () => {
-        if (!slug) return;
+        if (!postSlug) return;
         try {
-            const result = await postApi.getPostBySlug(slug as string);
+            const result = await postApi.getPostBySlug(postSlug);
             if (result.success && result.data) {
                 const p = result.data;
                 setPost(p);
@@ -68,7 +57,7 @@ export default function ChiTietBaiVietPage() {
         } catch (error) {
             console.error('Fetch post error:', error);
         }
-    }, [slug, user]);
+    }, [postSlug, user]);
 
     useEffect(() => {
         const load = async () => {
@@ -80,19 +69,32 @@ export default function ChiTietBaiVietPage() {
     }, [fetchPost]);
 
     useEffect(() => {
-        if (!slug || viewTracked.current) return;
+        if (!postSlug || viewTracked.current) return;
         viewTracked.current = true;
-        postApi.trackView(slug as string).catch(() => { });
-    }, [slug]);
+        postApi.trackView(postSlug).catch(() => { });
+    }, [postSlug]);
+
+    // 🔥 JOIN/LEAVE POST ROOM KHI CÓ SOCKET VÀ POST
+    useEffect(() => {
+        if (!socket || !isConnected || !postSlug) return;
+
+        console.log(`📢 Joining post room: post_${postSlug}`);
+        joinPostRoom(postSlug);
+
+        return () => {
+            console.log(`📢 Leaving post room: post_${postSlug}`);
+            leavePostRoom(postSlug);
+        };
+    }, [socket, isConnected, postSlug, joinPostRoom, leavePostRoom]);
 
     // Socket realtime handlers
-    // Chỉ giữ lại useEffect này cho socket events
     useEffect(() => {
-        if (!socket || !slug) return;
+        if (!socket || !postSlug) return;
 
         // Handle new comment
         const handleNewComment = (data: { comment: IComment; postSlug: string }) => {
-            if (data.postSlug !== slug) return;
+            if (data.postSlug !== postSlug) return;
+            console.log('📝 New comment received:', data.comment);
 
             setComments(prevComments => {
                 const newComment = data.comment;
@@ -124,7 +126,8 @@ export default function ChiTietBaiVietPage() {
 
         // Handle delete comment
         const handleDeleteComment = (data: { commentId: string; postSlug: string }) => {
-            if (data.postSlug !== slug) return;
+            if (data.postSlug !== postSlug) return;
+            console.log('🗑️ Comment deleted:', data.commentId);
 
             setComments(prevComments => {
                 const removeComment = (nodes: IComment[]): IComment[] => {
@@ -142,7 +145,8 @@ export default function ChiTietBaiVietPage() {
 
         // Handle update comment
         const handleUpdateComment = (data: { comment: IComment; postSlug: string }) => {
-            if (data.postSlug !== slug) return;
+            if (data.postSlug !== postSlug) return;
+            console.log('✏️ Comment updated:', data.comment);
 
             setComments(prevComments => {
                 const updateCommentInTree = (nodes: IComment[]): IComment[] => {
@@ -169,7 +173,8 @@ export default function ChiTietBaiVietPage() {
             reactions: IReactions;
             postSlug: string;
         }) => {
-            if (data.postSlug !== slug) return;
+            if (data.postSlug !== postSlug) return;
+            console.log('❤️ Reaction updated for comment:', data.commentId);
 
             setComments(prevComments => {
                 const updateReactionInTree = (nodes: IComment[]): IComment[] => {
@@ -201,12 +206,11 @@ export default function ChiTietBaiVietPage() {
             socket.off('comment:updated', handleUpdateComment);
             socket.off('comment:reaction_updated', handleReactionUpdate);
         };
-    }, [socket, slug]);
+    }, [socket, postSlug]);
 
     const handleLike = async () => {
         if (!token || !post) return;
 
-        // Optimistic update
         const newLiked = !liked;
         setLiked(newLiked);
         setLikeCount(prev => newLiked ? prev + 1 : prev - 1);
@@ -217,12 +221,10 @@ export default function ChiTietBaiVietPage() {
                 setLiked(result.data.liked);
                 setLikeCount(result.data.likes);
             } else {
-                // Rollback
                 setLiked(!newLiked);
                 setLikeCount(prev => newLiked ? prev - 1 : prev + 1);
             }
         } catch (error) {
-            // Rollback
             setLiked(!newLiked);
             setLikeCount(prev => newLiked ? prev - 1 : prev + 1);
             console.error('Like error:', error);
@@ -233,7 +235,6 @@ export default function ChiTietBaiVietPage() {
         if (!token || !post) return;
         try {
             await postApi.addComment(post._id, content, token, parentId ?? null);
-            // Không cần fetch lại, socket sẽ tự cập nhật
         } catch (error) {
             console.error('Add comment error:', error);
             throw error;
@@ -248,7 +249,6 @@ export default function ChiTietBaiVietPage() {
         if (!token || !post) return;
         try {
             await postApi.deleteComment(post._id, commentId, token);
-            // Không cần fetch lại, socket sẽ tự cập nhật
         } catch (error) {
             console.error('Delete comment error:', error);
         }

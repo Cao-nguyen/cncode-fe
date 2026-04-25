@@ -60,14 +60,13 @@ const getTotalReactions = (reactions: IReactions): number =>
 interface CommentItemProps {
     comment: IComment;
     post: IPost;
-    onCommentUpdated: () => Promise<void>;
+    // ✅ Không cần onCommentUpdated nữa — socket xử lý tất cả
     isChild?: boolean;
 }
 
 export default function CommentItem({
     comment,
     post,
-    onCommentUpdated,
     isChild = false,
 }: CommentItemProps) {
     const { user, token } = useAuthStore();
@@ -87,7 +86,19 @@ export default function CommentItem({
 
     const reactionRef = useRef<HTMLDivElement>(null);
 
-    // Lắng nghe reaction realtime từ socket
+    // Sync localReactions khi comment.reactions thay đổi từ socket (parent re-render)
+    useEffect(() => {
+        setLocalReactions(comment.reactions);
+    }, [comment.reactions]);
+
+    // Sync editContent khi comment.content thay đổi từ socket
+    useEffect(() => {
+        if (!isEditing) {
+            setEditContent(comment.content);
+        }
+    }, [comment.content, isEditing]);
+
+    // ✅ Lắng nghe reaction realtime từ socket (chỉ cho comment này)
     useEffect(() => {
         if (!socket) return;
 
@@ -108,10 +119,7 @@ export default function CommentItem({
         };
     }, [socket, comment._id]);
 
-    useEffect(() => {
-        setLocalReactions(comment.reactions);
-    }, [comment.reactions]);
-
+    // Click outside để đóng reaction popup
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
             if (reactionRef.current && !reactionRef.current.contains(e.target as Node)) {
@@ -131,7 +139,6 @@ export default function CommentItem({
     const commentUserId = getUserId(comment.user);
     const postAuthorId = getUserId(post.author);
 
-    // Lấy reaction hiện tại của user
     const getUserCurrentReaction = (): { type: string; label: string } | null => {
         if (!currentUserId) return null;
         for (const r of REACTIONS) {
@@ -153,7 +160,7 @@ export default function CommentItem({
 
     const canEdit = !!(user && currentUserId === commentUserId);
 
-    // Xử lý reaction với optimistic update
+    // ✅ Optimistic update cho reaction — socket sẽ confirm lại
     const handleReaction = async (type: string) => {
         if (!token || !user || !currentUserId) {
             toast.error('Vui lòng đăng nhập để thả cảm xúc');
@@ -166,7 +173,6 @@ export default function CommentItem({
 
         // Optimistic update
         const newReactions = { ...localReactions };
-
         if (isSameReaction) {
             newReactions[key] = newReactions[key].filter((id) => id !== currentUserId);
         } else {
@@ -183,13 +189,16 @@ export default function CommentItem({
 
         try {
             await postApi.toggleCommentReaction(post._id, comment._id, type, token);
-            // Không cần gọi onCommentUpdated, socket sẽ tự cập nhật
+            // Socket sẽ emit comment:reaction_updated → cập nhật chính xác từ server
         } catch (error) {
+            console.error('Reaction error:', error);
             toast.error('Có lỗi xảy ra');
+            // Rollback về reactions gốc
             setLocalReactions(comment.reactions);
         }
     };
 
+    // ✅ FIX: Bỏ onCommentUpdated() — socket sẽ emit comment:new
     const handleReply = async () => {
         if (!token) {
             toast.error('Vui lòng đăng nhập để trả lời');
@@ -203,8 +212,8 @@ export default function CommentItem({
             await postApi.addComment(post._id, replyContent, token, rootId);
             setReplyContent('');
             setShowReplyInput(false);
-            await onCommentUpdated();
             toast.success('Đã thêm phản hồi');
+            // ✅ KHÔNG gọi onCommentUpdated() — socket emit comment:new sẽ tự cập nhật
         } catch {
             toast.error('Có lỗi xảy ra');
         } finally {
@@ -212,26 +221,28 @@ export default function CommentItem({
         }
     };
 
+    // ✅ FIX: Bỏ onCommentUpdated() — socket sẽ emit comment:deleted
     const handleDelete = async () => {
         if (!confirm('Bạn có chắc chắn muốn xóa bình luận này?')) return;
         if (!token) return;
         try {
             await postApi.deleteComment(post._id, comment._id, token);
-            await onCommentUpdated();
             toast.success('Đã xóa bình luận');
+            // ✅ KHÔNG gọi onCommentUpdated() — socket emit comment:deleted sẽ tự cập nhật
         } catch {
             toast.error('Có lỗi xảy ra');
         }
     };
 
+    // ✅ FIX: Bỏ onCommentUpdated() — socket sẽ emit comment:updated
     const handleEditSubmit = async () => {
         if (!token || !editContent.trim()) return;
         setEditSubmitting(true);
         try {
             await postApi.editComment(post._id, comment._id, editContent, token);
-            await onCommentUpdated();
             setIsEditing(false);
             toast.success('Đã cập nhật bình luận');
+            // ✅ KHÔNG gọi onCommentUpdated() — socket emit comment:updated sẽ tự cập nhật
         } catch {
             toast.error('Có lỗi xảy ra');
         } finally {
@@ -276,7 +287,7 @@ export default function CommentItem({
                                 {comment.user?.fullName || 'Người dùng'}
                             </p>
                             {commentUserId && postAuthorId && commentUserId === postAuthorId && (
-                                <span className="text-xs bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-full">
+                                <span className="text-xs bg-main/10 text-main px-2 py-0.5 rounded-full">
                                     Tác giả
                                 </span>
                             )}
@@ -288,7 +299,7 @@ export default function CommentItem({
                         </div>
 
                         {comment.replyToName && isChild && (
-                            <span className="text-xs text-blue-500 font-medium">
+                            <span className="text-xs text-main font-medium">
                                 @{comment.replyToName}{' '}
                             </span>
                         )}
@@ -307,6 +318,7 @@ export default function CommentItem({
                                         size="sm"
                                         onClick={handleEditSubmit}
                                         disabled={editSubmitting || !editContent.trim()}
+                                        className="bg-main hover:bg-main-dark text-white"
                                     >
                                         {editSubmitting ? 'Đang lưu...' : 'Lưu'}
                                     </Button>
@@ -330,7 +342,6 @@ export default function CommentItem({
                         )}
                     </div>
 
-                    {/* Hiển thị reactions - chỉ hiển thị icon và số lượng */}
                     {totalReactions > 0 && (
                         <div className="flex items-center gap-1 mt-1 ml-1">
                             <div className="flex -space-x-1">
@@ -362,7 +373,7 @@ export default function CommentItem({
                             <button
                                 onClick={() => setShowReactionPopup((v) => !v)}
                                 className={`text-xs font-semibold leading-none transition px-2 py-0.5 rounded-full ${userReaction
-                                    ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+                                    ? 'bg-main/10 text-main'
                                     : 'text-muted-foreground hover:bg-gray-200 dark:hover:bg-gray-700'
                                     }`}
                             >
@@ -403,7 +414,7 @@ export default function CommentItem({
 
                         <DropdownMenu modal={false}>
                             <DropdownMenuTrigger asChild>
-                                <button className="flex items-center text-muted-foreground hover:text-foreground transition p-0.5 rounded-full hover:bg-muted">
+                                <button className="flex items-center text-muted-foreground hover:text-foreground transition p-0.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">
                                     <MoreHorizontal size={15} />
                                 </button>
                             </DropdownMenuTrigger>
@@ -461,6 +472,7 @@ export default function CommentItem({
                                         size="sm"
                                         onClick={handleReply}
                                         disabled={submitting || !replyContent.trim()}
+                                        className="bg-main hover:bg-main-dark text-white"
                                     >
                                         {submitting ? 'Đang gửi...' : 'Gửi'}
                                     </Button>
@@ -486,7 +498,6 @@ export default function CommentItem({
                                     key={child._id}
                                     comment={child}
                                     post={post}
-                                    onCommentUpdated={onCommentUpdated}
                                     isChild
                                 />
                             ))}
@@ -498,7 +509,7 @@ export default function CommentItem({
             <Dialog open={reportOpen} onOpenChange={setReportOpen}>
                 <DialogContent className="sm:max-w-md rounded-2xl">
                     <DialogHeader>
-                        <DialogTitle>Báo cáo bình luận</DialogTitle>
+                        <DialogTitle className="text-main">Báo cáo bình luận</DialogTitle>
                     </DialogHeader>
                     <div className="space-y-2 py-2">
                         <p className="text-sm text-muted-foreground">Chọn lý do báo cáo:</p>
@@ -507,12 +518,12 @@ export default function CommentItem({
                                 key={reason}
                                 onClick={() => setSelectedReason(reason)}
                                 className={`w-full text-left px-4 py-2.5 rounded-xl text-sm transition flex items-center justify-between border ${selectedReason === reason
-                                    ? 'border-black dark:border-white bg-muted font-medium'
-                                    : 'border-transparent hover:bg-muted'
+                                    ? 'border-main bg-main/10 text-main font-medium'
+                                    : 'border-transparent hover:bg-main/5'
                                     }`}
                             >
                                 {reason}
-                                {selectedReason === reason && <Check size={15} />}
+                                {selectedReason === reason && <Check size={15} className="text-main" />}
                             </button>
                         ))}
                     </div>
@@ -520,7 +531,11 @@ export default function CommentItem({
                         <Button variant="ghost" onClick={() => setReportOpen(false)}>
                             Hủy
                         </Button>
-                        <Button onClick={handleReport} disabled={reporting || !selectedReason}>
+                        <Button
+                            onClick={handleReport}
+                            disabled={reporting || !selectedReason}
+                            className="bg-main hover:bg-main-dark text-white"
+                        >
                             {reporting ? 'Đang gửi...' : 'Gửi báo cáo'}
                         </Button>
                     </DialogFooter>
