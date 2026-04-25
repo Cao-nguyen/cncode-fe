@@ -3,8 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { useTheme } from "next-themes";
-import { Sun, Moon, User, Settings, LogOut, BookOpen, FileText, Home, Heart } from "lucide-react";
+import { User, Settings, LogOut, BookOpen, FileText, Home, Heart } from "lucide-react";
 import {
     Home as Trangchu,
     Message2 as Diendan,
@@ -141,14 +140,8 @@ interface MobileMenuItem {
 
 export default function Header() {
     const pathname = usePathname();
-    const { setTheme, theme } = useTheme();
     const router = useRouter();
     const { user, logout, token, coins } = useAuthStore();
-    const [mounted, setMounted] = useState(false);
-
-    useEffect(() => {
-        setMounted(true);
-    }, []);
 
     const handleLogout = () => {
         logout();
@@ -191,7 +184,7 @@ export default function Header() {
     return (
         <>
             {/* Desktop */}
-            <div className="hidden lg:block bg-white dark:bg-black w-full h-15 fixed top-0 z-50">
+            <div className="hidden lg:block bg-white w-full h-15 fixed top-0 z-50 shadow-sm">
                 <div className="flex h-full justify-between items-center">
                     <div className="ml-1.5 lg:ml-4">
                         <Link href="/">
@@ -199,49 +192,39 @@ export default function Header() {
                         </Link>
                     </div>
 
-                    <div className="flex">
+                    <div className="flex h-full items-center">
                         {menu.map((m) => {
                             const isActive = pathname === m.link;
                             return (
-                                <div key={m.link} className="lg:px-1 xl:px-3">
+                                <div key={m.link} className="relative lg:px-1 xl:px-3 h-full flex items-center">
                                     <Link
                                         href={m.link}
                                         className={`
-                                            px-2.5 py-1.75 rounded-[9px] font-bold
-                                            transition-all duration-100 lg:text-[15px] xl:text-[16px]
+                                            px-2.5 py-1.75 font-bold text-[14px] transition-all duration-200
                                             ${isActive
-                                                ? "bg-[#dedede] dark:bg-[#424141] bg-opacity-50"
-                                                : "hover:bg-[#d5d5d5] dark:hover:bg-[#5F5F5F] hover:bg-opacity-50"
+                                                ? "text-main"
+                                                : "text-gray-700 hover:text-main"
                                             }
+                                            relative
                                         `}
                                     >
                                         {m.title}
                                     </Link>
+                                    {isActive && (
+                                        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-main rounded-t-full" />
+                                    )}
+                                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-main rounded-t-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none" />
                                 </div>
                             );
                         })}
                     </div>
 
                     <div className="mr-1.5 lg:mr-4 flex gap-3 items-center">
-                        {/* Theme toggle — chỉ render sau khi mounted để tránh flicker */}
-                        <button
-                            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                            className="p-1"
-                        >
-                            {mounted ? (
-                                theme === "dark"
-                                    ? <Sun size={20} className="text-white" />
-                                    : <Moon size={20} />
-                            ) : (
-                                <Moon size={20} />
-                            )}
-                        </button>
-
                         {displayUser && (
                             <div className="flex items-center gap-5 mr-1">
                                 <div className="relative flex items-center">
-                                    <div className="border border-gray-400 dark:border-gray-600 rounded-2xl pl-2 pr-4 py-0.5">
-                                        <p className="text-blue-500 dark:text-blue-300 text-[12px] font-medium">
+                                    <div className="border border-gray-400 rounded-2xl pl-2 pr-4 py-0.5">
+                                        <p className="text-main text-[12px] font-medium">
                                             {formatNumber(displayCoins)}
                                         </p>
                                     </div>
@@ -249,8 +232,8 @@ export default function Header() {
                                 </div>
 
                                 <div className="relative flex items-center">
-                                    <div className="border border-gray-400 dark:border-gray-600 rounded-2xl pl-2 pr-5 py-0.5">
-                                        <p className="text-blue-500 dark:text-blue-300 text-[12px] font-medium">
+                                    <div className="border border-gray-400 rounded-2xl pl-2 pr-5 py-0.5">
+                                        <p className="text-main text-[12px] font-medium">
                                             {formatNumber(displayStreak)}
                                         </p>
                                     </div>
@@ -276,7 +259,7 @@ export default function Header() {
                         ) : (
                             <Link
                                 href="/login"
-                                className="bg-black text-white dark:bg-white dark:text-black px-3 py-1.5 rounded-[10px] font-bold text-[14px]"
+                                className="bg-main text-white px-3.5 py-2 rounded-[8px] font-bold text-[14px]"
                             >
                                 Đăng nhập
                             </Link>
@@ -286,28 +269,18 @@ export default function Header() {
             </div>
 
             {/* Mobile top bar */}
-            <div className="lg:hidden fixed top-0 w-full h-10 bg-white dark:bg-black z-50 border-b border-gray-200 dark:border-gray-800">
+            <div className="lg:hidden fixed top-0 w-full h-10 bg-white z-50 border-b border-gray-200">
                 <div className="flex h-full justify-between items-center px-1.5">
                     <Link href="/">
                         <Image src="/images/logo.png" alt="Logo CNcode" width={60} height={30} className="object-contain" priority />
                     </Link>
 
                     <div className="flex gap-3 items-center">
-                        <button onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
-                            {mounted ? (
-                                theme === "dark"
-                                    ? <Sun size={18} className="text-white" />
-                                    : <Moon size={18} />
-                            ) : (
-                                <Moon size={18} />
-                            )}
-                        </button>
-
                         {displayUser && (
                             <div className="flex items-center gap-3">
                                 <div className="relative flex items-center">
-                                    <div className="border border-gray-400 dark:border-gray-600 rounded-2xl pl-2 pr-4 py-0.5">
-                                        <p className="text-blue-500 dark:text-blue-300 text-[10px] font-medium">
+                                    <div className="border border-gray-400 rounded-2xl pl-2 pr-4 py-0.5">
+                                        <p className="text-main text-[10px] font-medium">
                                             {formatNumber(displayCoins)}
                                         </p>
                                     </div>
@@ -315,8 +288,8 @@ export default function Header() {
                                 </div>
 
                                 <div className="relative flex items-center">
-                                    <div className="border border-gray-400 dark:border-gray-600 rounded-2xl pl-2 pr-5 py-0.5">
-                                        <p className="text-blue-500 dark:text-blue-300 text-[10px] font-medium">
+                                    <div className="border border-gray-400 rounded-2xl pl-2 pr-5 py-0.5">
+                                        <p className="text-main text-[10px] font-medium">
                                             {formatNumber(displayStreak)}
                                         </p>
                                     </div>
@@ -340,7 +313,7 @@ export default function Header() {
                         ) : (
                             <Link
                                 href="/login"
-                                className="bg-black text-white dark:bg-white dark:text-black px-2 py-1 rounded-[10px] font-bold text-[10px]"
+                                className="bg-main text-white px-2 py-1.5 rounded-[5px] font-bold text-[10px]"
                             >
                                 Đăng nhập
                             </Link>
@@ -351,7 +324,7 @@ export default function Header() {
 
             {/* Mobile bottom nav */}
             <div className="lg:hidden fixed bottom-0 left-0 w-full z-50">
-                <div className="w-full h-14 bg-white dark:bg-black border-t border-gray-200 dark:border-gray-800 rounded-t-2xl shadow-[0_-4px_20px_rgba(0,0,0,0.15)] flex items-center px-2">
+                <div className="w-full h-14 bg-white border-t border-gray-200 rounded-t-2xl shadow-[0_-4px_20px_rgba(0,0,0,0.15)] flex items-center px-2">
                     {menuMobile.map((m) => {
                         const isActive = pathname === m.link;
                         const Icon = m.icon;
@@ -364,9 +337,9 @@ export default function Header() {
                                 <Icon
                                     size={20}
                                     variant="Bold"
-                                    className={isActive ? "text-blue-500" : "text-gray-500 dark:text-gray-400"}
+                                    className={isActive ? "text-main" : "text-gray-500"}
                                 />
-                                <span className={`text-[10px] font-medium ${isActive ? "text-blue-500" : "text-gray-500 dark:text-gray-400"}`}>
+                                <span className={`text-[10px] font-medium ${isActive ? "text-main" : "text-gray-500"}`}>
                                     {m.title}
                                 </span>
                             </Link>
