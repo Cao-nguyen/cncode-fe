@@ -282,7 +282,7 @@ function NotificationBellInner({ userId }: { userId: string }) {
 
 export default function NotificationBell() {
     const { user } = useAuthStore();
-    console.log('🔔 NotificationBell - User:', user?.id);
-    if (!user?.id) return null;
-    return <NotificationBellInner userId={user.id} />;
+    console.log('🔔 NotificationBell - User:', user?._id);
+    if (!user?._id) return null;
+    return <NotificationBellInner userId={user._id} />;
 }
