@@ -190,7 +190,7 @@ function ServiceItem({ svc }: { svc: Service }) {
 export default function CNServicesGrid() {
     return (
         // Div lớn — shadow
-        <div className="mt-10 sm:mt-20 bg-white rounded-2xl md:rounded-3xl p-2 sm:p-3 w-full max-w-6xl mx-auto" style={{ boxShadow: "0 -8px 24px -4px rgba(0,0,0,0.18), 0 4px 8px -4px rgba(0,0,0,0.04)" }}>
+        <div className="mt-10 sm:mt-20 bg-white rounded-2xl md:rounded-3xl p-2 sm:p-3 w-[95%] max-w-6xl mx-auto" style={{ boxShadow: "0 -8px 24px -4px rgba(0,0,0,0.18), 0 4px 8px -4px rgba(0,0,0,0.04)" }}>
 
             {/* Div giữa — border */}
             <div className="border border-slate-200 rounded-2xl md:rounded-3xl">
