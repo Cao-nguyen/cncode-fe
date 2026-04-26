@@ -35,7 +35,8 @@ const BASE_URL =
     'http://localhost:5000';
 
 export function SocketProvider({ children }: { children: ReactNode }) {
-    const { user, token, isOnboarded } = useAuthStore();
+    const { user, token } = useAuthStore();
+    const isOnboarded = user?.isOnboarded;
     const socketRef = useRef<Socket | null>(null);
     const [socketState, setSocketState] = useState<Socket | null>(null);
     const [isConnected, setIsConnected] = useState(false);
@@ -57,11 +58,11 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     };
 
     useEffect(() => {
-        if (!token || !isOnboarded || !user?.id) {
+        if (!token || !isOnboarded || !user?._id) {
             console.log('🔌 Socket not connecting - missing requirements', {
                 hasToken: !!token,
                 isOnboarded,
-                hasUserId: !!user?.id
+                hasUserId: !!user?._id
             });
             return;
         }
@@ -123,20 +124,20 @@ export function SocketProvider({ children }: { children: ReactNode }) {
             setSocketId(undefined);
             registeredRef.current = false;
         };
-    }, [token, isOnboarded, user?.id]);
+    }, [token, isOnboarded, user?._id]);
 
     useEffect(() => {
         if (!socketState || !isConnected) return;
-        if (!user?.id) {
+        if (!user?._id) {
             console.log('⚠️ Cannot register: no user.id');
             return;
         }
         if (registeredRef.current) return;
 
-        console.log('📝 Registering user with socket:', user.id);
+        console.log('📝 Registering user with socket:', user._id);
 
         socketState.emit('register', {
-            userId: user.id,
+            userId: user._id,
             sessionId: null
         });
         registeredRef.current = true;
@@ -144,7 +145,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
         socketState.once('registered', (data) => {
             console.log('✅ User registered successfully:', data);
         });
-    }, [socketState, isConnected, user?.id]);
+    }, [socketState, isConnected, user?._id]);
 
     useEffect(() => {
         if (!socketState) return;
