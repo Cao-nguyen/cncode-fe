@@ -10,7 +10,6 @@ import {
     PopoverTrigger,
 } from '@/components/ui/popover';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { INotification } from '@/types/notification.type';
 import Link from 'next/link';
 
 interface NotificationItem {
@@ -145,56 +144,40 @@ function NotificationBellInner({ userId }: { userId: string }) {
     const [open, setOpen] = useState(false);
 
     useEffect(() => {
+        // Log để debug
         console.log('🔔 NotificationBell - Socket state:', { socket: !!socket, isConnected, userId });
     }, [socket, isConnected, userId]);
 
     useEffect(() => {
         if (!socket || !isConnected) {
-            console.log('🔕 NotificationBell - Socket not ready');
+            console.log('🔕 NotificationBell - Socket not ready, waiting...');
             return;
         }
 
         console.log('🔔 NotificationBell - Setting up notification listener');
 
-        const handleNewNotification = (data: INotification) => {
-            console.log('🔔🔔🔔 FRONTEND RECEIVED NOTIFICATION:', data);
+        const handleNewNotification = (data: any) => {
+            console.log('🔔📦 Received notification:', data);
 
             const newNotification: NotificationItem = {
-                id: crypto.randomUUID(),
+                id: data.id || crypto.randomUUID(),
                 type: data.type,
                 postSlug: data.postSlug || data.postId || '',
-                postTitle: data.postTitle || '',
+                postTitle: data.postTitle || 'Bài viết',
                 userName: data.userName || 'Người dùng',
                 commentId: data.commentId,
                 reactionType: data.reactionType,
                 content: data.content,
                 read: false,
-                createdAt: new Date().toISOString(),
+                createdAt: data.createdAt || new Date().toISOString(),
             };
 
             setNotifications((prev) => {
-                const updated = [newNotification, ...prev];
+                const updated = [newNotification, ...prev].slice(0, 50); // Giữ tối đa 50 thông báo
                 localStorage.setItem(`notifications_${userId}`, JSON.stringify(updated));
                 return updated;
             });
             setUnreadCount((prev) => prev + 1);
-
-            let message = '';
-            if (data.type === 'like_post') {
-                message = `${data.userName} đã thích bài viết "${data.postTitle}"`;
-            } else if (data.type === 'comment') {
-                message = `${data.userName} đã bình luận về bài viết "${data.postTitle}"`;
-            } else if (data.type === 'reply_comment') {
-                message = `${data.userName} đã trả lời bình luận của bạn`;
-            } else if (data.type === 'reaction_comment') {
-                message = `${data.userName} đã phản ứng bình luận của bạn`;
-            } else if (data.type === 'bookmark') {
-                message = `${data.userName} đã lưu bài viết "${data.postTitle}"`;
-            }
-
-            if (message) {
-                console.log("success")
-            }
         };
 
         socket.on('new_notification', handleNewNotification);
@@ -224,13 +207,22 @@ function NotificationBellInner({ userId }: { userId: string }) {
         });
     };
 
+    // Hiển thị thông báo lỗi nếu socket không kết nối
+    if (!isConnected) {
+        return (
+            <button className="relative p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition opacity-50">
+                <Bell size={20} />
+            </button>
+        );
+    }
+
     return (
         <Popover open={open} onOpenChange={setOpen}>
             <PopoverTrigger asChild>
                 <button className="relative p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition">
                     <Bell size={20} />
                     {unreadCount > 0 && (
-                        <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                        <span className="absolute top-0 right-0 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center">
                             {unreadCount > 9 ? '9+' : unreadCount}
                         </span>
                     )}
@@ -282,7 +274,12 @@ function NotificationBellInner({ userId }: { userId: string }) {
 
 export default function NotificationBell() {
     const { user } = useAuthStore();
-    console.log('🔔 NotificationBell - User:', user?._id);
-    if (!user?._id) return null;
+
+    // Chỉ hiển thị khi có user và đã load xong
+    if (!user?._id) {
+        console.log('🔔 NotificationBell - No user, not rendering');
+        return null;
+    }
+
     return <NotificationBellInner userId={user._id} />;
 }
