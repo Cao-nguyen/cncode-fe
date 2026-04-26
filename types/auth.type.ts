@@ -93,6 +93,7 @@ export interface AuthState {
     clearError: () => void;
     setUser: (user: User | null) => void;
     setIsOnboarded: (value: boolean) => void;
+    checkAndSync: () => Promise<void>;
 }
 
 export interface IGoogleLoginResponse {

@@ -35,6 +35,29 @@ export const useAuthStore = create<AuthState>()(
                 });
             },
 
+            checkAndSync: async (): Promise<void> => {
+                const token = get().token;
+                if (!token) return;
+                try {
+                    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/me`, {
+                        headers: { Authorization: `Bearer ${token}` },
+                    });
+                    if (!response.ok) {
+                        set({ ...initialState });
+                        return;
+                    }
+                    const data = await response.json();
+                    const userData = data.user ?? data.data;
+                    set({
+                        user: userData,
+                        coins: userData?.coins ?? 0,
+                        isAuthenticated: true,
+                    });
+                } catch {
+                    set({ ...initialState });
+                }
+            },
+
             login: async (credentials: LoginCredentials): Promise<void> => {
                 set({ isLoading: true, error: null });
                 try {
@@ -43,20 +66,15 @@ export const useAuthStore = create<AuthState>()(
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(credentials),
                     });
-
                     if (!response.ok) {
                         const error = await response.json();
                         throw new Error(error.message || 'Đăng nhập thất bại');
                     }
-
                     const data = await response.json();
-                    const userData = data.user;
-                    const tokenData = data.token;
-
                     set({
-                        user: userData,
-                        token: tokenData,
-                        coins: userData?.coins ?? 0,
+                        user: data.user,
+                        token: data.token,
+                        coins: data.user?.coins ?? 0,
                         isAuthenticated: true,
                         isLoading: false,
                         error: null,
@@ -78,20 +96,15 @@ export const useAuthStore = create<AuthState>()(
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ credential }),
                     });
-
                     if (!response.ok) {
                         const error = await response.json();
                         throw new Error(error.message || 'Đăng nhập với Google thất bại');
                     }
-
                     const data = await response.json();
-                    const userData = data.user;
-                    const tokenData = data.token;
-
                     set({
-                        user: userData,
-                        token: tokenData,
-                        coins: userData?.coins ?? 0,
+                        user: data.user,
+                        token: data.token,
+                        coins: data.user?.coins ?? 0,
                         isAuthenticated: true,
                         isLoading: false,
                         error: null,
@@ -113,20 +126,15 @@ export const useAuthStore = create<AuthState>()(
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(data),
                     });
-
                     if (!response.ok) {
                         const error = await response.json();
                         throw new Error(error.message || 'Đăng ký thất bại');
                     }
-
                     const result = await response.json();
-                    const userData = result.user;
-                    const tokenData = result.token;
-
                     set({
-                        user: userData,
-                        token: tokenData,
-                        coins: userData?.coins ?? 0,
+                        user: result.user,
+                        token: result.token,
+                        coins: result.user?.coins ?? 0,
                         isAuthenticated: true,
                         isLoading: false,
                         error: null,
@@ -151,9 +159,10 @@ export const useAuthStore = create<AuthState>()(
                             Authorization: `Bearer ${token}`,
                         },
                     });
-                    set({ ...initialState, isLoading: false });
                 } catch {
-                    set({ ...initialState, isLoading: false });
+                    // ignore
+                } finally {
+                    set({ ...initialState });
                 }
             },
 
@@ -169,18 +178,14 @@ export const useAuthStore = create<AuthState>()(
                         },
                         body: JSON.stringify(userData),
                     });
-
                     if (!response.ok) {
                         const error = await response.json();
                         throw new Error(error.message || 'Cập nhật thất bại');
                     }
-
                     const data = await response.json();
-                    const updatedUser = data.user;
-
                     set({
-                        user: updatedUser,
-                        coins: updatedUser?.coins ?? get().coins,
+                        user: data.user,
+                        coins: data.user?.coins ?? get().coins,
                         isLoading: false,
                         error: null,
                     });
@@ -205,12 +210,10 @@ export const useAuthStore = create<AuthState>()(
                         },
                         body: JSON.stringify(data),
                     });
-
                     if (!response.ok) {
                         const error = await response.json();
                         throw new Error(error.message || 'Đổi mật khẩu thất bại');
                     }
-
                     set({ isLoading: false, error: null });
                 } catch (error) {
                     set({
@@ -229,12 +232,10 @@ export const useAuthStore = create<AuthState>()(
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(data),
                     });
-
                     if (!response.ok) {
                         const error = await response.json();
                         throw new Error(error.message || 'Gửi yêu cầu thất bại');
                     }
-
                     set({ isLoading: false, error: null });
                 } catch (error) {
                     set({
@@ -253,12 +254,10 @@ export const useAuthStore = create<AuthState>()(
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(data),
                     });
-
                     if (!response.ok) {
                         const error = await response.json();
                         throw new Error(error.message || 'Đặt lại mật khẩu thất bại');
                     }
-
                     set({ isLoading: false, error: null });
                 } catch (error) {
                     set({
@@ -271,8 +270,7 @@ export const useAuthStore = create<AuthState>()(
 
             updateCoins: (amount: number): void => {
                 const currentCoins = get().coins;
-                const newCoins = currentCoins + amount;
-                const finalCoins = newCoins >= 0 ? newCoins : 0;
+                const finalCoins = Math.max(0, currentCoins + amount);
                 set({ coins: finalCoins });
                 const currentUser = get().user;
                 if (currentUser) {
