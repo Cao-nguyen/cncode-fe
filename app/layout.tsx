@@ -33,7 +33,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="vi" suppressHydrationWarning>
+    <html lang="vi" style={{ scrollbarGutter: "stable" }} suppressHydrationWarning>
       <body className={`${inter.className} antialiased`}>
         <AppThemeProvider>
 

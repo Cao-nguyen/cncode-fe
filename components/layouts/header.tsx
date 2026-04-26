@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
     User,
     Setting2 as Settings,
@@ -12,7 +12,8 @@ import {
     Document as FileText,
     Home,
     Heart,
-    CloseCircle
+    CloseCircle,
+    ArrowRight2,
 } from "iconsax-react";
 import {
     Home as Trangchu,
@@ -27,112 +28,227 @@ import {
 import type { Icon } from "iconsax-react";
 import NotificationBell from "./NotificationBell";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import {
-    DropdownMenu,
-    DropdownMenuTrigger,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
 import { useAuthStore } from "@/store/auth.store";
 import { toast } from "sonner";
 
-const formatNumber = (num: number) => {
-    return new Intl.NumberFormat("en", {
-        notation: "compact",
-        maximumFractionDigits: 1,
-    }).format(num);
-};
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
-interface UserDropdownProps {
-    user: { fullname: string; avatar: string; role: string };
-    onLogout: () => void;
+const formatNumber = (num: number) =>
+    new Intl.NumberFormat("en", { notation: "compact", maximumFractionDigits: 1 }).format(num);
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+interface MenuItem { title: string; link: string; }
+interface MobileMenuItem { title: string; link: string; icon: Icon; }
+interface SheetItem { icon: React.ReactNode; title: string; subtitle: string; href: string; }
+interface SheetSection { label: string; items: SheetItem[]; }
+
+// ─── Shared sections builder ───────────────────────────────────────────────────
+
+function buildSections(
+    user: { fullname: string; role: string },
+    iconSize: { width: number; height: number }
+): SheetSection[] {
+    return [
+        {
+            label: "Tài khoản",
+            items: [
+                { icon: <User variant="Bold" style={iconSize} />, title: "Trang cá nhân", subtitle: "Xem hồ sơ của bạn", href: `/profile/${user.fullname}` },
+                ...(user.role === "admin" ? [{ icon: <Settings variant="Bold" style={iconSize} />, title: "Trang quản trị", subtitle: "Quản lý hệ thống", href: "/admin/dashboard" }] : []),
+                ...(user.role === "teacher" ? [{ icon: <Settings variant="Bold" style={iconSize} />, title: "Trang quản lý", subtitle: "Quản lý lớp học", href: "/teacher/dashboard" }] : []),
+                { icon: <FileText variant="Bold" style={iconSize} />, title: "Lịch sử giao dịch", subtitle: "Xem các giao dịch của bạn", href: "/me/transactions" },
+                { icon: <FileText variant="Bold" style={iconSize} />, title: "Ưu đãi của tôi", subtitle: "Voucher & ưu đãi", href: "/me/voucher" },
+            ],
+        },
+        {
+            label: "Cộng đồng",
+            items: [
+                { icon: <Heart variant="Bold" style={iconSize} />, title: "Hành trình yêu thương", subtitle: "Câu chuyện của bạn", href: "/hanhtrinhyethuong" },
+                { icon: <NhaHang variant="Bold" style={iconSize} />, title: "Tiếp thị liên kết", subtitle: "Affiliate & hoa hồng", href: "/me/tiepthilienket" },
+            ],
+        },
+        {
+            label: "Tiện ích",
+            items: [
+                { icon: <Cuahangso variant="Bold" style={iconSize} />, title: "Cửa hàng số", subtitle: "Sản phẩm số của bạn", href: "/me/cuahangso" },
+                { icon: <FileText variant="Bold" style={iconSize} />, title: "Rút gọn liên kết", subtitle: "Sở hữu link ngắn", href: "/rutgonlink" },
+            ],
+        },
+        {
+            label: "Học tập",
+            items: [
+                { icon: <BookOpen variant="Bold" style={iconSize} />, title: "Khoá học của tôi", subtitle: "Tiếp tục học tập", href: "/me/khoahoc" },
+                { icon: <FileText variant="Bold" style={iconSize} />, title: "Bài viết của tôi", subtitle: "Quản lý nội dung", href: "/me/baiviet" },
+                { icon: <Home variant="Bold" style={iconSize} />, title: "Khu vườn học tập", subtitle: "Không gian của bạn", href: "/khuvuonhoctap" },
+                { icon: <NhaHang variant="Bold" style={iconSize} />, title: "Nhà hàng công nghệ", subtitle: "Khám phá công nghệ", href: "/nhahangcongnghe" },
+            ],
+        },
+        {
+            label: "Cài đặt",
+            items: [
+                { icon: <Settings variant="Bold" style={iconSize} />, title: "Cài đặt", subtitle: "Tuỳ chỉnh tài khoản", href: "/me/settings" },
+            ],
+        },
+    ];
 }
 
-function UserDropdown({ user, onLogout }: UserDropdownProps) {
+const ROLE_BADGE: Record<string, string> = {
+    admin: "bg-red-50 text-red-500",
+    teacher: "bg-blue-50 text-blue-500",
+    student: "bg-green-50 text-green-600",
+    user: "bg-gray-100 text-gray-500",
+};
+
+// ─── Desktop Right Drawer ─────────────────────────────────────────────────────
+
+interface DrawerProps {
+    user: { fullname: string; username: string; avatar: string; role: string };
+    onLogout: () => void;
+    onClose: () => void;
+    open: boolean;
+}
+
+function DesktopUserDrawer({ user, onLogout, onClose, open }: DrawerProps) {
+    const drawerRef = useRef<HTMLDivElement>(null);
+    const iconSize = { width: 18, height: 18 };
+    const sections = buildSections(user, iconSize);
+    const badgeClass = ROLE_BADGE[user.role] ?? "bg-gray-100 text-gray-500";
+
+    // Close on outside click
+    useEffect(() => {
+        if (!open) return;
+        const handler = (e: MouseEvent) => {
+            if (drawerRef.current && !drawerRef.current.contains(e.target as Node)) {
+                onClose();
+            }
+        };
+        const t = setTimeout(() => document.addEventListener("mousedown", handler), 100);
+        return () => { clearTimeout(t); document.removeEventListener("mousedown", handler); };
+    }, [open, onClose]);
+
+    // Close on Escape
+    useEffect(() => {
+        const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+        document.addEventListener("keydown", handler);
+        return () => document.removeEventListener("keydown", handler);
+    }, [onClose]);
+
     return (
-        <DropdownMenuContent align="end" className="w-55">
-            <div className="flex items-center gap-3 px-2 py-2">
-                <Avatar className="w-8 h-8">
-                    <AvatarImage src={user.avatar} />
-                    <AvatarFallback>{user.fullname?.charAt(0) || 'U'}</AvatarFallback>
-                </Avatar>
-                <div>
-                    <p className="text-sm font-bold">{user.fullname}</p>
-                    <p className="text-xs text-gray-500">Tài khoản: {user.role}</p>
+        <>
+            {/* Backdrop — opacity only, NO blur, NO transition-all */}
+            <div
+                onClick={onClose}
+                aria-hidden="true"
+                style={{
+                    position: "fixed",
+                    inset: 0,
+                    zIndex: 60,
+                    background: "rgba(0,0,0,0.2)",
+                    opacity: open ? 1 : 0,
+                    pointerEvents: open ? "auto" : "none",
+                    transition: "opacity 0.25s ease",
+                }}
+            />
+
+            {/* Drawer — transform only, willChange:transform → own composite layer */}
+            <div
+                ref={drawerRef}
+                style={{
+                    position: "fixed",
+                    top: 0,
+                    right: 0,
+                    bottom: 0,
+                    zIndex: 70,
+                    width: 308,
+                    display: "flex",
+                    flexDirection: "column",
+                    background: "#ffffff",
+                    borderLeft: "1px solid #f0f0f0",
+                    boxShadow: "-4px 0 24px rgba(0,0,0,0.08)",
+                    transform: open ? "translateX(0)" : "translateX(100%)",
+                    transition: "transform 0.3s cubic-bezier(0.32,0.72,0,1)",
+                    willChange: "transform",
+                }}
+            >
+                {/* Header */}
+                <div style={{ padding: "20px 16px 16px", borderBottom: "1px solid #f5f5f5", flexShrink: 0 }}>
+                    <div className="flex items-center gap-3">
+                        <div className="relative flex-shrink-0">
+                            <Avatar className="w-12 h-12 border-2 border-gray-100">
+                                <AvatarImage src={user.avatar} />
+                                <AvatarFallback className="text-[15px] font-bold bg-main text-white">
+                                    {user.fullname?.charAt(0) || "U"}
+                                </AvatarFallback>
+                            </Avatar>
+                            <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white bg-green-500" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <p className="text-[14px] font-bold text-gray-900 truncate leading-tight">{user.fullname}</p>
+                            <p className="text-[12px] text-gray-400 truncate mt-0.5">@{user.username}</p>
+                            <span className={`inline-block mt-1.5 text-[10px] font-semibold px-2 py-0.5 rounded-full capitalize ${badgeClass}`}>
+                                {user.role}
+                            </span>
+                        </div>
+                        <button
+                            onClick={onClose}
+                            aria-label="Đóng menu"
+                            className="w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 transition-colors text-gray-400"
+                        >
+                            <CloseCircle variant="Bold" style={{ width: 18, height: 18 }} />
+                        </button>
+                    </div>
+                </div>
+
+                {/* Scrollable body */}
+                <div className="no-scrollbar flex-1 overflow-y-auto" style={{ padding: "12px 12px 20px" }}>
+                    {sections.map((section) => (
+                        <div key={section.label} className="mb-2.5">
+                            <p className="text-[10px] font-semibold uppercase tracking-wider px-1 mb-1.5 text-gray-400">
+                                {section.label}
+                            </p>
+                            <div className="rounded-2xl overflow-hidden bg-gray-50 border border-gray-100">
+                                {section.items.map((item, idx) => (
+                                    <Link
+                                        key={item.href}
+                                        href={item.href}
+                                        onClick={onClose}
+                                        className="flex items-center gap-3 px-3 py-2.5 hover:bg-gray-100 transition-colors"
+                                        style={{
+                                            borderBottom: idx < section.items.length - 1 ? "1px solid #f0f0f0" : "none",
+                                            textDecoration: "none",
+                                        }}
+                                    >
+                                        <div className="w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-xl bg-white text-main shadow-sm">
+                                            {item.icon}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-[13px] font-semibold text-gray-800 leading-tight truncate">{item.title}</p>
+                                            <p className="text-[11px] text-gray-400 leading-tight truncate mt-0.5">{item.subtitle}</p>
+                                        </div>
+                                        <ArrowRight2 variant="Bold" style={{ width: 12, height: 12, color: "#d1d5db", flexShrink: 0 }} />
+                                    </Link>
+                                ))}
+                            </div>
+                        </div>
+                    ))}
+
+                    {/* Logout */}
+                    <button
+                        onClick={() => { onClose(); onLogout(); }}
+                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl hover:bg-red-100 transition-colors"
+                        style={{ background: "#fff1f2", border: "1px solid #fecdd3" }}
+                    >
+                        <div className="w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-xl bg-white text-red-500 shadow-sm">
+                            <LogOut variant="Bold" style={iconSize} />
+                        </div>
+                        <div className="flex-1 text-left">
+                            <p className="text-[13px] font-semibold text-red-500 leading-tight">Đăng xuất</p>
+                            <p className="text-[11px] text-red-300 leading-tight mt-0.5">Thoát khỏi tài khoản</p>
+                        </div>
+                    </button>
                 </div>
             </div>
-
-            <DropdownMenuSeparator />
-
-            <DropdownMenuItem>
-                <User variant="Bold" className="mr-2" style={{ width: 22, height: 22 }} />
-                <Link href={`/profile/${user.fullname}`}>Trang cá nhân</Link>
-            </DropdownMenuItem>
-
-            <DropdownMenuItem>
-                <FileText variant="Bold" className="mr-2" style={{ width: 22, height: 22 }} />
-                <Link href="/me/transactions">Giao dịch của tôi</Link>
-            </DropdownMenuItem>
-
-            <DropdownMenuItem>
-                <Cuahangso variant="Bold" className="mr-2" style={{ width: 22, height: 22 }} />
-                <Link href="/me/cuahangso">Cửa hàng số</Link>
-            </DropdownMenuItem>
-
-            <DropdownMenuItem>
-                <Heart variant="Bold" className="mr-2" style={{ width: 22, height: 22 }} />
-                <Link href="/hanhtrinhyethuong">Hành trình yêu thương</Link>
-            </DropdownMenuItem>
-
-            {user.role === "admin" && (
-                <DropdownMenuItem>
-                    <Settings variant="Bold" className="mr-2" style={{ width: 22, height: 22 }} />
-                    <Link href="/admin/dashboard">Trang quản trị</Link>
-                </DropdownMenuItem>
-            )}
-
-            {user.role === "teacher" && (
-                <DropdownMenuItem>
-                    <Settings variant="Bold" className="mr-2" style={{ width: 22, height: 22 }} />
-                    <Link href="/teacher/dashboard">Trang quản lý</Link>
-                </DropdownMenuItem>
-            )}
-
-            <DropdownMenuSeparator />
-
-            <DropdownMenuItem>
-                <BookOpen variant="Bold" className="mr-2" style={{ width: 22, height: 22 }} />
-                <Link href="/me/khoahoc">Khoá học của tôi</Link>
-            </DropdownMenuItem>
-
-            <DropdownMenuItem>
-                <FileText variant="Bold" className="mr-2" style={{ width: 22, height: 22 }} />
-                <Link href="/me/baiviet">Bài viết của tôi</Link>
-            </DropdownMenuItem>
-
-            <DropdownMenuItem>
-                <Home variant="Bold" className="mr-2" style={{ width: 22, height: 22 }} />
-                <Link href="/khuvuonhoctap">Khu vườn học tập</Link>
-            </DropdownMenuItem>
-
-            <DropdownMenuItem>
-                <NhaHang variant="Bold" className="mr-2" style={{ width: 22, height: 22 }} />
-                <Link href="/nhahangcongnghe">Nhà hàng công nghệ</Link>
-            </DropdownMenuItem>
-
-            <DropdownMenuSeparator />
-
-            <DropdownMenuItem>
-                <Settings variant="Bold" className="mr-2" style={{ width: 22, height: 22 }} />
-                <Link href="/me/settings">Cài đặt</Link>
-            </DropdownMenuItem>
-
-            <DropdownMenuItem className="text-red-500" onClick={onLogout}>
-                <LogOut variant="Bold" className="mr-2" style={{ width: 22, height: 22 }} />
-                Đăng xuất
-            </DropdownMenuItem>
-        </DropdownMenuContent>
+        </>
     );
 }
 
@@ -145,18 +261,11 @@ interface MobileSheetProps {
     open: boolean;
 }
 
-interface SheetSection {
-    label: string;
-    items: {
-        icon: React.ReactNode;
-        title: string;
-        subtitle: string;
-        href: string;
-    }[];
-}
-
 function MobileUserSheet({ user, onLogout, onClose, open }: MobileSheetProps) {
-    // Dùng position:fixed thay overflow:hidden để tránh layout shift
+    const iconSize = { width: 20, height: 20 };
+    const sections = buildSections(user, iconSize);
+    const badgeClass = ROLE_BADGE[user.role] ?? "bg-gray-100 text-gray-500";
+
     useEffect(() => {
         if (open) {
             const scrollY = window.scrollY;
@@ -179,53 +288,19 @@ function MobileUserSheet({ user, onLogout, onClose, open }: MobileSheetProps) {
         };
     }, [open]);
 
-    const iconSize = { width: 20, height: 20 };
-
-    const sections: SheetSection[] = [
-        {
-            label: "Tài khoản",
-            items: [
-                { icon: <User variant="Bold" style={iconSize} />, title: "Trang cá nhân", subtitle: "Xem hồ sơ của bạn", href: `/profile/${user.fullname}` },
-                { icon: <FileText variant="Bold" style={iconSize} />, title: "Giao dịch của tôi", subtitle: "Lịch sử giao dịch", href: "/me/transactions" },
-                { icon: <Cuahangso variant="Bold" style={iconSize} />, title: "Cửa hàng số", subtitle: "Sản phẩm số của bạn", href: "/me/cuahangso" },
-                { icon: <Heart variant="Bold" style={iconSize} />, title: "Hành trình yêu thương", subtitle: "Câu chuyện của bạn", href: "/hanhtrinhyethuong" },
-                ...(user.role === "admin" ? [{ icon: <Settings variant="Bold" style={iconSize} />, title: "Trang quản trị", subtitle: "Quản lý hệ thống", href: "/admin/dashboard" }] : []),
-                ...(user.role === "teacher" ? [{ icon: <Settings variant="Bold" style={iconSize} />, title: "Trang quản lý", subtitle: "Quản lý lớp học", href: "/teacher/dashboard" }] : []),
-            ],
-        },
-        {
-            label: "Học tập",
-            items: [
-                { icon: <BookOpen variant="Bold" style={iconSize} />, title: "Khoá học của tôi", subtitle: "Tiếp tục học tập", href: "/me/khoahoc" },
-                { icon: <FileText variant="Bold" style={iconSize} />, title: "Bài viết của tôi", subtitle: "Quản lý nội dung", href: "/me/baiviet" },
-                { icon: <Home variant="Bold" style={iconSize} />, title: "Khu vườn học tập", subtitle: "Không gian của bạn", href: "/khuvuonhoctap" },
-                { icon: <NhaHang variant="Bold" style={iconSize} />, title: "Nhà hàng công nghệ", subtitle: "Khám phá công nghệ", href: "/nhahangcongnghe" },
-            ],
-        },
-        {
-            label: "Cài đặt",
-            items: [
-                { icon: <Settings variant="Bold" style={iconSize} />, title: "Cài đặt", subtitle: "Tuỳ chỉnh tài khoản", href: "/me/settings" },
-            ],
-        },
-    ];
-
     return (
         <>
-            {/* Backdrop */}
             <div
                 className={`fixed inset-0 z-[60] bg-black/40 transition-opacity duration-300 ${open ? "opacity-100" : "opacity-0 pointer-events-none"}`}
                 onClick={onClose}
             />
-
-            {/* Sheet */}
             <div
-                className={`fixed bottom-0 left-0 right-0 z-[70] bg-white rounded-t-3xl transition-transform duration-300 ease-out`}
+                className="fixed bottom-0 left-0 right-0 z-[70] bg-white rounded-t-3xl flex flex-col"
                 style={{
                     transform: open ? "translateY(0)" : "translateY(100%)",
+                    transition: "transform 0.3s cubic-bezier(0.32,0.72,0,1)",
                     maxHeight: "85dvh",
-                    display: "flex",
-                    flexDirection: "column",
+                    willChange: "transform",
                 }}
             >
                 {/* Drag handle */}
@@ -233,37 +308,39 @@ function MobileUserSheet({ user, onLogout, onClose, open }: MobileSheetProps) {
                     <div className="w-10 h-1 bg-gray-200 rounded-full" />
                 </div>
 
-                {/* Header: Avatar + Info */}
+                {/* Header */}
                 <div className="px-4 pt-2 pb-4 flex items-center gap-3 flex-shrink-0">
-                    <Avatar className="w-12 h-12 border-2 border-gray-100">
-                        <AvatarImage src={user.avatar} />
-                        <AvatarFallback className="text-base font-bold">{user.fullname?.charAt(0) || 'U'}</AvatarFallback>
-                    </Avatar>
+                    <div className="relative flex-shrink-0">
+                        <Avatar className="w-12 h-12 border-2 border-gray-100">
+                            <AvatarImage src={user.avatar} />
+                            <AvatarFallback className="text-base font-bold bg-main text-white">
+                                {user.fullname?.charAt(0) || "U"}
+                            </AvatarFallback>
+                        </Avatar>
+                        <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white bg-green-500" />
+                    </div>
                     <div className="flex-1 min-w-0">
                         <p className="text-[15px] font-bold text-gray-900 truncate">{user.fullname}</p>
                         <p className="text-[12px] text-gray-400 truncate">@{user.username}</p>
-                        <span className="inline-block mt-0.5 text-[10px] font-semibold bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full capitalize">
+                        <span className={`inline-block mt-0.5 text-[10px] font-semibold px-2 py-0.5 rounded-full capitalize ${badgeClass}`}>
                             {user.role}
                         </span>
                     </div>
-                    <button
-                        onClick={onClose}
-                        className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 flex-shrink-0"
-                    >
+                    <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 flex-shrink-0">
                         <CloseCircle variant="Bold" style={{ width: 20, height: 20 }} />
                     </button>
                 </div>
 
                 <div className="w-full h-px bg-gray-100 flex-shrink-0" />
 
-                {/* Scrollable content */}
-                <div className="overflow-y-auto flex-1 pb-6">
+                {/* Content */}
+                <div className="no-scrollbar overflow-y-auto flex-1 pb-6">
                     {sections.map((section) => (
                         <div key={section.label} className="px-4 pt-4">
                             <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2 px-1">
                                 {section.label}
                             </p>
-                            <div className="bg-gray-50 rounded-2xl overflow-hidden">
+                            <div className="bg-gray-50 rounded-2xl overflow-hidden border border-gray-100">
                                 {section.items.map((item, idx) => (
                                     <Link
                                         key={item.href}
@@ -271,16 +348,14 @@ function MobileUserSheet({ user, onLogout, onClose, open }: MobileSheetProps) {
                                         onClick={onClose}
                                         className={`flex items-center gap-3 px-4 py-3 active:bg-gray-100 transition-colors ${idx < section.items.length - 1 ? "border-b border-gray-100" : ""}`}
                                     >
-                                        <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center text-gray-600 shadow-sm flex-shrink-0">
+                                        <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center text-main shadow-sm flex-shrink-0">
                                             {item.icon}
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <p className="text-[13px] font-semibold text-gray-800 leading-tight">{item.title}</p>
-                                            <p className="text-[11px] text-gray-400 leading-tight truncate">{item.subtitle}</p>
+                                            <p className="text-[11px] text-gray-400 leading-tight truncate mt-0.5">{item.subtitle}</p>
                                         </div>
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="text-gray-300 flex-shrink-0">
-                                            <path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                        </svg>
+                                        <ArrowRight2 variant="Bold" style={{ width: 14, height: 14, color: "#d1d5db", flexShrink: 0 }} />
                                     </Link>
                                 ))}
                             </div>
@@ -291,14 +366,15 @@ function MobileUserSheet({ user, onLogout, onClose, open }: MobileSheetProps) {
                     <div className="px-4 pt-4">
                         <button
                             onClick={() => { onClose(); onLogout(); }}
-                            className="w-full flex items-center gap-3 px-4 py-3 bg-red-50 rounded-2xl active:bg-red-100 transition-colors"
+                            className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl active:bg-red-100 transition-colors"
+                            style={{ background: "#fff1f2", border: "1px solid #fecdd3" }}
                         >
                             <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center text-red-500 shadow-sm flex-shrink-0">
                                 <LogOut variant="Bold" style={{ width: 20, height: 20 }} />
                             </div>
                             <div className="flex-1 text-left">
                                 <p className="text-[13px] font-semibold text-red-500 leading-tight">Đăng xuất</p>
-                                <p className="text-[11px] text-red-300 leading-tight">Thoát khỏi tài khoản</p>
+                                <p className="text-[11px] text-red-300 leading-tight mt-0.5">Thoát khỏi tài khoản</p>
                             </div>
                         </button>
                     </div>
@@ -308,19 +384,6 @@ function MobileUserSheet({ user, onLogout, onClose, open }: MobileSheetProps) {
     );
 }
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-interface MenuItem {
-    title: string;
-    link: string;
-}
-
-interface MobileMenuItem {
-    title: string;
-    link: string;
-    icon: Icon;
-}
-
 // ─── Main Header ──────────────────────────────────────────────────────────────
 
 export default function Header() {
@@ -328,13 +391,11 @@ export default function Header() {
     const router = useRouter();
     const { user, logout, token, coins } = useAuthStore();
     const [sheetOpen, setSheetOpen] = useState(false);
+    const [drawerOpen, setDrawerOpen] = useState(false);
 
     const handleLogout = () => {
         logout();
-        toast.success('Đã đăng xuất', {
-            description: 'Hẹn gặp lại bạn sau!',
-            duration: 2000,
-        });
+        toast.success("Đã đăng xuất", { description: "Hẹn gặp lại bạn sau!", duration: 2000 });
         router.push("/");
     };
 
@@ -359,10 +420,10 @@ export default function Header() {
     ];
 
     const displayUser = user && token ? {
-        fullname: user.fullName || 'Người dùng',
-        username: user.username || '',
+        fullname: user.fullName || "Người dùng",
+        username: user.username || "",
         avatar: user.avatar || "/images/avatar.png",
-        role: user.role || 'user',
+        role: user.role || "user",
     } : null;
 
     const displayCoins = displayUser ? (coins ?? 0) : 0;
@@ -370,16 +431,19 @@ export default function Header() {
 
     return (
         <>
-            {/* ── Desktop ── */}
-            <div className="hidden lg:block bg-white w-full h-15 fixed top-0 z-50 shadow-sm">
+            {/* ─────────────────── DESKTOP ─────────────────── */}
+            <header className="hidden lg:block bg-white w-full h-15 fixed top-0 z-50 shadow-sm">
                 <div className="flex h-full justify-between items-center">
+
+                    {/* Logo */}
                     <div className="ml-1.5 lg:ml-4">
                         <Link href="/">
                             <Image src="/images/logo.png" alt="Logo CNcode" width={100} height={55} priority />
                         </Link>
                     </div>
 
-                    <div className="flex h-full items-center">
+                    {/* Nav */}
+                    <nav className="flex h-full items-center">
                         {menu.map((m) => {
                             const isActive = pathname === m.link;
                             return (
@@ -396,8 +460,9 @@ export default function Header() {
                                 </div>
                             );
                         })}
-                    </div>
+                    </nav>
 
+                    {/* Right: coins, streak, bell, avatar */}
                     <div className="mr-1.5 lg:mr-4 flex gap-3 items-center">
                         {displayUser && (
                             <div className="flex items-center gap-5 mr-1">
@@ -419,17 +484,19 @@ export default function Header() {
                         <NotificationBell />
 
                         {displayUser ? (
-                            <DropdownMenu modal={false}>
-                                <DropdownMenuTrigger asChild>
-                                    <div className="p-0.5 rounded-full cursor-pointer">
-                                        <Avatar className="w-8 h-8">
-                                            <AvatarImage src={displayUser.avatar} />
-                                            <AvatarFallback>{displayUser.fullname?.charAt(0) || 'U'}</AvatarFallback>
-                                        </Avatar>
-                                    </div>
-                                </DropdownMenuTrigger>
-                                <UserDropdown user={displayUser} onLogout={handleLogout} />
-                            </DropdownMenu>
+                            <button
+                                onClick={() => setDrawerOpen(true)}
+                                aria-label="Mở menu tài khoản"
+                                className="relative p-0.5 rounded-full cursor-pointer focus:outline-none group"
+                            >
+                                <Avatar className="w-8 h-8 ring-2 ring-transparent group-hover:ring-main/30 transition-all duration-200">
+                                    <AvatarImage src={displayUser.avatar} />
+                                    <AvatarFallback className="text-xs font-bold bg-main text-white">
+                                        {displayUser.fullname?.charAt(0) || "U"}
+                                    </AvatarFallback>
+                                </Avatar>
+                                <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-white" />
+                            </button>
                         ) : (
                             <Link href="/login" className="bg-main text-white px-3.5 py-2 rounded-[8px] font-bold text-[14px]">
                                 Đăng nhập
@@ -437,9 +504,9 @@ export default function Header() {
                         )}
                     </div>
                 </div>
-            </div>
+            </header>
 
-            {/* ── Mobile top bar ── */}
+            {/* ─────────────────── MOBILE TOP BAR ─────────────────── */}
             <div className="lg:hidden fixed top-0 w-full h-10 bg-white z-50 border-b border-gray-200">
                 <div className="flex h-full justify-between items-center px-1.5">
                     <Link href="/">
@@ -467,15 +534,14 @@ export default function Header() {
                         <NotificationBell />
 
                         {displayUser ? (
-                            /* Avatar mở bottom sheet thay vì dropdown */
-                            <button
-                                onClick={() => setSheetOpen(true)}
-                                className="focus:outline-none"
-                            >
+                            <button onClick={() => setSheetOpen(true)} className="focus:outline-none relative">
                                 <Avatar className="w-6 h-6 cursor-pointer">
                                     <AvatarImage src={displayUser.avatar} />
-                                    <AvatarFallback>{displayUser.fullname?.charAt(0) || 'U'}</AvatarFallback>
+                                    <AvatarFallback className="text-[10px] font-bold bg-main text-white">
+                                        {displayUser.fullname?.charAt(0) || "U"}
+                                    </AvatarFallback>
                                 </Avatar>
+                                <span className="absolute bottom-0 right-0 w-2 h-2 bg-green-500 rounded-full border border-white" />
                             </button>
                         ) : (
                             <Link href="/login" className="bg-main text-white px-2 py-1.5 rounded-[5px] font-bold text-[10px]">
@@ -486,7 +552,17 @@ export default function Header() {
                 </div>
             </div>
 
-            {/* ── Mobile Bottom Sheet ── */}
+            {/* ─────────────────── DESKTOP DRAWER ─────────────────── */}
+            {displayUser && (
+                <DesktopUserDrawer
+                    user={displayUser}
+                    onLogout={handleLogout}
+                    onClose={() => setDrawerOpen(false)}
+                    open={drawerOpen}
+                />
+            )}
+
+            {/* ─────────────────── MOBILE BOTTOM SHEET ─────────────────── */}
             {displayUser && (
                 <MobileUserSheet
                     user={displayUser}
@@ -496,19 +572,19 @@ export default function Header() {
                 />
             )}
 
-            {/* ── Mobile bottom nav ── */}
+            {/* ─────────────────── MOBILE BOTTOM NAV ─────────────────── */}
             <div className="lg:hidden fixed bottom-0 left-0 w-full z-50">
                 <div className="w-full h-14 bg-white border-t border-gray-200 rounded-t-2xl shadow-[0_-4px_20px_rgba(0,0,0,0.15)] flex items-center px-2">
                     {menuMobile.map((m) => {
                         const isActive = pathname === m.link;
-                        const Icon = m.icon;
+                        const IconComp = m.icon;
                         return (
                             <Link
                                 key={m.link}
                                 href={m.link}
                                 className="flex-1 flex flex-col items-center justify-center gap-1 active:scale-95 active:opacity-90 transition-all duration-150"
                             >
-                                <Icon
+                                <IconComp
                                     variant="Bold"
                                     style={{ width: 22, height: 22 }}
                                     className={isActive ? "text-main" : "text-gray-500"}
