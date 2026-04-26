@@ -9,6 +9,7 @@ export interface User {
     role: UserRole;
     isActive: boolean;
     emailVerified: boolean;
+    isOnboarded?: boolean;
     createdAt: Date;
     updatedAt: Date;
     coins: number;
@@ -70,14 +71,6 @@ export interface AuthError {
     errors?: Record<string, string[]>;
 }
 
-export interface IGoogleLoginResponse {
-    success: boolean;
-    message: string;
-    user: User;
-    token: string;
-    coins?: number;
-}
-
 export interface AuthState {
     user: User | null;
     token: string | null;
@@ -99,4 +92,30 @@ export interface AuthState {
     updateStreak: (streak: number) => void;
     clearError: () => void;
     setUser: (user: User | null) => void;
+    setIsOnboarded: (value: boolean) => void;
+}
+
+export interface IGoogleLoginResponse {
+    success: boolean;
+    message: string;
+    data: {
+        user: User;
+        token: string;
+        isNewUser: boolean;
+    };
+}
+
+export interface IOnboardingData {
+    username: string;
+    class: string;
+    province: string;
+    school: string;
+    birthday: string;
+    bio: string;
+}
+
+export interface IOnboardingResponse {
+    success: boolean;
+    message: string;
+    data: User;
 }

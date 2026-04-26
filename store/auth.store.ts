@@ -61,8 +61,6 @@ export const useAuthStore = create<AuthState>()(
                         isLoading: false,
                         error: null,
                     });
-
-                    console.log('Login success - coins:', userData?.coins);
                 } catch (error) {
                     set({
                         isLoading: false,
@@ -98,8 +96,6 @@ export const useAuthStore = create<AuthState>()(
                         isLoading: false,
                         error: null,
                     });
-
-                    console.log('Google login success - coins:', userData?.coins);
                 } catch (error) {
                     set({
                         isLoading: false,
@@ -135,8 +131,6 @@ export const useAuthStore = create<AuthState>()(
                         isLoading: false,
                         error: null,
                     });
-
-                    console.log('Register success - coins:', userData?.coins);
                 } catch (error) {
                     set({
                         isLoading: false,
@@ -157,15 +151,9 @@ export const useAuthStore = create<AuthState>()(
                             Authorization: `Bearer ${token}`,
                         },
                     });
-                    set({
-                        ...initialState,
-                        isLoading: false,
-                    });
-                } catch (error) {
-                    set({
-                        ...initialState,
-                        isLoading: false,
-                    });
+                    set({ ...initialState, isLoading: false });
+                } catch {
+                    set({ ...initialState, isLoading: false });
                 }
             },
 
@@ -285,23 +273,17 @@ export const useAuthStore = create<AuthState>()(
                 const currentCoins = get().coins;
                 const newCoins = currentCoins + amount;
                 const finalCoins = newCoins >= 0 ? newCoins : 0;
-
                 set({ coins: finalCoins });
-
                 const currentUser = get().user;
                 if (currentUser) {
-                    set({
-                        user: { ...currentUser, coins: finalCoins },
-                    });
+                    set({ user: { ...currentUser, coins: finalCoins } });
                 }
             },
 
             updateStreak: (streak: number): void => {
                 const currentUser = get().user;
                 if (currentUser) {
-                    set({
-                        user: { ...currentUser, streak },
-                    });
+                    set({ user: { ...currentUser, streak } });
                 }
             },
 
@@ -315,6 +297,13 @@ export const useAuthStore = create<AuthState>()(
                     coins: user?.coins ?? 0,
                     isAuthenticated: !!user && !!get().token,
                 });
+            },
+
+            setIsOnboarded: (value: boolean): void => {
+                const currentUser = get().user;
+                if (currentUser) {
+                    set({ user: { ...currentUser, isOnboarded: value } });
+                }
             },
         }),
         {

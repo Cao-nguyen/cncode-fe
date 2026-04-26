@@ -60,14 +60,14 @@ export const useOnboarding = () => {
     if (!username || username.length < 3) {
       return
     }
-    
+
     setIsCheckingUsername(true)
     try {
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/api/auth/check-username?username=${encodeURIComponent(username)}`
       )
       const result = await response.json()
-      
+
       if (!result.available) {
         setErrors(prev => ({ ...prev, username: result.message || 'Tên người dùng đã tồn tại' }))
       } else {
@@ -87,7 +87,7 @@ export const useOnboarding = () => {
 
     const username = formData.username
     const currentError = errors.username
-    
+
     if (username && username.length >= 3 && !currentError && lastCheckedUsernameRef.current !== username) {
       checkTimeoutRef.current = setTimeout(() => {
         lastCheckedUsernameRef.current = username
@@ -147,7 +147,7 @@ export const useOnboarding = () => {
 
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!validateForm()) {
       return
     }
@@ -188,12 +188,12 @@ export const useOnboarding = () => {
       if (result.success) {
         setUser(result.data)
         setIsOnboarded(true)
-        
+
         toast.success('Hoàn tất hồ sơ thành công!', {
           description: `Chào mừng ${result.data.fullName} đến với CNcode`,
           duration: 3000,
         })
-        
+
         router.push('/')
       } else {
         if (result.message && result.message.includes('username')) {
