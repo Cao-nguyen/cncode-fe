@@ -70,6 +70,14 @@ export interface AuthError {
     errors?: Record<string, string[]>;
 }
 
+export interface IGoogleLoginResponse {
+    success: boolean;
+    message: string;
+    user: User;
+    token: string;
+    coins?: number;
+}
+
 export interface AuthState {
     user: User | null;
     token: string | null;
