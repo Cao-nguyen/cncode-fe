@@ -1,7 +1,7 @@
 'use client'
 
-import Image from "next/image";
-import Link from "next/link";
+import Image from "@/node_modules/next/image";
+import Link from "@/node_modules/next/link";
 import { GoogleLogin } from "@react-oauth/google";
 import { Loader2 } from "lucide-react";
 import { useLogin } from "@/hooks/auth/useLogin.hook";

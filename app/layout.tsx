@@ -1,5 +1,5 @@
 import { Inter } from "next/font/google";
-import type { Metadata } from "next";
+import type { Metadata } from "@/node_modules/next";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import "aos/dist/aos.css";
 import "./globals.css";
@@ -7,7 +7,6 @@ import "./globals.css";
 import ToasterProvider from "@/providers/toaster.provider";
 import AppThemeProvider from "@/providers/theme.provider";
 import AOSProvider from "@/providers/aos.provider";
-import ReduxProvider from "@/providers/redux.provider";
 import AuthProvider from "@/providers/auth.provider";
 import { SocketProvider } from "@/providers/socket.provider";
 import SessionProvider from "@/providers/session.provider";
@@ -37,21 +36,21 @@ export default function RootLayout({
     <html lang="vi" suppressHydrationWarning>
       <body className={`${inter.className} antialiased`}>
         <AppThemeProvider>
-          <ReduxProvider>
-            <AuthProvider>
-              <SocketProvider>
-                <SessionProvider>
-                  <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!}>
-                    <ToasterProvider>
-                      <AOSProvider>
-                        {children}
-                      </AOSProvider>
-                    </ToasterProvider>
-                  </GoogleOAuthProvider>
-                </SessionProvider>
-              </SocketProvider>
-            </AuthProvider>
-          </ReduxProvider>
+
+          <AuthProvider>
+            <SocketProvider>
+              <SessionProvider>
+                <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!}>
+                  <ToasterProvider>
+                    <AOSProvider>
+                      {children}
+                    </AOSProvider>
+                  </ToasterProvider>
+                </GoogleOAuthProvider>
+              </SessionProvider>
+            </SocketProvider>
+          </AuthProvider>
+
         </AppThemeProvider>
       </body>
     </html>

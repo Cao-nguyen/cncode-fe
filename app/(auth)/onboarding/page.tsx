@@ -1,6 +1,6 @@
 'use client'
 
-import Image from 'next/image'
+import Image from '@/node_modules/next/image'
 import { Loader2, AlertCircle, CheckCircle } from 'lucide-react'
 import { useOnboarding } from '@/hooks/auth/useOnboarding.hook'
 
@@ -16,9 +16,9 @@ export default function OnboardingPage() {
     handleSubmit,
   } = useOnboarding()
 
-  const isUsernameValid = formData.username.length >= 3 && 
-    /^[a-zA-Z0-9_]+$/.test(formData.username) && 
-    !errors.username && 
+  const isUsernameValid = formData.username.length >= 3 &&
+    /^[a-zA-Z0-9_]+$/.test(formData.username) &&
+    !errors.username &&
     formData.username.length > 0
 
   return (
@@ -61,9 +61,8 @@ export default function OnboardingPage() {
                 type="text"
                 value={formData.username}
                 onChange={(e) => handleChange('username', e.target.value)}
-                className={`w-full pl-8 pr-12 py-3 bg-zinc-900 border rounded-xl text-white focus:outline-none focus:border-blue-500 transition ${
-                  errors.username ? 'border-red-500' : isUsernameValid ? 'border-green-500' : 'border-zinc-700'
-                }`}
+                className={`w-full pl-8 pr-12 py-3 bg-zinc-900 border rounded-xl text-white focus:outline-none focus:border-blue-500 transition ${errors.username ? 'border-red-500' : isUsernameValid ? 'border-green-500' : 'border-zinc-700'
+                  }`}
                 placeholder="username"
                 disabled={loading}
               />
@@ -91,9 +90,8 @@ export default function OnboardingPage() {
             <select
               value={formData.class}
               onChange={(e) => handleChange('class', e.target.value)}
-              className={`w-full px-4 py-3 bg-zinc-900 border rounded-xl text-white focus:outline-none focus:border-blue-500 transition appearance-none cursor-pointer ${
-                errors.class ? 'border-red-500' : 'border-zinc-700'
-              }`}
+              className={`w-full px-4 py-3 bg-zinc-900 border rounded-xl text-white focus:outline-none focus:border-blue-500 transition appearance-none cursor-pointer ${errors.class ? 'border-red-500' : 'border-zinc-700'
+                }`}
               disabled={loading}
             >
               <option value="">-- Chọn lớp --</option>
@@ -115,9 +113,8 @@ export default function OnboardingPage() {
             <select
               value={formData.province}
               onChange={(e) => handleChange('province', e.target.value)}
-              className={`w-full px-4 py-3 bg-zinc-900 border rounded-xl text-white focus:outline-none focus:border-blue-500 transition appearance-none cursor-pointer ${
-                errors.province ? 'border-red-500' : 'border-zinc-700'
-              }`}
+              className={`w-full px-4 py-3 bg-zinc-900 border rounded-xl text-white focus:outline-none focus:border-blue-500 transition appearance-none cursor-pointer ${errors.province ? 'border-red-500' : 'border-zinc-700'
+                }`}
               disabled={loading}
             >
               <option value="">-- Chọn tỉnh/thành phố --</option>
@@ -140,9 +137,8 @@ export default function OnboardingPage() {
               type="text"
               value={formData.school}
               onChange={(e) => handleChange('school', e.target.value)}
-              className={`w-full px-4 py-3 bg-zinc-900 border rounded-xl text-white focus:outline-none focus:border-blue-500 transition ${
-                errors.school ? 'border-red-500' : 'border-zinc-700'
-              }`}
+              className={`w-full px-4 py-3 bg-zinc-900 border rounded-xl text-white focus:outline-none focus:border-blue-500 transition ${errors.school ? 'border-red-500' : 'border-zinc-700'
+                }`}
               placeholder="Ví dụ: THPT Tân Quới"
               disabled={loading}
             />
@@ -159,9 +155,8 @@ export default function OnboardingPage() {
               type="date"
               value={formData.birthday}
               onChange={(e) => handleChange('birthday', e.target.value)}
-              className={`w-full px-4 py-3 bg-zinc-900 border rounded-xl text-white focus:outline-none focus:border-blue-500 transition ${
-                errors.birthday ? 'border-red-500' : 'border-zinc-700'
-              }`}
+              className={`w-full px-4 py-3 bg-zinc-900 border rounded-xl text-white focus:outline-none focus:border-blue-500 transition ${errors.birthday ? 'border-red-500' : 'border-zinc-700'
+                }`}
               disabled={loading}
             />
             {errors.birthday && (
@@ -176,9 +171,8 @@ export default function OnboardingPage() {
             <textarea
               value={formData.bio}
               onChange={(e) => handleChange('bio', e.target.value)}
-              className={`w-full px-4 py-3 bg-zinc-900 border rounded-xl text-white focus:outline-none focus:border-blue-500 transition resize-none ${
-                errors.bio ? 'border-red-500' : 'border-zinc-700'
-              }`}
+              className={`w-full px-4 py-3 bg-zinc-900 border rounded-xl text-white focus:outline-none focus:border-blue-500 transition resize-none ${errors.bio ? 'border-red-500' : 'border-zinc-700'
+                }`}
               rows={4}
               placeholder="Giới thiệu đôi chút về bạn..."
               maxLength={500}
