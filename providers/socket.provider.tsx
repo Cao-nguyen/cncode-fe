@@ -36,7 +36,6 @@ const BASE_URL =
 
 export function SocketProvider({ children }: { children: ReactNode }) {
     const { user, token } = useAuthStore();
-    const isOnboarded = user?.isOnboarded;
     const socketRef = useRef<Socket | null>(null);
     const [socketState, setSocketState] = useState<Socket | null>(null);
     const [isConnected, setIsConnected] = useState(false);
@@ -57,12 +56,12 @@ export function SocketProvider({ children }: { children: ReactNode }) {
         }
     };
 
+    // ✅ Socket connection - cần cả user._id và token
     useEffect(() => {
-        if (!token || !isOnboarded || !user?._id) {
+        if (!user?._id || !token) {
             console.log('🔌 Socket not connecting - missing requirements', {
-                hasToken: !!token,
-                isOnboarded,
-                hasUserId: !!user?._id
+                hasUserId: !!user?._id,
+                hasToken: !!token
             });
             return;
         }
@@ -75,7 +74,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
         console.log('🔌 Creating socket connection...', BASE_URL);
 
         const instance = io(BASE_URL, {
-            auth: { token },
+            auth: { token },  // ✅ THÊM TOKEN VÀO ĐÂY
             transports: ['websocket', 'polling'],
             autoConnect: true,
             reconnection: true,
@@ -124,21 +123,19 @@ export function SocketProvider({ children }: { children: ReactNode }) {
             setSocketId(undefined);
             registeredRef.current = false;
         };
-    }, [token, isOnboarded, user?._id]);
+    }, [user?._id, token]);  // ✅ THÊM token vào dependency
 
+    // ✅ Register user với socket server
     useEffect(() => {
         if (!socketState || !isConnected) return;
-        if (!user?._id) {
-            console.log('⚠️ Cannot register: no user.id');
-            return;
-        }
+        if (!user?._id) return;
         if (registeredRef.current) return;
 
         console.log('📝 Registering user with socket:', user._id);
 
         socketState.emit('register', {
             userId: user._id,
-            sessionId: null
+            sessionId: localStorage.getItem('sessionId') || null
         });
         registeredRef.current = true;
 

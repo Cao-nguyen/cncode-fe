@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Bell, MessageCircle, Heart, ThumbsUp, Bookmark } from 'lucide-react';
+import { Bell, MessageCircle, Heart, ThumbsUp, Bookmark, Trash2, CheckCheck } from 'lucide-react';
 import { useSocket } from '@/providers/socket.provider';
 import { useAuthStore } from '@/store/auth.store';
 import {
@@ -10,20 +10,12 @@ import {
     PopoverTrigger,
 } from '@/components/ui/popover';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-
-interface NotificationItem {
-    id: string;
-    type: 'comment' | 'reaction_comment' | 'like_post' | 'reply_comment' | 'bookmark';
-    postSlug: string;
-    postTitle: string;
-    commentId?: string;
-    reactionType?: string;
-    userName: string;
-    content?: string;
-    read: boolean;
-    createdAt: string;
-}
+import { toast } from 'sonner';
+import { notificationApi } from '@/lib/api/notification.api';
+import type { INotification } from '@/types/notification.type';
 
 const REACTION_NAMES: Record<string, string> = {
     like: '👍 thích',
@@ -36,148 +28,163 @@ const REACTION_NAMES: Record<string, string> = {
 };
 
 function formatTime(dateString: string): string {
-    const diff = Math.floor((new Date().getTime() - new Date(dateString).getTime()) / 1000);
-    if (diff < 60) return 'Vừa xong';
-    if (diff < 3600) return `${Math.floor(diff / 60)} phút trước`;
-    if (diff < 86400) return `${Math.floor(diff / 3600)} giờ trước`;
-    if (diff < 604800) return `${Math.floor(diff / 86400)} ngày trước`;
-    return new Date(dateString).toLocaleDateString('vi-VN');
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'Vừa xong';
+    if (diffMins < 60) return `${diffMins} phút trước`;
+    if (diffHours < 24) return `${diffHours} giờ trước`;
+    if (diffDays < 7) return `${diffDays} ngày trước`;
+    return date.toLocaleDateString('vi-VN');
 }
 
-function getNotificationContent(notification: NotificationItem) {
-    if (notification.type === 'comment' || notification.type === 'reply_comment') {
-        return (
-            <div className="flex items-start gap-3">
-                <div className="bg-blue-100 dark:bg-blue-900/30 p-2 rounded-full shrink-0">
-                    <MessageCircle size={16} className="text-blue-600" />
-                </div>
-                <div className="flex-1 min-w-0">
-                    <p className="text-sm">
-                        <span className="font-semibold">{notification.userName}</span>{' '}
-                        {notification.type === 'reply_comment' ? 'đã trả lời bình luận của bạn' : 'đã bình luận'} về bài viết{' '}
-                        <span className="font-medium">{notification.postTitle}</span>
-                    </p>
-                    {notification.content && (
-                        <p className="text-xs text-gray-500 mt-1 line-clamp-2">
-                            {notification.content}
-                        </p>
-                    )}
-                    <p className="text-xs text-gray-400 mt-1">{formatTime(notification.createdAt)}</p>
-                </div>
-            </div>
-        );
-    }
-
-    if (notification.type === 'like_post') {
-        return (
-            <div className="flex items-start gap-3">
-                <div className="bg-red-100 dark:bg-red-900/30 p-2 rounded-full shrink-0">
-                    <ThumbsUp size={16} className="text-red-500" />
-                </div>
-                <div className="flex-1 min-w-0">
-                    <p className="text-sm">
-                        <span className="font-semibold">{notification.userName}</span>{' '}
-                        đã thích bài viết{' '}
-                        <span className="font-medium">{notification.postTitle}</span>
-                    </p>
-                    <p className="text-xs text-gray-400 mt-1">{formatTime(notification.createdAt)}</p>
-                </div>
-            </div>
-        );
-    }
-
-    if (notification.type === 'reaction_comment') {
-        return (
-            <div className="flex items-start gap-3">
-                <div className="bg-purple-100 dark:bg-purple-900/30 p-2 rounded-full shrink-0">
-                    <Heart size={16} className="text-purple-600" />
-                </div>
-                <div className="flex-1 min-w-0">
-                    <p className="text-sm">
-                        <span className="font-semibold">{notification.userName}</span>{' '}
-                        đã {REACTION_NAMES[notification.reactionType || 'like']} bình luận của bạn
-                    </p>
-                    <p className="text-xs text-gray-400 mt-1">{formatTime(notification.createdAt)}</p>
-                </div>
-            </div>
-        );
-    }
-
-    if (notification.type === 'bookmark') {
-        return (
-            <div className="flex items-start gap-3">
-                <div className="bg-yellow-100 dark:bg-yellow-900/30 p-2 rounded-full shrink-0">
-                    <Bookmark size={16} className="text-yellow-600" />
-                </div>
-                <div className="flex-1 min-w-0">
-                    <p className="text-sm">
-                        <span className="font-semibold">{notification.userName}</span>{' '}
-                        đã lưu bài viết của bạn{' '}
-                        <span className="font-medium">{notification.postTitle}</span>
-                    </p>
-                    <p className="text-xs text-gray-400 mt-1">{formatTime(notification.createdAt)}</p>
-                </div>
-            </div>
-        );
-    }
-
-    return null;
-}
-
-function loadNotifications(userId: string): NotificationItem[] {
-    try {
-        const saved = localStorage.getItem(`notifications_${userId}`);
-        return saved ? JSON.parse(saved) : [];
-    } catch {
-        return [];
+function getNotificationIcon(type: string, reactionType?: string) {
+    switch (type) {
+        case 'comment':
+        case 'reply_comment':
+            return <MessageCircle className="w-4 h-4 text-blue-500" />;
+        case 'like_post':
+            return <ThumbsUp className="w-4 h-4 text-red-500" />;
+        case 'reaction_comment':
+            return <Heart className="w-4 h-4 text-purple-500" />;
+        case 'bookmark':
+            return <Bookmark className="w-4 h-4 text-yellow-500" />;
+        default:
+            return <Bell className="w-4 h-4 text-gray-500" />;
     }
 }
 
-function NotificationBellInner({ userId }: { userId: string }) {
+function getNotificationMessage(notification: INotification): string {
+    const senderName = notification.senderId?.fullName || 'Ai đó';
+
+    switch (notification.type) {
+        case 'comment':
+            return `${senderName} đã bình luận về bài viết "${notification.postTitle}"`;
+        case 'reply_comment':
+            return `${senderName} đã trả lời bình luận của bạn`;
+        case 'like_post':
+            return `${senderName} đã thích bài viết "${notification.postTitle}"`;
+        case 'reaction_comment':
+            const reaction = REACTION_NAMES[notification.reactionType || 'like'];
+            return `${senderName} đã ${reaction} bình luận của bạn`;
+        case 'bookmark':
+            return `${senderName} đã lưu bài viết "${notification.postTitle}"`;
+        default:
+            return `${senderName} đã có hoạt động mới`;
+    }
+}
+
+export default function NotificationBell() {
+    const { user } = useAuthStore();
     const { socket, isConnected } = useSocket();
-    const [notifications, setNotifications] = useState<NotificationItem[]>(() =>
-        loadNotifications(userId),
-    );
-    const [unreadCount, setUnreadCount] = useState<number>(
-        () => loadNotifications(userId).filter((n) => !n.read).length,
-    );
     const [open, setOpen] = useState(false);
+    const [notifications, setNotifications] = useState<INotification[]>([]);
+    const [unreadCount, setUnreadCount] = useState(0);
+    const [isLoading, setIsLoading] = useState(false);
+    const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
 
-    useEffect(() => {
-        // Log để debug
-        console.log('🔔 NotificationBell - Socket state:', { socket: !!socket, isConnected, userId });
-    }, [socket, isConnected, userId]);
-
-    useEffect(() => {
-        if (!socket || !isConnected) {
-            console.log('🔕 NotificationBell - Socket not ready, waiting...');
-            return;
+    const fetchNotifications = async (pageNum: number = 1) => {
+        setIsLoading(true);
+        try {
+            const data = await notificationApi.getMyNotifications(pageNum);
+            if (pageNum === 1) {
+                setNotifications(data.notifications);
+            } else {
+                setNotifications(prev => [...prev, ...data.notifications]);
+            }
+            setUnreadCount(data.unreadCount);
+            setPage(data.page);
+            setTotalPages(data.totalPages);
+        } catch (error) {
+            console.error('Fetch notifications error:', error);
+        } finally {
+            setIsLoading(false);
         }
+    };
 
-        console.log('🔔 NotificationBell - Setting up notification listener');
+    const fetchUnreadCount = async () => {
+        try {
+            const count = await notificationApi.getUnreadCount();
+            setUnreadCount(count);
+        } catch (error) {
+            console.error('Fetch unread count error:', error);
+        }
+    };
 
-        const handleNewNotification = (data: any) => {
-            console.log('🔔📦 Received notification:', data);
+    const markAsRead = async (notificationId: string) => {
+        try {
+            await notificationApi.markAsRead(notificationId);
+            setNotifications(prev =>
+                prev.map(n =>
+                    n._id === notificationId ? { ...n, read: true } : n
+                )
+            );
+            setUnreadCount(prev => Math.max(0, prev - 1));
+        } catch (error) {
+            console.error('Mark as read error:', error);
+        }
+    };
 
-            const newNotification: NotificationItem = {
-                id: data.id || crypto.randomUUID(),
-                type: data.type,
-                postSlug: data.postSlug || data.postId || '',
-                postTitle: data.postTitle || 'Bài viết',
-                userName: data.userName || 'Người dùng',
-                commentId: data.commentId,
-                reactionType: data.reactionType,
-                content: data.content,
-                read: false,
-                createdAt: data.createdAt || new Date().toISOString(),
-            };
+    const markAllAsRead = async () => {
+        try {
+            await notificationApi.markAllAsRead();
+            setNotifications(prev =>
+                prev.map(n => ({ ...n, read: true }))
+            );
+            setUnreadCount(0);
+            toast.success('Đã đánh dấu tất cả là đã đọc');
+        } catch (error) {
+            console.error('Mark all as read error:', error);
+            toast.error('Có lỗi xảy ra');
+        }
+    };
 
-            setNotifications((prev) => {
-                const updated = [newNotification, ...prev].slice(0, 50); // Giữ tối đa 50 thông báo
-                localStorage.setItem(`notifications_${userId}`, JSON.stringify(updated));
-                return updated;
+    const deleteNotification = async (notificationId: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+        e.preventDefault();
+        try {
+            await notificationApi.deleteNotification(notificationId);
+            setNotifications(prev => prev.filter(n => n._id !== notificationId));
+            toast.success('Đã xóa thông báo');
+        } catch (error) {
+            console.error('Delete notification error:', error);
+            toast.error('Xóa thất bại');
+        }
+    };
+
+    const loadMore = () => {
+        if (page < totalPages && !isLoading) {
+            fetchNotifications(page + 1);
+        }
+    };
+
+    useEffect(() => {
+        if (open && notifications.length === 0) {
+            fetchNotifications(1);
+        }
+    }, [open]);
+
+    useEffect(() => {
+        if (user?._id) {
+            fetchUnreadCount();
+        }
+    }, [user?._id]);
+
+    useEffect(() => {
+        if (!socket || !isConnected || !user?._id) return;
+
+        const handleNewNotification = (data: INotification) => {
+            setNotifications(prev => [data, ...prev]);
+            setUnreadCount(prev => prev + 1);
+            toast.success('Thông báo mới!', {
+                description: getNotificationMessage(data),
+                duration: 3000,
             });
-            setUnreadCount((prev) => prev + 1);
         };
 
         socket.on('new_notification', handleNewNotification);
@@ -185,101 +192,128 @@ function NotificationBellInner({ userId }: { userId: string }) {
         return () => {
             socket.off('new_notification', handleNewNotification);
         };
-    }, [socket, isConnected, userId]);
+    }, [socket, isConnected, user?._id]);
 
-    const markAsRead = (notificationId: string) => {
-        setNotifications((prev) => {
-            const updated = prev.map((n) =>
-                n.id === notificationId ? { ...n, read: true } : n,
-            );
-            setUnreadCount(updated.filter((n) => !n.read).length);
-            localStorage.setItem(`notifications_${userId}`, JSON.stringify(updated));
-            return updated;
-        });
-    };
-
-    const markAllAsRead = () => {
-        setNotifications((prev) => {
-            const updated = prev.map((n) => ({ ...n, read: true }));
-            setUnreadCount(0);
-            localStorage.setItem(`notifications_${userId}`, JSON.stringify(updated));
-            return updated;
-        });
-    };
-
-    // Hiển thị thông báo lỗi nếu socket không kết nối
-    if (!isConnected) {
-        return (
-            <button className="relative p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition opacity-50">
-                <Bell size={20} />
-            </button>
-        );
-    }
+    if (!user?._id) return null;
 
     return (
         <Popover open={open} onOpenChange={setOpen}>
             <PopoverTrigger asChild>
-                <button className="relative p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition">
-                    <Bell size={20} />
+                <button
+                    type="button"
+                    className="relative p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+                    aria-label="Thông báo"
+                >
+                    <Bell className="w-5 h-5" />
                     {unreadCount > 0 && (
-                        <span className="absolute top-0 right-0 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center">
-                            {unreadCount > 9 ? '9+' : unreadCount}
+                        <span className="absolute top-0 right-0 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1">
+                            {unreadCount > 99 ? '99+' : unreadCount}
                         </span>
                     )}
                 </button>
             </PopoverTrigger>
-            <PopoverContent className="w-96 p-0" align="end">
+            <PopoverContent className="w-[380px] p-0" align="end">
                 <div className="flex items-center justify-between p-4 border-b">
-                    <h3 className="font-semibold">Thông báo</h3>
+                    <h3 className="font-semibold text-gray-900 dark:text-white">
+                        Thông báo
+                        {unreadCount > 0 && (
+                            <span className="ml-2 text-xs text-gray-500">({unreadCount} chưa đọc)</span>
+                        )}
+                    </h3>
                     {unreadCount > 0 && (
-                        <button
+                        <Button
+                            variant="ghost"
+                            size="sm"
                             onClick={markAllAsRead}
-                            className="text-xs text-blue-600 hover:text-blue-700"
+                            className="text-xs h-8"
                         >
-                            Đánh dấu đã đọc
-                        </button>
+                            <CheckCheck className="w-3.5 h-3.5 mr-1" />
+                            Đọc tất cả
+                        </Button>
                     )}
                 </div>
-                <ScrollArea className="h-96">
-                    {notifications.length === 0 ? (
+
+                <ScrollArea className="h-[400px]">
+                    {isLoading && notifications.length === 0 ? (
+                        <div className="flex items-center justify-center py-12">
+                            <div className="animate-spin rounded-full h-6 w-6 border-2 border-gray-300 border-t-main" />
+                        </div>
+                    ) : notifications.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-12 text-gray-500">
-                            <Bell size={40} className="mb-2 opacity-50" />
+                            <Bell className="w-12 h-12 mb-3 opacity-50" />
                             <p className="text-sm">Chưa có thông báo nào</p>
+                            <p className="text-xs text-gray-400 mt-1">Khi có hoạt động mới, thông báo sẽ hiển thị tại đây</p>
                         </div>
                     ) : (
-                        <div className="divide-y">
+                        <div className="divide-y divide-gray-100 dark:divide-gray-800">
                             {notifications.map((notification) => (
                                 <Link
-                                    key={notification.id}
-                                    href={`/baiviet/${notification.postSlug}`}
+                                    key={notification._id}
+                                    href={`/baiviet/${notification.postSlug || notification.postId}`}
                                     onClick={() => {
-                                        markAsRead(notification.id);
+                                        if (!notification.read) {
+                                            markAsRead(notification._id);
+                                        }
                                         setOpen(false);
                                     }}
-                                    className={`block p-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition ${!notification.read
-                                        ? 'bg-blue-50 dark:bg-blue-950/20'
-                                        : ''
+                                    className={`block p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors ${!notification.read ? 'bg-blue-50/50 dark:bg-blue-950/20' : ''
                                         }`}
                                 >
-                                    {getNotificationContent(notification)}
+                                    <div className="flex gap-3">
+                                        <div className="flex-shrink-0">
+                                            <Avatar className="w-10 h-10">
+                                                <AvatarImage src={notification.senderId?.avatar} />
+                                                <AvatarFallback className="bg-main/10 text-main text-sm">
+                                                    {notification.senderId?.fullName?.charAt(0) || 'N'}
+                                                </AvatarFallback>
+                                            </Avatar>
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-sm text-gray-800 dark:text-gray-200">
+                                                {getNotificationMessage(notification)}
+                                            </p>
+                                            {notification.content && (
+                                                <p className="text-xs text-gray-500 mt-1 line-clamp-2">
+                                                    {notification.content}
+                                                </p>
+                                            )}
+                                            <div className="flex items-center gap-2 mt-2">
+                                                <span className="text-xs text-gray-400">
+                                                    {formatTime(notification.createdAt)}
+                                                </span>
+                                                {!notification.read && (
+                                                    <span className="w-2 h-2 bg-blue-500 rounded-full" />
+                                                )}
+                                            </div>
+                                        </div>
+                                        <button
+                                            onClick={(e) => deleteNotification(notification._id, e)}
+                                            className="flex-shrink-0 p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100"
+                                            aria-label="Xóa"
+                                        >
+                                            <Trash2 className="w-3.5 h-3.5" />
+                                        </button>
+                                    </div>
                                 </Link>
                             ))}
+                        </div>
+                    )}
+
+                    {totalPages > 1 && page < totalPages && (
+                        <div className="p-3 text-center border-t">
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={loadMore}
+                                disabled={isLoading}
+                                className="text-xs"
+                            >
+                                {isLoading ? 'Đang tải...' : 'Xem thêm'}
+                            </Button>
                         </div>
                     )}
                 </ScrollArea>
             </PopoverContent>
         </Popover>
     );
-}
-
-export default function NotificationBell() {
-    const { user } = useAuthStore();
-
-    // Chỉ hiển thị khi có user và đã load xong
-    if (!user?._id) {
-        console.log('🔔 NotificationBell - No user, not rendering');
-        return null;
-    }
-
-    return <NotificationBellInner userId={user._id} />;
 }
