@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Bell, MessageCircle, Heart, ThumbsUp, Bookmark, Trash2, CheckCheck } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { Bell, MessageCircle, Heart, ThumbsUp, Bookmark, Trash2, CheckCheck, Coins, Flame, Info } from 'lucide-react';
 import { useSocket } from '@/providers/socket.provider';
 import { useAuthStore } from '@/store/auth.store';
 import {
@@ -42,7 +42,7 @@ function formatTime(dateString: string): string {
     return date.toLocaleDateString('vi-VN');
 }
 
-function getNotificationIcon(type: string, reactionType?: string) {
+function NotificationIcon({ type }: { type: INotification['type'] }) {
     switch (type) {
         case 'comment':
         case 'reply_comment':
@@ -53,30 +53,66 @@ function getNotificationIcon(type: string, reactionType?: string) {
             return <Heart className="w-4 h-4 text-purple-500" />;
         case 'bookmark':
             return <Bookmark className="w-4 h-4 text-yellow-500" />;
+        case 'first_login_bonus':
+            return <Coins className="w-4 h-4 text-yellow-500" />;
+        case 'streak_bonus':
+            return <Flame className="w-4 h-4 text-orange-500" />;
         default:
-            return <Bell className="w-4 h-4 text-gray-500" />;
+            return <Info className="w-4 h-4 text-gray-500" />;
     }
+}
+
+// Avatar hệ thống cho system/bonus notifications
+function SystemAvatar({ type }: { type: INotification['type'] }) {
+    if (type === 'first_login_bonus') {
+        return (
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center flex-shrink-0 text-lg">
+                🎉
+            </div>
+        );
+    }
+    if (type === 'streak_bonus') {
+        return (
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center flex-shrink-0 text-lg">
+                🔥
+            </div>
+        );
+    }
+    return (
+        <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
+            <Bell className="w-5 h-5 text-gray-400" />
+        </div>
+    );
 }
 
 function getNotificationMessage(notification: INotification): string {
     const senderName = notification.senderId?.fullName || 'Ai đó';
 
     switch (notification.type) {
+        case 'first_login_bonus':
+            return notification.content || `Chào mừng! Bạn nhận được ${notification.meta?.coins ?? 100} xu khi đăng nhập lần đầu.`;
+        case 'streak_bonus':
+            return notification.content || `🔥 Bạn nhận được ${notification.meta?.coins} xu thưởng streak!`;
         case 'comment':
             return `${senderName} đã bình luận về bài viết "${notification.postTitle}"`;
         case 'reply_comment':
             return `${senderName} đã trả lời bình luận của bạn`;
         case 'like_post':
             return `${senderName} đã thích bài viết "${notification.postTitle}"`;
-        case 'reaction_comment':
+        case 'reaction_comment': {
             const reaction = REACTION_NAMES[notification.reactionType || 'like'];
             return `${senderName} đã ${reaction} bình luận của bạn`;
+        }
         case 'bookmark':
             return `${senderName} đã lưu bài viết "${notification.postTitle}"`;
         default:
-            return `${senderName} đã có hoạt động mới`;
+            return notification.content || `${senderName} đã có hoạt động mới`;
     }
 }
+
+// Kiểm tra notification có phải system/bonus không (không có link bài viết)
+const isSystemNotification = (type: INotification['type']) =>
+    type === 'first_login_bonus' || type === 'streak_bonus' || type === 'system';
 
 export default function NotificationBell() {
     const { user } = useAuthStore();
@@ -87,13 +123,15 @@ export default function NotificationBell() {
     const [isLoading, setIsLoading] = useState(false);
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
+    const [hasFetched, setHasFetched] = useState(false);
 
-    const fetchNotifications = async (pageNum: number = 1) => {
+    const fetchNotifications = useCallback(async (pageNum: number = 1) => {
         setIsLoading(true);
         try {
             const data = await notificationApi.getMyNotifications(pageNum);
             if (pageNum === 1) {
                 setNotifications(data.notifications);
+                setHasFetched(true);
             } else {
                 setNotifications(prev => [...prev, ...data.notifications]);
             }
@@ -105,46 +143,41 @@ export default function NotificationBell() {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, []);
 
-    const fetchUnreadCount = async () => {
+    const fetchUnreadCount = useCallback(async () => {
         try {
             const count = await notificationApi.getUnreadCount();
             setUnreadCount(count);
         } catch (error) {
             console.error('Fetch unread count error:', error);
         }
-    };
+    }, []);
 
-    const markAsRead = async (notificationId: string) => {
+    const markAsRead = useCallback(async (notificationId: string) => {
         try {
             await notificationApi.markAsRead(notificationId);
             setNotifications(prev =>
-                prev.map(n =>
-                    n._id === notificationId ? { ...n, read: true } : n
-                )
+                prev.map(n => n._id === notificationId ? { ...n, read: true } : n)
             );
             setUnreadCount(prev => Math.max(0, prev - 1));
         } catch (error) {
             console.error('Mark as read error:', error);
         }
-    };
+    }, []);
 
-    const markAllAsRead = async () => {
+    const markAllAsRead = useCallback(async () => {
         try {
             await notificationApi.markAllAsRead();
-            setNotifications(prev =>
-                prev.map(n => ({ ...n, read: true }))
-            );
+            setNotifications(prev => prev.map(n => ({ ...n, read: true })));
             setUnreadCount(0);
             toast.success('Đã đánh dấu tất cả là đã đọc');
         } catch (error) {
-            console.error('Mark all as read error:', error);
             toast.error('Có lỗi xảy ra');
         }
-    };
+    }, []);
 
-    const deleteNotification = async (notificationId: string, e: React.MouseEvent) => {
+    const deleteNotification = useCallback(async (notificationId: string, e: React.MouseEvent) => {
         e.stopPropagation();
         e.preventDefault();
         try {
@@ -152,10 +185,9 @@ export default function NotificationBell() {
             setNotifications(prev => prev.filter(n => n._id !== notificationId));
             toast.success('Đã xóa thông báo');
         } catch (error) {
-            console.error('Delete notification error:', error);
             toast.error('Xóa thất bại');
         }
-    };
+    }, []);
 
     const loadMore = () => {
         if (page < totalPages && !isLoading) {
@@ -163,35 +195,50 @@ export default function NotificationBell() {
         }
     };
 
+    // Fetch khi mở popover lần đầu
     useEffect(() => {
-        if (open && notifications.length === 0) {
+        if (open && !hasFetched) {
             fetchNotifications(1);
         }
-    }, [open]);
+    }, [open, hasFetched, fetchNotifications]);
 
+    // Fetch unread count khi user login
     useEffect(() => {
         if (user?._id) {
             fetchUnreadCount();
         }
-    }, [user?._id]);
+    }, [user?._id, fetchUnreadCount]);
 
+    // ✅ Lắng nghe socket - new_notification từ DB (không dùng localStorage)
     useEffect(() => {
         if (!socket || !isConnected || !user?._id) return;
 
         const handleNewNotification = (data: INotification) => {
+            // Thêm vào đầu danh sách (đã là object từ DB)
             setNotifications(prev => [data, ...prev]);
             setUnreadCount(prev => prev + 1);
-            toast.success('Thông báo mới!', {
-                description: getNotificationMessage(data),
-                duration: 3000,
-            });
+
+            // Toast tuỳ theo loại
+            if (data.type === 'first_login_bonus') {
+                toast.success('🎉 Chào mừng đến với CNcode!', {
+                    description: `Bạn đã nhận được ${data.meta?.coins ?? 100} xu để bắt đầu hành trình học tập!`,
+                    duration: 6000,
+                });
+            } else if (data.type === 'streak_bonus') {
+                toast.success('🔥 Thưởng streak!', {
+                    description: data.content,
+                    duration: 5000,
+                });
+            } else {
+                toast.info('Thông báo mới!', {
+                    description: getNotificationMessage(data),
+                    duration: 3000,
+                });
+            }
         };
 
         socket.on('new_notification', handleNewNotification);
-
-        return () => {
-            socket.off('new_notification', handleNewNotification);
-        };
+        return () => { socket.off('new_notification', handleNewNotification); };
     }, [socket, isConnected, user?._id]);
 
     if (!user?._id) return null;
@@ -212,7 +259,9 @@ export default function NotificationBell() {
                     )}
                 </button>
             </PopoverTrigger>
+
             <PopoverContent className="w-[380px] p-0" align="end">
+                {/* Header */}
                 <div className="flex items-center justify-between p-4 border-b">
                     <h3 className="font-semibold text-gray-900 dark:text-white">
                         Thông báo
@@ -221,12 +270,7 @@ export default function NotificationBell() {
                         )}
                     </h3>
                     {unreadCount > 0 && (
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={markAllAsRead}
-                            className="text-xs h-8"
-                        >
+                        <Button variant="ghost" size="sm" onClick={markAllAsRead} className="text-xs h-8">
                             <CheckCheck className="w-3.5 h-3.5 mr-1" />
                             Đọc tất cả
                         </Button>
@@ -246,38 +290,42 @@ export default function NotificationBell() {
                         </div>
                     ) : (
                         <div className="divide-y divide-gray-100 dark:divide-gray-800">
-                            {notifications.map((notification) => (
-                                <Link
-                                    key={notification._id}
-                                    href={`/baiviet/${notification.postSlug || notification.postId}`}
-                                    onClick={() => {
-                                        if (!notification.read) {
-                                            markAsRead(notification._id);
-                                        }
-                                        setOpen(false);
-                                    }}
-                                    className={`block p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors ${!notification.read ? 'bg-blue-50/50 dark:bg-blue-950/20' : ''
-                                        }`}
-                                >
-                                    <div className="flex gap-3">
-                                        <div className="flex-shrink-0">
-                                            <Avatar className="w-10 h-10">
-                                                <AvatarImage src={notification.senderId?.avatar} />
-                                                <AvatarFallback className="bg-main/10 text-main text-sm">
-                                                    {notification.senderId?.fullName?.charAt(0) || 'N'}
-                                                </AvatarFallback>
-                                            </Avatar>
-                                        </div>
+                            {notifications.map((notification) => {
+                                const isSystem = isSystemNotification(notification.type);
+                                const content = (
+                                    <div className={`flex gap-3 p-4 ${!notification.read ? 'bg-blue-50/50 dark:bg-blue-950/20' : ''} hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group`}>
+                                        {/* Avatar */}
+                                        {isSystem ? (
+                                            <SystemAvatar type={notification.type} />
+                                        ) : (
+                                            <div className="flex-shrink-0">
+                                                <Avatar className="w-10 h-10">
+                                                    <AvatarImage src={notification.senderId?.avatar} />
+                                                    <AvatarFallback className="bg-main/10 text-main text-sm">
+                                                        {notification.senderId?.fullName?.charAt(0) || 'N'}
+                                                    </AvatarFallback>
+                                                </Avatar>
+                                            </div>
+                                        )}
+
+                                        {/* Content */}
                                         <div className="flex-1 min-w-0">
                                             <p className="text-sm text-gray-800 dark:text-gray-200">
                                                 {getNotificationMessage(notification)}
                                             </p>
-                                            {notification.content && (
+                                            {/* Hiển thị coin bonus */}
+                                            {notification.meta?.coins && notification.meta.coins > 0 && (
+                                                <p className="text-xs text-yellow-600 font-medium mt-0.5">
+                                                    +{notification.meta.coins} xu
+                                                </p>
+                                            )}
+                                            {notification.content && !isSystem && (
                                                 <p className="text-xs text-gray-500 mt-1 line-clamp-2">
                                                     {notification.content}
                                                 </p>
                                             )}
-                                            <div className="flex items-center gap-2 mt-2">
+                                            <div className="flex items-center gap-2 mt-1.5">
+                                                <NotificationIcon type={notification.type} />
                                                 <span className="text-xs text-gray-400">
                                                     {formatTime(notification.createdAt)}
                                                 </span>
@@ -286,6 +334,8 @@ export default function NotificationBell() {
                                                 )}
                                             </div>
                                         </div>
+
+                                        {/* Delete button */}
                                         <button
                                             onClick={(e) => deleteNotification(notification._id, e)}
                                             className="flex-shrink-0 p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100"
@@ -294,8 +344,35 @@ export default function NotificationBell() {
                                             <Trash2 className="w-3.5 h-3.5" />
                                         </button>
                                     </div>
-                                </Link>
-                            ))}
+                                );
+
+                                // System notifications không có link
+                                if (isSystem) {
+                                    return (
+                                        <div
+                                            key={notification._id}
+                                            onClick={() => !notification.read && markAsRead(notification._id)}
+                                            className="cursor-default"
+                                        >
+                                            {content}
+                                        </div>
+                                    );
+                                }
+
+                                return (
+                                    <Link
+                                        key={notification._id}
+                                        href={`/baiviet/${notification.postSlug || notification.postId}`}
+                                        onClick={() => {
+                                            if (!notification.read) markAsRead(notification._id);
+                                            setOpen(false);
+                                        }}
+                                        className="block"
+                                    >
+                                        {content}
+                                    </Link>
+                                );
+                            })}
                         </div>
                     )}
 

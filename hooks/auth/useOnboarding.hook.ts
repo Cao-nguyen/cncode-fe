@@ -37,6 +37,7 @@ export const useOnboarding = () => {
   const { token, setUser, setIsOnboarded } = useAuthStore()
   const [loading, setLoading] = useState(false)
   const [isCheckingUsername, setIsCheckingUsername] = useState(false)
+  const [isUsernameAvailable, setIsUsernameAvailable] = useState(false)
   const [formData, setFormData] = useState<IOnboardingData>({
     username: '',
     class: '',
@@ -51,17 +52,24 @@ export const useOnboarding = () => {
 
   const handleChange = useCallback((field: keyof IOnboardingData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }))
+
+    // Khi user thay đổi username, reset trạng thái available và ref
+    if (field === 'username') {
+      setIsUsernameAvailable(false)
+      lastCheckedUsernameRef.current = ''
+    }
+
     if (errors[field as keyof ErrorsType]) {
       setErrors(prev => ({ ...prev, [field]: undefined }))
     }
   }, [errors])
 
   const checkUsername = useCallback(async (username: string) => {
-    if (!username || username.length < 3) {
-      return
-    }
+    if (!username || username.length < 3) return
 
+    setIsUsernameAvailable(false)
     setIsCheckingUsername(true)
+
     try {
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/api/auth/check-username?username=${encodeURIComponent(username)}`
@@ -70,11 +78,14 @@ export const useOnboarding = () => {
 
       if (!result.available) {
         setErrors(prev => ({ ...prev, username: result.message || 'Tên người dùng đã tồn tại' }))
+        setIsUsernameAvailable(false)
       } else {
         setErrors(prev => ({ ...prev, username: undefined }))
+        setIsUsernameAvailable(true)
       }
     } catch (error) {
       console.error('Check username failed:', error)
+      // Không set lỗi khi network fail để user vẫn có thể submit
     } finally {
       setIsCheckingUsername(false)
     }
@@ -86,9 +97,13 @@ export const useOnboarding = () => {
     }
 
     const username = formData.username
-    const currentError = errors.username
 
-    if (username && username.length >= 3 && !currentError && lastCheckedUsernameRef.current !== username) {
+    // Chỉ check khi username hợp lệ về format và chưa từng check username này
+    const isFormatValid = username.length >= 3 && /^[a-zA-Z0-9_]+$/.test(username)
+    const notCheckedYet = lastCheckedUsernameRef.current !== username
+    const hasNoFormatError = !errors.username
+
+    if (isFormatValid && notCheckedYet && hasNoFormatError) {
       checkTimeoutRef.current = setTimeout(() => {
         lastCheckedUsernameRef.current = username
         checkUsername(username)
@@ -148,9 +163,7 @@ export const useOnboarding = () => {
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!validateForm()) {
-      return
-    }
+    if (!validateForm()) return
 
     if (isCheckingUsername) {
       toast.warning('Đang kiểm tra tên người dùng', {
@@ -196,11 +209,10 @@ export const useOnboarding = () => {
 
         router.push('/')
       } else {
-        if (result.message && result.message.includes('username')) {
+        if (result.message && result.message.toLowerCase().includes('username')) {
           setErrors(prev => ({ ...prev, username: result.message }))
-          toast.error('Lỗi', {
-            description: result.message,
-          })
+          setIsUsernameAvailable(false)
+          toast.error('Lỗi', { description: result.message })
         } else {
           setErrors(prev => ({ ...prev, general: result.message || 'Có lỗi xảy ra' }))
           toast.error('Có lỗi xảy ra', {
@@ -224,6 +236,7 @@ export const useOnboarding = () => {
     errors,
     loading,
     isCheckingUsername,
+    isUsernameAvailable,
     classOptions: CLASSES,
     provinceOptions: PROVINCES,
     handleChange,

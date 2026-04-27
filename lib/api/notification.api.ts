@@ -1,35 +1,55 @@
-import axios from 'axios';
 import type { INotification, NotificationResponse, UnreadCountResponse } from '@/types/notification.type';
+import { useAuthStore } from '@/store/auth.store';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+const API_URL = `${process.env.NEXT_PUBLIC_API_URL}/api` || 'http://localhost:5000/api';
 
-const api = axios.create({
-    baseURL: API_URL,
-    withCredentials: true,
+// Helper lấy token từ store mà không cần hook (dùng được ngoài component)
+const getToken = () => useAuthStore.getState().token;
+
+const authHeaders = () => ({
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${getToken()}`,
 });
 
 export const notificationApi = {
     getMyNotifications: async (page = 1, limit = 20): Promise<NotificationResponse['data']> => {
-        const response = await api.get<NotificationResponse>('/notifications/my', {
-            params: { page, limit },
-        });
-        return response.data.data;
+        const response = await fetch(
+            `${API_URL}/notifications/my?page=${page}&limit=${limit}`,
+            { headers: authHeaders() }
+        );
+        if (!response.ok) throw new Error('Failed to fetch notifications');
+        const data: NotificationResponse = await response.json();
+        return data.data;
     },
 
     getUnreadCount: async (): Promise<number> => {
-        const response = await api.get<UnreadCountResponse>('/notifications/unread-count');
-        return response.data.data.unreadCount;
+        const response = await fetch(
+            `${API_URL}/notifications/unread-count`,
+            { headers: authHeaders() }
+        );
+        if (!response.ok) throw new Error('Failed to fetch unread count');
+        const data: UnreadCountResponse = await response.json();
+        return data.data.unreadCount;
     },
 
     markAsRead: async (notificationId: string): Promise<void> => {
-        await api.put(`/notifications/${notificationId}/read`);
+        await fetch(`${API_URL}/notifications/${notificationId}/read`, {
+            method: 'PUT',
+            headers: authHeaders(),
+        });
     },
 
     markAllAsRead: async (): Promise<void> => {
-        await api.put('/notifications/mark-all-read');
+        await fetch(`${API_URL}/notifications/mark-all-read`, {
+            method: 'PUT',
+            headers: authHeaders(),
+        });
     },
 
     deleteNotification: async (notificationId: string): Promise<void> => {
-        await api.delete(`/notifications/${notificationId}`);
+        await fetch(`${API_URL}/notifications/${notificationId}`, {
+            method: 'DELETE',
+            headers: authHeaders(),
+        });
     },
 };

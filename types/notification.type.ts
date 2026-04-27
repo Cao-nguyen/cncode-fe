@@ -1,18 +1,31 @@
 export interface INotification {
     _id: string;
+    notificationId: string; // unique string ID (added)
     userId: string;
-    type: 'comment' | 'reaction_comment' | 'like_post' | 'reply_comment' | 'bookmark';
+    type:
+    | 'comment'
+    | 'reaction_comment'
+    | 'like_post'
+    | 'reply_comment'
+    | 'bookmark'
+    | 'first_login_bonus'
+    | 'streak_bonus'
+    | 'system';
     postId?: string;
     postSlug?: string;
     postTitle?: string;
     commentId?: string;
     reactionType?: string;
-    senderId: {
+    senderId?: {
         _id: string;
         fullName: string;
         avatar?: string;
-    };
+    } | null;
     content?: string;
+    meta?: {
+        coins?: number;
+        streak?: number;
+    };
     read: boolean;
     createdAt: string;
     updatedAt: string;
@@ -34,4 +47,17 @@ export interface UnreadCountResponse {
     data: {
         unreadCount: number;
     };
+}
+
+// Socket events
+export interface CoinsUpdatedPayload {
+    coins: number;
+    delta: number;
+    reason: 'first_login_bonus' | 'streak_bonus' | 'purchase' | string;
+}
+
+export interface StreakUpdatedPayload {
+    streak: number;
+    coinsEarned: number;
+    totalCoins: number;
 }

@@ -126,8 +126,9 @@ export function CreateShortLink() {
     return (
         <div className="space-y-6">
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-                <div className="space-y-1.5">
-                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                {/* URL gốc */}
+                <div className="flex flex-col gap-2">
+                    <label className="uppercase text-sm font-medium text-gray-700 dark:text-gray-300">
                         Đường dẫn gốc
                     </label>
                     <div className="relative">
@@ -140,7 +141,7 @@ export function CreateShortLink() {
                             {...register('originalUrl')}
                             type="text"
                             placeholder="https://example.com/duong-dan-rat-dai"
-                            className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 focus:border-main focus:ring-2 focus:ring-main/20 outline-none transition-all text-sm"
+                            className="w-full pl-9 pr-4 py-2.5 rounded-[8px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 focus:border-main focus:ring-2 focus:ring-main/20 outline-none transition-all text-sm"
                         />
                     </div>
                     {errors.originalUrl && (
@@ -151,6 +152,7 @@ export function CreateShortLink() {
                     )}
                 </div>
 
+                {/* Tùy chỉnh button */}
                 <button
                     type="button"
                     onClick={() => {
@@ -170,14 +172,15 @@ export function CreateShortLink() {
                     <Heart size={14} variant="Bold" className="text-main" />
                 </button>
 
+                {/* Custom alias */}
                 {useCustom && (
-                    <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                            Alias tùy chỉnh
+                    <div className="flex flex-col gap-2">
+                        <label className="uppercase text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Miền tùy chỉnh
                         </label>
                         <div className="flex gap-2">
                             <div
-                                className={`flex-1 flex rounded-xl border overflow-hidden transition-colors ${aliasState === 'taken'
+                                className={`flex-1 flex rounded-[8px] border overflow-hidden transition-colors ${aliasState === 'taken'
                                     ? 'border-red-400 dark:border-red-600'
                                     : aliasState === 'available'
                                         ? 'border-green-400 dark:border-green-600'
@@ -185,7 +188,7 @@ export function CreateShortLink() {
                                     }`}
                             >
                                 <span className="flex items-center px-3 text-xs text-gray-500 bg-gray-50 dark:bg-gray-800 border-r border-inherit whitespace-nowrap">
-                                    cncode.com/s/
+                                    cncode.io.vn/s/
                                 </span>
                                 <input
                                     type="text"
@@ -199,7 +202,7 @@ export function CreateShortLink() {
                                 type="button"
                                 onClick={handleCheckAlias}
                                 disabled={aliasState === 'checking'}
-                                className="px-4 py-2 rounded-xl border border-main text-main text-sm font-medium hover:bg-main/5 transition-colors disabled:opacity-50 whitespace-nowrap"
+                                className="px-4 py-2 rounded-[8px] border border-main text-main text-sm font-medium hover:bg-main/5 transition-colors disabled:opacity-50 whitespace-nowrap"
                             >
                                 {aliasState === 'checking' ? (
                                     <Loader2 size={16} className="animate-spin" />
@@ -211,20 +214,21 @@ export function CreateShortLink() {
                         {aliasState === 'taken' && (
                             <p className="flex items-center gap-1 text-xs text-red-500">
                                 <Warning2 size={12} variant="Bold" />
-                                Alias đã được sử dụng
+                                Miền đã được sử dụng
                             </p>
                         )}
                         {aliasState === 'available' && (
                             <p className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
                                 <TickCircle size={12} variant="Bold" />
-                                Alias có thể sử dụng
+                                Miền có thể sử dụng
                             </p>
                         )}
                     </div>
                 )}
 
-                <div className="space-y-1.5">
-                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                {/* Expiry */}
+                <div className="flex flex-col gap-2">
+                    <label className="uppercase text-sm font-medium text-gray-700 dark:text-gray-300">
                         Hết hạn sau{' '}
                         <span className="font-normal text-gray-400">(ngày, để trống = vĩnh viễn)</span>
                     </label>
@@ -233,7 +237,7 @@ export function CreateShortLink() {
                         min={1}
                         {...register('expiresInDays')}
                         placeholder="Ví dụ: 30"
-                        className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 focus:border-main focus:ring-2 focus:ring-main/20 outline-none transition-all text-sm"
+                        className="w-full px-4 py-2.5 rounded-[8px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 focus:border-main focus:ring-2 focus:ring-main/20 outline-none transition-all text-sm"
                     />
                     {errors.expiresInDays && (
                         <p className="flex items-center gap-1 text-xs text-red-500">
@@ -243,10 +247,11 @@ export function CreateShortLink() {
                     )}
                 </div>
 
+                {/* Submit button */}
                 <button
                     type="submit"
                     disabled={isCreating}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-main text-white font-semibold transition-all hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-[8px] bg-main text-white font-semibold transition-all hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     {isCreating ? (
                         <>
@@ -257,21 +262,21 @@ export function CreateShortLink() {
                         <>
                             <Link21 size={16} variant="Bold" />
                             Tạo link rút gọn
-                            <ArrowRight2 size={16} variant="Bold" />
                         </>
                     )}
                 </button>
             </form>
 
+            {/* Result */}
             {createdLink && (
-                <div className="p-4 rounded-xl border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950/30 space-y-3">
+                <div className="p-4 rounded-[8px] border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950/30 space-y-3">
                     <div className="flex items-center gap-2">
                         <TickCircle size={16} className="text-green-600" variant="Bold" />
                         <span className="text-sm font-semibold text-green-700 dark:text-green-400">
                             Link đã tạo thành công!
                         </span>
                     </div>
-                    <div className="flex items-center justify-between gap-3 p-3 rounded-lg bg-white dark:bg-gray-900 border border-green-100 dark:border-green-800">
+                    <div className="flex items-center justify-between gap-3 p-3 rounded-[8px] bg-white dark:bg-gray-900 border border-green-100 dark:border-green-800">
                         <a
                             href={createdLink.shortUrl}
                             target="_blank"

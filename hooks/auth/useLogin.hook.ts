@@ -7,47 +7,69 @@ import { IGoogleLoginResponse } from '@/types/auth.type'
 
 export const useLogin = () => {
   const router = useRouter()
-  const { setAuth } = useAuthStore()
+  const { token, setAuth } = useAuthStore()
   const [checking, setChecking] = useState(true)
 
   useEffect(() => {
     const checkAuth = async () => {
-      const token = localStorage.getItem('token')
-      if (token) {
-        try {
-          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/me`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-          })
-          if (response.ok) {
-            const result = await response.json()
-            setAuth(result.data, token)
-            if (!result.data.isOnboarded) {
-              router.push('/onboarding')
-            } else {
-              router.push('/')
-            }
-            return
-          }
-        } catch (error) {
-          localStorage.removeItem('token')
-        }
+      // Ưu tiên token từ persist store, fallback localStorage
+      const savedToken = token || localStorage.getItem('token')
+
+      if (!savedToken) {
+        setChecking(false)
+        return
       }
-      setChecking(false)
+
+      try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/me`, {
+          headers: { Authorization: `Bearer ${savedToken}` },
+        })
+
+        if (!response.ok) {
+          // Token hết hạn hoặc không hợp lệ
+          setChecking(false)
+          return
+        }
+
+        const result = await response.json()
+
+        // API /me trả về { data: User } hoặc { user: User } — parse an toàn
+        const userData = result.data ?? result.user
+
+        if (!userData) {
+          setChecking(false)
+          return
+        }
+
+        // Sync store với data mới nhất từ server (tránh dùng cached isOnboarded)
+        setAuth(userData, savedToken)
+
+        // Luôn dùng giá trị isOnboarded từ server, không từ localStorage cache
+        if (userData.isOnboarded === false) {
+          router.push('/onboarding')
+        } else {
+          router.push('/')
+        }
+      } catch {
+        setChecking(false)
+      }
     }
+
     checkAuth()
-  }, [router, setAuth])
+  }, []) // Chỉ chạy 1 lần khi mount, không depend vào token để tránh loop
 
   const handleGoogleSuccess = useCallback(async (response: CredentialResponse) => {
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/google`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ credential: response.credential })
+        body: JSON.stringify({ credential: response.credential }),
       })
 
       const result: IGoogleLoginResponse = await res.json()
 
       if (result.success) {
+        // Sync store với data từ server response
         setAuth(result.data.user, result.data.token)
 
         if (result.data.isNewUser) {
@@ -57,19 +79,24 @@ export const useLogin = () => {
           })
         } else {
           toast.success('Đăng nhập thành công!', {
-            description: `Chào mừng ${result.data.user.fullName} quay trở lại CNcode`,
+            description: `Chào mừng ${result.data.user.fullName} quay trở lại`,
             duration: 3000,
           })
         }
 
-        if (result.data.isNewUser || !result.data.user.isOnboarded) {
+        // Dùng isOnboarded từ server response, không từ store/cache
+        if (result.data.user.isOnboarded === false) {
           router.push('/onboarding')
         } else {
           router.push('/')
         }
+      } else {
+        toast.error('Đăng nhập thất bại', {
+          description: result.message || 'Có lỗi xảy ra',
+          duration: 3000,
+        })
       }
-    } catch (error) {
-      console.error('Google login failed:', error)
+    } catch {
       toast.error('Đăng nhập thất bại', {
         description: 'Có lỗi xảy ra, vui lòng thử lại sau',
         duration: 3000,
