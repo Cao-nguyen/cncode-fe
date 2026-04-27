@@ -25,6 +25,7 @@ import {
     Link1,
     Clock,
     Coin1,
+    MessageProgramming,
 } from "iconsax-react";
 import {
     Home as Trangchu,
@@ -78,6 +79,7 @@ function buildSections(
                 { icon: <NhaHang variant="Bold" style={iconSize} />, title: "Tiếp thị liên kết", subtitle: "Affiliate & hoa hồng", href: "/me/tiepthilienket" },
                 { icon: <ArchiveBox variant="Bold" style={iconSize} />, title: "Góp ý", subtitle: "Chia sẻ ý kiến của bạn", href: "/gopy" },
                 { icon: <BoxSearch variant="Bold" style={iconSize} />, title: "Hỏi đáp (FAQ)", subtitle: "Câu hỏi thường gặp", href: "/faq" },
+                { icon: <MessageProgramming variant="Bold" style={iconSize} />, title: "Hỗ trợ dự án", subtitle: "Cùng nhau thực hiện ý tưởng", href: "/hotroduan" },
                 { icon: <Global variant="Bold" style={iconSize} />, title: "Truyền thông chéo", subtitle: "Kết nối & chia sẻ", href: "/truyenthongcheo" },
             ],
         },
