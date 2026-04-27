@@ -1,5 +1,5 @@
 // lib/api/user.api.ts
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
 export interface IUser {
     _id: string;
@@ -26,6 +26,7 @@ export interface IUser {
         _id: string;
         reason: string;
         action: string;
+        adminId?: string;
         createdAt: string;
     }>;
 }
@@ -44,6 +45,13 @@ export interface IProvinceStat {
     count: number;
 }
 
+export interface IProvinceStatsResponse {
+    stats: IProvinceStat[];
+    totalWithProvince: number;
+    totalWithoutProvince: number;
+    totalUsers: number;
+}
+
 export interface IUserFilters {
     search: string;
     role: string;
@@ -52,7 +60,7 @@ export interface IUserFilters {
     sortOrder: 'asc' | 'desc';
 }
 
-export interface IApiResponse<T> {
+export interface IApiResponse<T = unknown> {
     success: boolean;
     data: T;
     message?: string;
@@ -64,12 +72,36 @@ export interface IApiResponse<T> {
     };
 }
 
+async function handleResponse<T>(response: Response): Promise<IApiResponse<T>> {
+    if (!response.ok) {
+        let errorMessage = `Lỗi ${response.status}: ${response.statusText}`;
+        try {
+            const errorData = await response.json();
+            errorMessage = errorData.message || errorMessage;
+        } catch {
+            // Không thể parse JSON
+        }
+        return {
+            success: false,
+            data: null as T,
+            message: errorMessage,
+        };
+    }
+
+    const data = await response.json();
+    return data;
+}
+
 export const userApi = {
+    // User APIs
     getProfile: async (token: string): Promise<IApiResponse<IUser>> => {
         const response = await fetch(`${API_URL}/api/users/profile`, {
-            headers: { Authorization: `Bearer ${token}` }
+            headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
         });
-        return response.json();
+        return handleResponse<IUser>(response);
     },
 
     updateProfile: async (data: Partial<IUser>, token: string): Promise<IApiResponse<IUser>> => {
@@ -81,7 +113,7 @@ export const userApi = {
             },
             body: JSON.stringify(data)
         });
-        return response.json();
+        return handleResponse<IUser>(response);
     },
 
     requestRoleChange: async (token: string): Promise<IApiResponse<null>> => {
@@ -93,7 +125,7 @@ export const userApi = {
             },
             body: JSON.stringify({ requestedRole: 'teacher' })
         });
-        return response.json();
+        return handleResponse<null>(response);
     },
 
     changePassword: async (currentPassword: string, newPassword: string, token: string): Promise<IApiResponse<null>> => {
@@ -105,7 +137,7 @@ export const userApi = {
             },
             body: JSON.stringify({ currentPassword, newPassword })
         });
-        return response.json();
+        return handleResponse<null>(response);
     },
 
     uploadAvatar: async (file: File, token: string): Promise<IApiResponse<{ url: string }>> => {
@@ -113,10 +145,12 @@ export const userApi = {
         formData.append('avatar', file);
         const response = await fetch(`${API_URL}/api/users/upload-avatar`, {
             method: 'POST',
-            headers: { Authorization: `Bearer ${token}` },
+            headers: {
+                Authorization: `Bearer ${token}`
+            },
             body: formData
         });
-        return response.json();
+        return handleResponse<{ url: string }>(response);
     },
 
     // Admin APIs
@@ -125,35 +159,70 @@ export const userApi = {
             page: page.toString(),
             limit: limit.toString(),
             ...(filters.search && { search: filters.search }),
-            ...(filters.role && { role: filters.role }),
+            ...(filters.role && filters.role !== 'all' && { role: filters.role }),
+            ...(filters.status && filters.status !== 'all' && { status: filters.status }),
             ...(filters.sortBy && { sortBy: filters.sortBy }),
             ...(filters.sortOrder && { sortOrder: filters.sortOrder })
         });
         const response = await fetch(`${API_URL}/api/users/admin/users?${params}`, {
-            headers: { Authorization: `Bearer ${token}` }
+            headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
         });
-        return response.json();
+        return handleResponse<IUser[]>(response);
+    },
+
+    getUserById: async (userId: string, token: string): Promise<IApiResponse<IUser>> => {
+        const response = await fetch(`${API_URL}/api/users/admin/users/${userId}`, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        return handleResponse<IUser>(response);
+    },
+
+    updateUserByAdmin: async (userId: string, data: Partial<IUser>, token: string): Promise<IApiResponse<IUser>> => {
+        const response = await fetch(`${API_URL}/api/users/admin/users/${userId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify(data)
+        });
+        return handleResponse<IUser>(response);
     },
 
     getUserStats: async (token: string): Promise<IApiResponse<IUserStats>> => {
         const response = await fetch(`${API_URL}/api/users/admin/users/stats`, {
-            headers: { Authorization: `Bearer ${token}` }
+            headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
         });
-        return response.json();
+        return handleResponse<IUserStats>(response);
     },
 
-    getUserStatsByProvince: async (token: string): Promise<IApiResponse<{ stats: IProvinceStat[] }>> => {
+    getUserStatsByProvince: async (token: string): Promise<IApiResponse<IProvinceStatsResponse>> => {
         const response = await fetch(`${API_URL}/api/users/admin/users/stats/province`, {
-            headers: { Authorization: `Bearer ${token}` }
+            headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
         });
-        return response.json();
+        return handleResponse<IProvinceStatsResponse>(response);
     },
 
     getPendingTeachers: async (token: string): Promise<IApiResponse<IUser[]>> => {
         const response = await fetch(`${API_URL}/api/users/admin/users/pending-teachers`, {
-            headers: { Authorization: `Bearer ${token}` }
+            headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
         });
-        return response.json();
+        return handleResponse<IUser[]>(response);
     },
 
     approveTeacherRequest: async (userId: string, approved: boolean, token: string): Promise<IApiResponse<{ role: string }>> => {
@@ -165,7 +234,7 @@ export const userApi = {
             },
             body: JSON.stringify({ approved })
         });
-        return response.json();
+        return handleResponse<{ role: string }>(response);
     },
 
     changeUserRole: async (userId: string, role: string, token: string): Promise<IApiResponse<IUser>> => {
@@ -177,7 +246,7 @@ export const userApi = {
             },
             body: JSON.stringify({ role })
         });
-        return response.json();
+        return handleResponse<IUser>(response);
     },
 
     markViolation: async (userId: string, reason: string, action: string, token: string): Promise<IApiResponse<IUser>> => {
@@ -189,7 +258,28 @@ export const userApi = {
             },
             body: JSON.stringify({ reason, action })
         });
-        return response.json();
+        return handleResponse<IUser>(response);
+    },
+
+    removeViolation: async (userId: string, violationId: string, token: string): Promise<IApiResponse<IUser>> => {
+        const response = await fetch(`${API_URL}/api/users/admin/users/${userId}/violations/${violationId}`, {
+            method: 'DELETE',
+            headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        return handleResponse<IUser>(response);
+    },
+
+    getViolatedUsers: async (token: string): Promise<IApiResponse<IUser[]>> => {
+        const response = await fetch(`${API_URL}/api/users/admin/users/violations/list`, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        return handleResponse<IUser[]>(response);
     },
 
     adjustUserCoins: async (userId: string, amount: number, reason: string, token: string): Promise<IApiResponse<{ coins: number }>> => {
@@ -201,14 +291,17 @@ export const userApi = {
             },
             body: JSON.stringify({ amount, reason })
         });
-        return response.json();
+        return handleResponse<{ coins: number }>(response);
     },
 
     deleteUser: async (userId: string, token: string): Promise<IApiResponse<null>> => {
         const response = await fetch(`${API_URL}/api/users/admin/users/${userId}`, {
             method: 'DELETE',
-            headers: { Authorization: `Bearer ${token}` }
+            headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
         });
-        return response.json();
+        return handleResponse<null>(response);
     }
 };

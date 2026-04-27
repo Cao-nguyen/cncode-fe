@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Bell, MessageCircle, Heart, ThumbsUp, Bookmark, Trash2, CheckCheck, Coins, Flame, Info } from 'lucide-react';
+import { Bell, MessageCircle, Heart, ThumbsUp, Bookmark, CheckCheck, Coins, Flame, Info, XCircle } from 'lucide-react';
 import { useSocket } from '@/providers/socket.provider';
 import { useAuthStore } from '@/store/auth.store';
 import {
@@ -57,6 +57,10 @@ function NotificationIcon({ type }: { type: INotification['type'] }) {
             return <Coins className="w-4 h-4 text-yellow-500" />;
         case 'streak_bonus':
             return <Flame className="w-4 h-4 text-orange-500" />;
+        case 'role_request_approved':
+            return <CheckCheck className="w-4 h-4 text-green-500" />;
+        case 'role_request_rejected':
+            return <XCircle className="w-4 h-4 text-red-500" />;
         default:
             return <Info className="w-4 h-4 text-gray-500" />;
     }
@@ -77,8 +81,22 @@ function SystemAvatar({ type }: { type: INotification['type'] }) {
             </div>
         );
     }
+    if (type === 'role_request_approved') {
+        return (
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center flex-shrink-0 text-lg">
+                ✅
+            </div>
+        );
+    }
+    if (type === 'role_request_rejected') {
+        return (
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-400 to-rose-500 flex items-center justify-center flex-shrink-0 text-lg">
+                ❌
+            </div>
+        );
+    }
     return (
-        <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
+        <div className="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center flex-shrink-0">
             <Bell className="w-5 h-5 text-gray-400" />
         </div>
     );
@@ -109,8 +127,50 @@ function getNotificationMessage(notification: INotification): string {
     }
 }
 
+const isRoleRequestType = (type: INotification['type']) =>
+    type === 'role_request_approved' || type === 'role_request_rejected';
+
+function NotificationContent({ data }: { data: INotification }) {
+    const isRoleRequest = isRoleRequestType(data.type);
+
+    return (
+        <div className="flex-1 min-w-0">
+            {isRoleRequest ? (
+                <p className="text-sm text-gray-800 dark:text-gray-200">
+                    {data.content}
+                </p>
+            ) : (
+                <p className="text-sm text-gray-800 dark:text-gray-200">
+                    {getNotificationMessage(data)}
+                </p>
+            )}
+
+            {/* Chỉ hiển thị coins khi > 0 và không phải role request */}
+            {!isRoleRequest && (data.meta?.coins ?? 0) > 0 && (
+                <p className="text-xs text-yellow-600 font-medium mt-0.5">
+                    +{data.meta!.coins} xu
+                </p>
+            )}
+
+            <div className="flex items-center gap-2 mt-1.5">
+                <NotificationIcon type={data.type} />
+                <span className="text-xs text-gray-400">
+                    {formatTime(data.createdAt)}
+                </span>
+                {!data.read && (
+                    <span className="w-2 h-2 bg-main rounded-full" />
+                )}
+            </div>
+        </div>
+    );
+}
+
 const isSystemNotification = (type: INotification['type']) =>
-    type === 'first_login_bonus' || type === 'streak_bonus' || type === 'system';
+    type === 'first_login_bonus' ||
+    type === 'streak_bonus' ||
+    type === 'system' ||
+    type === 'role_request_approved' ||
+    type === 'role_request_rejected';
 
 export default function NotificationBell() {
     const { user } = useAuthStore();
@@ -198,23 +258,6 @@ export default function NotificationBell() {
         const handleNewNotification = (data: INotification) => {
             setNotifications(prev => [data, ...prev]);
             setUnreadCount(prev => prev + 1);
-
-            if (data.type === 'first_login_bonus') {
-                toast.success('🎉 Chào mừng đến với CNcode!', {
-                    description: `Bạn đã nhận được ${data.meta?.coins ?? 100} xu để bắt đầu hành trình học tập!`,
-                    duration: 6000,
-                });
-            } else if (data.type === 'streak_bonus') {
-                toast.success('🔥 Thưởng streak!', {
-                    description: data.content,
-                    duration: 5000,
-                });
-            } else {
-                toast.info('Thông báo mới!', {
-                    description: getNotificationMessage(data),
-                    duration: 3000,
-                });
-            }
         };
 
         socket.on('new_notification', handleNewNotification);
@@ -242,7 +285,7 @@ export default function NotificationBell() {
 
             <PopoverContent className="w-[380px] p-0" align="end">
                 {/* Header */}
-                <div className="flex items-center justify-between p-4 border-b">
+                <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-800">
                     <h3 className="font-semibold text-gray-900 dark:text-white">
                         Thông báo
                         {unreadCount > 0 && (
@@ -289,30 +332,7 @@ export default function NotificationBell() {
                                         )}
 
                                         {/* Content */}
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-sm text-gray-800 dark:text-gray-200">
-                                                {getNotificationMessage(notification)}
-                                            </p>
-                                            {notification.meta?.coins && notification.meta.coins > 0 && (
-                                                <p className="text-xs text-yellow-600 font-medium mt-0.5">
-                                                    +{notification.meta.coins} xu
-                                                </p>
-                                            )}
-                                            {notification.content && !isSystem && (
-                                                <p className="text-xs text-gray-500 mt-1 line-clamp-2">
-                                                    {notification.content}
-                                                </p>
-                                            )}
-                                            <div className="flex items-center gap-2 mt-1.5">
-                                                <NotificationIcon type={notification.type} />
-                                                <span className="text-xs text-gray-400">
-                                                    {formatTime(notification.createdAt)}
-                                                </span>
-                                                {!notification.read && (
-                                                    <span className="w-2 h-2 bg-main rounded-full" />
-                                                )}
-                                            </div>
-                                        </div>
+                                        <NotificationContent data={notification} />
                                     </div>
                                 );
 
@@ -328,10 +348,27 @@ export default function NotificationBell() {
                                     );
                                 }
 
+                                // Chỉ link đến bài viết nếu có postSlug hoặc postId
+                                const linkHref = notification.postSlug || notification.postId
+                                    ? `/baiviet/${notification.postSlug || notification.postId}`
+                                    : '#';
+
+                                if (!notification.postSlug && !notification.postId) {
+                                    return (
+                                        <div
+                                            key={notification._id}
+                                            onClick={() => !notification.read && markAsRead(notification._id)}
+                                            className="cursor-default"
+                                        >
+                                            {content}
+                                        </div>
+                                    );
+                                }
+
                                 return (
                                     <Link
                                         key={notification._id}
-                                        href={`/baiviet/${notification.postSlug || notification.postId}`}
+                                        href={linkHref}
                                         onClick={() => {
                                             if (!notification.read) markAsRead(notification._id);
                                             setOpen(false);
@@ -346,7 +383,7 @@ export default function NotificationBell() {
                     )}
 
                     {totalPages > 1 && page < totalPages && (
-                        <div className="p-3 text-center border-t">
+                        <div className="p-3 text-center border-t border-gray-200 dark:border-gray-800">
                             <Button
                                 variant="ghost"
                                 size="sm"

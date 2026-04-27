@@ -3,7 +3,7 @@ import { CreateShortLink } from '@/components/shortlink/CreateShortLink';
 import { MyLinksList } from '@/components/shortlink/MyLinksList';
 
 export const metadata: Metadata = {
-    title: 'Rút gọn link | CNcode',
+    title: 'Rút gọn link',
     description: 'Tạo link rút gọn miễn phí, tùy chỉnh theo ý bạn. Theo dõi lượt click và quản lý link dễ dàng.',
 };
 

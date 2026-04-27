@@ -10,7 +10,9 @@ export interface INotification {
     | 'bookmark'
     | 'first_login_bonus'
     | 'streak_bonus'
-    | 'system';
+    | 'system'
+    | 'role_request_rejected'
+    | 'role_request_approved';
     postId?: string;
     postSlug?: string;
     postTitle?: string;
@@ -25,6 +27,7 @@ export interface INotification {
     meta?: {
         coins?: number;
         streak?: number;
+        adminName?: string;
     };
     read: boolean;
     createdAt: string;
