@@ -14,6 +14,17 @@ import {
     Heart,
     CloseCircle,
     ArrowRight2,
+    ArchiveBox,
+    BoxSearch,
+    Briefcase,
+    Global,
+    GlobalSearch,
+    ArchiveBook,
+    DeviceMessage,
+    Message,
+    Link1,
+    Clock,
+    Coin1,
 } from "iconsax-react";
 import {
     Home as Trangchu,
@@ -56,8 +67,8 @@ function buildSections(
                 { icon: <User variant="Bold" style={iconSize} />, title: "Trang cá nhân", subtitle: "Xem hồ sơ của bạn", href: `/profile/${user.fullname}` },
                 ...(user.role === "admin" ? [{ icon: <Settings variant="Bold" style={iconSize} />, title: "Trang quản trị", subtitle: "Quản lý hệ thống", href: "/admin/dashboard" }] : []),
                 ...(user.role === "teacher" ? [{ icon: <Settings variant="Bold" style={iconSize} />, title: "Trang quản lý", subtitle: "Quản lý lớp học", href: "/teacher/dashboard" }] : []),
-                { icon: <FileText variant="Bold" style={iconSize} />, title: "Lịch sử giao dịch", subtitle: "Xem các giao dịch của bạn", href: "/me/transactions" },
-                { icon: <FileText variant="Bold" style={iconSize} />, title: "Ưu đãi của tôi", subtitle: "Voucher & ưu đãi", href: "/me/voucher" },
+                { icon: <Clock variant="Bold" style={iconSize} />, title: "Lịch sử giao dịch", subtitle: "Xem các giao dịch của bạn", href: "/me/transactions" },
+                { icon: <Coin1 variant="Bold" style={iconSize} />, title: "Ưu đãi của tôi", subtitle: "Voucher & ưu đãi", href: "/me/voucher" },
             ],
         },
         {
@@ -65,18 +76,25 @@ function buildSections(
             items: [
                 { icon: <Heart variant="Bold" style={iconSize} />, title: "Hành trình yêu thương", subtitle: "Câu chuyện của bạn", href: "/hanhtrinhyethuong" },
                 { icon: <NhaHang variant="Bold" style={iconSize} />, title: "Tiếp thị liên kết", subtitle: "Affiliate & hoa hồng", href: "/me/tiepthilienket" },
+                { icon: <ArchiveBox variant="Bold" style={iconSize} />, title: "Góp ý", subtitle: "Chia sẻ ý kiến của bạn", href: "/gopy" },
+                { icon: <BoxSearch variant="Bold" style={iconSize} />, title: "Hỏi đáp (FAQ)", subtitle: "Câu hỏi thường gặp", href: "/faq" },
+                { icon: <Global variant="Bold" style={iconSize} />, title: "Truyền thông chéo", subtitle: "Kết nối & chia sẻ", href: "/truyenthongcheo" },
             ],
         },
         {
             label: "Tiện ích",
             items: [
-                { icon: <Cuahangso variant="Bold" style={iconSize} />, title: "Cửa hàng số", subtitle: "Sản phẩm số của bạn", href: "/me/cuahangso" },
-                { icon: <FileText variant="Bold" style={iconSize} />, title: "Rút gọn liên kết", subtitle: "Sở hữu link ngắn", href: "/rutgonlink" },
+                { icon: <Link1 variant="Bold" style={iconSize} />, title: "Rút gọn liên kết", subtitle: "Sở hữu link ngắn", href: "/rutgonlink" },
+                { icon: <Message variant="Bold" style={iconSize} />, title: "Gia sư AI", subtitle: "Học cùng trí tuệ nhân tạo", href: "/giasu-ai" },
+                { icon: <DeviceMessage variant="Bold" style={iconSize} />, title: "Chat với Admin", subtitle: "Liên hệ hỗ trợ", href: "/chat-admin" },
+                { icon: <Briefcase variant="Bold" style={iconSize} />, title: "CNjobs", subtitle: "Cơ hội việc làm", href: "/cnjobs" },
+                { icon: <GlobalSearch variant="Bold" style={iconSize} />, title: "CNsocial", subtitle: "Mạng xã hội cộng đồng", href: "/cnsocial" },
             ],
         },
         {
             label: "Học tập",
             items: [
+                { icon: <ArchiveBook variant="Bold" style={iconSize} />, title: "CNbooks", subtitle: "Thư viện sách số", href: "/cnbooks" },
                 { icon: <BookOpen variant="Bold" style={iconSize} />, title: "Khoá học của tôi", subtitle: "Tiếp tục học tập", href: "/me/khoahoc" },
                 { icon: <FileText variant="Bold" style={iconSize} />, title: "Bài viết của tôi", subtitle: "Quản lý nội dung", href: "/me/baiviet" },
                 { icon: <Home variant="Bold" style={iconSize} />, title: "Khu vườn học tập", subtitle: "Không gian của bạn", href: "/khuvuonhoctap" },
