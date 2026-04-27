@@ -62,7 +62,6 @@ function NotificationIcon({ type }: { type: INotification['type'] }) {
     }
 }
 
-// Avatar hệ thống cho system/bonus notifications
 function SystemAvatar({ type }: { type: INotification['type'] }) {
     if (type === 'first_login_bonus') {
         return (
@@ -110,7 +109,6 @@ function getNotificationMessage(notification: INotification): string {
     }
 }
 
-// Kiểm tra notification có phải system/bonus không (không có link bài viết)
 const isSystemNotification = (type: INotification['type']) =>
     type === 'first_login_bonus' || type === 'streak_bonus' || type === 'system';
 
@@ -171,21 +169,8 @@ export default function NotificationBell() {
             await notificationApi.markAllAsRead();
             setNotifications(prev => prev.map(n => ({ ...n, read: true })));
             setUnreadCount(0);
-            toast.success('Đã đánh dấu tất cả là đã đọc');
         } catch (error) {
             toast.error('Có lỗi xảy ra');
-        }
-    }, []);
-
-    const deleteNotification = useCallback(async (notificationId: string, e: React.MouseEvent) => {
-        e.stopPropagation();
-        e.preventDefault();
-        try {
-            await notificationApi.deleteNotification(notificationId);
-            setNotifications(prev => prev.filter(n => n._id !== notificationId));
-            toast.success('Đã xóa thông báo');
-        } catch (error) {
-            toast.error('Xóa thất bại');
         }
     }, []);
 
@@ -195,30 +180,25 @@ export default function NotificationBell() {
         }
     };
 
-    // Fetch khi mở popover lần đầu
     useEffect(() => {
         if (open && !hasFetched) {
             fetchNotifications(1);
         }
     }, [open, hasFetched, fetchNotifications]);
 
-    // Fetch unread count khi user login
     useEffect(() => {
         if (user?._id) {
             fetchUnreadCount();
         }
     }, [user?._id, fetchUnreadCount]);
 
-    // ✅ Lắng nghe socket - new_notification từ DB (không dùng localStorage)
     useEffect(() => {
         if (!socket || !isConnected || !user?._id) return;
 
         const handleNewNotification = (data: INotification) => {
-            // Thêm vào đầu danh sách (đã là object từ DB)
             setNotifications(prev => [data, ...prev]);
             setUnreadCount(prev => prev + 1);
 
-            // Toast tuỳ theo loại
             if (data.type === 'first_login_bonus') {
                 toast.success('🎉 Chào mừng đến với CNcode!', {
                     description: `Bạn đã nhận được ${data.meta?.coins ?? 100} xu để bắt đầu hành trình học tập!`,
@@ -293,7 +273,7 @@ export default function NotificationBell() {
                             {notifications.map((notification) => {
                                 const isSystem = isSystemNotification(notification.type);
                                 const content = (
-                                    <div className={`flex gap-3 p-4 ${!notification.read ? 'bg-blue-50/50 dark:bg-blue-950/20' : ''} hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group`}>
+                                    <div className={`flex gap-3 p-4 ${!notification.read ? 'bg-blue-50/50 dark:bg-blue-950/20' : ''} hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors`}>
                                         {/* Avatar */}
                                         {isSystem ? (
                                             <SystemAvatar type={notification.type} />
@@ -301,7 +281,7 @@ export default function NotificationBell() {
                                             <div className="flex-shrink-0">
                                                 <Avatar className="w-10 h-10">
                                                     <AvatarImage src={notification.senderId?.avatar} />
-                                                    <AvatarFallback className="bg-main/10 text-main text-sm">
+                                                    <AvatarFallback className="bg-main text-white text-sm">
                                                         {notification.senderId?.fullName?.charAt(0) || 'N'}
                                                     </AvatarFallback>
                                                 </Avatar>
@@ -313,7 +293,6 @@ export default function NotificationBell() {
                                             <p className="text-sm text-gray-800 dark:text-gray-200">
                                                 {getNotificationMessage(notification)}
                                             </p>
-                                            {/* Hiển thị coin bonus */}
                                             {notification.meta?.coins && notification.meta.coins > 0 && (
                                                 <p className="text-xs text-yellow-600 font-medium mt-0.5">
                                                     +{notification.meta.coins} xu
@@ -330,23 +309,13 @@ export default function NotificationBell() {
                                                     {formatTime(notification.createdAt)}
                                                 </span>
                                                 {!notification.read && (
-                                                    <span className="w-2 h-2 bg-blue-500 rounded-full" />
+                                                    <span className="w-2 h-2 bg-main rounded-full" />
                                                 )}
                                             </div>
                                         </div>
-
-                                        {/* Delete button */}
-                                        <button
-                                            onClick={(e) => deleteNotification(notification._id, e)}
-                                            className="flex-shrink-0 p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100"
-                                            aria-label="Xóa"
-                                        >
-                                            <Trash2 className="w-3.5 h-3.5" />
-                                        </button>
                                     </div>
                                 );
 
-                                // System notifications không có link
                                 if (isSystem) {
                                     return (
                                         <div
