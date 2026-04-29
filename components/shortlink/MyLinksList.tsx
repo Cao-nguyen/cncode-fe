@@ -124,7 +124,7 @@ function LinkCard({
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                     <CopyButton text={link.shortUrl} />
                     <a
-                        href={link.originalUrl}
+                        href={link.shortUrl}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
