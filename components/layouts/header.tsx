@@ -135,7 +135,6 @@ function DesktopUserDrawer({ user, onLogout, onClose, open }: DrawerProps) {
     const sections = buildSections(user, iconSize);
     const badgeClass = ROLE_BADGE[user.role] ?? "bg-gray-100 text-gray-500";
 
-    // Close on outside click
     useEffect(() => {
         if (!open) return;
         const handler = (e: MouseEvent) => {
@@ -147,7 +146,6 @@ function DesktopUserDrawer({ user, onLogout, onClose, open }: DrawerProps) {
         return () => { clearTimeout(t); document.removeEventListener("mousedown", handler); };
     }, [open, onClose]);
 
-    // Close on Escape
     useEffect(() => {
         const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
         document.addEventListener("keydown", handler);
@@ -156,7 +154,6 @@ function DesktopUserDrawer({ user, onLogout, onClose, open }: DrawerProps) {
 
     return (
         <>
-            {/* Backdrop */}
             <div
                 onClick={onClose}
                 aria-hidden="true"
@@ -171,7 +168,6 @@ function DesktopUserDrawer({ user, onLogout, onClose, open }: DrawerProps) {
                 }}
             />
 
-            {/* Drawer */}
             <div
                 ref={drawerRef}
                 style={{
@@ -191,7 +187,6 @@ function DesktopUserDrawer({ user, onLogout, onClose, open }: DrawerProps) {
                     willChange: "transform",
                 }}
             >
-                {/* Header */}
                 <div style={{ padding: "20px 16px 16px", borderBottom: "1px solid #f5f5f5", flexShrink: 0 }}>
                     <div className="flex items-center gap-3">
                         <div className="relative flex-shrink-0">
@@ -220,7 +215,6 @@ function DesktopUserDrawer({ user, onLogout, onClose, open }: DrawerProps) {
                     </div>
                 </div>
 
-                {/* Scrollable body */}
                 <div className="no-scrollbar flex-1 overflow-y-auto" style={{ padding: "12px 12px 20px" }}>
                     {sections.map((section) => (
                         <div key={section.label} className="mb-2.5">
@@ -253,7 +247,6 @@ function DesktopUserDrawer({ user, onLogout, onClose, open }: DrawerProps) {
                         </div>
                     ))}
 
-                    {/* Logout */}
                     <button
                         onClick={() => { onClose(); onLogout(); }}
                         className="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl hover:bg-red-100 transition-colors"
@@ -273,7 +266,9 @@ function DesktopUserDrawer({ user, onLogout, onClose, open }: DrawerProps) {
     );
 }
 
-// ─── Mobile Bottom Sheet ──────────────────────────────────────────────────────
+// ─── Mobile Bottom Sheet with TikTok-style drag ──────────────────────────────
+
+// ─── Mobile Bottom Sheet with TikTok-style drag ──────────────────────────────
 
 interface MobileSheetProps {
     user: { fullname: string; username: string; avatar: string; role: string };
@@ -288,8 +283,10 @@ function MobileUserSheet({ user, onLogout, onClose, open }: MobileSheetProps) {
     const badgeClass = ROLE_BADGE[user.role] ?? "bg-gray-100 text-gray-500";
     const sheetRef = useRef<HTMLDivElement>(null);
     const startY = useRef<number>(0);
-    const currentY = useRef<number>(0);
+    const currentTranslateY = useRef<number>(0);
     const [isDragging, setIsDragging] = useState(false);
+    const [translateY, setTranslateY] = useState(0);
+    const [isClosing, setIsClosing] = useState(false);
 
     // Lock body scroll when open
     useEffect(() => {
@@ -298,12 +295,16 @@ function MobileUserSheet({ user, onLogout, onClose, open }: MobileSheetProps) {
             document.body.style.position = "fixed";
             document.body.style.top = `-${scrollY}px`;
             document.body.style.width = "100%";
+            setTranslateY(0);
+            setIsClosing(false);
         } else {
             const scrollY = document.body.style.top;
             document.body.style.position = "";
             document.body.style.top = "";
             document.body.style.width = "";
             if (scrollY) window.scrollTo(0, parseInt(scrollY) * -1);
+            setTranslateY(0);
+            setIsDragging(false);
         }
         return () => {
             const scrollY = document.body.style.top;
@@ -316,48 +317,103 @@ function MobileUserSheet({ user, onLogout, onClose, open }: MobileSheetProps) {
 
     // Handle touch start
     const handleTouchStart = (e: React.TouchEvent) => {
+        if (isClosing) return;
         startY.current = e.touches[0].clientY;
         setIsDragging(true);
     };
 
-    // Handle touch move - close when dragging down
+    // Handle touch move - follow finger smoothly
     const handleTouchMove = (e: React.TouchEvent) => {
-        if (!isDragging) return;
-        currentY.current = e.touches[0].clientY;
-        const diff = currentY.current - startY.current;
+        if (!isDragging || isClosing) return;
 
-        // If dragged down more than 100px, close the sheet
-        if (diff > 100) {
-            onClose();
-            setIsDragging(false);
+        const currentY = e.touches[0].clientY;
+        const diff = currentY - startY.current;
+
+        // Only allow dragging down (positive diff)
+        if (diff > 0) {
+            // Smooth follow with damping
+            const newTranslateY = Math.min(diff, 300);
+            setTranslateY(newTranslateY);
+            currentTranslateY.current = newTranslateY;
         }
     };
 
+    // Handle touch end - determine if should close or bounce back
     const handleTouchEnd = () => {
+        if (!isDragging || isClosing) {
+            setIsDragging(false);
+            return;
+        }
+
         setIsDragging(false);
+
+        // Close if dragged more than 100px
+        if (currentTranslateY.current > 100) {
+            setIsClosing(true);
+            setTranslateY(500);
+            setTimeout(() => {
+                onClose();
+                setIsClosing(false);
+                setTranslateY(0);
+                currentTranslateY.current = 0;
+            }, 300);
+        } else {
+            // Bounce back animation
+            setTranslateY(0);
+            currentTranslateY.current = 0;
+        }
     };
+
+    // Get transform style based on drag state
+    const getTransformStyle = () => {
+        if (isClosing) {
+            return "translateY(100%)";
+        }
+        if (translateY > 0) {
+            return `translateY(${translateY}px)`;
+        }
+        return "translateY(0)";
+    };
+
+    // Determine if transition should be applied
+    const shouldTransition = !isDragging && !isClosing;
 
     return (
         <>
+            {/* Backdrop with fade based on drag */}
             <div
-                className={`fixed inset-0 z-[60] bg-black/40 transition-opacity duration-300 ${open ? "opacity-100" : "opacity-0 pointer-events-none"}`}
-                onClick={onClose}
+                className={`fixed inset-0 z-[60] transition-opacity duration-300 ${open && !isClosing ? "bg-black/40" : "bg-black/0 pointer-events-none"
+                    }`}
+                style={{
+                    opacity: open && !isClosing ? Math.max(0, 1 - translateY / 500) : 0,
+                    pointerEvents: open && !isClosing ? "auto" : "none",
+                }}
+                onClick={() => {
+                    if (!isClosing) {
+                        setIsClosing(true);
+                        setTranslateY(500);
+                        setTimeout(() => onClose(), 300);
+                    }
+                }}
             />
+
+            {/* Draggable Sheet */}
             <div
                 ref={sheetRef}
                 className="fixed bottom-0 left-0 right-0 z-[70] bg-white rounded-t-3xl flex flex-col"
                 style={{
-                    transform: open ? "translateY(0)" : "translateY(100%)",
-                    transition: "transform 0.3s cubic-bezier(0.32,0.72,0,1)",
+                    transform: getTransformStyle(),
+                    transition: shouldTransition ? "transform 0.3s cubic-bezier(0.32,0.72,0,1)" : "none",
                     maxHeight: "85dvh",
                     willChange: "transform",
+                    touchAction: "pan-y",
                 }}
                 onTouchStart={handleTouchStart}
                 onTouchMove={handleTouchMove}
                 onTouchEnd={handleTouchEnd}
             >
-                {/* Drag handle - can drag to close */}
-                <div className="flex justify-center pt-3 pb-1 flex-shrink-0 cursor-grab active:cursor-grabbing">
+                {/* Drag handle - visual indicator only */}
+                <div className="flex justify-center pt-3 pb-1 flex-shrink-0">
                     <div className="w-10 h-1 bg-gray-300 rounded-full" />
                 </div>
 
@@ -379,14 +435,21 @@ function MobileUserSheet({ user, onLogout, onClose, open }: MobileSheetProps) {
                             {user.role}
                         </span>
                     </div>
-                    <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 flex-shrink-0">
+                    <button
+                        onClick={() => {
+                            setIsClosing(true);
+                            setTranslateY(500);
+                            setTimeout(() => onClose(), 300);
+                        }}
+                        className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 flex-shrink-0"
+                    >
                         <CloseCircle variant="Bold" style={{ width: 20, height: 20 }} />
                     </button>
                 </div>
 
                 <div className="w-full h-px bg-gray-100 flex-shrink-0" />
 
-                {/* Content */}
+                {/* Scrollable Content */}
                 <div className="no-scrollbar overflow-y-auto flex-1 pb-6">
                     {sections.map((section) => (
                         <div key={section.label} className="px-4 pt-4">
@@ -398,7 +461,11 @@ function MobileUserSheet({ user, onLogout, onClose, open }: MobileSheetProps) {
                                     <Link
                                         key={item.href}
                                         href={item.href}
-                                        onClick={onClose}
+                                        onClick={() => {
+                                            setIsClosing(true);
+                                            setTranslateY(500);
+                                            setTimeout(() => onClose(), 300);
+                                        }}
                                         className={`flex items-center gap-3 px-4 py-3 active:bg-gray-100 transition-colors ${idx < section.items.length - 1 ? "border-b border-gray-100" : ""}`}
                                     >
                                         <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center text-main shadow-sm flex-shrink-0">
@@ -418,7 +485,11 @@ function MobileUserSheet({ user, onLogout, onClose, open }: MobileSheetProps) {
                     {/* Logout */}
                     <div className="px-4 pt-4">
                         <button
-                            onClick={() => { onClose(); onLogout(); }}
+                            onClick={() => {
+                                setIsClosing(true);
+                                setTranslateY(500);
+                                setTimeout(() => { onClose(); onLogout(); }, 300);
+                            }}
                             className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl active:bg-red-100 transition-colors"
                             style={{ background: "#fff1f2", border: "1px solid #fecdd3" }}
                         >
@@ -446,16 +517,11 @@ export default function Header() {
     const { socket, isConnected } = useSocket();
     const [sheetOpen, setSheetOpen] = useState(false);
     const [drawerOpen, setDrawerOpen] = useState(false);
-    const [localCoins, setLocalCoins] = useState(coins);
-    const [localStreak, setLocalStreak] = useState(user?.streak || 0);
-    const [localRole, setLocalRole] = useState(user?.role || "user");
 
-    // Update local state when auth store changes
-    useEffect(() => {
-        setLocalCoins(coins);
-        setLocalStreak(user?.streak || 0);
-        setLocalRole(user?.role || "user");
-    }, [coins, user?.streak, user?.role]);
+    // Use derived values directly from store instead of local state
+    const displayCoins = user && token ? (coins ?? 0) : 0;
+    const displayStreak = user && token ? (user?.streak ?? 0) : 0;
+    const displayRole = user?.role || "user";
 
     // ========== REALTIME SOCKET HANDLERS ==========
 
@@ -465,9 +531,8 @@ export default function Header() {
 
         const handleCoinsUpdated = (data: { userId: string; coins: number; amount?: number }) => {
             if (user?._id === data.userId) {
-                const diff = data.coins - localCoins;
+                const diff = data.coins - (user?.coins || 0);
                 updateCoins(diff);
-                setLocalCoins(data.coins);
                 if (diff > 0) {
                     toast.success(`✨ +${diff} xu!`, { duration: 2000 });
                 } else if (diff < 0) {
@@ -478,7 +543,7 @@ export default function Header() {
 
         socket.on("coins_updated", handleCoinsUpdated);
         return () => { socket.off("coins_updated", handleCoinsUpdated); };
-    }, [socket, isConnected, user?._id, localCoins, updateCoins]);
+    }, [socket, isConnected, user?._id, user?.coins, updateCoins]);
 
     // Listen for streak updates
     useEffect(() => {
@@ -487,11 +552,9 @@ export default function Header() {
         const handleStreakUpdated = (data: { userId: string; streak: number; totalCoins: number }) => {
             if (user?._id === data.userId) {
                 updateStreak(data.streak);
-                setLocalStreak(data.streak);
-                if (data.totalCoins !== localCoins) {
-                    const diff = data.totalCoins - localCoins;
+                const diff = data.totalCoins - (user?.coins || 0);
+                if (diff !== 0) {
                     updateCoins(diff);
-                    setLocalCoins(data.totalCoins);
                 }
                 toast.success(`🔥 Streak: ${data.streak} ngày liên tiếp!`, { duration: 2000 });
             }
@@ -499,15 +562,14 @@ export default function Header() {
 
         socket.on("streak_updated", handleStreakUpdated);
         return () => { socket.off("streak_updated", handleStreakUpdated); };
-    }, [socket, isConnected, user?._id, localCoins, updateStreak, updateCoins]);
+    }, [socket, isConnected, user?._id, user?.coins, updateStreak, updateCoins]);
 
     // Listen for role changes
     useEffect(() => {
         if (!socket || !isConnected) return;
 
         const handleRoleChanged = (data: { userId: string; newRole: string; oldRole: string }) => {
-            if (user?._id === data.userId && data.newRole !== localRole) {
-                setLocalRole(data.newRole as "user" | "teacher" | "admin");
+            if (user?._id === data.userId && data.newRole !== user?.role) {
                 if (user) {
                     setUser({ ...user, role: data.newRole as "user" | "teacher" | "admin" });
                 }
@@ -518,7 +580,7 @@ export default function Header() {
 
         socket.on("role_changed", handleRoleChanged);
         return () => { socket.off("role_changed", handleRoleChanged); };
-    }, [socket, isConnected, user?._id, localRole, user, setUser]);
+    }, [socket, isConnected, user, setUser]);
 
     const handleLogout = async () => {
         await logout();
@@ -550,11 +612,8 @@ export default function Header() {
         fullname: user.fullName || "Người dùng",
         username: user.username || "",
         avatar: user.avatar || "/images/avatar.png",
-        role: localRole,
+        role: displayRole,
     } : null;
-
-    const displayCoins = displayUser ? localCoins : 0;
-    const displayStreak = displayUser ? localStreak : 0;
 
     return (
         <>
@@ -562,14 +621,12 @@ export default function Header() {
             <header className="hidden lg:block bg-white w-full h-15 fixed top-0 z-50 shadow-sm">
                 <div className="flex h-full justify-between items-center">
 
-                    {/* Logo */}
                     <div className="ml-1.5 lg:ml-4">
                         <Link href="/">
                             <Image src="/images/logo.png" alt="Logo CNcode" width={100} height={55} priority />
                         </Link>
                     </div>
 
-                    {/* Nav */}
                     <nav className="flex h-full items-center">
                         {menu.map((m) => {
                             const isActive = pathname === m.link;
@@ -589,7 +646,6 @@ export default function Header() {
                         })}
                     </nav>
 
-                    {/* Right: coins, streak, bell, avatar */}
                     <div className="mr-1.5 lg:mr-4 flex gap-3 items-center">
                         {displayUser && (
                             <div className="flex items-center gap-5 mr-1">
