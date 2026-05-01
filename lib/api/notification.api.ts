@@ -52,4 +52,15 @@ export const notificationApi = {
             headers: authHeaders(),
         });
     },
+
+    sendToUsers: async (userIds: string[], data: { title: string; content: string; type: string; meta: Record<string, unknown> }) => {
+        const response = await fetch(`${API_URL}/api/notifications/send-to-users`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${localStorage.getItem('token')}`
+            },
+            body: JSON.stringify({ userIds, ...data })
+        });
+    },
 };

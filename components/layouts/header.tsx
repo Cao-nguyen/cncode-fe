@@ -1,9 +1,9 @@
-'use client'
+'use client';
 
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import {
     User,
     Setting2 as Settings,
@@ -41,6 +41,7 @@ import type { Icon } from "iconsax-react";
 import NotificationBell from "./NotificationBell";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useAuthStore } from "@/store/auth.store";
+import { useSocket } from "@/providers/socket.provider";
 import { toast } from "sonner";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -155,7 +156,7 @@ function DesktopUserDrawer({ user, onLogout, onClose, open }: DrawerProps) {
 
     return (
         <>
-            {/* Backdrop — opacity only, NO blur, NO transition-all */}
+            {/* Backdrop */}
             <div
                 onClick={onClose}
                 aria-hidden="true"
@@ -170,7 +171,7 @@ function DesktopUserDrawer({ user, onLogout, onClose, open }: DrawerProps) {
                 }}
             />
 
-            {/* Drawer — transform only, willChange:transform → own composite layer */}
+            {/* Drawer */}
             <div
                 ref={drawerRef}
                 style={{
@@ -285,7 +286,12 @@ function MobileUserSheet({ user, onLogout, onClose, open }: MobileSheetProps) {
     const iconSize = { width: 20, height: 20 };
     const sections = buildSections(user, iconSize);
     const badgeClass = ROLE_BADGE[user.role] ?? "bg-gray-100 text-gray-500";
+    const sheetRef = useRef<HTMLDivElement>(null);
+    const startY = useRef<number>(0);
+    const currentY = useRef<number>(0);
+    const [isDragging, setIsDragging] = useState(false);
 
+    // Lock body scroll when open
     useEffect(() => {
         if (open) {
             const scrollY = window.scrollY;
@@ -308,6 +314,29 @@ function MobileUserSheet({ user, onLogout, onClose, open }: MobileSheetProps) {
         };
     }, [open]);
 
+    // Handle touch start
+    const handleTouchStart = (e: React.TouchEvent) => {
+        startY.current = e.touches[0].clientY;
+        setIsDragging(true);
+    };
+
+    // Handle touch move - close when dragging down
+    const handleTouchMove = (e: React.TouchEvent) => {
+        if (!isDragging) return;
+        currentY.current = e.touches[0].clientY;
+        const diff = currentY.current - startY.current;
+
+        // If dragged down more than 100px, close the sheet
+        if (diff > 100) {
+            onClose();
+            setIsDragging(false);
+        }
+    };
+
+    const handleTouchEnd = () => {
+        setIsDragging(false);
+    };
+
     return (
         <>
             <div
@@ -315,6 +344,7 @@ function MobileUserSheet({ user, onLogout, onClose, open }: MobileSheetProps) {
                 onClick={onClose}
             />
             <div
+                ref={sheetRef}
                 className="fixed bottom-0 left-0 right-0 z-[70] bg-white rounded-t-3xl flex flex-col"
                 style={{
                     transform: open ? "translateY(0)" : "translateY(100%)",
@@ -322,10 +352,13 @@ function MobileUserSheet({ user, onLogout, onClose, open }: MobileSheetProps) {
                     maxHeight: "85dvh",
                     willChange: "transform",
                 }}
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
             >
-                {/* Drag handle */}
-                <div className="flex justify-center pt-3 pb-1 flex-shrink-0">
-                    <div className="w-10 h-1 bg-gray-200 rounded-full" />
+                {/* Drag handle - can drag to close */}
+                <div className="flex justify-center pt-3 pb-1 flex-shrink-0 cursor-grab active:cursor-grabbing">
+                    <div className="w-10 h-1 bg-gray-300 rounded-full" />
                 </div>
 
                 {/* Header */}
@@ -409,12 +442,86 @@ function MobileUserSheet({ user, onLogout, onClose, open }: MobileSheetProps) {
 export default function Header() {
     const pathname = usePathname();
     const router = useRouter();
-    const { user, logout, token, coins } = useAuthStore();
+    const { user, logout, token, coins, updateCoins, updateStreak, setUser } = useAuthStore();
+    const { socket, isConnected } = useSocket();
     const [sheetOpen, setSheetOpen] = useState(false);
     const [drawerOpen, setDrawerOpen] = useState(false);
+    const [localCoins, setLocalCoins] = useState(coins);
+    const [localStreak, setLocalStreak] = useState(user?.streak || 0);
+    const [localRole, setLocalRole] = useState(user?.role || "user");
 
-    const handleLogout = () => {
-        logout();
+    // Update local state when auth store changes
+    useEffect(() => {
+        setLocalCoins(coins);
+        setLocalStreak(user?.streak || 0);
+        setLocalRole(user?.role || "user");
+    }, [coins, user?.streak, user?.role]);
+
+    // ========== REALTIME SOCKET HANDLERS ==========
+
+    // Listen for coins updates
+    useEffect(() => {
+        if (!socket || !isConnected) return;
+
+        const handleCoinsUpdated = (data: { userId: string; coins: number; amount?: number }) => {
+            if (user?._id === data.userId) {
+                const diff = data.coins - localCoins;
+                updateCoins(diff);
+                setLocalCoins(data.coins);
+                if (diff > 0) {
+                    toast.success(`✨ +${diff} xu!`, { duration: 2000 });
+                } else if (diff < 0) {
+                    toast.info(`📉 ${diff} xu`, { duration: 2000 });
+                }
+            }
+        };
+
+        socket.on("coins_updated", handleCoinsUpdated);
+        return () => { socket.off("coins_updated", handleCoinsUpdated); };
+    }, [socket, isConnected, user?._id, localCoins, updateCoins]);
+
+    // Listen for streak updates
+    useEffect(() => {
+        if (!socket || !isConnected) return;
+
+        const handleStreakUpdated = (data: { userId: string; streak: number; totalCoins: number }) => {
+            if (user?._id === data.userId) {
+                updateStreak(data.streak);
+                setLocalStreak(data.streak);
+                if (data.totalCoins !== localCoins) {
+                    const diff = data.totalCoins - localCoins;
+                    updateCoins(diff);
+                    setLocalCoins(data.totalCoins);
+                }
+                toast.success(`🔥 Streak: ${data.streak} ngày liên tiếp!`, { duration: 2000 });
+            }
+        };
+
+        socket.on("streak_updated", handleStreakUpdated);
+        return () => { socket.off("streak_updated", handleStreakUpdated); };
+    }, [socket, isConnected, user?._id, localCoins, updateStreak, updateCoins]);
+
+    // Listen for role changes
+    useEffect(() => {
+        if (!socket || !isConnected) return;
+
+        const handleRoleChanged = (data: { userId: string; newRole: string; oldRole: string }) => {
+            if (user?._id === data.userId && data.newRole !== localRole) {
+                setLocalRole(data.newRole as "user" | "teacher" | "admin");
+                if (user) {
+                    setUser({ ...user, role: data.newRole as "user" | "teacher" | "admin" });
+                }
+                const roleLabel = data.newRole === "teacher" ? "Giáo viên" : data.newRole === "admin" ? "Quản trị viên" : "Người dùng";
+                toast.info(`🔄 Vai trò của bạn đã được cập nhật thành ${roleLabel}`, { duration: 3000 });
+            }
+        };
+
+        socket.on("role_changed", handleRoleChanged);
+        return () => { socket.off("role_changed", handleRoleChanged); };
+    }, [socket, isConnected, user?._id, localRole, user, setUser]);
+
+    const handleLogout = async () => {
+        await logout();
         toast.success("Đã đăng xuất", { description: "Hẹn gặp lại bạn sau!", duration: 2000 });
         router.push("/");
     };
@@ -443,11 +550,11 @@ export default function Header() {
         fullname: user.fullName || "Người dùng",
         username: user.username || "",
         avatar: user.avatar || "/images/avatar.png",
-        role: user.role || "user",
+        role: localRole,
     } : null;
 
-    const displayCoins = displayUser ? (coins ?? 0) : 0;
-    const displayStreak = displayUser ? (user?.streak ?? 0) : 0;
+    const displayCoins = displayUser ? localCoins : 0;
+    const displayStreak = displayUser ? localStreak : 0;
 
     return (
         <>

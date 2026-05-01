@@ -147,6 +147,22 @@ export function SocketProvider({ children }: { children: ReactNode }) {
         return () => { socketState.off('streak_updated', handleStreakUpdated); };
     }, [socketState, isConnected, updateStreak, updateCoins]);
 
+    useEffect(() => {
+        if (!socketState || !isConnected) return;
+
+        const handleRoleChanged = (data: { newRole: string }) => {
+            const currentUser = useAuthStore.getState().user;
+            if (currentUser) {
+                useAuthStore.getState().setUser({ ...currentUser, role: data.newRole as 'user' | 'teacher' | 'admin' });
+            }
+            // Reload để áp dụng quyền mới
+            window.location.href = '/';
+        };
+
+        socketState.on('role_changed', handleRoleChanged);
+        return () => { socketState.off('role_changed', handleRoleChanged); };
+    }, [socketState, isConnected]);
+
     // Post room events
     useEffect(() => {
         if (!socketState) return;

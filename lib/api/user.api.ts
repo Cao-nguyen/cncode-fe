@@ -303,5 +303,16 @@ export const userApi = {
             }
         });
         return handleResponse<null>(response);
-    }
+    },
+
+    deleteOwnAccount: async (token: string): Promise<IApiResponse<null>> => {
+        const response = await fetch(`${API_URL}/api/users/delete-account`, {
+            method: 'DELETE',
+            headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        return handleResponse<null>(response);
+    },
 };
