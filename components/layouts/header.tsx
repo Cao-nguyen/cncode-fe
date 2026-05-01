@@ -286,54 +286,65 @@ function MobileUserSheet({ user, onLogout, onClose, open }: MobileSheetProps) {
     const currentTranslateY = useRef<number>(0);
     const [translateY, setTranslateY] = useState(0);
     const [isDragging, setIsDragging] = useState(false);
-    const [internalOpen, setInternalOpen] = useState(open);
+    const [isClosing, setIsClosing] = useState(false);
+    const [isOpen, setIsOpen] = useState(open);
 
-    // Sync internalOpen with prop
+    // Sync isOpen with prop
     useEffect(() => {
-        if (open) {
-            setInternalOpen(true);
-            setTranslateY(0);
-            currentTranslateY.current = 0;
-            // Lock body scroll
+        setIsOpen(open);
+    }, [open]);
+
+    // Handle body scroll lock/unlock (no setState)
+    useEffect(() => {
+        if (isOpen) {
             const scrollY = window.scrollY;
             document.body.style.position = "fixed";
             document.body.style.top = `-${scrollY}px`;
             document.body.style.width = "100%";
         } else {
-            setInternalOpen(false);
-            setTranslateY(0);
-            currentTranslateY.current = 0;
-            setIsDragging(false);
-            // Unlock body scroll
             const scrollY = document.body.style.top;
             document.body.style.position = "";
             document.body.style.top = "";
             document.body.style.width = "";
             if (scrollY) window.scrollTo(0, parseInt(scrollY) * -1);
         }
-    }, [open]);
 
-    // Cleanup on unmount
-    useEffect(() => {
         return () => {
-            const scrollY = document.body.style.top;
-            document.body.style.position = "";
-            document.body.style.top = "";
-            document.body.style.width = "";
-            if (scrollY) window.scrollTo(0, parseInt(scrollY) * -1);
+            if (!isOpen) {
+                const scrollY = document.body.style.top;
+                document.body.style.position = "";
+                document.body.style.top = "";
+                document.body.style.width = "";
+                if (scrollY) window.scrollTo(0, parseInt(scrollY) * -1);
+            }
         };
+    }, [isOpen]);
+
+    // Reset animation states when open becomes true
+    const resetAnimationStates = useCallback(() => {
+        setTranslateY(0);
+        setIsClosing(false);
+        setIsDragging(false);
+        currentTranslateY.current = 0;
     }, []);
+
+    // Call reset when open changes
+    useEffect(() => {
+        if (isOpen) {
+            resetAnimationStates();
+        }
+    }, [isOpen, resetAnimationStates]);
 
     // Handle touch start
     const handleTouchStart = (e: React.TouchEvent) => {
-        if (!internalOpen) return;
+        if (isClosing || !isOpen) return;
         startY.current = e.touches[0].clientY;
         setIsDragging(true);
     };
 
     // Handle touch move - follow finger smoothly
     const handleTouchMove = (e: React.TouchEvent) => {
-        if (!isDragging || !internalOpen) return;
+        if (!isDragging || isClosing || !isOpen) return;
 
         const currentY = e.touches[0].clientY;
         const diff = currentY - startY.current;
@@ -349,7 +360,7 @@ function MobileUserSheet({ user, onLogout, onClose, open }: MobileSheetProps) {
 
     // Handle touch end - determine if should close or bounce back
     const handleTouchEnd = () => {
-        if (!isDragging || !internalOpen) {
+        if (!isDragging || isClosing || !isOpen) {
             setIsDragging(false);
             return;
         }
@@ -367,19 +378,17 @@ function MobileUserSheet({ user, onLogout, onClose, open }: MobileSheetProps) {
     };
 
     const handleClose = () => {
+        if (isClosing) return;
+        setIsClosing(true);
         setTranslateY(500);
         setTimeout(() => {
             onClose();
-            setInternalOpen(false);
-            setTranslateY(0);
-            currentTranslateY.current = 0;
-            setIsDragging(false);
         }, 300);
     };
 
     // Get transform style based on drag state
     const getTransformStyle = () => {
-        if (!internalOpen) {
+        if (!isOpen || isClosing) {
             return "translateY(100%)";
         }
         if (translateY > 0) {
@@ -389,19 +398,19 @@ function MobileUserSheet({ user, onLogout, onClose, open }: MobileSheetProps) {
     };
 
     // Determine if transition should be applied
-    const shouldTransition = !isDragging && internalOpen;
+    const shouldTransition = !isDragging && !isClosing && isOpen;
 
-    if (!internalOpen && !open) return null;
+    if (!isOpen) return null;
 
     return (
         <>
             {/* Backdrop */}
             <div
-                className={`fixed inset-0 z-[60] transition-opacity duration-300`}
+                className="fixed inset-0 z-[60] transition-opacity duration-300"
                 style={{
                     backgroundColor: "rgba(0,0,0,0.4)",
-                    opacity: internalOpen ? Math.max(0, 1 - translateY / 500) : 0,
-                    pointerEvents: internalOpen ? "auto" : "none",
+                    opacity: isClosing ? 0 : Math.max(0, 1 - translateY / 500),
+                    pointerEvents: isOpen && !isClosing ? "auto" : "none",
                 }}
                 onClick={handleClose}
             />
