@@ -284,28 +284,37 @@ function MobileUserSheet({ user, onLogout, onClose, open }: MobileSheetProps) {
     const sheetRef = useRef<HTMLDivElement>(null);
     const startY = useRef<number>(0);
     const currentTranslateY = useRef<number>(0);
-    const [isDragging, setIsDragging] = useState(false);
     const [translateY, setTranslateY] = useState(0);
-    const [isClosing, setIsClosing] = useState(false);
+    const [isDragging, setIsDragging] = useState(false);
+    const [internalOpen, setInternalOpen] = useState(open);
 
-    // Lock body scroll when open
+    // Sync internalOpen with prop
     useEffect(() => {
         if (open) {
+            setInternalOpen(true);
+            setTranslateY(0);
+            currentTranslateY.current = 0;
+            // Lock body scroll
             const scrollY = window.scrollY;
             document.body.style.position = "fixed";
             document.body.style.top = `-${scrollY}px`;
             document.body.style.width = "100%";
-            setTranslateY(0);
-            setIsClosing(false);
         } else {
+            setInternalOpen(false);
+            setTranslateY(0);
+            currentTranslateY.current = 0;
+            setIsDragging(false);
+            // Unlock body scroll
             const scrollY = document.body.style.top;
             document.body.style.position = "";
             document.body.style.top = "";
             document.body.style.width = "";
             if (scrollY) window.scrollTo(0, parseInt(scrollY) * -1);
-            setTranslateY(0);
-            setIsDragging(false);
         }
+    }, [open]);
+
+    // Cleanup on unmount
+    useEffect(() => {
         return () => {
             const scrollY = document.body.style.top;
             document.body.style.position = "";
@@ -313,18 +322,18 @@ function MobileUserSheet({ user, onLogout, onClose, open }: MobileSheetProps) {
             document.body.style.width = "";
             if (scrollY) window.scrollTo(0, parseInt(scrollY) * -1);
         };
-    }, [open]);
+    }, []);
 
     // Handle touch start
     const handleTouchStart = (e: React.TouchEvent) => {
-        if (isClosing) return;
+        if (!internalOpen) return;
         startY.current = e.touches[0].clientY;
         setIsDragging(true);
     };
 
     // Handle touch move - follow finger smoothly
     const handleTouchMove = (e: React.TouchEvent) => {
-        if (!isDragging || isClosing) return;
+        if (!isDragging || !internalOpen) return;
 
         const currentY = e.touches[0].clientY;
         const diff = currentY - startY.current;
@@ -340,7 +349,7 @@ function MobileUserSheet({ user, onLogout, onClose, open }: MobileSheetProps) {
 
     // Handle touch end - determine if should close or bounce back
     const handleTouchEnd = () => {
-        if (!isDragging || isClosing) {
+        if (!isDragging || !internalOpen) {
             setIsDragging(false);
             return;
         }
@@ -349,14 +358,7 @@ function MobileUserSheet({ user, onLogout, onClose, open }: MobileSheetProps) {
 
         // Close if dragged more than 100px
         if (currentTranslateY.current > 100) {
-            setIsClosing(true);
-            setTranslateY(500);
-            setTimeout(() => {
-                onClose();
-                setIsClosing(false);
-                setTranslateY(0);
-                currentTranslateY.current = 0;
-            }, 300);
+            handleClose();
         } else {
             // Bounce back animation
             setTranslateY(0);
@@ -364,9 +366,20 @@ function MobileUserSheet({ user, onLogout, onClose, open }: MobileSheetProps) {
         }
     };
 
+    const handleClose = () => {
+        setTranslateY(500);
+        setTimeout(() => {
+            onClose();
+            setInternalOpen(false);
+            setTranslateY(0);
+            currentTranslateY.current = 0;
+            setIsDragging(false);
+        }, 300);
+    };
+
     // Get transform style based on drag state
     const getTransformStyle = () => {
-        if (isClosing) {
+        if (!internalOpen) {
             return "translateY(100%)";
         }
         if (translateY > 0) {
@@ -376,25 +389,21 @@ function MobileUserSheet({ user, onLogout, onClose, open }: MobileSheetProps) {
     };
 
     // Determine if transition should be applied
-    const shouldTransition = !isDragging && !isClosing;
+    const shouldTransition = !isDragging && internalOpen;
+
+    if (!internalOpen && !open) return null;
 
     return (
         <>
-            {/* Backdrop with fade based on drag */}
+            {/* Backdrop */}
             <div
-                className={`fixed inset-0 z-[60] transition-opacity duration-300 ${open && !isClosing ? "bg-black/40" : "bg-black/0 pointer-events-none"
-                    }`}
+                className={`fixed inset-0 z-[60] transition-opacity duration-300`}
                 style={{
-                    opacity: open && !isClosing ? Math.max(0, 1 - translateY / 500) : 0,
-                    pointerEvents: open && !isClosing ? "auto" : "none",
+                    backgroundColor: "rgba(0,0,0,0.4)",
+                    opacity: internalOpen ? Math.max(0, 1 - translateY / 500) : 0,
+                    pointerEvents: internalOpen ? "auto" : "none",
                 }}
-                onClick={() => {
-                    if (!isClosing) {
-                        setIsClosing(true);
-                        setTranslateY(500);
-                        setTimeout(() => onClose(), 300);
-                    }
-                }}
+                onClick={handleClose}
             />
 
             {/* Draggable Sheet */}
@@ -412,7 +421,7 @@ function MobileUserSheet({ user, onLogout, onClose, open }: MobileSheetProps) {
                 onTouchMove={handleTouchMove}
                 onTouchEnd={handleTouchEnd}
             >
-                {/* Drag handle - visual indicator only */}
+                {/* Drag handle */}
                 <div className="flex justify-center pt-3 pb-1 flex-shrink-0">
                     <div className="w-10 h-1 bg-gray-300 rounded-full" />
                 </div>
@@ -436,11 +445,7 @@ function MobileUserSheet({ user, onLogout, onClose, open }: MobileSheetProps) {
                         </span>
                     </div>
                     <button
-                        onClick={() => {
-                            setIsClosing(true);
-                            setTranslateY(500);
-                            setTimeout(() => onClose(), 300);
-                        }}
+                        onClick={handleClose}
                         className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 flex-shrink-0"
                     >
                         <CloseCircle variant="Bold" style={{ width: 20, height: 20 }} />
@@ -461,11 +466,7 @@ function MobileUserSheet({ user, onLogout, onClose, open }: MobileSheetProps) {
                                     <Link
                                         key={item.href}
                                         href={item.href}
-                                        onClick={() => {
-                                            setIsClosing(true);
-                                            setTranslateY(500);
-                                            setTimeout(() => onClose(), 300);
-                                        }}
+                                        onClick={handleClose}
                                         className={`flex items-center gap-3 px-4 py-3 active:bg-gray-100 transition-colors ${idx < section.items.length - 1 ? "border-b border-gray-100" : ""}`}
                                     >
                                         <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center text-main shadow-sm flex-shrink-0">
@@ -486,9 +487,8 @@ function MobileUserSheet({ user, onLogout, onClose, open }: MobileSheetProps) {
                     <div className="px-4 pt-4">
                         <button
                             onClick={() => {
-                                setIsClosing(true);
-                                setTranslateY(500);
-                                setTimeout(() => { onClose(); onLogout(); }, 300);
+                                handleClose();
+                                setTimeout(() => onLogout(), 350);
                             }}
                             className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl active:bg-red-100 transition-colors"
                             style={{ background: "#fff1f2", border: "1px solid #fecdd3" }}
