@@ -1,3 +1,4 @@
+// store/shortlink.store.ts
 import { create } from 'zustand';
 import { shortlinkApi } from '@/lib/api/shortlink.api';
 import type { ShortLink, CreateShortLinkPayload, UpdateShortLinkPayload } from '@/types/shortlink.type';
@@ -30,11 +31,14 @@ export const useShortLinkStore = create<ShortLinkState>((set, get) => ({
         try {
             const data = await shortlinkApi.getMyLinks(page);
             set({
-                links: data.links,
-                currentPage: data.page,
-                totalPages: data.totalPages,
-                total: data.total,
+                links: data.links || [],
+                currentPage: data.page || page,
+                totalPages: data.totalPages || 1,
+                total: data.total || 0,
             });
+        } catch (error) {
+            console.error('Fetch my links error:', error);
+            set({ links: [], total: 0 });
         } finally {
             set({ isLoading: false });
         }
