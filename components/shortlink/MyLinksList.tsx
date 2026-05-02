@@ -80,10 +80,10 @@ function LinkCard({ link, onDelete }: { link: ShortLink; onDelete: (shortCode: s
                     </div>
                     <p className="text-xs text-gray-500 truncate">{link.originalUrl}</p>
                     <div className="flex flex-wrap gap-3 text-xs text-gray-400">
-                        <span className="flex items-center gap-1"><Mouse size={12} />{link.clicks.toLocaleString('vi-VN')} lượt click</span>
+                        <span className="flex items-center gap-1"><Mouse size={12} variant='Outline' />{link.clicks.toLocaleString('vi-VN')} lượt click</span>
                         {link.expiresAt && (
                             <span className={`flex items-center gap-1 ${isExpired ? 'text-red-400' : ''}`}>
-                                <Calendar size={12} />Hết hạn: {new Date(link.expiresAt).toLocaleDateString('vi-VN')}
+                                <Calendar size={12} variant='Outline' />Hết hạn: {new Date(link.expiresAt).toLocaleDateString('vi-VN')}
                             </span>
                         )}
                     </div>
@@ -91,10 +91,10 @@ function LinkCard({ link, onDelete }: { link: ShortLink; onDelete: (shortCode: s
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                     <CopyButton text={link.shortUrl} />
                     <a href={link.shortUrl} target="_blank" rel="noopener noreferrer" className="p-2 rounded-lg hover:bg-gray-100 transition-colors" title="Mở link gốc">
-                        <ExportSquare size={16} className="text-gray-500" />
+                        <ExportSquare size={16} variant='Outline' className="text-gray-500" />
                     </a>
                     <button onClick={() => onDelete(link.shortCode)} className="p-2 rounded-lg hover:bg-red-50 transition-colors" title="Xóa link">
-                        <Trash size={16} className="text-red-500" />
+                        <Trash size={16} variant='Outline' className="text-red-500" />
                     </button>
                 </div>
             </div>
