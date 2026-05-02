@@ -43,7 +43,6 @@ import NotificationBell from "./NotificationBell";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useAuthStore } from "@/store/auth.store";
 import { useSocket } from "@/providers/socket.provider";
-import { toast } from "sonner";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -136,7 +135,6 @@ function DesktopUserDrawer({ user, onLogout, onClose, open }: DrawerProps) {
     const sections = buildSections(user, iconSize);
     const badgeClass = ROLE_BADGE[user.role] ?? "bg-gray-100 text-gray-500";
 
-    // Close on outside click
     useEffect(() => {
         if (!open) return;
         const handler = (e: MouseEvent) => {
@@ -151,7 +149,6 @@ function DesktopUserDrawer({ user, onLogout, onClose, open }: DrawerProps) {
         };
     }, [open, onClose]);
 
-    // Close on Escape
     useEffect(() => {
         const handler = (e: KeyboardEvent) => {
             if (e.key === "Escape") onClose();
@@ -162,7 +159,6 @@ function DesktopUserDrawer({ user, onLogout, onClose, open }: DrawerProps) {
 
     return (
         <>
-            {/* Backdrop */}
             <div
                 onClick={onClose}
                 className="fixed inset-0 z-[60] bg-black/20 transition-opacity duration-300"
@@ -172,7 +168,6 @@ function DesktopUserDrawer({ user, onLogout, onClose, open }: DrawerProps) {
                 }}
             />
 
-            {/* Drawer */}
             <div
                 ref={drawerRef}
                 className="fixed top-0 right-0 bottom-0 z-[70] w-[308px] bg-white border-l border-gray-100 shadow-[-4px_0_24px_rgba(0,0,0,0.08)] flex flex-col transition-transform duration-300 will-change-transform"
@@ -180,7 +175,6 @@ function DesktopUserDrawer({ user, onLogout, onClose, open }: DrawerProps) {
                     transform: open ? "translateX(0)" : "translateX(100%)",
                 }}
             >
-                {/* Header */}
                 <div className="p-5 border-b border-gray-100 flex-shrink-0">
                     <div className="flex items-center gap-3">
                         <div className="relative flex-shrink-0">
@@ -208,7 +202,6 @@ function DesktopUserDrawer({ user, onLogout, onClose, open }: DrawerProps) {
                     </div>
                 </div>
 
-                {/* Content */}
                 <div className="flex-1 overflow-y-auto no-scrollbar p-3">
                     {sections.map((section) => (
                         <div key={section.label} className="mb-3">
@@ -238,7 +231,6 @@ function DesktopUserDrawer({ user, onLogout, onClose, open }: DrawerProps) {
                         </div>
                     ))}
 
-                    {/* Logout */}
                     <button
                         onClick={() => {
                             onClose();
@@ -275,7 +267,6 @@ function MobileUserSheet({ user, onLogout, onClose, open }: MobileSheetProps) {
     const sections = buildSections(user, iconSize);
     const badgeClass = ROLE_BADGE[user.role] ?? "bg-gray-100 text-gray-500";
 
-    // Lock body scroll when open
     useEffect(() => {
         if (open) {
             const scrollY = window.scrollY;
@@ -304,14 +295,12 @@ function MobileUserSheet({ user, onLogout, onClose, open }: MobileSheetProps) {
 
     return (
         <>
-            {/* Backdrop */}
             <div
                 className="fixed inset-0 z-[60] bg-black/40 transition-opacity duration-300"
                 style={{ opacity: open ? 1 : 0 }}
                 onClick={onClose}
             />
 
-            {/* Sheet */}
             <div
                 className="fixed bottom-0 left-0 right-0 z-[70] bg-white rounded-t-3xl flex flex-col transition-transform duration-300 will-change-transform"
                 style={{
@@ -319,12 +308,10 @@ function MobileUserSheet({ user, onLogout, onClose, open }: MobileSheetProps) {
                     maxHeight: "85dvh",
                 }}
             >
-                {/* Drag handle */}
                 <div className="flex justify-center pt-3 pb-1 flex-shrink-0">
                     <div className="w-10 h-1 bg-gray-300 rounded-full" />
                 </div>
 
-                {/* Header */}
                 <div className="px-4 pt-2 pb-4 flex items-center gap-3 flex-shrink-0">
                     <div className="relative flex-shrink-0">
                         <Avatar className="w-12 h-12 border-2 border-gray-100">
@@ -349,7 +336,6 @@ function MobileUserSheet({ user, onLogout, onClose, open }: MobileSheetProps) {
 
                 <div className="w-full h-px bg-gray-100 flex-shrink-0" />
 
-                {/* Content */}
                 <div className="flex-1 overflow-y-auto no-scrollbar pb-6">
                     {sections.map((section) => (
                         <div key={section.label} className="px-4 pt-4">
@@ -379,7 +365,6 @@ function MobileUserSheet({ user, onLogout, onClose, open }: MobileSheetProps) {
                         </div>
                     ))}
 
-                    {/* Logout */}
                     <div className="px-4 pt-4">
                         <button
                             onClick={() => {
@@ -418,22 +403,18 @@ export default function Header() {
     const displayStreak = user && token ? (user?.streak ?? 0) : 0;
     const displayRole = user?.role || "user";
 
-    // Realtime coins update
     useEffect(() => {
         if (!socket || !isConnected) return;
         const handleCoinsUpdated = (data: { userId: string; coins: number; amount?: number }) => {
             if (user?._id === data.userId) {
                 const diff = data.coins - (user?.coins || 0);
                 updateCoins(diff);
-                if (diff > 0) toast.success(`✨ +${diff} xu!`, { duration: 2000 });
-                else if (diff < 0) toast.info(`📉 ${diff} xu`, { duration: 2000 });
             }
         };
         socket.on("coins_updated", handleCoinsUpdated);
         return () => { socket.off("coins_updated", handleCoinsUpdated); };
     }, [socket, isConnected, user?._id, user?.coins, updateCoins]);
 
-    // Realtime streak update
     useEffect(() => {
         if (!socket || !isConnected) return;
         const handleStreakUpdated = (data: { userId: string; streak: number; totalCoins: number }) => {
@@ -441,21 +422,17 @@ export default function Header() {
                 updateStreak(data.streak);
                 const diff = data.totalCoins - (user?.coins || 0);
                 if (diff !== 0) updateCoins(diff);
-                toast.success(`🔥 Streak: ${data.streak} ngày liên tiếp!`, { duration: 2000 });
             }
         };
         socket.on("streak_updated", handleStreakUpdated);
         return () => { socket.off("streak_updated", handleStreakUpdated); };
     }, [socket, isConnected, user?._id, user?.coins, updateStreak, updateCoins]);
 
-    // Realtime role update
     useEffect(() => {
         if (!socket || !isConnected) return;
         const handleRoleChanged = (data: { userId: string; newRole: string; oldRole: string }) => {
             if (user?._id === data.userId && data.newRole !== user?.role) {
                 if (user) setUser({ ...user, role: data.newRole as "user" | "teacher" | "admin" });
-                const roleLabel = data.newRole === "teacher" ? "Giáo viên" : data.newRole === "admin" ? "Quản trị viên" : "Người dùng";
-                toast.info(`🔄 Vai trò của bạn đã được cập nhật thành ${roleLabel}`, { duration: 3000 });
             }
         };
         socket.on("role_changed", handleRoleChanged);
@@ -464,7 +441,6 @@ export default function Header() {
 
     const handleLogout = async () => {
         await logout();
-        toast.success("Đã đăng xuất", { description: "Hẹn gặp lại bạn sau!", duration: 2000 });
         router.push("/");
     };
 
@@ -500,32 +476,30 @@ export default function Header() {
             {/* DESKTOP HEADER */}
             <header className="hidden lg:block bg-white w-full h-[60px] fixed top-0 z-50 shadow-sm">
                 <div className="flex h-full justify-between items-center px-4">
-                    {/* Logo */}
                     <Link href="/" className="flex-shrink-0">
                         <Image src="/images/logo.png" alt="Logo CNcode" width={100} height={55} priority />
                     </Link>
 
-                    {/* Nav Menu */}
                     <nav className="flex h-full items-center gap-1">
                         {menu.map((item) => {
                             const isActive = pathname === item.link;
                             return (
-                                <Link
-                                    key={item.link}
-                                    href={item.link}
-                                    className={`relative px-3 py-2 font-bold text-sm transition-all duration-200 ${isActive ? "text-main" : "text-gray-700 hover:text-main"
-                                        }`}
-                                >
-                                    {item.title}
+                                <div key={item.link} className="relative h-full flex items-center">
+                                    <Link
+                                        href={item.link}
+                                        className={`px-3 py-2 font-bold text-sm transition-all duration-200 ${isActive ? "text-main" : "text-gray-700 hover:text-main"
+                                            }`}
+                                    >
+                                        {item.title}
+                                    </Link>
                                     {isActive && (
-                                        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-main rounded-t-full" />
+                                        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-main" />
                                     )}
-                                </Link>
+                                </div>
                             );
                         })}
                     </nav>
 
-                    {/* Right Section */}
                     <div className="flex items-center gap-4">
                         {displayUser && (
                             <div className="flex items-center gap-4">
@@ -614,7 +588,7 @@ export default function Header() {
                 </div>
             </div>
 
-            {/* Drawers */}
+            {/* DRAWERS */}
             {displayUser && (
                 <DesktopUserDrawer
                     user={displayUser}

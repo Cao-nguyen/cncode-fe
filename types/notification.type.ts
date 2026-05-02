@@ -1,66 +1,55 @@
-export interface INotification {
-    _id: string;
-    notificationId: string; // unique string ID (added)
+// types/notification.type.ts
+export interface CoinsUpdatedPayload {
+    coins: number;
     userId: string;
-    type:
-    | 'comment'
-    | 'reaction_comment'
-    | 'like_post'
-    | 'reply_comment'
-    | 'bookmark'
-    | 'first_login_bonus'
-    | 'streak_bonus'
-    | 'system'
-    | 'role_request_rejected'
-    | 'role_request_approved';
-    postId?: string;
-    postSlug?: string;
-    postTitle?: string;
-    commentId?: string;
-    reactionType?: string;
-    senderId?: {
-        _id: string;
-        fullName: string;
-        avatar?: string;
-    } | null;
-    content?: string;
-    meta?: {
-        coins?: number;
-        streak?: number;
-        adminName?: string;
-    };
+    amount?: number;
+}
+
+export interface StreakUpdatedPayload {
+    streak: number;
+    userId: string;
+    totalCoins: number;
+}
+
+export interface RoleChangedPayload {
+    newRole: 'user' | 'teacher' | 'admin';
+    oldRole: string;
+    userId: string;
+}
+
+export interface NotificationPayload {
+    _id: string;
+    notificationId: string;
+    userId: string;
+    type: string;
+    content: string;
+    meta?: Record<string, unknown>;
     read: boolean;
     createdAt: string;
     updatedAt: string;
 }
 
-export interface NotificationResponse {
-    success: boolean;
-    data: {
-        notifications: INotification[];
-        unreadCount: number;
-        total: number;
-        page: number;
-        totalPages: number;
+export interface INotification {
+    _id: string;
+    userId: string;
+    senderId?: {
+        _id: string;
+        fullName: string;
+        avatar?: string;
     };
-}
-
-export interface UnreadCountResponse {
-    success: boolean;
-    data: {
-        unreadCount: number;
+    type: 'comment' | 'reply_comment' | 'like_post' | 'reaction_comment' | 'bookmark' | 'first_login_bonus' | 'streak_bonus' | 'role_request_approved' | 'role_request_rejected' | 'system';
+    content: string;
+    postId?: string;
+    postSlug?: string;
+    postTitle?: string;
+    reactionType?: string;
+    meta?: {
+        coins?: number;
+        oldRole?: string;
+        newRole?: string;
+        approved?: boolean;
     };
-}
-
-// Socket events
-export interface CoinsUpdatedPayload {
-    coins: number;
-    delta: number;
-    reason: 'first_login_bonus' | 'streak_bonus' | 'purchase' | string;
-}
-
-export interface StreakUpdatedPayload {
-    streak: number;
-    coinsEarned: number;
-    totalCoins: number;
+    read: boolean;
+    createdAt: string;
+    updatedAt: string;
 }

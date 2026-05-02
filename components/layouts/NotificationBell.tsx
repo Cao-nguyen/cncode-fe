@@ -1,3 +1,4 @@
+// components/NotificationBell.tsx
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -13,7 +14,6 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { toast } from 'sonner';
 import { notificationApi } from '@/lib/api/notification.api';
 import type { INotification } from '@/types/notification.type';
 
@@ -145,7 +145,6 @@ function NotificationContent({ data }: { data: INotification }) {
                 </p>
             )}
 
-            {/* Chỉ hiển thị coins khi > 0 và không phải role request */}
             {!isRoleRequest && (data.meta?.coins ?? 0) > 0 && (
                 <p className="text-xs text-yellow-600 font-medium mt-0.5">
                     +{data.meta!.coins} xu
@@ -173,7 +172,7 @@ const isSystemNotification = (type: INotification['type']) =>
     type === 'role_request_rejected';
 
 export default function NotificationBell() {
-    const { user } = useAuthStore();
+    const { user, token } = useAuthStore();
     const { socket, isConnected } = useSocket();
     const [open, setOpen] = useState(false);
     const [notifications, setNotifications] = useState<INotification[]>([]);
@@ -181,44 +180,67 @@ export default function NotificationBell() {
     const [isLoading, setIsLoading] = useState(false);
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
-    const [hasFetched, setHasFetched] = useState(false);
+    const [isInitialLoad, setIsInitialLoad] = useState(true);
 
     const fetchNotifications = useCallback(async (pageNum: number = 1) => {
+        if (!token || !user?._id) return;
+
         setIsLoading(true);
         try {
             const data = await notificationApi.getMyNotifications(pageNum);
             if (pageNum === 1) {
                 setNotifications(data.notifications);
-                setHasFetched(true);
+                setUnreadCount(data.unreadCount);
             } else {
                 setNotifications(prev => [...prev, ...data.notifications]);
             }
-            setUnreadCount(data.unreadCount);
             setPage(data.page);
             setTotalPages(data.totalPages);
         } catch (error) {
             console.error('Fetch notifications error:', error);
         } finally {
             setIsLoading(false);
+            if (isInitialLoad) setIsInitialLoad(false);
         }
-    }, []);
+    }, [user?._id, token, isInitialLoad]);
 
     const fetchUnreadCount = useCallback(async () => {
+        if (!token || !user?._id) return;
+
         try {
             const count = await notificationApi.getUnreadCount();
             setUnreadCount(count);
         } catch (error) {
             console.error('Fetch unread count error:', error);
         }
-    }, []);
+    }, [user?._id, token]);
+
+    // Initial load
+    useEffect(() => {
+        if (token && user?._id) {
+            fetchNotifications(1);
+            fetchUnreadCount();
+        }
+    }, [token, user?._id, fetchNotifications, fetchUnreadCount]);
+
+    // Refresh when opening popup
+    useEffect(() => {
+        if (open && token && user?._id) {
+            fetchNotifications(1);
+            fetchUnreadCount();
+        }
+    }, [open, token, user?._id, fetchNotifications, fetchUnreadCount]);
 
     const markAsRead = useCallback(async (notificationId: string) => {
         try {
             await notificationApi.markAsRead(notificationId);
-            setNotifications(prev =>
-                prev.map(n => n._id === notificationId ? { ...n, read: true } : n)
-            );
-            setUnreadCount(prev => Math.max(0, prev - 1));
+            setNotifications(prev => {
+                const updated = prev.map(n =>
+                    n._id === notificationId ? { ...n, read: true } : n
+                );
+                setUnreadCount(updated.filter(n => !n.read).length);
+                return updated;
+            });
         } catch (error) {
             console.error('Mark as read error:', error);
         }
@@ -227,10 +249,13 @@ export default function NotificationBell() {
     const markAllAsRead = useCallback(async () => {
         try {
             await notificationApi.markAllAsRead();
-            setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-            setUnreadCount(0);
+            setNotifications(prev => {
+                const updated = prev.map(n => ({ ...n, read: true }));
+                setUnreadCount(0);
+                return updated;
+            });
         } catch (error) {
-            toast.error('Có lỗi xảy ra');
+            console.error('Mark all as read error:', error);
         }
     }, []);
 
@@ -240,31 +265,24 @@ export default function NotificationBell() {
         }
     };
 
-    useEffect(() => {
-        if (open && !hasFetched) {
-            fetchNotifications(1);
-        }
-    }, [open, hasFetched, fetchNotifications]);
-
-    useEffect(() => {
-        if (user?._id) {
-            fetchUnreadCount();
-        }
-    }, [user?._id, fetchUnreadCount]);
-
+    // Socket realtime
     useEffect(() => {
         if (!socket || !isConnected || !user?._id) return;
 
         const handleNewNotification = (data: INotification) => {
-            setNotifications(prev => [data, ...prev]);
-            setUnreadCount(prev => prev + 1);
+            setNotifications(prev => {
+                if (prev.some(n => n._id === data._id)) return prev;
+                const updated = [data, ...prev];
+                setUnreadCount(updated.filter(n => !n.read).length);
+                return updated;
+            });
         };
 
         socket.on('new_notification', handleNewNotification);
         return () => { socket.off('new_notification', handleNewNotification); };
     }, [socket, isConnected, user?._id]);
 
-    if (!user?._id) return null;
+    if (!token || !user?._id) return null;
 
     return (
         <Popover open={open} onOpenChange={setOpen}>
@@ -276,15 +294,14 @@ export default function NotificationBell() {
                 >
                     <Bell className="w-5 h-5" />
                     {unreadCount > 0 && (
-                        <span className="absolute top-0 right-0 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1">
+                        <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1">
                             {unreadCount > 99 ? '99+' : unreadCount}
                         </span>
                     )}
                 </button>
             </PopoverTrigger>
 
-            <PopoverContent className="w-[380px] p-0" align="end">
-                {/* Header */}
+            <PopoverContent className="w-[380px] p-0 mr-4" align="end" sideOffset={5}>
                 <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-800">
                     <h3 className="font-semibold text-gray-900 dark:text-white">
                         Thông báo
@@ -316,8 +333,10 @@ export default function NotificationBell() {
                             {notifications.map((notification) => {
                                 const isSystem = isSystemNotification(notification.type);
                                 const content = (
-                                    <div className={`flex gap-3 p-4 ${!notification.read ? 'bg-blue-50/50 dark:bg-blue-950/20' : ''} hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors`}>
-                                        {/* Avatar */}
+                                    <div
+                                        className={`flex gap-3 p-4 ${!notification.read ? 'bg-blue-50/50 dark:bg-blue-950/20' : ''} hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer`}
+                                        onClick={() => !notification.read && markAsRead(notification._id)}
+                                    >
                                         {isSystem ? (
                                             <SystemAvatar type={notification.type} />
                                         ) : (
@@ -330,39 +349,16 @@ export default function NotificationBell() {
                                                 </Avatar>
                                             </div>
                                         )}
-
-                                        {/* Content */}
                                         <NotificationContent data={notification} />
                                     </div>
                                 );
 
-                                if (isSystem) {
-                                    return (
-                                        <div
-                                            key={notification._id}
-                                            onClick={() => !notification.read && markAsRead(notification._id)}
-                                            className="cursor-default"
-                                        >
-                                            {content}
-                                        </div>
-                                    );
-                                }
-
-                                // Chỉ link đến bài viết nếu có postSlug hoặc postId
                                 const linkHref = notification.postSlug || notification.postId
                                     ? `/baiviet/${notification.postSlug || notification.postId}`
-                                    : '#';
+                                    : null;
 
-                                if (!notification.postSlug && !notification.postId) {
-                                    return (
-                                        <div
-                                            key={notification._id}
-                                            onClick={() => !notification.read && markAsRead(notification._id)}
-                                            className="cursor-default"
-                                        >
-                                            {content}
-                                        </div>
-                                    );
+                                if (!linkHref || isSystem) {
+                                    return <div key={notification._id}>{content}</div>;
                                 }
 
                                 return (

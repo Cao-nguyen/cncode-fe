@@ -8,7 +8,7 @@ interface CNCodeLoaderProps {
     onComplete?: () => void;
 }
 
-export default function CNCodeLoader({
+export default function Loading({
     text = "Đang tải",
     duration,
     onComplete,
