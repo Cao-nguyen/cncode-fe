@@ -116,7 +116,7 @@ const SERVICES: Service[] = [
     { tooltip: "Chat với Admin", href: "/chatwithadmin", label: "Chat với Admin", sublabel: "Hỗ trợ trực tiếp", icon: <IconChatAdmin /> },
     { tooltip: "Hỏi đáp cộng đồng", href: "/faq", label: "Hỏi đáp", sublabel: "Cộng đồng giải đáp", icon: <IconHoiDap /> },
     { tooltip: "Truyền thông chéo", href: "/truyenthongcheo", label: "Truyền thông chéo", sublabel: "Kết nối đa kênh", icon: <IconTruyenThong /> },
-    { tooltip: "Tiếp thị liên kết", href: "/me/tiepthilienket", label: "Tiếp thị liên kết", sublabel: "Affiliate & hoa hồng", icon: <IconTiepThi /> },
+    { tooltip: "Tiếp thị liên kết", href: "/me/affiliate", label: "Tiếp thị liên kết", sublabel: "Affiliate & hoa hồng", icon: <IconTiepThi /> },
     { tooltip: "Xem CNsocial", href: "/cnsocial", label: "CNsocial", sublabel: "Mạng xã hội cộng đồng", icon: <IconCNsocial /> },
     { tooltip: "Rút gọn link ngay", href: "/rutgonlink", label: "Rút gọn link", sublabel: "Sở hữu link ngắn dễ dàng share", icon: <IconRutGon /> },
     { tooltip: "Khoá học", href: "/khoahoc", label: "Khoá học", sublabel: "Học những điều thú vị", icon: <IconKhoahoc /> },

@@ -62,6 +62,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
         }
     }, [socketState, isConnected]);
 
+    // ─── Khởi tạo socket connection ───────────────────────────────
     useEffect(() => {
         if (!user?._id || !token) return;
         if (socketRef.current?.connected) return;
@@ -99,14 +100,9 @@ export function SocketProvider({ children }: { children: ReactNode }) {
             setIsConnected(false);
         });
 
-        instance.on('reconnect', (attemptNumber) => {
-            console.log('🔌 Socket reconnected after', attemptNumber, 'attempts');
+        instance.on('reconnect', () => {
             setIsConnected(true);
             registeredRef.current = false;
-        });
-
-        instance.on('reconnect_attempt', (attemptNumber) => {
-            console.log('🔌 Socket reconnection attempt:', attemptNumber);
         });
 
         return () => {
@@ -121,6 +117,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
         };
     }, [user?._id, token]);
 
+    // ─── Register user vào room ───────────────────────────────────
     useEffect(() => {
         if (!socketState || !isConnected || !user?._id || registeredRef.current) return;
 
@@ -132,11 +129,37 @@ export function SocketProvider({ children }: { children: ReactNode }) {
         console.log('📡 User registered with socket:', user._id);
     }, [socketState, isConnected, user?._id]);
 
+    // ─── force_logout: bị xóa tài khoản hoặc bị ban ─────────────
+    useEffect(() => {
+        if (!socketState || !isConnected) return;
+
+        const handleForceLogout = (data: { code: string; message: string }) => {
+            const isBanned = data.code === 'USER_BANNED';
+
+            toast.error(isBanned ? '🔴 Tài khoản bị khóa' : '⛔ Tài khoản bị xóa', {
+                description: data.message || 'Vui lòng liên hệ quản trị viên',
+                duration: 6000,
+            });
+
+            const { logout } = useAuthStore.getState();
+            logout();
+
+            localStorage.removeItem('token');
+            localStorage.removeItem('auth-storage');
+
+            window.location.href = '/';
+        };
+
+        socketState.on('force_logout', handleForceLogout);
+        return () => { socketState.off('force_logout', handleForceLogout); };
+    }, [socketState, isConnected]);
+
+    // ─── Role changed ─────────────────────────────────────────────
     useEffect(() => {
         if (!socketState || !isConnected) return;
 
         const handleRoleChanged = (data: RoleChangedPayload) => {
-            console.log('📡 Role changed event received:', data);
+            console.log('📡 Role changed:', data);
             if (user && data.newRole !== user.role) {
                 setUser({ ...user, role: data.newRole });
             }
@@ -146,25 +169,27 @@ export function SocketProvider({ children }: { children: ReactNode }) {
         return () => { socketState.off('role_changed', handleRoleChanged); };
     }, [socketState, isConnected, user, setUser]);
 
+    // ─── Coins updated ────────────────────────────────────────────
     useEffect(() => {
         if (!socketState || !isConnected) return;
 
         const handleCoinsUpdated = (data: CoinsUpdatedPayload) => {
-            console.log('📡 Coins updated event received:', data);
+            console.log('📡 Coins updated:', data);
             const currentCoins = useAuthStore.getState().coins;
             const diff = data.coins - currentCoins;
-            updateCoins(diff);
+            if (diff !== 0) updateCoins(diff);
         };
 
         socketState.on('coins_updated', handleCoinsUpdated);
         return () => { socketState.off('coins_updated', handleCoinsUpdated); };
     }, [socketState, isConnected, updateCoins]);
 
+    // ─── Streak updated ───────────────────────────────────────────
     useEffect(() => {
         if (!socketState || !isConnected) return;
 
         const handleStreakUpdated = (data: StreakUpdatedPayload) => {
-            console.log('📡 Streak updated event received:', data);
+            console.log('📡 Streak updated:', data);
             updateStreak(data.streak);
             const currentCoins = useAuthStore.getState().coins;
             const diff = data.totalCoins - currentCoins;
@@ -175,56 +200,37 @@ export function SocketProvider({ children }: { children: ReactNode }) {
         return () => { socketState.off('streak_updated', handleStreakUpdated); };
     }, [socketState, isConnected, updateStreak, updateCoins]);
 
+    // ─── New notification (chỉ log — NotificationBell tự handle) ──
     useEffect(() => {
         if (!socketState || !isConnected) return;
 
         const handleNewNotification = (data: NotificationPayload) => {
-            console.log('📡 New notification event received:', data);
+            console.log('📡 New notification:', data);
         };
 
         socketState.on('new_notification', handleNewNotification);
         return () => { socketState.off('new_notification', handleNewNotification); };
     }, [socketState, isConnected]);
 
+    // ─── Post room events ─────────────────────────────────────────
     useEffect(() => {
         if (!socketState) return;
 
-        const handleJoinedPostRoom = (data: { postSlug: string; room: string }) => {
-            console.log('📡 Joined post room:', data);
+        const handleJoined = (data: { postSlug: string }) => {
+            console.log('📡 Joined post room:', data.postSlug);
         };
-        const handleLeftPostRoom = (data: { postSlug: string; room: string }) => {
-            console.log('📡 Left post room:', data);
+        const handleLeft = (data: { postSlug: string }) => {
+            console.log('📡 Left post room:', data.postSlug);
         };
 
-        socketState.on('joined_post_room', handleJoinedPostRoom);
-        socketState.on('left_post_room', handleLeftPostRoom);
+        socketState.on('joined_post_room', handleJoined);
+        socketState.on('left_post_room', handleLeft);
 
         return () => {
-            socketState.off('joined_post_room', handleJoinedPostRoom);
-            socketState.off('left_post_room', handleLeftPostRoom);
+            socketState.off('joined_post_room', handleJoined);
+            socketState.off('left_post_room', handleLeft);
         };
     }, [socketState]);
-
-    useEffect(() => {
-        if (!socketState || !isConnected) return;
-
-        const handleAccountDeleted = (data: { message: string }) => {
-            toast.error('Tài khoản của bạn đã bị xóa', {
-                description: data.message || 'Vui lòng liên hệ admin để biết thêm chi tiết',
-                duration: 5000,
-            });
-
-            // Logout user
-            const { logout } = useAuthStore.getState();
-            logout();
-
-            // Chuyển về trang chủ
-            window.location.href = '/';
-        };
-
-        socketState.on('account_deleted', handleAccountDeleted);
-        return () => { socketState.off('account_deleted', handleAccountDeleted); };
-    }, [socketState, isConnected]);
 
     const value = useMemo<SocketContextType>(
         () => ({ socket: socketState, isConnected, socketId, joinPostRoom, leavePostRoom }),

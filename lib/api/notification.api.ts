@@ -5,11 +5,12 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
 const getToken = () => {
     if (typeof window === 'undefined') return null;
-
     try {
         const raw = localStorage.getItem('auth-storage');
+        console.log('🔑 raw auth-storage:', raw); // xem có data không
         if (!raw) return null;
         const parsed = JSON.parse(raw);
+        console.log('🔑 token:', parsed?.state?.token); // xem token có không
         return parsed?.state?.token ?? null;
     } catch {
         return null;

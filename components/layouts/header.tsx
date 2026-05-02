@@ -44,19 +44,13 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useAuthStore } from "@/store/auth.store";
 import { useSocket } from "@/providers/socket.provider";
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
 const formatNumber = (num: number) =>
     new Intl.NumberFormat("en", { notation: "compact", maximumFractionDigits: 1 }).format(num);
-
-// ─── Types ────────────────────────────────────────────────────────────────────
 
 interface MenuItem { title: string; link: string; }
 interface MobileMenuItem { title: string; link: string; icon: Icon; }
 interface SheetItem { icon: React.ReactNode; title: string; subtitle: string; href: string; }
 interface SheetSection { label: string; items: SheetItem[]; }
-
-// ─── Shared sections builder ───────────────────────────────────────────────────
 
 function buildSections(
     user: { fullname: string; role: string },
@@ -77,7 +71,7 @@ function buildSections(
             label: "Cộng đồng",
             items: [
                 { icon: <Heart variant="Bold" style={iconSize} />, title: "Hành trình yêu thương", subtitle: "Câu chuyện của bạn", href: "/hanhtrinhyethuong" },
-                { icon: <NhaHang variant="Bold" style={iconSize} />, title: "Tiếp thị liên kết", subtitle: "Affiliate & hoa hồng", href: "/me/tiepthilienket" },
+                { icon: <NhaHang variant="Bold" style={iconSize} />, title: "Tiếp thị liên kết", subtitle: "Nhận xu từ giới thiệu", href: "/affiliate" },
                 { icon: <ArchiveBox variant="Bold" style={iconSize} />, title: "Góp ý", subtitle: "Chia sẻ ý kiến của bạn", href: "/gopy" },
                 { icon: <BoxSearch variant="Bold" style={iconSize} />, title: "Hỏi đáp (FAQ)", subtitle: "Câu hỏi thường gặp", href: "/faq" },
                 { icon: <MessageProgramming variant="Bold" style={iconSize} />, title: "Hỗ trợ dự án", subtitle: "Cùng nhau thực hiện ý tưởng", href: "/hotroduan" },
@@ -119,8 +113,6 @@ const ROLE_BADGE: Record<string, string> = {
     student: "bg-green-50 text-green-600",
     user: "bg-gray-100 text-gray-500",
 };
-
-// ─── Desktop Right Drawer ─────────────────────────────────────────────────────
 
 interface DrawerProps {
     user: { fullname: string; username: string; avatar: string; role: string };
@@ -167,7 +159,6 @@ function DesktopUserDrawer({ user, onLogout, onClose, open }: DrawerProps) {
                     pointerEvents: open ? "auto" : "none",
                 }}
             />
-
             <div
                 ref={drawerRef}
                 className="fixed top-0 right-0 bottom-0 z-[70] w-[308px] bg-white border-l border-gray-100 shadow-[-4px_0_24px_rgba(0,0,0,0.08)] flex flex-col transition-transform duration-300 will-change-transform"
@@ -201,7 +192,6 @@ function DesktopUserDrawer({ user, onLogout, onClose, open }: DrawerProps) {
                         </button>
                     </div>
                 </div>
-
                 <div className="flex-1 overflow-y-auto no-scrollbar p-3">
                     {sections.map((section) => (
                         <div key={section.label} className="mb-3">
@@ -214,8 +204,7 @@ function DesktopUserDrawer({ user, onLogout, onClose, open }: DrawerProps) {
                                         key={item.href}
                                         href={item.href}
                                         onClick={onClose}
-                                        className={`flex items-center gap-3 px-3 py-2.5 hover:bg-gray-100 transition-colors ${idx < section.items.length - 1 ? "border-b border-gray-100" : ""
-                                            }`}
+                                        className={`flex items-center gap-3 px-3 py-2.5 hover:bg-gray-100 transition-colors ${idx < section.items.length - 1 ? "border-b border-gray-100" : ""}`}
                                     >
                                         <div className="w-8 h-8 flex items-center justify-center rounded-xl bg-white text-main shadow-sm flex-shrink-0">
                                             {item.icon}
@@ -230,7 +219,6 @@ function DesktopUserDrawer({ user, onLogout, onClose, open }: DrawerProps) {
                             </div>
                         </div>
                     ))}
-
                     <button
                         onClick={() => {
                             onClose();
@@ -252,8 +240,6 @@ function DesktopUserDrawer({ user, onLogout, onClose, open }: DrawerProps) {
         </>
     );
 }
-
-// ─── Mobile Bottom Sheet ─────────────────────────────────────────────────────
 
 interface MobileSheetProps {
     user: { fullname: string; username: string; avatar: string; role: string };
@@ -300,7 +286,6 @@ function MobileUserSheet({ user, onLogout, onClose, open }: MobileSheetProps) {
                 style={{ opacity: open ? 1 : 0 }}
                 onClick={onClose}
             />
-
             <div
                 className="fixed bottom-0 left-0 right-0 z-[70] bg-white rounded-t-3xl flex flex-col transition-transform duration-300 will-change-transform"
                 style={{
@@ -311,7 +296,6 @@ function MobileUserSheet({ user, onLogout, onClose, open }: MobileSheetProps) {
                 <div className="flex justify-center pt-3 pb-1 flex-shrink-0">
                     <div className="w-10 h-1 bg-gray-300 rounded-full" />
                 </div>
-
                 <div className="px-4 pt-2 pb-4 flex items-center gap-3 flex-shrink-0">
                     <div className="relative flex-shrink-0">
                         <Avatar className="w-12 h-12 border-2 border-gray-100">
@@ -333,9 +317,7 @@ function MobileUserSheet({ user, onLogout, onClose, open }: MobileSheetProps) {
                         <CloseCircle variant="Bold" className="w-5 h-5" />
                     </button>
                 </div>
-
                 <div className="w-full h-px bg-gray-100 flex-shrink-0" />
-
                 <div className="flex-1 overflow-y-auto no-scrollbar pb-6">
                     {sections.map((section) => (
                         <div key={section.label} className="px-4 pt-4">
@@ -348,8 +330,7 @@ function MobileUserSheet({ user, onLogout, onClose, open }: MobileSheetProps) {
                                         key={item.href}
                                         href={item.href}
                                         onClick={onClose}
-                                        className={`flex items-center gap-3 px-4 py-3 active:bg-gray-100 transition-colors ${idx < section.items.length - 1 ? "border-b border-gray-100" : ""
-                                            }`}
+                                        className={`flex items-center gap-3 px-4 py-3 active:bg-gray-100 transition-colors ${idx < section.items.length - 1 ? "border-b border-gray-100" : ""}`}
                                     >
                                         <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center text-main shadow-sm flex-shrink-0">
                                             {item.icon}
@@ -364,7 +345,6 @@ function MobileUserSheet({ user, onLogout, onClose, open }: MobileSheetProps) {
                             </div>
                         </div>
                     ))}
-
                     <div className="px-4 pt-4">
                         <button
                             onClick={() => {
@@ -389,8 +369,6 @@ function MobileUserSheet({ user, onLogout, onClose, open }: MobileSheetProps) {
     );
 }
 
-// ─── Main Header ──────────────────────────────────────────────────────────────
-
 export default function Header() {
     const pathname = usePathname();
     const router = useRouter();
@@ -402,6 +380,45 @@ export default function Header() {
     const displayCoins = user && token ? (coins ?? 0) : 0;
     const displayStreak = user && token ? (user?.streak ?? 0) : 0;
     const displayRole = user?.role || "user";
+
+    // Kiểm tra token validity định kỳ
+    useEffect(() => {
+        const checkTokenValidity = async () => {
+            const currentToken = localStorage.getItem('token');
+            if (!currentToken) return;
+
+            try {
+                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/me`, {
+                    headers: { Authorization: `Bearer ${currentToken}` },
+                });
+
+                if (!res.ok) {
+                    const { logout: storeLogout } = useAuthStore.getState();
+                    storeLogout();
+                    router.push('/login');
+                }
+            } catch {
+                // Lỗi mạng, bỏ qua
+            }
+        };
+
+        const interval = setInterval(checkTokenValidity, 30000);
+        return () => clearInterval(interval);
+    }, [router]);
+
+    // Lắng nghe force logout từ socket
+    useEffect(() => {
+        if (!socket || !isConnected) return;
+
+        const handleForceLogout = () => {
+            const { logout: storeLogout } = useAuthStore.getState();
+            storeLogout();
+            router.push('/login');
+        };
+
+        socket.on('force_logout', handleForceLogout);
+        return () => { socket.off('force_logout', handleForceLogout); };
+    }, [socket, isConnected, router]);
 
     useEffect(() => {
         if (!socket || !isConnected) return;
@@ -473,13 +490,11 @@ export default function Header() {
 
     return (
         <>
-            {/* DESKTOP HEADER */}
             <header className="hidden lg:block bg-white w-full h-[60px] fixed top-0 z-50 shadow-sm">
                 <div className="flex h-full justify-between items-center px-4">
                     <Link href="/" className="flex-shrink-0">
                         <Image src="/images/logo.png" alt="Logo CNcode" width={100} height={55} priority />
                     </Link>
-
                     <nav className="flex h-full items-center gap-1">
                         {menu.map((item) => {
                             const isActive = pathname === item.link;
@@ -487,19 +502,15 @@ export default function Header() {
                                 <div key={item.link} className="relative h-full flex items-center">
                                     <Link
                                         href={item.link}
-                                        className={`px-3 py-2 font-bold text-sm transition-all duration-200 ${isActive ? "text-main" : "text-gray-700 hover:text-main"
-                                            }`}
+                                        className={`px-3 py-2 font-bold text-sm transition-all duration-200 ${isActive ? "text-main" : "text-gray-700 hover:text-main"}`}
                                     >
                                         {item.title}
                                     </Link>
-                                    {isActive && (
-                                        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-main" />
-                                    )}
+                                    {isActive && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-main" />}
                                 </div>
                             );
                         })}
                     </nav>
-
                     <div className="flex items-center gap-4">
                         {displayUser && (
                             <div className="flex items-center gap-4">
@@ -517,14 +528,9 @@ export default function Header() {
                                 </div>
                             </div>
                         )}
-
                         <NotificationBell />
-
                         {displayUser ? (
-                            <button
-                                onClick={() => setDrawerOpen(true)}
-                                className="relative p-0.5 rounded-full focus:outline-none group"
-                            >
+                            <button onClick={() => setDrawerOpen(true)} className="relative p-0.5 rounded-full focus:outline-none group">
                                 <Avatar className="w-8 h-8 ring-2 ring-transparent group-hover:ring-main/30 transition-all">
                                     <AvatarImage src={displayUser.avatar} />
                                     <AvatarFallback className="text-xs font-bold bg-main text-white">
@@ -534,21 +540,17 @@ export default function Header() {
                                 <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-white" />
                             </button>
                         ) : (
-                            <Link href="/login" className="bg-main text-white px-4 py-2 rounded-lg font-bold text-sm">
-                                Đăng nhập
-                            </Link>
+                            <Link href="/login" className="bg-main text-white px-4 py-2 rounded-lg font-bold text-sm">Đăng nhập</Link>
                         )}
                     </div>
                 </div>
             </header>
 
-            {/* MOBILE TOP BAR */}
             <div className="lg:hidden fixed top-0 w-full h-10 bg-white z-50 border-b border-gray-200">
                 <div className="flex h-full justify-between items-center px-2">
                     <Link href="/">
                         <Image src="/images/logo.png" alt="Logo" width={60} height={30} className="object-contain" priority />
                     </Link>
-
                     <div className="flex items-center gap-2">
                         {displayUser && (
                             <div className="flex items-center gap-2">
@@ -566,9 +568,7 @@ export default function Header() {
                                 </div>
                             </div>
                         )}
-
                         <NotificationBell />
-
                         {displayUser ? (
                             <button onClick={() => setSheetOpen(true)} className="relative">
                                 <Avatar className="w-6 h-6">
@@ -580,51 +580,24 @@ export default function Header() {
                                 <span className="absolute bottom-0 right-0 w-1.5 h-1.5 bg-green-500 rounded-full border border-white" />
                             </button>
                         ) : (
-                            <Link href="/login" className="bg-main text-white px-2 py-1 rounded text-[10px] font-bold">
-                                Đăng nhập
-                            </Link>
+                            <Link href="/login" className="bg-main text-white px-2 py-1 rounded text-[10px] font-bold">Đăng nhập</Link>
                         )}
                     </div>
                 </div>
             </div>
 
-            {/* DRAWERS */}
-            {displayUser && (
-                <DesktopUserDrawer
-                    user={displayUser}
-                    onLogout={handleLogout}
-                    onClose={() => setDrawerOpen(false)}
-                    open={drawerOpen}
-                />
-            )}
-            {displayUser && (
-                <MobileUserSheet
-                    user={displayUser}
-                    onLogout={handleLogout}
-                    onClose={() => setSheetOpen(false)}
-                    open={sheetOpen}
-                />
-            )}
+            {displayUser && <DesktopUserDrawer user={displayUser} onLogout={handleLogout} onClose={() => setDrawerOpen(false)} open={drawerOpen} />}
+            {displayUser && <MobileUserSheet user={displayUser} onLogout={handleLogout} onClose={() => setSheetOpen(false)} open={sheetOpen} />}
 
-            {/* MOBILE BOTTOM NAV */}
             <div className="lg:hidden fixed bottom-0 left-0 w-full z-40">
                 <div className="w-full h-14 bg-white border-t border-gray-200 rounded-t-2xl shadow-[0_-4px_20px_rgba(0,0,0,0.15)] flex items-center px-2">
                     {menuMobile.map((item) => {
                         const isActive = pathname === item.link;
                         const IconComp = item.icon;
                         return (
-                            <Link
-                                key={item.link}
-                                href={item.link}
-                                className="flex-1 flex flex-col items-center justify-center gap-1 active:scale-95 transition-all"
-                            >
-                                <IconComp
-                                    variant="Bold"
-                                    className={`w-5 h-5 ${isActive ? "text-main" : "text-gray-500"}`}
-                                />
-                                <span className={`text-[10px] font-medium ${isActive ? "text-main" : "text-gray-500"}`}>
-                                    {item.title}
-                                </span>
+                            <Link key={item.link} href={item.link} className="flex-1 flex flex-col items-center justify-center gap-1 active:scale-95 transition-all">
+                                <IconComp variant="Bold" className={`w-5 h-5 ${isActive ? "text-main" : "text-gray-500"}`} />
+                                <span className={`text-[10px] font-medium ${isActive ? "text-main" : "text-gray-500"}`}>{item.title}</span>
                             </Link>
                         );
                     })}

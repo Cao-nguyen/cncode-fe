@@ -12,7 +12,6 @@ export const useLogin = () => {
 
   useEffect(() => {
     const checkAuth = async () => {
-      // Ưu tiên token từ persist store, fallback localStorage
       const savedToken = token || localStorage.getItem('token')
 
       if (!savedToken) {
@@ -23,17 +22,15 @@ export const useLogin = () => {
       try {
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/me`, {
           headers: { Authorization: `Bearer ${savedToken}` },
+          credentials: 'include',
         })
 
         if (!response.ok) {
-          // Token hết hạn hoặc không hợp lệ
           setChecking(false)
           return
         }
 
         const result = await response.json()
-
-        // API /me trả về { data: User } hoặc { user: User } — parse an toàn
         const userData = result.data ?? result.user
 
         if (!userData) {
@@ -41,10 +38,8 @@ export const useLogin = () => {
           return
         }
 
-        // Sync store với data mới nhất từ server (tránh dùng cached isOnboarded)
         setAuth(userData, savedToken)
 
-        // Luôn dùng giá trị isOnboarded từ server, không từ localStorage cache
         if (userData.isOnboarded === false) {
           router.push('/onboarding')
         } else {
@@ -56,20 +51,20 @@ export const useLogin = () => {
     }
 
     checkAuth()
-  }, []) // Chỉ chạy 1 lần khi mount, không depend vào token để tránh loop
+  }, [])
 
   const handleGoogleSuccess = useCallback(async (response: CredentialResponse) => {
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/google`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ credential: response.credential }),
       })
 
       const result: IGoogleLoginResponse = await res.json()
 
       if (result.success) {
-        // Sync store với data từ server response
         setAuth(result.data.user, result.data.token)
 
         if (result.data.isNewUser) {
@@ -84,7 +79,6 @@ export const useLogin = () => {
           })
         }
 
-        // Dùng isOnboarded từ server response, không từ store/cache
         if (result.data.user.isOnboarded === false) {
           router.push('/onboarding')
         } else {
@@ -96,7 +90,8 @@ export const useLogin = () => {
           duration: 3000,
         })
       }
-    } catch {
+    } catch (error) {
+      console.error('Google login error:', error)
       toast.error('Đăng nhập thất bại', {
         description: 'Có lỗi xảy ra, vui lòng thử lại sau',
         duration: 3000,

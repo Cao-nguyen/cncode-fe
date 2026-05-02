@@ -13,6 +13,10 @@ const nextConfig = {
         source: '/s/:shortCode',
         destination: `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/s/:shortCode`,
       },
+      {
+        source: '/track',
+        destination: `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/affiliate/track`,
+      },
     ];
   },
 };
