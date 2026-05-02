@@ -1,6 +1,7 @@
 // providers/socket.provider.tsx
 'use client';
 
+import { toast } from 'sonner';
 import {
     createContext,
     useContext,
@@ -203,6 +204,27 @@ export function SocketProvider({ children }: { children: ReactNode }) {
             socketState.off('left_post_room', handleLeftPostRoom);
         };
     }, [socketState]);
+
+    useEffect(() => {
+        if (!socketState || !isConnected) return;
+
+        const handleAccountDeleted = (data: { message: string }) => {
+            toast.error('Tài khoản của bạn đã bị xóa', {
+                description: data.message || 'Vui lòng liên hệ admin để biết thêm chi tiết',
+                duration: 5000,
+            });
+
+            // Logout user
+            const { logout } = useAuthStore.getState();
+            logout();
+
+            // Chuyển về trang chủ
+            window.location.href = '/';
+        };
+
+        socketState.on('account_deleted', handleAccountDeleted);
+        return () => { socketState.off('account_deleted', handleAccountDeleted); };
+    }, [socketState, isConnected]);
 
     const value = useMemo<SocketContextType>(
         () => ({ socket: socketState, isConnected, socketId, joinPostRoom, leavePostRoom }),

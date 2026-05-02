@@ -1,11 +1,11 @@
+// app/layout.tsx
 import { Inter } from "next/font/google";
-import type { Metadata } from "@/node_modules/next";
+import type { Metadata } from "next";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import "aos/dist/aos.css";
 import "./globals.css";
 
 import ToasterProvider from "@/providers/toaster.provider";
-import AppThemeProvider from "@/providers/theme.provider";
 import AOSProvider from "@/providers/aos.provider";
 import AuthProvider from "@/providers/auth.provider";
 import { SocketProvider } from "@/providers/socket.provider";
@@ -32,26 +32,35 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";
+
   return (
-    <html lang="vi" style={{ scrollbarGutter: "stable" }} suppressHydrationWarning>
+    <html lang="vi" suppressHydrationWarning>
+      <head>
+        <meta name="color-scheme" content="light" />
+        <meta name="theme-color" content="#ffffff" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              document.documentElement.classList.remove('dark');
+              document.documentElement.style.colorScheme = 'light';
+              localStorage.removeItem('theme');
+            `,
+          }}
+        />
+      </head>
       <body className={`${inter.className} antialiased`}>
-        <AppThemeProvider>
-
-          <AuthProvider>
-            <SocketProvider>
-              <SessionProvider>
-                <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!}>
-                  <ToasterProvider>
-                    <AOSProvider>
-                      {children}
-                    </AOSProvider>
-                  </ToasterProvider>
-                </GoogleOAuthProvider>
-              </SessionProvider>
-            </SocketProvider>
-          </AuthProvider>
-
-        </AppThemeProvider>
+        <AuthProvider>
+          <SocketProvider>
+            <SessionProvider>
+              <GoogleOAuthProvider clientId={googleClientId}>
+                <ToasterProvider>
+                  <AOSProvider>{children}</AOSProvider>
+                </ToasterProvider>
+              </GoogleOAuthProvider>
+            </SessionProvider>
+          </SocketProvider>
+        </AuthProvider>
       </body>
     </html>
   );

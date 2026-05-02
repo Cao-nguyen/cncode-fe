@@ -35,7 +35,6 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 import { format } from 'date-fns';
-import { vi } from 'date-fns/locale';
 import {
     BarChart,
     Bar,
@@ -47,15 +46,14 @@ import {
     ResponsiveContainer
 } from 'recharts';
 
-// Constants
-const ROLE_OPTIONS: Array<{ value: string; label: string }> = [
+const ROLE_OPTIONS = [
     { value: '', label: 'Tất cả vai trò' },
     { value: 'user', label: 'Người dùng' },
     { value: 'teacher', label: 'Giáo viên' },
     { value: 'admin', label: 'Admin' }
 ];
 
-const SORT_OPTIONS: Array<{ value: string; label: string }> = [
+const SORT_OPTIONS = [
     { value: 'createdAt', label: 'Ngày tạo' },
     { value: 'fullName', label: 'Tên' },
     { value: 'coins', label: 'Số xu' },
@@ -64,105 +62,81 @@ const SORT_OPTIONS: Array<{ value: string; label: string }> = [
     { value: 'lastActiveAt', label: 'Hoạt động gần đây' }
 ];
 
-const PAGE_SIZE_OPTIONS: number[] = [10, 20, 50, 100];
+const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
 
-// Custom tooltip for bar chart
 const CustomBarTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ value: number }>; label?: string }) => {
     if (active && payload && payload.length) {
         return (
             <div className="bg-white dark:bg-gray-800 p-2 sm:p-3 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
                 <p className="font-semibold text-xs sm:text-sm mb-1">{label}</p>
-                <p className="text-xs sm:text-sm text-main">
-                    {payload[0]?.value?.toLocaleString() || 0} người dùng
-                </p>
+                <p className="text-xs sm:text-sm text-main">{payload[0]?.value?.toLocaleString() || 0} người dùng</p>
             </div>
         );
     }
     return null;
 };
 
-// Helper để tạo thông báo qua notificationBell
-const sendSystemNotification = async (
-    userIds: string[],
-    title: string,
-    content: string,
-    type: 'system' | 'role_request_approved' | 'role_request_rejected' = 'system'
-) => {
+const sendSystemNotification = async (userIds: string[], title: string, content: string, type: 'system' | 'role_request_approved' | 'role_request_rejected' = 'system') => {
     try {
-        await notificationApi.sendToUsers(userIds, {
-            title,
-            content,
-            type,
-            meta: {}
-        });
+        await notificationApi.sendToUsers(userIds, { title, content, type, meta: {} });
     } catch (error) {
         console.error('Send notification error:', error);
     }
 };
 
 export default function AdminUsersPage() {
-    const { token, user: currentUser } = useAuthStore();
+    const { token } = useAuthStore();
     const { socket, isConnected } = useSocket();
 
-    // State quản lý dữ liệu
     const [users, setUsers] = useState<IUser[]>([]);
     const [pendingTeachers, setPendingTeachers] = useState<IUser[]>([]);
     const [stats, setStats] = useState<IUserStats | null>(null);
     const [provinceStats, setProvinceStats] = useState<IProvinceStat[]>([]);
-    const [loading, setLoading] = useState<boolean>(true);
-    const [loadingProvince, setLoadingProvince] = useState<boolean>(true);
-    const [loadingPending, setLoadingPending] = useState<boolean>(false);
+    const [loading, setLoading] = useState(true);
+    const [loadingProvince, setLoadingProvince] = useState(true);
+    const [loadingPending, setLoadingPending] = useState(false);
 
-    // State phân trang
-    const [page, setPage] = useState<number>(1);
-    const [pageSize, setPageSize] = useState<number>(20);
-    const [totalPages, setTotalPages] = useState<number>(1);
-    const [totalUsers, setTotalUsers] = useState<number>(0);
+    const [page, setPage] = useState(1);
+    const [pageSize, setPageSize] = useState(20);
+    const [totalPages, setTotalPages] = useState(1);
+    const [totalUsers, setTotalUsers] = useState(0);
 
-    // State UI
-    const [showFilters, setShowFilters] = useState<boolean>(false);
+    const [showFilters, setShowFilters] = useState(false);
     const [activeTab, setActiveTab] = useState<'all' | 'pending'>('all');
-    const [isMobile, setIsMobile] = useState<boolean>(false);
+    const [isMobile, setIsMobile] = useState(false);
+    const [isTablet, setIsTablet] = useState(false);
 
-    // State filters
     const [filters, setFilters] = useState<IUserFilters>({
-        search: '',
-        role: '',
-        status: '',
-        sortBy: 'createdAt',
-        sortOrder: 'desc'
+        search: '', role: '', status: '', sortBy: 'createdAt', sortOrder: 'desc'
     });
 
-    // State modals
     const [selectedUser, setSelectedUser] = useState<IUser | null>(null);
-    const [showUserModal, setShowUserModal] = useState<boolean>(false);
-    const [showCoinModal, setShowCoinModal] = useState<boolean>(false);
-    const [showRoleModal, setShowRoleModal] = useState<boolean>(false);
-    const [showViolationModal, setShowViolationModal] = useState<boolean>(false);
+    const [showUserModal, setShowUserModal] = useState(false);
+    const [showCoinModal, setShowCoinModal] = useState(false);
+    const [showRoleModal, setShowRoleModal] = useState(false);
+    const [showViolationModal, setShowViolationModal] = useState(false);
 
-    // Form states
-    const [selectedRole, setSelectedRole] = useState<string>('');
-    const [violationReason, setViolationReason] = useState<string>('');
+    const [selectedRole, setSelectedRole] = useState('');
+    const [violationReason, setViolationReason] = useState('');
     const [violationAction, setViolationAction] = useState<'warn' | 'mute' | 'ban'>('warn');
-    const [coinAmount, setCoinAmount] = useState<number>(0);
-    const [coinReason, setCoinReason] = useState<string>('');
+    const [coinAmount, setCoinAmount] = useState(0);
+    const [coinReason, setCoinReason] = useState('');
     const [actionLoading, setActionLoading] = useState<{ type: string; userId: string } | null>(null);
 
     const initialFetchDone = useRef(false);
 
-    // Check mobile
     useEffect(() => {
-        const checkMobile = () => {
-            setIsMobile(window.innerWidth < 768);
+        const checkScreen = () => {
+            const width = window.innerWidth;
+            setIsMobile(width < 640);
+            setIsTablet(width >= 640 && width < 1024);
         };
-        checkMobile();
-        window.addEventListener('resize', checkMobile);
-        return () => window.removeEventListener('resize', checkMobile);
+        checkScreen();
+        window.addEventListener('resize', checkScreen);
+        return () => window.removeEventListener('resize', checkScreen);
     }, []);
 
-    // ========== DATA FETCHING ==========
-
-    const fetchUsers = useCallback(async (showLoading: boolean = true) => {
+    const fetchUsers = useCallback(async (showLoading = true) => {
         if (!token) return;
         if (showLoading) setLoading(true);
         try {
@@ -186,9 +160,7 @@ export default function AdminUsersPage() {
         setLoadingPending(true);
         try {
             const result = await userApi.getPendingTeachers(token);
-            if (result.success) {
-                setPendingTeachers(result.data);
-            }
+            if (result.success) setPendingTeachers(result.data);
         } catch (error) {
             console.error('Failed to fetch pending teachers:', error);
         } finally {
@@ -200,9 +172,7 @@ export default function AdminUsersPage() {
         if (!token) return;
         try {
             const result = await userApi.getUserStats(token);
-            if (result.success) {
-                setStats(result.data);
-            }
+            if (result.success) setStats(result.data);
         } catch (error) {
             console.error('Failed to fetch stats:', error);
         }
@@ -213,9 +183,7 @@ export default function AdminUsersPage() {
         setLoadingProvince(true);
         try {
             const result = await userApi.getUserStatsByProvince(token);
-            if (result.success) {
-                setProvinceStats(result.data.stats);
-            }
+            if (result.success) setProvinceStats(result.data.stats);
         } catch (error) {
             console.error('Failed to fetch province stats:', error);
         } finally {
@@ -223,20 +191,13 @@ export default function AdminUsersPage() {
         }
     }, [token]);
 
-    // Initial fetch
     useEffect(() => {
         if (token && !initialFetchDone.current) {
             initialFetchDone.current = true;
-            Promise.all([
-                fetchUsers(),
-                fetchStats(),
-                fetchProvinceStats(),
-                fetchPendingTeachers()
-            ]);
+            Promise.all([fetchUsers(), fetchStats(), fetchProvinceStats(), fetchPendingTeachers()]);
         }
-    }, [token, fetchUsers, fetchStats, fetchProvinceStats, fetchPendingTeachers]);
+    }, [token]);
 
-    // Reset page khi filters thay đổi
     useEffect(() => {
         if (initialFetchDone.current) {
             setPage(1);
@@ -244,82 +205,32 @@ export default function AdminUsersPage() {
         }
     }, [filters, pageSize]);
 
-    // Fetch khi page thay đổi
     useEffect(() => {
-        if (initialFetchDone.current && page > 0) {
-            fetchUsers();
-        }
+        if (initialFetchDone.current && page > 0) fetchUsers();
     }, [page]);
 
-    // ========== SOCKET REALTIME HANDLERS ==========
-
-    // Lắng nghe user mới đăng ký
     useEffect(() => {
         if (!socket || !isConnected) return;
 
-        const handleNewUserRegistered = (data: { userId: string; userName: string; email: string }) => {
+        const handleNewUserRegistered = () => {
             fetchStats();
             fetchProvinceStats();
-            if (activeTab === 'all' && page === 1) {
-                fetchUsers(false);
-            }
+            if (activeTab === 'all' && page === 1) fetchUsers(false);
         };
 
-        socket.on('new_user_registered', handleNewUserRegistered);
-        return () => { socket.off('new_user_registered', handleNewUserRegistered); };
-    }, [socket, isConnected, activeTab, page, fetchStats, fetchProvinceStats, fetchUsers]);
-
-    // Lắng nghe yêu cầu role
-    useEffect(() => {
-        if (!socket || !isConnected) return;
-
-        const handleRoleRequestNotification = (data: { userId: string; userName: string; requestedRole: string }) => {
+        const handleRoleRequestNotification = () => {
             fetchPendingTeachers();
             fetchStats();
         };
 
-        socket.on('role_request_notification', handleRoleRequestNotification);
-        return () => { socket.off('role_request_notification', handleRoleRequestNotification); };
-    }, [socket, isConnected, fetchPendingTeachers, fetchStats]);
-
-    // Lắng nghe cập nhật coins
-    useEffect(() => {
-        if (!socket || !isConnected) return;
-
-        const handleCoinsUpdated = (data: { userId: string; coins: number; userName?: string; amount?: number }) => {
-            setUsers(prevUsers =>
-                prevUsers.map(user =>
-                    user._id === data.userId
-                        ? { ...user, coins: data.coins }
-                        : user
-                )
-            );
-            setPendingTeachers(prev =>
-                prev.map(user =>
-                    user._id === data.userId
-                        ? { ...user, coins: data.coins }
-                        : user
-                )
-            );
+        const handleCoinsUpdated = (data: { userId: string; coins: number }) => {
+            setUsers(prev => prev.map(user => user._id === data.userId ? { ...user, coins: data.coins } : user));
+            setPendingTeachers(prev => prev.map(user => user._id === data.userId ? { ...user, coins: data.coins } : user));
             fetchStats();
         };
 
-        socket.on('coins_updated', handleCoinsUpdated);
-        return () => { socket.off('coins_updated', handleCoinsUpdated); };
-    }, [socket, isConnected, fetchStats]);
-
-    // Lắng nghe thay đổi role
-    useEffect(() => {
-        if (!socket || !isConnected) return;
-
         const handleRoleChanged = (data: { userId: string; newRole: string; oldRole: string; userName: string }) => {
-            setUsers(prevUsers =>
-                prevUsers.map(user =>
-                    user._id === data.userId
-                        ? { ...user, role: data.newRole as 'user' | 'teacher' | 'admin' }
-                        : user
-                )
-            );
+            setUsers(prev => prev.map(user => user._id === data.userId ? { ...user, role: data.newRole as 'user' | 'teacher' | 'admin' } : user));
             if (data.newRole === 'teacher') {
                 setPendingTeachers(prev => prev.filter(user => user._id !== data.userId));
             }
@@ -327,55 +238,38 @@ export default function AdminUsersPage() {
             fetchPendingTeachers();
         };
 
-        socket.on('role_changed', handleRoleChanged);
-        return () => { socket.off('role_changed', handleRoleChanged); };
-    }, [socket, isConnected, fetchStats, fetchPendingTeachers]);
-
-    // Lắng nghe xóa user
-    useEffect(() => {
-        if (!socket || !isConnected) return;
-
         const handleUserDeleted = (data: { userId: string; userName: string }) => {
-            setUsers(prevUsers => prevUsers.filter(user => user._id !== data.userId));
+            setUsers(prev => prev.filter(user => user._id !== data.userId));
             setPendingTeachers(prev => prev.filter(user => user._id !== data.userId));
             fetchStats();
             fetchProvinceStats();
             setTotalUsers(prev => prev - 1);
         };
 
-        socket.on('user_deleted', handleUserDeleted);
-        return () => { socket.off('user_deleted', handleUserDeleted); };
-    }, [socket, isConnected, fetchStats, fetchProvinceStats]);
-
-    // Lắng nghe cập nhật streak
-    useEffect(() => {
-        if (!socket || !isConnected) return;
-
         const handleStreakUpdated = (data: { userId: string; streak: number; totalCoins: number }) => {
-            setUsers(prevUsers =>
-                prevUsers.map(user =>
-                    user._id === data.userId
-                        ? { ...user, streak: data.streak, coins: data.totalCoins }
-                        : user
-                )
-            );
-            setPendingTeachers(prev =>
-                prev.map(user =>
-                    user._id === data.userId
-                        ? { ...user, streak: data.streak, coins: data.totalCoins }
-                        : user
-                )
-            );
+            setUsers(prev => prev.map(user => user._id === data.userId ? { ...user, streak: data.streak, coins: data.totalCoins } : user));
+            setPendingTeachers(prev => prev.map(user => user._id === data.userId ? { ...user, streak: data.streak, coins: data.totalCoins } : user));
             fetchStats();
         };
 
+        socket.on('new_user_registered', handleNewUserRegistered);
+        socket.on('role_request_notification', handleRoleRequestNotification);
+        socket.on('coins_updated', handleCoinsUpdated);
+        socket.on('role_changed', handleRoleChanged);
+        socket.on('user_deleted', handleUserDeleted);
         socket.on('streak_updated', handleStreakUpdated);
-        return () => { socket.off('streak_updated', handleStreakUpdated); };
-    }, [socket, isConnected, fetchStats]);
 
-    // ========== HANDLERS ==========
+        return () => {
+            socket.off('new_user_registered', handleNewUserRegistered);
+            socket.off('role_request_notification', handleRoleRequestNotification);
+            socket.off('coins_updated', handleCoinsUpdated);
+            socket.off('role_changed', handleRoleChanged);
+            socket.off('user_deleted', handleUserDeleted);
+            socket.off('streak_updated', handleStreakUpdated);
+        };
+    }, [socket, isConnected, activeTab, page, fetchStats, fetchProvinceStats, fetchUsers, fetchPendingTeachers]);
 
-    const handleApproveTeacher = async (userId: string, approved: boolean): Promise<void> => {
+    const handleApproveTeacher = async (userId: string, approved: boolean) => {
         if (!token) return;
         setActionLoading({ type: 'approve', userId });
         try {
@@ -385,16 +279,15 @@ export default function AdminUsersPage() {
                 await sendSystemNotification(
                     [userId],
                     approved ? 'Yêu cầu giáo viên được duyệt' : 'Yêu cầu giáo viên bị từ chối',
-                    approved
-                        ? `Chúc mừng! Yêu cầu trở thành giáo viên của bạn đã được duyệt.`
-                        : `Rất tiếc! Yêu cầu trở thành giáo viên của bạn đã bị từ chối.`,
+                    approved ? `Chúc mừng! Yêu cầu trở thành giáo viên của bạn đã được duyệt.` : `Rất tiếc! Yêu cầu trở thành giáo viên của bạn đã bị từ chối.`,
                     approved ? 'role_request_approved' : 'role_request_rejected'
                 );
-                fetchPendingTeachers();
-                fetchStats();
-                if (approved && activeTab === 'all' && page === 1) {
-                    fetchUsers(false);
+                setPendingTeachers(prev => prev.filter(u => u._id !== userId));
+                if (approved) {
+                    setUsers(prev => [...prev, { ...user, role: 'teacher', requestedRole: null }]);
                 }
+                fetchStats();
+                if (activeTab === 'all' && page === 1) fetchUsers(false);
             }
         } catch (error) {
             console.error('Approve teacher error:', error);
@@ -403,7 +296,7 @@ export default function AdminUsersPage() {
         }
     };
 
-    const handleChangeRole = async (): Promise<void> => {
+    const handleChangeRole = async () => {
         if (!selectedUser || !selectedRole || !token) return;
         setActionLoading({ type: 'role', userId: selectedUser._id });
         try {
@@ -416,6 +309,10 @@ export default function AdminUsersPage() {
                     `Quản trị viên đã thay đổi vai trò của bạn thành ${roleLabel}.`,
                     'system'
                 );
+                setUsers(prev => prev.map(user => user._id === selectedUser._id ? { ...user, role: selectedRole as 'user' | 'teacher' | 'admin' } : user));
+                if (selectedRole === 'teacher') {
+                    setPendingTeachers(prev => prev.filter(user => user._id !== selectedUser._id));
+                }
                 setShowRoleModal(false);
                 setSelectedUser(null);
                 setSelectedRole('');
@@ -427,7 +324,7 @@ export default function AdminUsersPage() {
         }
     };
 
-    const handleMarkViolation = async (): Promise<void> => {
+    const handleMarkViolation = async () => {
         if (!selectedUser || !violationReason || !token) return;
         setActionLoading({ type: 'violation', userId: selectedUser._id });
         try {
@@ -451,7 +348,7 @@ export default function AdminUsersPage() {
         }
     };
 
-    const handleAdjustCoins = async (): Promise<void> => {
+    const handleAdjustCoins = async () => {
         if (!selectedUser || coinAmount === 0 || !token) return;
         setActionLoading({ type: 'coins', userId: selectedUser._id });
         try {
@@ -464,6 +361,7 @@ export default function AdminUsersPage() {
                     `Quản trị viên đã ${action} xu. Lý do: ${coinReason || 'Không có lý do'}`,
                     'system'
                 );
+                setUsers(prev => prev.map(user => user._id === selectedUser._id ? { ...user, coins: user.coins + coinAmount } : user));
                 setShowCoinModal(false);
                 setCoinAmount(0);
                 setCoinReason('');
@@ -475,7 +373,7 @@ export default function AdminUsersPage() {
         }
     };
 
-    const handleDeleteUser = async (user: IUser): Promise<void> => {
+    const handleDeleteUser = async (user: IUser) => {
         if (!confirm(`Bạn có chắc chắn muốn xóa người dùng "${user.fullName}"? Hành động này không thể hoàn tác.`)) return;
         if (!token) return;
         setActionLoading({ type: 'delete', userId: user._id });
@@ -488,7 +386,7 @@ export default function AdminUsersPage() {
         }
     };
 
-    const getRoleBadge = (role: string): React.ReactNode => {
+    const getRoleBadge = (role: string) => {
         switch (role) {
             case 'admin':
                 return <span className="px-1.5 sm:px-2 py-0.5 sm:py-1 bg-red-100 text-red-700 dark:bg-red-950/30 dark:text-red-400 rounded-lg text-[10px] sm:text-xs font-medium">Admin</span>;
@@ -499,10 +397,9 @@ export default function AdminUsersPage() {
         }
     };
 
-    const getPageNumbers = (): (number | string)[] => {
+    const getPageNumbers = () => {
         const pages: (number | string)[] = [];
         const maxVisible = isMobile ? 3 : 5;
-
         if (totalPages <= maxVisible) {
             for (let i = 1; i <= totalPages; i++) pages.push(i);
         } else {
@@ -525,11 +422,11 @@ export default function AdminUsersPage() {
         return pages;
     };
 
-    const topProvinces: IProvinceStat[] = provinceStats.slice(0, 10);
+    const topProvinces = provinceStats.slice(0, 10);
 
     if (loading && users.length === 0) {
         return (
-            <div className="flex items-center justify-center h-96">
+            <div className="flex items-center justify-center min-h-[400px]">
                 <Loader2 className="w-8 h-8 animate-spin text-main" />
             </div>
         );
@@ -541,21 +438,12 @@ export default function AdminUsersPage() {
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
                 <div>
                     <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Quản lý người dùng</h1>
-                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-0.5 sm:mt-1">
-                        Quản lý tất cả người dùng - Dữ liệu tự động cập nhật realtime
-                        {isConnected && <span className="ml-2 text-green-500 text-[10px]">● Đã kết nối</span>}
-                        {!isConnected && <span className="ml-2 text-red-500 text-[10px]">● Đang kết nối lại</span>}
-                    </p>
+                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-0.5">Quản lý tất cả người dùng - Dữ liệu realtime</p>
                 </div>
-                <div className="flex items-center gap-2">
-                    <button
-                        onClick={() => setShowFilters(!showFilters)}
-                        className="flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 text-sm sm:text-base border border-main text-main rounded-lg hover:bg-main/5 transition"
-                    >
-                        <Filter size={isMobile ? 16 : 18} />
-                        <span>Bộ lọc</span>
-                    </button>
-                </div>
+                <button onClick={() => setShowFilters(!showFilters)} className="flex items-center justify-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 text-sm border border-main text-main rounded-lg hover:bg-main/5 transition">
+                    <Filter size={isMobile ? 16 : 18} />
+                    <span>Bộ lọc</span>
+                </button>
             </div>
 
             {/* Stats Cards */}
@@ -586,12 +474,7 @@ export default function AdminUsersPage() {
                         <UserPlus size={isMobile ? 14 : 18} />
                         <span className="text-xs sm:text-sm">Chờ duyệt</span>
                     </div>
-                    <p className="text-lg sm:text-2xl font-bold">
-                        {pendingTeachers.length}
-                        {pendingTeachers.length > 0 && (
-                            <span className="ml-2 text-xs text-yellow-600 animate-pulse">✨ Mới!</span>
-                        )}
-                    </p>
+                    <p className="text-lg sm:text-2xl font-bold">{pendingTeachers.length}{pendingTeachers.length > 0 && <span className="ml-1 text-xs text-yellow-600 animate-pulse">✨</span>}</p>
                 </div>
                 <div className="rounded-xl p-3 sm:p-4 shadow-sm border border-purple-200 dark:border-purple-800 bg-white dark:bg-gray-900">
                     <div className="flex items-center gap-1.5 sm:gap-2 text-purple-500 mb-1 sm:mb-2">
@@ -609,59 +492,41 @@ export default function AdminUsersPage() {
                 </div>
             </div>
 
-            {/* Biểu đồ thống kê theo tỉnh thành */}
+            {/* Biểu đồ thống kê */}
             <div className="rounded-xl p-4 sm:p-5 shadow-sm border border-main/20 bg-white dark:bg-gray-900">
                 <div className="flex items-center gap-2 mb-3 sm:mb-4">
                     <BarChart3 size={isMobile ? 18 : 20} className="text-main" />
-                    <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
-                        Thống kê người dùng theo tỉnh thành
-                    </h2>
+                    <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">Thống kê người dùng theo tỉnh thành</h2>
                 </div>
-
                 {loadingProvince ? (
                     <div className="flex justify-center items-center h-48 sm:h-64">
                         <Loader2 className="w-6 h-6 sm:w-8 sm:h-8 animate-spin text-main" />
                     </div>
                 ) : provinceStats.length === 0 ? (
-                    <div className="text-center py-8 sm:py-12 text-gray-500 text-sm sm:text-base">
-                        Chưa có dữ liệu thống kê theo tỉnh thành
-                    </div>
+                    <div className="text-center py-8 sm:py-12 text-gray-500 text-sm sm:text-base">Chưa có dữ liệu thống kê theo tỉnh thành</div>
                 ) : (
                     <>
-                        <div className={`${isMobile ? 'overflow-x-auto' : ''}`}>
-                            <div className={isMobile ? 'min-w-[500px]' : 'w-full'}>
+                        <div className="overflow-x-auto">
+                            <div className="min-w-[500px]">
                                 <ResponsiveContainer width="100%" height={isMobile ? 300 : 400}>
                                     <BarChart data={topProvinces} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
                                         <CartesianGrid strokeDasharray="3 3" />
-                                        <XAxis
-                                            dataKey="_id"
-                                            angle={-45}
-                                            textAnchor="end"
-                                            height={isMobile ? 70 : 80}
-                                            interval={0}
-                                            tick={{ fontSize: isMobile ? 10 : 12 }}
-                                        />
+                                        <XAxis dataKey="_id" angle={-45} textAnchor="end" height={70} interval={0} tick={{ fontSize: isMobile ? 10 : 12 }} />
                                         <YAxis tick={{ fontSize: isMobile ? 10 : 12 }} />
                                         <Tooltip content={<CustomBarTooltip />} />
-                                        <Legend wrapperStyle={{ fontSize: isMobile ? 10 : 12 }} />
-                                        <Bar
-                                            dataKey="count"
-                                            fill="var(--color-main)"
-                                            name="Số lượng người dùng"
-                                            radius={[4, 4, 0, 0]}
-                                        />
+                                        <Legend />
+                                        <Bar dataKey="count" fill="var(--color-main)" name="Số lượng người dùng" radius={[4, 4, 0, 0]} />
                                     </BarChart>
                                 </ResponsiveContainer>
                             </div>
                         </div>
-
                         <div className="mt-4 sm:mt-6 overflow-x-auto">
                             <table className="w-full text-xs sm:text-sm">
                                 <thead className="bg-main/5">
                                     <tr>
-                                        <th className="text-left p-2 sm:p-3 font-semibold text-main">STT</th>
-                                        <th className="text-left p-2 sm:p-3 font-semibold text-main">Tỉnh/Thành phố</th>
-                                        <th className="text-left p-2 sm:p-3 font-semibold text-main">Số lượng người dùng</th>
+                                        <th className="text-left p-2 sm:p-3 font-semibold text-main">#</th>
+                                        <th className="text-left p-2 sm:p-3 font-semibold text-main">Tỉnh/TP</th>
+                                        <th className="text-left p-2 sm:p-3 font-semibold text-main">Số lượng</th>
                                         <th className="text-left p-2 sm:p-3 font-semibold text-main">Tỉ lệ</th>
                                     </tr>
                                 </thead>
@@ -675,11 +540,8 @@ export default function AdminUsersPage() {
                                                 <td className="p-2 sm:p-3">{province.count.toLocaleString()} người</td>
                                                 <td className="p-2 sm:p-3">
                                                     <div className="flex items-center gap-1 sm:gap-2">
-                                                        <div className="flex-1 h-1.5 sm:h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                                                            <div
-                                                                className="h-full bg-main rounded-full"
-                                                                style={{ width: `${percentage}%` }}
-                                                            />
+                                                        <div className="flex-1 h-1.5 sm:h-2 bg-gray-200 rounded-full overflow-hidden">
+                                                            <div className="h-full bg-main rounded-full" style={{ width: `${percentage}%` }} />
                                                         </div>
                                                         <span className="text-[10px] sm:text-xs text-gray-500 w-10 sm:w-12">{percentage}%</span>
                                                     </div>
@@ -696,29 +558,12 @@ export default function AdminUsersPage() {
 
             {/* Tabs */}
             <div className="flex gap-2 border-b overflow-x-auto">
-                <button
-                    onClick={() => setActiveTab('all')}
-                    className={`px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium whitespace-nowrap transition ${activeTab === 'all'
-                        ? 'border-b-2 border-main text-main'
-                        : 'text-gray-500 hover:text-gray-700'
-                        }`}
-                >
-                    Tất cả người dùng
-                    <span className="ml-2 text-xs text-gray-400">({totalUsers})</span>
+                <button onClick={() => setActiveTab('all')} className={`px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium whitespace-nowrap transition ${activeTab === 'all' ? 'border-b-2 border-main text-main' : 'text-gray-500 hover:text-gray-700'}`}>
+                    Tất cả người dùng <span className="ml-1 text-xs text-gray-400">({totalUsers})</span>
                 </button>
-                <button
-                    onClick={() => setActiveTab('pending')}
-                    className={`px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium whitespace-nowrap transition flex items-center gap-1 sm:gap-2 ${activeTab === 'pending'
-                        ? 'border-b-2 border-main text-main'
-                        : 'text-gray-500 hover:text-gray-700'
-                        }`}
-                >
+                <button onClick={() => setActiveTab('pending')} className={`px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium whitespace-nowrap transition flex items-center gap-1 ${activeTab === 'pending' ? 'border-b-2 border-main text-main' : 'text-gray-500 hover:text-gray-700'}`}>
                     Giáo viên chờ duyệt
-                    {pendingTeachers.length > 0 && (
-                        <span className="px-1.5 sm:px-2 py-0.5 bg-main text-white rounded-full text-[10px] sm:text-xs animate-pulse">
-                            {pendingTeachers.length}
-                        </span>
-                    )}
+                    {pendingTeachers.length > 0 && <span className="px-1.5 py-0.5 bg-main text-white rounded-full text-[10px] animate-pulse">{pendingTeachers.length}</span>}
                 </button>
             </div>
 
@@ -727,40 +572,17 @@ export default function AdminUsersPage() {
                 <div className="rounded-xl p-4 sm:p-5 shadow-sm border border-main/20 bg-white dark:bg-gray-900">
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                         <div className="relative">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={isMobile ? 16 : 18} />
-                            <input
-                                type="text"
-                                placeholder="Tìm kiếm theo tên, email..."
-                                value={filters.search}
-                                onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
-                                className="w-full pl-9 sm:pl-10 pr-3 sm:pr-4 py-1.5 sm:py-2 text-sm border border-main/30 rounded-lg bg-white dark:bg-gray-900 focus:outline-none focus:border-main transition"
-                            />
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                            <input type="text" placeholder="Tìm kiếm..." value={filters.search} onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))} className="w-full pl-9 pr-3 py-1.5 text-sm border border-main/30 rounded-lg bg-white dark:bg-gray-900 focus:outline-none focus:border-main" />
                         </div>
-                        <select
-                            value={filters.role}
-                            onChange={(e) => setFilters(prev => ({ ...prev, role: e.target.value }))}
-                            className="px-3 sm:px-4 py-1.5 sm:py-2 text-sm border border-main/30 rounded-lg bg-white dark:bg-gray-900 focus:outline-none focus:border-main transition"
-                        >
-                            {ROLE_OPTIONS.map(opt => (
-                                <option key={opt.value} value={opt.value}>{opt.label}</option>
-                            ))}
+                        <select value={filters.role} onChange={(e) => setFilters(prev => ({ ...prev, role: e.target.value }))} className="px-3 py-1.5 text-sm border border-main/30 rounded-lg bg-white dark:bg-gray-900 focus:outline-none focus:border-main">
+                            {ROLE_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
                         </select>
-                        <select
-                            value={filters.sortBy}
-                            onChange={(e) => setFilters(prev => ({ ...prev, sortBy: e.target.value }))}
-                            className="px-3 sm:px-4 py-1.5 sm:py-2 text-sm border border-main/30 rounded-lg bg-white dark:bg-gray-900 focus:outline-none focus:border-main transition"
-                        >
-                            {SORT_OPTIONS.map(opt => (
-                                <option key={opt.value} value={opt.value}>{opt.label}</option>
-                            ))}
+                        <select value={filters.sortBy} onChange={(e) => setFilters(prev => ({ ...prev, sortBy: e.target.value }))} className="px-3 py-1.5 text-sm border border-main/30 rounded-lg bg-white dark:bg-gray-900 focus:outline-none focus:border-main">
+                            {SORT_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
                         </select>
-                        <select
-                            value={filters.sortOrder}
-                            onChange={(e) => setFilters(prev => ({ ...prev, sortOrder: e.target.value as 'asc' | 'desc' }))}
-                            className="px-3 sm:px-4 py-1.5 sm:py-2 text-sm border border-main/30 rounded-lg bg-white dark:bg-gray-900 focus:outline-none focus:border-main transition"
-                        >
-                            <option value="desc">Mới nhất</option>
-                            <option value="asc">Cũ nhất</option>
+                        <select value={filters.sortOrder} onChange={(e) => setFilters(prev => ({ ...prev, sortOrder: e.target.value as 'asc' | 'desc' }))} className="px-3 py-1.5 text-sm border border-main/30 rounded-lg bg-white dark:bg-gray-900 focus:outline-none focus:border-main">
+                            <option value="desc">Mới nhất</option><option value="asc">Cũ nhất</option>
                         </select>
                     </div>
                 </div>
@@ -769,14 +591,14 @@ export default function AdminUsersPage() {
             {/* Users Table */}
             <div className="rounded-xl shadow-sm border border-main/20 overflow-hidden bg-white dark:bg-gray-900">
                 <div className="overflow-x-auto">
-                    <table className="w-full min-w-[800px] sm:min-w-full">
+                    <table className="w-full min-w-[800px] lg:min-w-full">
                         <thead className="bg-main/5 border-b border-main/20">
                             <tr>
                                 <th className="text-left px-3 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-semibold text-main">Người dùng</th>
                                 <th className="text-left px-3 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-semibold text-main">Vai trò</th>
                                 <th className="text-left px-3 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-semibold text-main">Tỉnh/TP</th>
                                 <th className="text-left px-3 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-semibold text-main">Xu</th>
-                                <th className="text-left px-3 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-semibold text-main">Streak</th>
+                                {!isMobile && !isTablet && <th className="text-left px-3 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-semibold text-main">Streak</th>}
                                 <th className="text-left px-3 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-semibold text-main">Tham gia</th>
                                 <th className="text-center px-3 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-semibold text-main">Thao tác</th>
                             </tr>
@@ -787,13 +609,7 @@ export default function AdminUsersPage() {
                                     <td className="px-3 sm:px-6 py-3 sm:py-4">
                                         <div className="flex items-center gap-2 sm:gap-3">
                                             <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-main/10 overflow-hidden flex-shrink-0">
-                                                {user.avatar ? (
-                                                    <Image src={user.avatar} alt={user.fullName} width={40} height={40} className="w-full h-full object-cover" />
-                                                ) : (
-                                                    <div className="w-full h-full flex items-center justify-center text-base sm:text-lg font-semibold text-main">
-                                                        {user.fullName.charAt(0).toUpperCase()}
-                                                    </div>
-                                                )}
+                                                {user.avatar ? <Image src={user.avatar} alt={user.fullName} width={40} height={40} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-base sm:text-lg font-semibold text-main">{user.fullName.charAt(0).toUpperCase()}</div>}
                                             </div>
                                             <div>
                                                 <p className="font-medium text-sm sm:text-base text-gray-900 dark:text-white">{user.fullName}</p>
@@ -807,25 +623,11 @@ export default function AdminUsersPage() {
                                             {getRoleBadge(user.role)}
                                             {activeTab === 'pending' && user.requestedRole === 'teacher' && (
                                                 <div className="flex items-center gap-1 mt-1">
-                                                    <button
-                                                        onClick={() => handleApproveTeacher(user._id, true)}
-                                                        disabled={actionLoading?.userId === user._id && actionLoading?.type === 'approve'}
-                                                        className="px-1.5 sm:px-2 py-0.5 sm:py-1 bg-green-100 text-green-700 rounded text-[10px] sm:text-xs hover:bg-green-200 transition disabled:opacity-50"
-                                                    >
-                                                        {actionLoading?.userId === user._id && actionLoading?.type === 'approve' ? (
-                                                            <Loader2 className="w-3 h-3 animate-spin inline" />
-                                                        ) : (
-                                                            <CheckCircle size={10} className="inline mr-0.5" />
-                                                        )}
-                                                        Duyệt
+                                                    <button onClick={() => handleApproveTeacher(user._id, true)} disabled={actionLoading?.userId === user._id} className="px-1.5 sm:px-2 py-0.5 sm:py-1 bg-green-100 text-green-700 rounded text-[10px] sm:text-xs hover:bg-green-200 disabled:opacity-50">
+                                                        {actionLoading?.userId === user._id ? <Loader2 className="w-2 h-2 animate-spin inline" /> : <CheckCircle size={10} className="inline mr-0.5" />}Duyệt
                                                     </button>
-                                                    <button
-                                                        onClick={() => handleApproveTeacher(user._id, false)}
-                                                        disabled={actionLoading?.userId === user._id && actionLoading?.type === 'approve'}
-                                                        className="px-1.5 sm:px-2 py-0.5 sm:py-1 bg-red-100 text-red-700 rounded text-[10px] sm:text-xs hover:bg-red-200 transition disabled:opacity-50"
-                                                    >
-                                                        <XCircle size={10} className="inline mr-0.5" />
-                                                        Từ chối
+                                                    <button onClick={() => handleApproveTeacher(user._id, false)} disabled={actionLoading?.userId === user._id} className="px-1.5 sm:px-2 py-0.5 sm:py-1 bg-red-100 text-red-700 rounded text-[10px] sm:text-xs hover:bg-red-200 disabled:opacity-50">
+                                                        <XCircle size={10} className="inline mr-0.5" />Từ chối
                                                     </button>
                                                 </div>
                                             )}
@@ -834,98 +636,37 @@ export default function AdminUsersPage() {
                                     <td className="px-3 sm:px-6 py-3 sm:py-4">
                                         <div className="flex items-center gap-0.5 sm:gap-1">
                                             <MapPin size={isMobile ? 12 : 14} className="text-main/50" />
-                                            <span className="text-xs sm:text-sm text-gray-700 dark:text-gray-300">
-                                                {user.province || <span className="text-gray-400">Chưa cập nhật</span>}
-                                            </span>
+                                            <span className="text-xs sm:text-sm text-gray-700 dark:text-gray-300">{user.province || '---'}</span>
                                         </div>
                                     </td>
                                     <td className="px-3 sm:px-6 py-3 sm:py-4">
                                         <div className="flex items-center gap-1 sm:gap-2">
                                             <span className="font-semibold text-main text-sm sm:text-base">{user.coins.toLocaleString()}</span>
-                                            <button
-                                                onClick={() => {
-                                                    setSelectedUser(user);
-                                                    setShowCoinModal(true);
-                                                }}
-                                                className="p-0.5 sm:p-1 text-gray-400 hover:text-main rounded transition"
-                                                title="Điều chỉnh xu"
-                                            >
+                                            <button onClick={() => { setSelectedUser(user); setShowCoinModal(true); }} className="p-0.5 sm:p-1 text-gray-400 hover:text-main rounded transition" title="Điều chỉnh xu">
                                                 <Coins size={isMobile ? 12 : 14} />
                                             </button>
                                         </div>
                                     </td>
-                                    <td className="px-3 sm:px-6 py-3 sm:py-4">
-                                        <div className="flex items-center gap-1">
-                                            <span className="text-main font-medium text-sm sm:text-base">{user.streak}</span>
-                                            <span className="text-xs text-gray-400">ngày</span>
-                                        </div>
-                                    </td>
-                                    <td className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-gray-500">
-                                        {format(new Date(user.createdAt), 'dd/MM/yyyy')}
-                                    </td>
+                                    {!isMobile && !isTablet && (
+                                        <td className="px-3 sm:px-6 py-3 sm:py-4">
+                                            <span className="text-main text-sm sm:text-base">{user.streak}</span>
+                                        </td>
+                                    )}
+                                    <td className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-gray-500">{format(new Date(user.createdAt), 'dd/MM/yyyy')}</td>
                                     <td className="px-3 sm:px-6 py-3 sm:py-4">
                                         <div className="flex items-center justify-center gap-0.5 sm:gap-1 flex-wrap">
-                                            <button
-                                                onClick={() => {
-                                                    setSelectedUser(user);
-                                                    setShowUserModal(true);
-                                                }}
-                                                className="p-1 sm:p-2 text-main hover:bg-main/10 rounded-lg transition"
-                                                title="Xem chi tiết"
-                                            >
-                                                <Eye size={isMobile ? 14 : 18} />
-                                            </button>
-                                            <button
-                                                onClick={() => {
-                                                    setSelectedUser(user);
-                                                    setShowRoleModal(true);
-                                                    setSelectedRole(user.role);
-                                                }}
-                                                className="p-1 sm:p-2 text-purple-600 hover:bg-purple-100 dark:hover:bg-purple-950/30 rounded-lg transition"
-                                                title="Đổi vai trò"
-                                            >
-                                                <UserCog size={isMobile ? 14 : 18} />
-                                            </button>
-                                            <button
-                                                onClick={() => {
-                                                    setSelectedUser(user);
-                                                    setShowViolationModal(true);
-                                                }}
-                                                className="p-1 sm:p-2 text-red-600 hover:bg-red-100 dark:hover:bg-red-950/30 rounded-lg transition"
-                                                title="Đánh dấu vi phạm"
-                                            >
-                                                <AlertTriangle size={isMobile ? 14 : 18} />
-                                            </button>
-                                            <button
-                                                onClick={() => handleDeleteUser(user)}
-                                                disabled={actionLoading?.userId === user._id && actionLoading?.type === 'delete'}
-                                                className="p-1 sm:p-2 text-red-600 hover:bg-red-100 dark:hover:bg-red-950/30 rounded-lg transition disabled:opacity-50"
-                                                title="Xóa"
-                                            >
-                                                {actionLoading?.userId === user._id && actionLoading?.type === 'delete' ? (
-                                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                                ) : (
-                                                    <Trash2 size={isMobile ? 14 : 18} />
-                                                )}
+                                            <button onClick={() => { setSelectedUser(user); setShowUserModal(true); }} className="p-1 sm:p-2 text-main hover:bg-main/10 rounded-lg transition" title="Chi tiết"><Eye size={isMobile ? 14 : 18} /></button>
+                                            <button onClick={() => { setSelectedUser(user); setShowRoleModal(true); setSelectedRole(user.role); }} className="p-1 sm:p-2 text-purple-600 hover:bg-purple-100 rounded-lg transition" title="Đổi vai trò"><UserCog size={isMobile ? 14 : 18} /></button>
+                                            <button onClick={() => { setSelectedUser(user); setShowViolationModal(true); }} className="p-1 sm:p-2 text-red-600 hover:bg-red-100 rounded-lg transition" title="Vi phạm"><AlertTriangle size={isMobile ? 14 : 18} /></button>
+                                            <button onClick={() => handleDeleteUser(user)} disabled={actionLoading?.userId === user._id} className="p-1 sm:p-2 text-red-600 hover:bg-red-100 rounded-lg transition disabled:opacity-50" title="Xóa">
+                                                {actionLoading?.userId === user._id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 size={isMobile ? 14 : 18} />}
                                             </button>
                                         </div>
                                     </td>
                                 </tr>
                             ))}
-                            {activeTab === 'all' && users.length === 0 && !loading && (
-                                <tr>
-                                    <td colSpan={7} className="text-center py-8 text-gray-500">
-                                        Không có người dùng nào
-                                    </td>
-                                </tr>
-                            )}
-                            {activeTab === 'pending' && pendingTeachers.length === 0 && !loadingPending && (
-                                <tr>
-                                    <td colSpan={7} className="text-center py-8 text-gray-500">
-                                        Không có giáo viên nào chờ duyệt
-                                    </td>
-                                </tr>
-                            )}
+                            {activeTab === 'all' && users.length === 0 && !loading && <tr><td colSpan={7} className="text-center py-8 text-gray-500">Không có người dùng nào</td></tr>}
+                            {activeTab === 'pending' && pendingTeachers.length === 0 && !loadingPending && <tr><td colSpan={7} className="text-center py-8 text-gray-500">Không có giáo viên nào chờ duyệt</td></tr>}
                         </tbody>
                     </table>
                 </div>
@@ -936,152 +677,57 @@ export default function AdminUsersPage() {
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
                             <div className="flex items-center gap-2">
                                 <span className="text-xs sm:text-sm text-gray-600">Hiển thị</span>
-                                <select
-                                    value={pageSize}
-                                    onChange={(e) => setPageSize(Number(e.target.value))}
-                                    className="px-1.5 sm:px-2 py-0.5 sm:py-1 text-xs sm:text-sm border border-main/30 rounded-lg bg-white dark:bg-gray-900 focus:outline-none focus:border-main"
-                                >
-                                    {PAGE_SIZE_OPTIONS.map(size => (
-                                        <option key={size} value={size}>{size}</option>
-                                    ))}
+                                <select value={pageSize} onChange={(e) => setPageSize(Number(e.target.value))} className="px-1.5 sm:px-2 py-0.5 sm:py-1 text-xs sm:text-sm border border-main/30 rounded-lg bg-white dark:bg-gray-900 focus:outline-none focus:border-main">
+                                    {PAGE_SIZE_OPTIONS.map(size => <option key={size} value={size}>{size}</option>)}
                                 </select>
                                 <span className="text-xs sm:text-sm text-gray-600">người dùng</span>
                             </div>
-
                             <div className="flex items-center gap-1 sm:gap-2">
-                                <button
-                                    onClick={() => setPage(1)}
-                                    disabled={page === 1}
-                                    className="p-1 sm:p-2 border border-main/20 rounded-lg disabled:opacity-50 hover:bg-main/5 transition"
-                                >
-                                    <ChevronsLeft size={isMobile ? 14 : 18} />
-                                </button>
-                                <button
-                                    onClick={() => setPage(p => Math.max(1, p - 1))}
-                                    disabled={page === 1}
-                                    className="p-1 sm:p-2 border border-main/20 rounded-lg disabled:opacity-50 hover:bg-main/5 transition"
-                                >
-                                    <ChevronLeft size={isMobile ? 14 : 18} />
-                                </button>
-
+                                <button onClick={() => setPage(1)} disabled={page === 1} className="p-1 sm:p-2 border border-main/20 rounded-lg disabled:opacity-50 hover:bg-main/5"><ChevronsLeft size={isMobile ? 14 : 18} /></button>
+                                <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="p-1 sm:p-2 border border-main/20 rounded-lg disabled:opacity-50 hover:bg-main/5"><ChevronLeft size={isMobile ? 14 : 18} /></button>
                                 <div className="flex items-center gap-0.5 sm:gap-1">
-                                    {getPageNumbers().map((pageNum, idx) => (
-                                        pageNum === '...' ? (
-                                            <span key={`ellipsis-${idx}`} className="px-1 sm:px-2 py-0.5 sm:py-1 text-gray-500 text-xs sm:text-sm">...</span>
-                                        ) : (
-                                            <button
-                                                key={pageNum}
-                                                onClick={() => setPage(pageNum as number)}
-                                                className={`min-w-[28px] sm:min-w-[36px] h-7 sm:h-9 px-1 sm:px-2 rounded-lg text-xs sm:text-sm font-medium transition ${page === pageNum
-                                                    ? 'bg-main text-white'
-                                                    : 'hover:bg-main/10 text-gray-700 border border-main/20'
-                                                    }`}
-                                            >
-                                                {pageNum}
-                                            </button>
-                                        )
-                                    ))}
+                                    {getPageNumbers().map((pageNum, idx) => pageNum === '...' ? <span key={idx} className="px-1 sm:px-2 py-0.5 sm:py-1 text-gray-500 text-xs sm:text-sm">...</span> : <button key={pageNum} onClick={() => setPage(pageNum as number)} className={`min-w-[28px] sm:min-w-[36px] h-7 sm:h-9 px-1 sm:px-2 rounded-lg text-xs sm:text-sm font-medium transition ${page === pageNum ? 'bg-main text-white' : 'hover:bg-main/10 text-gray-700 border border-main/20'}`}>{pageNum}</button>)}
                                 </div>
-
-                                <button
-                                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                                    disabled={page === totalPages}
-                                    className="p-1 sm:p-2 border border-main/20 rounded-lg disabled:opacity-50 hover:bg-main/5 transition"
-                                >
-                                    <ChevronRight size={isMobile ? 14 : 18} />
-                                </button>
-                                <button
-                                    onClick={() => setPage(totalPages)}
-                                    disabled={page === totalPages}
-                                    className="p-1 sm:p-2 border border-main/20 rounded-lg disabled:opacity-50 hover:bg-main/5 transition"
-                                >
-                                    <ChevronsRight size={isMobile ? 14 : 18} />
-                                </button>
+                                <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} className="p-1 sm:p-2 border border-main/20 rounded-lg disabled:opacity-50 hover:bg-main/5"><ChevronRight size={isMobile ? 14 : 18} /></button>
+                                <button onClick={() => setPage(totalPages)} disabled={page === totalPages} className="p-1 sm:p-2 border border-main/20 rounded-lg disabled:opacity-50 hover:bg-main/5"><ChevronsRight size={isMobile ? 14 : 18} /></button>
                             </div>
-
-                            <div className="text-xs sm:text-sm text-gray-500 text-center sm:text-right">
-                                Hiển thị {(page - 1) * pageSize + 1} - {Math.min(page * pageSize, totalUsers)} trên tổng {totalUsers.toLocaleString()} người dùng
-                            </div>
+                            <div className="text-xs sm:text-sm text-gray-500 text-center sm:text-right">Hiển thị {(page - 1) * pageSize + 1} - {Math.min(page * pageSize, totalUsers)} trên tổng {totalUsers.toLocaleString()} người dùng</div>
                         </div>
                     </div>
                 )}
             </div>
 
-            {/* ========== MODALS ========== */}
-
-            {/* User Detail Modal */}
+            {/* Modals */}
             {showUserModal && selectedUser && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowUserModal(false)}>
                     <div className="bg-white dark:bg-gray-900 rounded-xl w-full max-w-[90%] sm:max-w-2xl max-h-[90vh] overflow-y-auto border border-main/20" onClick={(e) => e.stopPropagation()}>
                         <div className="sticky top-0 bg-white dark:bg-gray-900 p-3 sm:p-5 border-b border-main/20 flex justify-between items-center">
                             <h2 className="text-lg sm:text-xl font-semibold text-main">Chi tiết người dùng</h2>
-                            <button onClick={() => setShowUserModal(false)} className="p-1 sm:p-2 hover:bg-main/10 rounded-lg transition">
-                                <X size={isMobile ? 18 : 20} className="text-main" />
-                            </button>
+                            <button onClick={() => setShowUserModal(false)} className="p-1 sm:p-2 hover:bg-main/10 rounded-lg transition"><X size={isMobile ? 18 : 20} className="text-main" /></button>
                         </div>
                         <div className="p-4 sm:p-5 space-y-3 sm:space-y-4">
                             <div className="flex items-center gap-3 sm:gap-4">
                                 <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-main/10 overflow-hidden">
-                                    {selectedUser.avatar ? (
-                                        <Image src={selectedUser.avatar} alt={selectedUser.fullName} width={80} height={80} className="w-full h-full object-cover" />
-                                    ) : (
-                                        <div className="w-full h-full flex items-center justify-center text-xl sm:text-2xl font-bold text-main">
-                                            {selectedUser.fullName.charAt(0).toUpperCase()}
-                                        </div>
-                                    )}
+                                    {selectedUser.avatar ? <Image src={selectedUser.avatar} alt={selectedUser.fullName} width={80} height={80} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-xl sm:text-2xl font-bold text-main">{selectedUser.fullName.charAt(0).toUpperCase()}</div>}
                                 </div>
-                                <div>
-                                    <h3 className="text-base sm:text-xl font-bold text-gray-900 dark:text-white">{selectedUser.fullName}</h3>
-                                    <p className="text-xs sm:text-sm text-gray-500 break-words">{selectedUser.email}</p>
-                                    {selectedUser.username && <p className="text-xs text-main">@{selectedUser.username}</p>}
-                                </div>
+                                <div><h3 className="text-base sm:text-xl font-bold">{selectedUser.fullName}</h3><p className="text-xs sm:text-sm text-gray-500 break-words">{selectedUser.email}</p>{selectedUser.username && <p className="text-xs text-main">@{selectedUser.username}</p>}</div>
                             </div>
-
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                                <div className="flex items-center gap-2 text-xs sm:text-sm">
-                                    <Shield size={isMobile ? 14 : 16} className="text-main/60" /> Vai trò: {getRoleBadge(selectedUser.role)}
-                                </div>
-                                <div className="flex items-center gap-2 text-xs sm:text-sm">
-                                    <Coins size={isMobile ? 14 : 16} className="text-main/60" /> Số xu: <span className="font-semibold text-main">{selectedUser.coins.toLocaleString()}</span>
-                                </div>
-                                <div className="flex items-center gap-2 text-xs sm:text-sm">
-                                    <Calendar size={isMobile ? 14 : 16} className="text-main/60" /> Streak: <span className="font-semibold text-main">{selectedUser.streak} ngày</span>
-                                </div>
-                                <div className="flex items-center gap-2 text-xs sm:text-sm">
-                                    <Mail size={isMobile ? 14 : 16} className="text-main/60" /> {selectedUser.email}
-                                </div>
-                                <div className="flex items-center gap-2 text-xs sm:text-sm">
-                                    <MapPin size={isMobile ? 14 : 16} className="text-main/60" /> {selectedUser.province || 'Chưa cập nhật'}
-                                </div>
-                                {selectedUser.class && (
-                                    <div className="flex items-center gap-2 text-xs sm:text-sm">
-                                        <GraduationCap size={isMobile ? 14 : 16} className="text-main/60" /> Lớp: {selectedUser.class}
-                                    </div>
-                                )}
-                                {selectedUser.school && (
-                                    <div className="flex items-center gap-2 text-xs sm:text-sm">
-                                        <School size={isMobile ? 14 : 16} className="text-main/60" /> {selectedUser.school}
-                                    </div>
-                                )}
-                                {selectedUser.bio && (
-                                    <div className="sm:col-span-2 flex items-start gap-2 text-xs sm:text-sm">
-                                        <div className="text-main/60 mt-0.5">📝</div>
-                                        <div className="text-gray-600 dark:text-gray-400">{selectedUser.bio}</div>
-                                    </div>
-                                )}
-                                <div className="sm:col-span-2 flex items-center gap-2 text-xs sm:text-sm text-gray-500">
-                                    <Calendar size={isMobile ? 14 : 16} /> Ngày tạo: {format(new Date(selectedUser.createdAt), 'dd/MM/yyyy HH:mm')}
-                                </div>
-                                <div className="sm:col-span-2 flex items-center gap-2 text-xs sm:text-sm text-gray-500">
-                                    <Calendar size={isMobile ? 14 : 16} /> Cập nhật: {format(new Date(selectedUser.updatedAt), 'dd/MM/yyyy HH:mm')}
-                                </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-xs sm:text-sm">
+                                <div className="flex items-center gap-2"><Shield size={isMobile ? 14 : 16} className="text-main/60" /> Vai trò: {getRoleBadge(selectedUser.role)}</div>
+                                <div className="flex items-center gap-2"><Coins size={isMobile ? 14 : 16} className="text-main/60" /> Xu: {selectedUser.coins.toLocaleString()}</div>
+                                <div className="flex items-center gap-2"><Calendar size={isMobile ? 14 : 16} className="text-main/60" /> Streak: {selectedUser.streak} ngày</div>
+                                <div className="flex items-center gap-2"><Mail size={isMobile ? 14 : 16} className="text-main/60" /> {selectedUser.email}</div>
+                                <div className="flex items-center gap-2"><MapPin size={isMobile ? 14 : 16} className="text-main/60" /> {selectedUser.province || 'Chưa cập nhật'}</div>
+                                {selectedUser.class && <div className="flex items-center gap-2"><GraduationCap size={isMobile ? 14 : 16} className="text-main/60" /> Lớp: {selectedUser.class}</div>}
+                                {selectedUser.school && <div className="flex items-center gap-2"><School size={isMobile ? 14 : 16} className="text-main/60" /> {selectedUser.school}</div>}
+                                {selectedUser.bio && <div className="sm:col-span-2 flex items-start gap-2"><div className="text-main/60 mt-0.5">📝</div><div className="text-gray-600 dark:text-gray-400">{selectedUser.bio}</div></div>}
+                                <div className="sm:col-span-2 flex items-center gap-2 text-gray-500"><Calendar size={isMobile ? 14 : 16} /> Ngày tạo: {format(new Date(selectedUser.createdAt), 'dd/MM/yyyy HH:mm')}</div>
                             </div>
                         </div>
                     </div>
                 </div>
             )}
 
-            {/* Change Role Modal */}
             {showRoleModal && selectedUser && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowRoleModal(false)}>
                     <div className="bg-white dark:bg-gray-900 rounded-xl w-full max-w-[90%] sm:max-w-md border border-main/20" onClick={(e) => e.stopPropagation()}>
@@ -1091,39 +737,13 @@ export default function AdminUsersPage() {
                             <p className="text-xs text-main mt-1">Vai trò hiện tại: {getRoleBadge(selectedUser.role)}</p>
                         </div>
                         <div className="p-4 sm:p-5 space-y-3 sm:space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium mb-2">Vai trò mới</label>
-                                <select
-                                    value={selectedRole}
-                                    onChange={(e) => setSelectedRole(e.target.value)}
-                                    className="w-full px-3 sm:px-4 py-1.5 sm:py-2 text-sm border border-main/30 rounded-lg bg-white dark:bg-gray-900 focus:outline-none focus:border-main transition"
-                                >
-                                    <option value="user">Người dùng</option>
-                                    <option value="teacher">Giáo viên</option>
-                                    <option value="admin">Admin</option>
-                                </select>
-                            </div>
-                            <div className="flex gap-3">
-                                <button
-                                    onClick={() => setShowRoleModal(false)}
-                                    className="flex-1 px-3 sm:px-4 py-1.5 sm:py-2 border border-main/30 text-main rounded-lg hover:bg-main/5 text-sm transition"
-                                >
-                                    Hủy
-                                </button>
-                                <button
-                                    onClick={handleChangeRole}
-                                    disabled={actionLoading?.type === 'role'}
-                                    className="flex-1 px-3 sm:px-4 py-1.5 sm:py-2 bg-main text-white rounded-lg hover:bg-main/80 text-sm transition disabled:opacity-50"
-                                >
-                                    {actionLoading?.type === 'role' ? <Loader2 className="w-4 h-4 animate-spin inline" /> : 'Xác nhận'}
-                                </button>
-                            </div>
+                            <div><label className="block text-sm font-medium mb-2">Vai trò mới</label><select value={selectedRole} onChange={(e) => setSelectedRole(e.target.value)} className="w-full px-3 sm:px-4 py-1.5 sm:py-2 text-sm border border-main/30 rounded-lg bg-white dark:bg-gray-900 focus:outline-none focus:border-main"><option value="user">Người dùng</option><option value="teacher">Giáo viên</option><option value="admin">Admin</option></select></div>
+                            <div className="flex gap-3"><button onClick={() => setShowRoleModal(false)} className="flex-1 px-3 sm:px-4 py-1.5 sm:py-2 border border-main/30 text-main rounded-lg hover:bg-main/5 text-sm transition">Hủy</button><button onClick={handleChangeRole} disabled={actionLoading?.type === 'role'} className="flex-1 px-3 sm:px-4 py-1.5 sm:py-2 bg-main text-white rounded-lg hover:bg-main/80 text-sm transition disabled:opacity-50">{actionLoading?.type === 'role' ? <Loader2 className="w-4 h-4 animate-spin inline" /> : 'Xác nhận'}</button></div>
                         </div>
                     </div>
                 </div>
             )}
 
-            {/* Mark Violation Modal */}
             {showViolationModal && selectedUser && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowViolationModal(false)}>
                     <div className="bg-white dark:bg-gray-900 rounded-xl w-full max-w-[90%] sm:max-w-md border border-main/20" onClick={(e) => e.stopPropagation()}>
@@ -1132,49 +752,14 @@ export default function AdminUsersPage() {
                             <p className="text-xs sm:text-sm text-gray-500 mt-1">Người dùng: {selectedUser.fullName}</p>
                         </div>
                         <div className="p-4 sm:p-5 space-y-3 sm:space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium mb-2">Hành động</label>
-                                <select
-                                    value={violationAction}
-                                    onChange={(e) => setViolationAction(e.target.value as 'warn' | 'mute' | 'ban')}
-                                    className="w-full px-3 sm:px-4 py-1.5 sm:py-2 text-sm border border-main/30 rounded-lg bg-white dark:bg-gray-900 focus:outline-none focus:border-main transition"
-                                >
-                                    <option value="warn">⚠️ Cảnh cáo</option>
-                                    <option value="mute">🔇 Cấm chat (7 ngày)</option>
-                                    <option value="ban">🔴 Khóa tài khoản</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium mb-2">Lý do</label>
-                                <textarea
-                                    value={violationReason}
-                                    onChange={(e) => setViolationReason(e.target.value)}
-                                    className="w-full px-3 sm:px-4 py-1.5 sm:py-2 text-sm border border-main/30 rounded-lg bg-white dark:bg-gray-900 focus:outline-none focus:border-main transition"
-                                    rows={3}
-                                    placeholder="Nhập lý do xử lý vi phạm..."
-                                />
-                            </div>
-                            <div className="flex gap-3">
-                                <button
-                                    onClick={() => setShowViolationModal(false)}
-                                    className="flex-1 px-3 sm:px-4 py-1.5 sm:py-2 border border-main/30 text-main rounded-lg hover:bg-main/5 text-sm transition"
-                                >
-                                    Hủy
-                                </button>
-                                <button
-                                    onClick={handleMarkViolation}
-                                    disabled={actionLoading?.type === 'violation'}
-                                    className="flex-1 px-3 sm:px-4 py-1.5 sm:py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm transition disabled:opacity-50"
-                                >
-                                    {actionLoading?.type === 'violation' ? <Loader2 className="w-4 h-4 animate-spin inline" /> : 'Xác nhận'}
-                                </button>
-                            </div>
+                            <div><label className="block text-sm font-medium mb-2">Hành động</label><select value={violationAction} onChange={(e) => setViolationAction(e.target.value as 'warn' | 'mute' | 'ban')} className="w-full px-3 sm:px-4 py-1.5 sm:py-2 text-sm border border-main/30 rounded-lg bg-white dark:bg-gray-900 focus:outline-none focus:border-main"><option value="warn">⚠️ Cảnh cáo</option><option value="mute">🔇 Cấm chat (7 ngày)</option><option value="ban">🔴 Khóa tài khoản</option></select></div>
+                            <div><label className="block text-sm font-medium mb-2">Lý do</label><textarea value={violationReason} onChange={(e) => setViolationReason(e.target.value)} className="w-full px-3 sm:px-4 py-1.5 sm:py-2 text-sm border border-main/30 rounded-lg bg-white dark:bg-gray-900 focus:outline-none focus:border-main transition" rows={3} placeholder="Nhập lý do xử lý vi phạm..." /></div>
+                            <div className="flex gap-3"><button onClick={() => setShowViolationModal(false)} className="flex-1 px-3 sm:px-4 py-1.5 sm:py-2 border border-main/30 text-main rounded-lg hover:bg-main/5 text-sm transition">Hủy</button><button onClick={handleMarkViolation} disabled={actionLoading?.type === 'violation'} className="flex-1 px-3 sm:px-4 py-1.5 sm:py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm transition disabled:opacity-50">{actionLoading?.type === 'violation' ? <Loader2 className="w-4 h-4 animate-spin inline" /> : 'Xác nhận'}</button></div>
                         </div>
                     </div>
                 </div>
             )}
 
-            {/* Adjust Coins Modal */}
             {showCoinModal && selectedUser && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowCoinModal(false)}>
                     <div className="bg-white dark:bg-gray-900 rounded-xl w-full max-w-[90%] sm:max-w-md border border-main/20" onClick={(e) => e.stopPropagation()}>
@@ -1184,42 +769,9 @@ export default function AdminUsersPage() {
                             <p className="text-xs text-main mt-1">Xu hiện tại: <span className="font-semibold">{selectedUser.coins.toLocaleString()}</span></p>
                         </div>
                         <div className="p-4 sm:p-5 space-y-3 sm:space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium mb-2">Số xu (có thể âm)</label>
-                                <input
-                                    type="number"
-                                    value={coinAmount}
-                                    onChange={(e) => setCoinAmount(parseInt(e.target.value) || 0)}
-                                    className="w-full px-3 sm:px-4 py-1.5 sm:py-2 text-sm border border-main/30 rounded-lg bg-white dark:bg-gray-900 focus:outline-none focus:border-main transition"
-                                    placeholder="Nhập số xu..."
-                                />
-                                <p className="text-[10px] sm:text-xs text-gray-500 mt-1">Nhập số dương để cộng, số âm để trừ</p>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium mb-2">Lý do</label>
-                                <textarea
-                                    value={coinReason}
-                                    onChange={(e) => setCoinReason(e.target.value)}
-                                    className="w-full px-3 sm:px-4 py-1.5 sm:py-2 text-sm border border-main/30 rounded-lg bg-white dark:bg-gray-900 focus:outline-none focus:border-main transition"
-                                    rows={3}
-                                    placeholder="Nhập lý do điều chỉnh..."
-                                />
-                            </div>
-                            <div className="flex gap-3">
-                                <button
-                                    onClick={() => setShowCoinModal(false)}
-                                    className="flex-1 px-3 sm:px-4 py-1.5 sm:py-2 border border-main/30 text-main rounded-lg hover:bg-main/5 text-sm transition"
-                                >
-                                    Hủy
-                                </button>
-                                <button
-                                    onClick={handleAdjustCoins}
-                                    disabled={actionLoading?.type === 'coins'}
-                                    className="flex-1 px-3 sm:px-4 py-1.5 sm:py-2 bg-main text-white rounded-lg hover:bg-main/80 text-sm transition disabled:opacity-50"
-                                >
-                                    {actionLoading?.type === 'coins' ? <Loader2 className="w-4 h-4 animate-spin inline" /> : 'Xác nhận'}
-                                </button>
-                            </div>
+                            <div><label className="block text-sm font-medium mb-2">Số xu (có thể âm)</label><input type="number" value={coinAmount} onChange={(e) => setCoinAmount(parseInt(e.target.value) || 0)} className="w-full px-3 sm:px-4 py-1.5 sm:py-2 text-sm border border-main/30 rounded-lg bg-white dark:bg-gray-900 focus:outline-none focus:border-main transition" placeholder="Nhập số xu..." /><p className="text-[10px] sm:text-xs text-gray-500 mt-1">Nhập số dương để cộng, số âm để trừ</p></div>
+                            <div><label className="block text-sm font-medium mb-2">Lý do</label><textarea value={coinReason} onChange={(e) => setCoinReason(e.target.value)} className="w-full px-3 sm:px-4 py-1.5 sm:py-2 text-sm border border-main/30 rounded-lg bg-white dark:bg-gray-900 focus:outline-none focus:border-main transition" rows={3} placeholder="Nhập lý do điều chỉnh..." /></div>
+                            <div className="flex gap-3"><button onClick={() => setShowCoinModal(false)} className="flex-1 px-3 sm:px-4 py-1.5 sm:py-2 border border-main/30 text-main rounded-lg hover:bg-main/5 text-sm transition">Hủy</button><button onClick={handleAdjustCoins} disabled={actionLoading?.type === 'coins'} className="flex-1 px-3 sm:px-4 py-1.5 sm:py-2 bg-main text-white rounded-lg hover:bg-main/80 text-sm transition disabled:opacity-50">{actionLoading?.type === 'coins' ? <Loader2 className="w-4 h-4 animate-spin inline" /> : 'Xác nhận'}</button></div>
                         </div>
                     </div>
                 </div>
