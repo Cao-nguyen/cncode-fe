@@ -1,9 +1,10 @@
+// components/layouts/header.tsx
 'use client';
 
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
     User,
     Setting2 as Settings,
@@ -135,6 +136,7 @@ function DesktopUserDrawer({ user, onLogout, onClose, open }: DrawerProps) {
     const sections = buildSections(user, iconSize);
     const badgeClass = ROLE_BADGE[user.role] ?? "bg-gray-100 text-gray-500";
 
+    // Close on outside click
     useEffect(() => {
         if (!open) return;
         const handler = (e: MouseEvent) => {
@@ -142,52 +144,44 @@ function DesktopUserDrawer({ user, onLogout, onClose, open }: DrawerProps) {
                 onClose();
             }
         };
-        const t = setTimeout(() => document.addEventListener("mousedown", handler), 100);
-        return () => { clearTimeout(t); document.removeEventListener("mousedown", handler); };
+        const timer = setTimeout(() => document.addEventListener("mousedown", handler), 100);
+        return () => {
+            clearTimeout(timer);
+            document.removeEventListener("mousedown", handler);
+        };
     }, [open, onClose]);
 
+    // Close on Escape
     useEffect(() => {
-        const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+        const handler = (e: KeyboardEvent) => {
+            if (e.key === "Escape") onClose();
+        };
         document.addEventListener("keydown", handler);
         return () => document.removeEventListener("keydown", handler);
     }, [onClose]);
 
     return (
         <>
+            {/* Backdrop */}
             <div
                 onClick={onClose}
-                aria-hidden="true"
+                className="fixed inset-0 z-[60] bg-black/20 transition-opacity duration-300"
                 style={{
-                    position: "fixed",
-                    inset: 0,
-                    zIndex: 60,
-                    background: "rgba(0,0,0,0.2)",
                     opacity: open ? 1 : 0,
                     pointerEvents: open ? "auto" : "none",
-                    transition: "opacity 0.25s ease",
                 }}
             />
 
+            {/* Drawer */}
             <div
                 ref={drawerRef}
+                className="fixed top-0 right-0 bottom-0 z-[70] w-[308px] bg-white border-l border-gray-100 shadow-[-4px_0_24px_rgba(0,0,0,0.08)] flex flex-col transition-transform duration-300 will-change-transform"
                 style={{
-                    position: "fixed",
-                    top: 0,
-                    right: 0,
-                    bottom: 0,
-                    zIndex: 70,
-                    width: 308,
-                    display: "flex",
-                    flexDirection: "column",
-                    background: "#ffffff",
-                    borderLeft: "1px solid #f0f0f0",
-                    boxShadow: "-4px 0 24px rgba(0,0,0,0.08)",
                     transform: open ? "translateX(0)" : "translateX(100%)",
-                    transition: "transform 0.3s cubic-bezier(0.32,0.72,0,1)",
-                    willChange: "transform",
                 }}
             >
-                <div style={{ padding: "20px 16px 16px", borderBottom: "1px solid #f5f5f5", flexShrink: 0 }}>
+                {/* Header */}
+                <div className="p-5 border-b border-gray-100 flex-shrink-0">
                     <div className="flex items-center gap-3">
                         <div className="relative flex-shrink-0">
                             <Avatar className="w-12 h-12 border-2 border-gray-100">
@@ -199,25 +193,25 @@ function DesktopUserDrawer({ user, onLogout, onClose, open }: DrawerProps) {
                             <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white bg-green-500" />
                         </div>
                         <div className="flex-1 min-w-0">
-                            <p className="text-[14px] font-bold text-gray-900 truncate leading-tight">{user.fullname}</p>
-                            <p className="text-[12px] text-gray-400 truncate mt-0.5">@{user.username}</p>
+                            <p className="text-sm font-bold text-gray-900 truncate">{user.fullname}</p>
+                            <p className="text-xs text-gray-400 truncate mt-0.5">@{user.username}</p>
                             <span className={`inline-block mt-1.5 text-[10px] font-semibold px-2 py-0.5 rounded-full capitalize ${badgeClass}`}>
                                 {user.role}
                             </span>
                         </div>
                         <button
                             onClick={onClose}
-                            aria-label="Đóng menu"
-                            className="w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 transition-colors text-gray-400"
+                            className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 transition-colors text-gray-400 flex-shrink-0"
                         >
-                            <CloseCircle variant="Bold" style={{ width: 18, height: 18 }} />
+                            <CloseCircle variant="Bold" className="w-[18px] h-[18px]" />
                         </button>
                     </div>
                 </div>
 
-                <div className="no-scrollbar flex-1 overflow-y-auto" style={{ padding: "12px 12px 20px" }}>
+                {/* Content */}
+                <div className="flex-1 overflow-y-auto no-scrollbar p-3">
                     {sections.map((section) => (
-                        <div key={section.label} className="mb-2.5">
+                        <div key={section.label} className="mb-3">
                             <p className="text-[10px] font-semibold uppercase tracking-wider px-1 mb-1.5 text-gray-400">
                                 {section.label}
                             </p>
@@ -227,37 +221,38 @@ function DesktopUserDrawer({ user, onLogout, onClose, open }: DrawerProps) {
                                         key={item.href}
                                         href={item.href}
                                         onClick={onClose}
-                                        className="flex items-center gap-3 px-3 py-2.5 hover:bg-gray-100 transition-colors"
-                                        style={{
-                                            borderBottom: idx < section.items.length - 1 ? "1px solid #f0f0f0" : "none",
-                                            textDecoration: "none",
-                                        }}
+                                        className={`flex items-center gap-3 px-3 py-2.5 hover:bg-gray-100 transition-colors ${idx < section.items.length - 1 ? "border-b border-gray-100" : ""
+                                            }`}
                                     >
-                                        <div className="w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-xl bg-white text-main shadow-sm">
+                                        <div className="w-8 h-8 flex items-center justify-center rounded-xl bg-white text-main shadow-sm flex-shrink-0">
                                             {item.icon}
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <p className="text-[13px] font-semibold text-gray-800 leading-tight truncate">{item.title}</p>
-                                            <p className="text-[11px] text-gray-400 leading-tight truncate mt-0.5">{item.subtitle}</p>
+                                            <p className="text-[13px] font-semibold text-gray-800 truncate">{item.title}</p>
+                                            <p className="text-[11px] text-gray-400 truncate mt-0.5">{item.subtitle}</p>
                                         </div>
-                                        <ArrowRight2 variant="Bold" style={{ width: 12, height: 12, color: "#d1d5db", flexShrink: 0 }} />
+                                        <ArrowRight2 variant="Bold" className="w-3 h-3 text-gray-300 flex-shrink-0" />
                                     </Link>
                                 ))}
                             </div>
                         </div>
                     ))}
 
+                    {/* Logout */}
                     <button
-                        onClick={() => { onClose(); onLogout(); }}
+                        onClick={() => {
+                            onClose();
+                            onLogout();
+                        }}
                         className="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl hover:bg-red-100 transition-colors"
                         style={{ background: "#fff1f2", border: "1px solid #fecdd3" }}
                     >
-                        <div className="w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-xl bg-white text-red-500 shadow-sm">
-                            <LogOut variant="Bold" style={iconSize} />
+                        <div className="w-8 h-8 flex items-center justify-center rounded-xl bg-white text-red-500 shadow-sm flex-shrink-0">
+                            <LogOut variant="Bold" className="w-[18px] h-[18px]" />
                         </div>
                         <div className="flex-1 text-left">
-                            <p className="text-[13px] font-semibold text-red-500 leading-tight">Đăng xuất</p>
-                            <p className="text-[11px] text-red-300 leading-tight mt-0.5">Thoát khỏi tài khoản</p>
+                            <p className="text-[13px] font-semibold text-red-500">Đăng xuất</p>
+                            <p className="text-[11px] text-red-300 mt-0.5">Thoát khỏi tài khoản</p>
                         </div>
                     </button>
                 </div>
@@ -266,9 +261,7 @@ function DesktopUserDrawer({ user, onLogout, onClose, open }: DrawerProps) {
     );
 }
 
-// ─── Mobile Bottom Sheet with TikTok-style drag ──────────────────────────────
-
-// ─── Mobile Bottom Sheet with TikTok-style drag ──────────────────────────────
+// ─── Mobile Bottom Sheet ─────────────────────────────────────────────────────
 
 interface MobileSheetProps {
     user: { fullname: string; username: string; avatar: string; role: string };
@@ -281,22 +274,10 @@ function MobileUserSheet({ user, onLogout, onClose, open }: MobileSheetProps) {
     const iconSize = { width: 20, height: 20 };
     const sections = buildSections(user, iconSize);
     const badgeClass = ROLE_BADGE[user.role] ?? "bg-gray-100 text-gray-500";
-    const sheetRef = useRef<HTMLDivElement>(null);
-    const startY = useRef<number>(0);
-    const currentTranslateY = useRef<number>(0);
-    const [translateY, setTranslateY] = useState(0);
-    const [isDragging, setIsDragging] = useState(false);
-    const [isClosing, setIsClosing] = useState(false);
-    const [isOpen, setIsOpen] = useState(open);
 
-    // Sync isOpen with prop
+    // Lock body scroll when open
     useEffect(() => {
-        setIsOpen(open);
-    }, [open]);
-
-    // Handle body scroll lock/unlock (no setState)
-    useEffect(() => {
-        if (isOpen) {
+        if (open) {
             const scrollY = window.scrollY;
             document.body.style.position = "fixed";
             document.body.style.top = `-${scrollY}px`;
@@ -308,9 +289,8 @@ function MobileUserSheet({ user, onLogout, onClose, open }: MobileSheetProps) {
             document.body.style.width = "";
             if (scrollY) window.scrollTo(0, parseInt(scrollY) * -1);
         }
-
         return () => {
-            if (!isOpen) {
+            if (!open) {
                 const scrollY = document.body.style.top;
                 document.body.style.position = "";
                 document.body.style.top = "";
@@ -318,117 +298,26 @@ function MobileUserSheet({ user, onLogout, onClose, open }: MobileSheetProps) {
                 if (scrollY) window.scrollTo(0, parseInt(scrollY) * -1);
             }
         };
-    }, [isOpen]);
+    }, [open]);
 
-    // Reset animation states when open becomes true
-    const resetAnimationStates = useCallback(() => {
-        setTranslateY(0);
-        setIsClosing(false);
-        setIsDragging(false);
-        currentTranslateY.current = 0;
-    }, []);
-
-    // Call reset when open changes
-    useEffect(() => {
-        if (isOpen) {
-            resetAnimationStates();
-        }
-    }, [isOpen, resetAnimationStates]);
-
-    // Handle touch start
-    const handleTouchStart = (e: React.TouchEvent) => {
-        if (isClosing || !isOpen) return;
-        startY.current = e.touches[0].clientY;
-        setIsDragging(true);
-    };
-
-    // Handle touch move - follow finger smoothly
-    const handleTouchMove = (e: React.TouchEvent) => {
-        if (!isDragging || isClosing || !isOpen) return;
-
-        const currentY = e.touches[0].clientY;
-        const diff = currentY - startY.current;
-
-        // Only allow dragging down (positive diff)
-        if (diff > 0) {
-            // Smooth follow with damping
-            const newTranslateY = Math.min(diff, 300);
-            setTranslateY(newTranslateY);
-            currentTranslateY.current = newTranslateY;
-        }
-    };
-
-    // Handle touch end - determine if should close or bounce back
-    const handleTouchEnd = () => {
-        if (!isDragging || isClosing || !isOpen) {
-            setIsDragging(false);
-            return;
-        }
-
-        setIsDragging(false);
-
-        // Close if dragged more than 100px
-        if (currentTranslateY.current > 100) {
-            handleClose();
-        } else {
-            // Bounce back animation
-            setTranslateY(0);
-            currentTranslateY.current = 0;
-        }
-    };
-
-    const handleClose = () => {
-        if (isClosing) return;
-        setIsClosing(true);
-        setTranslateY(500);
-        setTimeout(() => {
-            onClose();
-        }, 300);
-    };
-
-    // Get transform style based on drag state
-    const getTransformStyle = () => {
-        if (!isOpen || isClosing) {
-            return "translateY(100%)";
-        }
-        if (translateY > 0) {
-            return `translateY(${translateY}px)`;
-        }
-        return "translateY(0)";
-    };
-
-    // Determine if transition should be applied
-    const shouldTransition = !isDragging && !isClosing && isOpen;
-
-    if (!isOpen) return null;
+    if (!open) return null;
 
     return (
         <>
             {/* Backdrop */}
             <div
-                className="fixed inset-0 z-[60] transition-opacity duration-300"
-                style={{
-                    backgroundColor: "rgba(0,0,0,0.4)",
-                    opacity: isClosing ? 0 : Math.max(0, 1 - translateY / 500),
-                    pointerEvents: isOpen && !isClosing ? "auto" : "none",
-                }}
-                onClick={handleClose}
+                className="fixed inset-0 z-[60] bg-black/40 transition-opacity duration-300"
+                style={{ opacity: open ? 1 : 0 }}
+                onClick={onClose}
             />
 
-            {/* Draggable Sheet */}
+            {/* Sheet */}
             <div
-                ref={sheetRef}
-                className="fixed bottom-0 left-0 right-0 z-[70] bg-white rounded-t-3xl flex flex-col"
+                className="fixed bottom-0 left-0 right-0 z-[70] bg-white rounded-t-3xl flex flex-col transition-transform duration-300 will-change-transform"
                 style={{
-                    transform: getTransformStyle(),
-                    transition: shouldTransition ? "transform 0.3s cubic-bezier(0.32,0.72,0,1)" : "none",
+                    transform: open ? "translateY(0)" : "translateY(100%)",
                     maxHeight: "85dvh",
-                    willChange: "transform",
-                    touchAction: "pan-y",
                 }}
-                onTouchStart={handleTouchStart}
-                onTouchMove={handleTouchMove}
-                onTouchEnd={handleTouchEnd}
             >
                 {/* Drag handle */}
                 <div className="flex justify-center pt-3 pb-1 flex-shrink-0">
@@ -448,23 +337,20 @@ function MobileUserSheet({ user, onLogout, onClose, open }: MobileSheetProps) {
                     </div>
                     <div className="flex-1 min-w-0">
                         <p className="text-[15px] font-bold text-gray-900 truncate">{user.fullname}</p>
-                        <p className="text-[12px] text-gray-400 truncate">@{user.username}</p>
+                        <p className="text-xs text-gray-400 truncate">@{user.username}</p>
                         <span className={`inline-block mt-0.5 text-[10px] font-semibold px-2 py-0.5 rounded-full capitalize ${badgeClass}`}>
                             {user.role}
                         </span>
                     </div>
-                    <button
-                        onClick={handleClose}
-                        className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 flex-shrink-0"
-                    >
-                        <CloseCircle variant="Bold" style={{ width: 20, height: 20 }} />
+                    <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 flex-shrink-0">
+                        <CloseCircle variant="Bold" className="w-5 h-5" />
                     </button>
                 </div>
 
                 <div className="w-full h-px bg-gray-100 flex-shrink-0" />
 
-                {/* Scrollable Content */}
-                <div className="no-scrollbar overflow-y-auto flex-1 pb-6">
+                {/* Content */}
+                <div className="flex-1 overflow-y-auto no-scrollbar pb-6">
                     {sections.map((section) => (
                         <div key={section.label} className="px-4 pt-4">
                             <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2 px-1">
@@ -475,17 +361,18 @@ function MobileUserSheet({ user, onLogout, onClose, open }: MobileSheetProps) {
                                     <Link
                                         key={item.href}
                                         href={item.href}
-                                        onClick={handleClose}
-                                        className={`flex items-center gap-3 px-4 py-3 active:bg-gray-100 transition-colors ${idx < section.items.length - 1 ? "border-b border-gray-100" : ""}`}
+                                        onClick={onClose}
+                                        className={`flex items-center gap-3 px-4 py-3 active:bg-gray-100 transition-colors ${idx < section.items.length - 1 ? "border-b border-gray-100" : ""
+                                            }`}
                                     >
                                         <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center text-main shadow-sm flex-shrink-0">
                                             {item.icon}
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <p className="text-[13px] font-semibold text-gray-800 leading-tight">{item.title}</p>
-                                            <p className="text-[11px] text-gray-400 leading-tight truncate mt-0.5">{item.subtitle}</p>
+                                            <p className="text-[13px] font-semibold text-gray-800">{item.title}</p>
+                                            <p className="text-[11px] text-gray-400 truncate mt-0.5">{item.subtitle}</p>
                                         </div>
-                                        <ArrowRight2 variant="Bold" style={{ width: 14, height: 14, color: "#d1d5db", flexShrink: 0 }} />
+                                        <ArrowRight2 variant="Bold" className="w-3.5 h-3.5 text-gray-300 flex-shrink-0" />
                                     </Link>
                                 ))}
                             </div>
@@ -496,18 +383,18 @@ function MobileUserSheet({ user, onLogout, onClose, open }: MobileSheetProps) {
                     <div className="px-4 pt-4">
                         <button
                             onClick={() => {
-                                handleClose();
+                                onClose();
                                 setTimeout(() => onLogout(), 350);
                             }}
                             className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl active:bg-red-100 transition-colors"
                             style={{ background: "#fff1f2", border: "1px solid #fecdd3" }}
                         >
                             <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center text-red-500 shadow-sm flex-shrink-0">
-                                <LogOut variant="Bold" style={{ width: 20, height: 20 }} />
+                                <LogOut variant="Bold" className="w-5 h-5" />
                             </div>
                             <div className="flex-1 text-left">
-                                <p className="text-[13px] font-semibold text-red-500 leading-tight">Đăng xuất</p>
-                                <p className="text-[11px] text-red-300 leading-tight mt-0.5">Thoát khỏi tài khoản</p>
+                                <p className="text-[13px] font-semibold text-red-500">Đăng xuất</p>
+                                <p className="text-[11px] text-red-300 mt-0.5">Thoát khỏi tài khoản</p>
                             </div>
                         </button>
                     </div>
@@ -527,66 +414,50 @@ export default function Header() {
     const [sheetOpen, setSheetOpen] = useState(false);
     const [drawerOpen, setDrawerOpen] = useState(false);
 
-    // Use derived values directly from store instead of local state
     const displayCoins = user && token ? (coins ?? 0) : 0;
     const displayStreak = user && token ? (user?.streak ?? 0) : 0;
     const displayRole = user?.role || "user";
 
-    // ========== REALTIME SOCKET HANDLERS ==========
-
-    // Listen for coins updates
+    // Realtime coins update
     useEffect(() => {
         if (!socket || !isConnected) return;
-
         const handleCoinsUpdated = (data: { userId: string; coins: number; amount?: number }) => {
             if (user?._id === data.userId) {
                 const diff = data.coins - (user?.coins || 0);
                 updateCoins(diff);
-                if (diff > 0) {
-                    toast.success(`✨ +${diff} xu!`, { duration: 2000 });
-                } else if (diff < 0) {
-                    toast.info(`📉 ${diff} xu`, { duration: 2000 });
-                }
+                if (diff > 0) toast.success(`✨ +${diff} xu!`, { duration: 2000 });
+                else if (diff < 0) toast.info(`📉 ${diff} xu`, { duration: 2000 });
             }
         };
-
         socket.on("coins_updated", handleCoinsUpdated);
         return () => { socket.off("coins_updated", handleCoinsUpdated); };
     }, [socket, isConnected, user?._id, user?.coins, updateCoins]);
 
-    // Listen for streak updates
+    // Realtime streak update
     useEffect(() => {
         if (!socket || !isConnected) return;
-
         const handleStreakUpdated = (data: { userId: string; streak: number; totalCoins: number }) => {
             if (user?._id === data.userId) {
                 updateStreak(data.streak);
                 const diff = data.totalCoins - (user?.coins || 0);
-                if (diff !== 0) {
-                    updateCoins(diff);
-                }
+                if (diff !== 0) updateCoins(diff);
                 toast.success(`🔥 Streak: ${data.streak} ngày liên tiếp!`, { duration: 2000 });
             }
         };
-
         socket.on("streak_updated", handleStreakUpdated);
         return () => { socket.off("streak_updated", handleStreakUpdated); };
     }, [socket, isConnected, user?._id, user?.coins, updateStreak, updateCoins]);
 
-    // Listen for role changes
+    // Realtime role update
     useEffect(() => {
         if (!socket || !isConnected) return;
-
         const handleRoleChanged = (data: { userId: string; newRole: string; oldRole: string }) => {
             if (user?._id === data.userId && data.newRole !== user?.role) {
-                if (user) {
-                    setUser({ ...user, role: data.newRole as "user" | "teacher" | "admin" });
-                }
+                if (user) setUser({ ...user, role: data.newRole as "user" | "teacher" | "admin" });
                 const roleLabel = data.newRole === "teacher" ? "Giáo viên" : data.newRole === "admin" ? "Quản trị viên" : "Người dùng";
                 toast.info(`🔄 Vai trò của bạn đã được cập nhật thành ${roleLabel}`, { duration: 3000 });
             }
         };
-
         socket.on("role_changed", handleRoleChanged);
         return () => { socket.off("role_changed", handleRoleChanged); };
     }, [socket, isConnected, user, setUser]);
@@ -626,47 +497,47 @@ export default function Header() {
 
     return (
         <>
-            {/* ─────────────────── DESKTOP ─────────────────── */}
-            <header className="hidden lg:block bg-white w-full h-15 fixed top-0 z-50 shadow-sm">
-                <div className="flex h-full justify-between items-center">
+            {/* DESKTOP HEADER */}
+            <header className="hidden lg:block bg-white w-full h-[60px] fixed top-0 z-50 shadow-sm">
+                <div className="flex h-full justify-between items-center px-4">
+                    {/* Logo */}
+                    <Link href="/" className="flex-shrink-0">
+                        <Image src="/images/logo.png" alt="Logo CNcode" width={100} height={55} priority />
+                    </Link>
 
-                    <div className="ml-1.5 lg:ml-4">
-                        <Link href="/">
-                            <Image src="/images/logo.png" alt="Logo CNcode" width={100} height={55} priority />
-                        </Link>
-                    </div>
-
-                    <nav className="flex h-full items-center">
-                        {menu.map((m) => {
-                            const isActive = pathname === m.link;
+                    {/* Nav Menu */}
+                    <nav className="flex h-full items-center gap-1">
+                        {menu.map((item) => {
+                            const isActive = pathname === item.link;
                             return (
-                                <div key={m.link} className="relative lg:px-1 xl:px-3 h-full flex items-center">
-                                    <Link
-                                        href={m.link}
-                                        className={`px-2.5 py-1.75 font-bold text-[14px] transition-all duration-200 relative ${isActive ? "text-main" : "text-gray-700 hover:text-main"}`}
-                                    >
-                                        {m.title}
-                                    </Link>
+                                <Link
+                                    key={item.link}
+                                    href={item.link}
+                                    className={`relative px-3 py-2 font-bold text-sm transition-all duration-200 ${isActive ? "text-main" : "text-gray-700 hover:text-main"
+                                        }`}
+                                >
+                                    {item.title}
                                     {isActive && (
                                         <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-main rounded-t-full" />
                                     )}
-                                </div>
+                                </Link>
                             );
                         })}
                     </nav>
 
-                    <div className="mr-1.5 lg:mr-4 flex gap-3 items-center">
+                    {/* Right Section */}
+                    <div className="flex items-center gap-4">
                         {displayUser && (
-                            <div className="flex items-center gap-5 mr-1">
+                            <div className="flex items-center gap-4">
                                 <div className="relative flex items-center">
-                                    <div className="border border-gray-400 rounded-2xl pl-2 pr-4 py-0.5">
-                                        <p className="text-main text-[12px] font-medium">{formatNumber(displayCoins)}</p>
+                                    <div className="border border-gray-300 rounded-2xl pl-2 pr-4 py-0.5">
+                                        <p className="text-main text-xs font-medium">{formatNumber(displayCoins)}</p>
                                     </div>
                                     <Image src="/icons/coins.svg" alt="Coins" width={25} height={25} className="absolute -right-3" />
                                 </div>
                                 <div className="relative flex items-center">
-                                    <div className="border border-gray-400 rounded-2xl pl-2 pr-5 py-0.5">
-                                        <p className="text-main text-[12px] font-medium">{formatNumber(displayStreak)}</p>
+                                    <div className="border border-gray-300 rounded-2xl pl-2 pr-5 py-0.5">
+                                        <p className="text-main text-xs font-medium">{formatNumber(displayStreak)}</p>
                                     </div>
                                     <Image src="/icons/streak.svg" alt="Streak" width={27} height={27} className="absolute -right-3" />
                                 </div>
@@ -678,10 +549,9 @@ export default function Header() {
                         {displayUser ? (
                             <button
                                 onClick={() => setDrawerOpen(true)}
-                                aria-label="Mở menu tài khoản"
-                                className="relative p-0.5 rounded-full cursor-pointer focus:outline-none group"
+                                className="relative p-0.5 rounded-full focus:outline-none group"
                             >
-                                <Avatar className="w-8 h-8 ring-2 ring-transparent group-hover:ring-main/30 transition-all duration-200">
+                                <Avatar className="w-8 h-8 ring-2 ring-transparent group-hover:ring-main/30 transition-all">
                                     <AvatarImage src={displayUser.avatar} />
                                     <AvatarFallback className="text-xs font-bold bg-main text-white">
                                         {displayUser.fullname?.charAt(0) || "U"}
@@ -690,7 +560,7 @@ export default function Header() {
                                 <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-white" />
                             </button>
                         ) : (
-                            <Link href="/login" className="bg-main text-white px-3.5 py-2 rounded-[8px] font-bold text-[14px]">
+                            <Link href="/login" className="bg-main text-white px-4 py-2 rounded-lg font-bold text-sm">
                                 Đăng nhập
                             </Link>
                         )}
@@ -698,27 +568,27 @@ export default function Header() {
                 </div>
             </header>
 
-            {/* ─────────────────── MOBILE TOP BAR ─────────────────── */}
+            {/* MOBILE TOP BAR */}
             <div className="lg:hidden fixed top-0 w-full h-10 bg-white z-50 border-b border-gray-200">
-                <div className="flex h-full justify-between items-center px-1.5">
+                <div className="flex h-full justify-between items-center px-2">
                     <Link href="/">
-                        <Image src="/images/logo.png" alt="Logo CNcode" width={60} height={30} className="object-contain" priority />
+                        <Image src="/images/logo.png" alt="Logo" width={60} height={30} className="object-contain" priority />
                     </Link>
 
-                    <div className="flex gap-3 items-center">
+                    <div className="flex items-center gap-2">
                         {displayUser && (
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-2">
                                 <div className="relative flex items-center">
-                                    <div className="border border-gray-400 rounded-2xl pl-2 pr-4 py-0.5">
+                                    <div className="border border-gray-300 rounded-2xl pl-1.5 pr-3 py-0.5">
                                         <p className="text-main text-[10px] font-medium">{formatNumber(displayCoins)}</p>
                                     </div>
-                                    <Image src="/icons/coins.svg" alt="Coins" width={20} height={20} className="absolute -right-2.5" />
+                                    <Image src="/icons/coins.svg" alt="Coins" width={18} height={18} className="absolute -right-2" />
                                 </div>
                                 <div className="relative flex items-center">
-                                    <div className="border border-gray-400 rounded-2xl pl-2 pr-5 py-0.5">
+                                    <div className="border border-gray-300 rounded-2xl pl-1.5 pr-4 py-0.5">
                                         <p className="text-main text-[10px] font-medium">{formatNumber(displayStreak)}</p>
                                     </div>
-                                    <Image src="/icons/streak.svg" alt="Streak" width={22} height={22} className="absolute -right-2.5" />
+                                    <Image src="/icons/streak.svg" alt="Streak" width={20} height={20} className="absolute -right-2" />
                                 </div>
                             </div>
                         )}
@@ -726,17 +596,17 @@ export default function Header() {
                         <NotificationBell />
 
                         {displayUser ? (
-                            <button onClick={() => setSheetOpen(true)} className="focus:outline-none relative">
-                                <Avatar className="w-6 h-6 cursor-pointer">
+                            <button onClick={() => setSheetOpen(true)} className="relative">
+                                <Avatar className="w-6 h-6">
                                     <AvatarImage src={displayUser.avatar} />
                                     <AvatarFallback className="text-[10px] font-bold bg-main text-white">
                                         {displayUser.fullname?.charAt(0) || "U"}
                                     </AvatarFallback>
                                 </Avatar>
-                                <span className="absolute bottom-0 right-0 w-2 h-2 bg-green-500 rounded-full border border-white" />
+                                <span className="absolute bottom-0 right-0 w-1.5 h-1.5 bg-green-500 rounded-full border border-white" />
                             </button>
                         ) : (
-                            <Link href="/login" className="bg-main text-white px-2 py-1.5 rounded-[5px] font-bold text-[10px]">
+                            <Link href="/login" className="bg-main text-white px-2 py-1 rounded text-[10px] font-bold">
                                 Đăng nhập
                             </Link>
                         )}
@@ -744,7 +614,7 @@ export default function Header() {
                 </div>
             </div>
 
-            {/* ─────────────────── DESKTOP DRAWER ─────────────────── */}
+            {/* Drawers */}
             {displayUser && (
                 <DesktopUserDrawer
                     user={displayUser}
@@ -753,8 +623,6 @@ export default function Header() {
                     open={drawerOpen}
                 />
             )}
-
-            {/* ─────────────────── MOBILE BOTTOM SHEET ─────────────────── */}
             {displayUser && (
                 <MobileUserSheet
                     user={displayUser}
@@ -764,32 +632,30 @@ export default function Header() {
                 />
             )}
 
-            {/* ─────────────────── MOBILE BOTTOM NAV ─────────────────── */}
-            <div className="lg:hidden fixed bottom-0 left-0 w-full z-50">
+            {/* MOBILE BOTTOM NAV */}
+            <div className="lg:hidden fixed bottom-0 left-0 w-full z-40">
                 <div className="w-full h-14 bg-white border-t border-gray-200 rounded-t-2xl shadow-[0_-4px_20px_rgba(0,0,0,0.15)] flex items-center px-2">
-                    {menuMobile.map((m) => {
-                        const isActive = pathname === m.link;
-                        const IconComp = m.icon;
+                    {menuMobile.map((item) => {
+                        const isActive = pathname === item.link;
+                        const IconComp = item.icon;
                         return (
                             <Link
-                                key={m.link}
-                                href={m.link}
-                                className="flex-1 flex flex-col items-center justify-center gap-1 active:scale-95 active:opacity-90 transition-all duration-150"
+                                key={item.link}
+                                href={item.link}
+                                className="flex-1 flex flex-col items-center justify-center gap-1 active:scale-95 transition-all"
                             >
                                 <IconComp
                                     variant="Bold"
-                                    style={{ width: 22, height: 22 }}
-                                    className={isActive ? "text-main" : "text-gray-500"}
+                                    className={`w-5 h-5 ${isActive ? "text-main" : "text-gray-500"}`}
                                 />
                                 <span className={`text-[10px] font-medium ${isActive ? "text-main" : "text-gray-500"}`}>
-                                    {m.title}
+                                    {item.title}
                                 </span>
                             </Link>
                         );
                     })}
                 </div>
             </div>
-
             <div className="lg:hidden h-10" />
         </>
     );

@@ -1,8 +1,7 @@
 "use client";
 
 import { useRouter, usePathname } from "next/navigation";
-import { useTheme } from "next-themes";
-import { Moon, Sun, PanelLeft, LogOut, Menu, House } from "lucide-react";
+import { PanelLeft, LogOut, Menu, House } from "lucide-react";
 import { useAuthStore } from "@/store/auth.store";
 import NotificationBell from "./NotificationBell";
 import { useState, useEffect } from "react";
@@ -30,7 +29,6 @@ interface NavAdminProps {
 }
 
 export default function NavAdmin({ open, onToggle }: NavAdminProps) {
-    const { theme, setTheme } = useTheme();
     const { logout } = useAuthStore();
     const router = useRouter();
     const path = usePathname();
@@ -105,16 +103,6 @@ export default function NavAdmin({ open, onToggle }: NavAdminProps) {
 
                     {/* Notification */}
                     <NotificationBell />
-
-                    {/* Theme toggle */}
-                    <button
-                        onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                        className={btnBase}
-                        aria-label="Đổi giao diện"
-                    >
-                        <Sun size={18} className="hidden dark:block" />
-                        <Moon size={18} className="block dark:hidden" />
-                    </button>
 
                     {/* Divider - ẩn trên mobile */}
                     {!isMobile && <div className="mx-1 h-5 w-px bg-black/[0.1] dark:bg-white/[0.1]" />}
