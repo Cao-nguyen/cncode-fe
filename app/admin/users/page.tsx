@@ -1,13 +1,13 @@
 // app/admin/users/page.tsx
 'use client';
 
+import CustomTextarea from '@/components/ui/CustomTextarea';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuthStore } from '@/store/auth.store';
 import { useSocket } from '@/providers/socket.provider';
 import { userApi, IUser, IUserFilters, IUserStats, IProvinceStat } from '@/lib/api/user.api';
 import {
     Search,
-    Filter,
     ChevronLeft,
     ChevronRight,
     Loader2,
@@ -44,6 +44,8 @@ import {
     Legend,
     ResponsiveContainer
 } from 'recharts';
+import CustomSelect from '@/components/ui/CustomSelect';
+import CustomInput from '@/components/ui/CustomInput';
 
 const ROLE_OPTIONS = [
     { value: '', label: 'Tất cả vai trò' },
@@ -92,7 +94,6 @@ export default function AdminUsersPage() {
     const [totalPages, setTotalPages] = useState(1);
     const [totalUsers, setTotalUsers] = useState(0);
 
-    const [showFilters, setShowFilters] = useState(false);
     const [activeTab, setActiveTab] = useState<'all' | 'pending'>('all');
     const [isMobile, setIsMobile] = useState(false);
     const [isTablet, setIsTablet] = useState(false);
@@ -423,10 +424,6 @@ export default function AdminUsersPage() {
                     <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Quản lý người dùng</h1>
                     <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-0.5">Quản lý tất cả người dùng - Dữ liệu realtime</p>
                 </div>
-                <button onClick={() => setShowFilters(!showFilters)} className="flex items-center justify-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 text-sm border border-main text-main rounded-lg hover:bg-main/5 transition">
-                    <Filter size={isMobile ? 16 : 18} />
-                    <span>Bộ lọc</span>
-                </button>
             </div>
 
             {/* Stats Cards */}
@@ -550,26 +547,40 @@ export default function AdminUsersPage() {
                 </button>
             </div>
 
-            {/* Filters Panel */}
-            {showFilters && (
-                <div className="rounded-xl p-4 sm:p-5 shadow-sm border border-main/20 bg-white dark:bg-gray-900">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-                        <div className="relative">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-                            <input type="text" placeholder="Tìm kiếm..." value={filters.search} onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))} className="w-full pl-9 pr-3 py-1.5 text-sm border border-main/30 rounded-lg bg-white dark:bg-gray-900 focus:outline-none focus:border-main" />
-                        </div>
-                        <select value={filters.role} onChange={(e) => setFilters(prev => ({ ...prev, role: e.target.value }))} className="px-3 py-1.5 text-sm border border-main/30 rounded-lg bg-white dark:bg-gray-900 focus:outline-none focus:border-main">
-                            {ROLE_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-                        </select>
-                        <select value={filters.sortBy} onChange={(e) => setFilters(prev => ({ ...prev, sortBy: e.target.value }))} className="px-3 py-1.5 text-sm border border-main/30 rounded-lg bg-white dark:bg-gray-900 focus:outline-none focus:border-main">
-                            {SORT_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-                        </select>
-                        <select value={filters.sortOrder} onChange={(e) => setFilters(prev => ({ ...prev, sortOrder: e.target.value as 'asc' | 'desc' }))} className="px-3 py-1.5 text-sm border border-main/30 rounded-lg bg-white dark:bg-gray-900 focus:outline-none focus:border-main">
-                            <option value="desc">Mới nhất</option><option value="asc">Cũ nhất</option>
-                        </select>
+            {/* Filters Panel - Luôn hiển thị */}
+            <div className="rounded-xl p-4 sm:p-5 shadow-sm border border-main/20 bg-white dark:bg-gray-900">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                    <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                        <CustomInput
+                            value={filters.search}
+                            onChange={(value) => setFilters(prev => ({ ...prev, search: value }))}
+                            placeholder="Tìm kiếm..."
+                        />
                     </div>
+                    <CustomSelect
+                        value={filters.role}
+                        onChange={(value) => setFilters(prev => ({ ...prev, role: value }))}
+                        options={ROLE_OPTIONS}
+                        placeholder="Chọn vai trò"
+                    />
+                    <CustomSelect
+                        value={filters.sortBy}
+                        onChange={(value) => setFilters(prev => ({ ...prev, sortBy: value }))}
+                        options={SORT_OPTIONS}
+                        placeholder="Sắp xếp theo"
+                    />
+                    <CustomSelect
+                        value={filters.sortOrder}
+                        onChange={(value) => setFilters(prev => ({ ...prev, sortOrder: value as 'asc' | 'desc' }))}
+                        options={[
+                            { value: 'desc', label: 'Mới nhất' },
+                            { value: 'asc', label: 'Cũ nhất' }
+                        ]}
+                        placeholder="Thứ tự"
+                    />
                 </div>
-            )}
+            </div>
 
             {/* Users Table */}
             <div className="rounded-xl shadow-sm border border-main/20 overflow-hidden bg-white dark:bg-gray-900">
@@ -723,7 +734,7 @@ export default function AdminUsersPage() {
                 )}
             </div>
 
-            {/* Modal: Chi tiết user */}
+            {/* Modals */}
             {showUserModal && selectedUser && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowUserModal(false)}>
                     <div className="bg-white dark:bg-gray-900 rounded-xl w-full max-w-[90%] sm:max-w-2xl max-h-[90vh] overflow-y-auto border border-main/20" onClick={(e) => e.stopPropagation()}>
@@ -754,7 +765,6 @@ export default function AdminUsersPage() {
                 </div>
             )}
 
-            {/* Modal: Đổi vai trò */}
             {showRoleModal && selectedUser && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowRoleModal(false)}>
                     <div className="bg-white dark:bg-gray-900 rounded-xl w-full max-w-[90%] sm:max-w-md border border-main/20" onClick={(e) => e.stopPropagation()}>
@@ -764,14 +774,30 @@ export default function AdminUsersPage() {
                             <p className="text-xs text-main mt-1">Vai trò hiện tại: {getRoleBadge(selectedUser.role)}</p>
                         </div>
                         <div className="p-4 sm:p-5 space-y-3 sm:space-y-4">
-                            <div><label className="block text-sm font-medium mb-2">Vai trò mới</label><select value={selectedRole} onChange={(e) => setSelectedRole(e.target.value)} className="w-full px-3 sm:px-4 py-1.5 sm:py-2 text-sm border border-main/30 rounded-lg bg-white dark:bg-gray-900 focus:outline-none focus:border-main"><option value="user">Người dùng</option><option value="teacher">Giáo viên</option><option value="admin">Admin</option></select></div>
-                            <div className="flex gap-3"><button onClick={() => setShowRoleModal(false)} className="flex-1 px-3 sm:px-4 py-1.5 sm:py-2 border border-main/30 text-main rounded-lg hover:bg-main/5 text-sm transition">Hủy</button><button onClick={handleChangeRole} disabled={actionLoading?.type === 'role'} className="flex-1 px-3 sm:px-4 py-1.5 sm:py-2 bg-main text-white rounded-lg hover:bg-main/80 text-sm transition disabled:opacity-50">{actionLoading?.type === 'role' ? <Loader2 className="w-4 h-4 animate-spin inline" /> : 'Xác nhận'}</button></div>
+                            <div>
+                                <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Vai trò mới</label>
+                                <CustomSelect
+                                    value={selectedRole}
+                                    onChange={(value) => setSelectedRole(value)}
+                                    options={[
+                                        { value: 'user', label: 'Người dùng' },
+                                        { value: 'teacher', label: 'Giáo viên' },
+                                        { value: 'admin', label: 'Admin' }
+                                    ]}
+                                    placeholder="Chọn vai trò"
+                                />
+                            </div>
+                            <div className="flex gap-3">
+                                <button onClick={() => setShowRoleModal(false)} className="flex-1 px-3 sm:px-4 py-1.5 sm:py-2 border border-main/30 text-main rounded-lg hover:bg-main/5 text-sm transition">Hủy</button>
+                                <button onClick={handleChangeRole} disabled={actionLoading?.type === 'role'} className="flex-1 px-3 sm:px-4 py-1.5 sm:py-2 bg-main text-white rounded-lg hover:bg-main/80 text-sm transition disabled:opacity-50">
+                                    {actionLoading?.type === 'role' ? <Loader2 className="w-4 h-4 animate-spin inline" /> : 'Xác nhận'}
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
             )}
 
-            {/* Modal: Vi phạm */}
             {showViolationModal && selectedUser && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowViolationModal(false)}>
                     <div className="bg-white dark:bg-gray-900 rounded-xl w-full max-w-[90%] sm:max-w-md border border-main/20" onClick={(e) => e.stopPropagation()}>
@@ -780,9 +806,35 @@ export default function AdminUsersPage() {
                             <p className="text-xs sm:text-sm text-gray-500 mt-1">Người dùng: {selectedUser.fullName}</p>
                         </div>
                         <div className="p-4 sm:p-5 space-y-3 sm:space-y-4">
-                            <div><label className="block text-sm font-medium mb-2">Hành động</label><select value={violationAction} onChange={(e) => setViolationAction(e.target.value as 'warn' | 'mute' | 'ban')} className="w-full px-3 sm:px-4 py-1.5 sm:py-2 text-sm border border-main/30 rounded-lg bg-white dark:bg-gray-900 focus:outline-none focus:border-main"><option value="warn">⚠️ Cảnh cáo</option><option value="mute">🔇 Cấm chat (7 ngày)</option><option value="ban">🔴 Khóa tài khoản</option></select></div>
-                            <div><label className="block text-sm font-medium mb-2">Lý do</label><textarea value={violationReason} onChange={(e) => setViolationReason(e.target.value)} className="w-full px-3 sm:px-4 py-1.5 sm:py-2 text-sm border border-main/30 rounded-lg bg-white dark:bg-gray-900 focus:outline-none focus:border-main transition" rows={3} placeholder="Nhập lý do xử lý vi phạm..." /></div>
-                            <div className="flex gap-3"><button onClick={() => setShowViolationModal(false)} className="flex-1 px-3 sm:px-4 py-1.5 sm:py-2 border border-main/30 text-main rounded-lg hover:bg-main/5 text-sm transition">Hủy</button><button onClick={handleMarkViolation} disabled={actionLoading?.type === 'violation'} className="flex-1 px-3 sm:px-4 py-1.5 sm:py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm transition disabled:opacity-50">{actionLoading?.type === 'violation' ? <Loader2 className="w-4 h-4 animate-spin inline" /> : 'Xác nhận'}</button></div>
+                            <div>
+                                <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Hành động</label>
+                                <CustomSelect
+                                    value={violationAction}
+                                    onChange={(value) => setViolationAction(value as 'warn' | 'mute' | 'ban')}
+                                    options={[
+                                        { value: 'warn', label: '⚠️ Cảnh cáo' },
+                                        { value: 'mute', label: '🔇 Cấm chat (7 ngày)' },
+                                        { value: 'ban', label: '🔴 Khóa tài khoản' }
+                                    ]}
+                                    placeholder="Chọn hành động"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Lý do</label>
+                                <CustomTextarea
+                                    value={violationReason}
+                                    onChange={(value) => setViolationReason(value)}
+                                    placeholder="Nhập lý do xử lý vi phạm..."
+                                    rows={3}
+                                    maxLength={500}
+                                />
+                            </div>
+                            <div className="flex gap-3">
+                                <button onClick={() => setShowViolationModal(false)} className="flex-1 px-3 sm:px-4 py-1.5 sm:py-2 border border-main/30 text-main rounded-lg hover:bg-main/5 text-sm transition">Hủy</button>
+                                <button onClick={handleMarkViolation} disabled={actionLoading?.type === 'violation'} className="flex-1 px-3 sm:px-4 py-1.5 sm:py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm transition disabled:opacity-50">
+                                    {actionLoading?.type === 'violation' ? <Loader2 className="w-4 h-4 animate-spin inline" /> : 'Xác nhận'}
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -798,9 +850,32 @@ export default function AdminUsersPage() {
                             <p className="text-xs text-main mt-1">Xu hiện tại: <span className="font-semibold">{selectedUser.coins.toLocaleString()}</span></p>
                         </div>
                         <div className="p-4 sm:p-5 space-y-3 sm:space-y-4">
-                            <div><label className="block text-sm font-medium mb-2">Số xu (có thể âm)</label><input type="number" value={coinAmount} onChange={(e) => setCoinAmount(parseInt(e.target.value) || 0)} className="w-full px-3 sm:px-4 py-1.5 sm:py-2 text-sm border border-main/30 rounded-lg bg-white dark:bg-gray-900 focus:outline-none focus:border-main transition" placeholder="Nhập số xu..." /><p className="text-[10px] sm:text-xs text-gray-500 mt-1">Nhập số dương để cộng, số âm để trừ</p></div>
-                            <div><label className="block text-sm font-medium mb-2">Lý do</label><textarea value={coinReason} onChange={(e) => setCoinReason(e.target.value)} className="w-full px-3 sm:px-4 py-1.5 sm:py-2 text-sm border border-main/30 rounded-lg bg-white dark:bg-gray-900 focus:outline-none focus:border-main transition" rows={3} placeholder="Nhập lý do điều chỉnh..." /></div>
-                            <div className="flex gap-3"><button onClick={() => setShowCoinModal(false)} className="flex-1 px-3 sm:px-4 py-1.5 sm:py-2 border border-main/30 text-main rounded-lg hover:bg-main/5 text-sm transition">Hủy</button><button onClick={handleAdjustCoins} disabled={actionLoading?.type === 'coins'} className="flex-1 px-3 sm:px-4 py-1.5 sm:py-2 bg-main text-white rounded-lg hover:bg-main/80 text-sm transition disabled:opacity-50">{actionLoading?.type === 'coins' ? <Loader2 className="w-4 h-4 animate-spin inline" /> : 'Xác nhận'}</button></div>
+                            <div>
+                                <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Số xu (có thể âm)</label>
+                                <CustomInput
+                                    type="number"
+                                    value={coinAmount.toString()}
+                                    onChange={(value) => setCoinAmount(parseInt(value) || 0)}
+                                    placeholder="Nhập số xu..."
+                                />
+                                <p className="text-[10px] sm:text-xs text-gray-500 mt-1">Nhập số dương để cộng, số âm để trừ</p>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Lý do</label>
+                                <CustomTextarea
+                                    value={coinReason}
+                                    onChange={(value) => setCoinReason(value)}
+                                    placeholder="Nhập lý do điều chỉnh..."
+                                    rows={3}
+                                    maxLength={500}
+                                />
+                            </div>
+                            <div className="flex gap-3">
+                                <button onClick={() => setShowCoinModal(false)} className="flex-1 px-3 sm:px-4 py-1.5 sm:py-2 border border-main/30 text-main rounded-lg hover:bg-main/5 text-sm transition">Hủy</button>
+                                <button onClick={handleAdjustCoins} disabled={actionLoading?.type === 'coins'} className="flex-1 px-3 sm:px-4 py-1.5 sm:py-2 bg-main text-white rounded-lg hover:bg-main/80 text-sm transition disabled:opacity-50">
+                                    {actionLoading?.type === 'coins' ? <Loader2 className="w-4 h-4 animate-spin inline" /> : 'Xác nhận'}
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
