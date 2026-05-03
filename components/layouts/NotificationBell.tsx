@@ -1,4 +1,3 @@
-// components/NotificationBell.tsx
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -188,11 +187,8 @@ export default function NotificationBell() {
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
 
-    // Dùng ref để tránh fetch trùng khi open thay đổi cùng lúc socket fire
     const isFetchingRef = useRef(false);
 
-    // ─── Lọc notification theo role ────────────────────────────────────────────
-    // Admin thấy tất cả, user thường không thấy ADMIN_ONLY_TYPES
     const filterByRole = useCallback(
         (list: INotification[]): INotification[] => {
             if (user?.role === 'admin') return list;
@@ -201,7 +197,6 @@ export default function NotificationBell() {
         [user?.role]
     );
 
-    // ─── Fetch từ API ───────────────────────────────────────────────────────────
     const fetchNotifications = useCallback(
         async (pageNum: number = 1) => {
             if (!token || !user?._id || isFetchingRef.current) return;
@@ -234,42 +229,59 @@ export default function NotificationBell() {
         [token, user?._id, filterByRole]
     );
 
-    // Initial load
     useEffect(() => {
         if (token && user?._id) {
             fetchNotifications(1);
         }
-    }, [token, user?._id]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [token, user?._id]);
 
-    // Khi mở Bell: chỉ fetch lại nếu có unread (tránh fetch thừa)
     useEffect(() => {
         if (open && token && user?._id && unreadCount > 0) {
             fetchNotifications(1);
         }
-    }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [open]);
 
     // ─── Socket: nhận notification mới realtime ─────────────────────────────────
     useEffect(() => {
-        if (!socket || !isConnected || !user?._id) return;
+        if (!socket || !isConnected) {
+            console.log('❌ Socket not connected');
+            return;
+        }
+        if (!user?._id) {
+            console.log('❌ No user ID');
+            return;
+        }
 
         const handler = (data: INotification) => {
+            console.log('🔔 Received new_notification:', data);
+
             // Bỏ qua nếu không phải role phù hợp
-            if (isAdminOnlyType(data.type) && user.role !== 'admin') return;
+            if (isAdminOnlyType(data.type) && user.role !== 'admin') {
+                console.log('⏭️ Skipping admin-only notification for non-admin');
+                return;
+            }
 
             setNotifications(prev => {
-                // Chống duplicate: nếu đã có _id này thì bỏ qua
-                if (prev.some(n => n._id === data._id)) return prev;
+                // Chống duplicate
+                if (prev.some(n => n._id === data._id)) {
+                    console.log('⏭️ Duplicate notification, skipping');
+                    return prev;
+                }
                 const updated = [data, ...prev];
                 setUnreadCount(updated.filter(n => !n.read).length);
+                console.log('✅ Added new notification, total:', updated.length);
                 return updated;
             });
         };
 
         socket.on('new_notification', handler);
-        return () => { socket.off('new_notification', handler); };
-    }, [socket, isConnected, user?._id, user?.role]);
+        console.log('🎧 Listening for new_notification events');
 
-    // ─── Actions ────────────────────────────────────────────────────────────────
+        return () => {
+            socket.off('new_notification', handler);
+            console.log('🔇 Stopped listening for new_notification');
+        };
+    }, [socket, isConnected, user?._id, user?.role]);
 
     const markAsRead = useCallback(async (notificationId: string) => {
         try {
@@ -303,8 +315,6 @@ export default function NotificationBell() {
     };
 
     if (!token || !user?._id) return null;
-
-    // ─── Render ─────────────────────────────────────────────────────────────────
 
     return (
         <Popover open={open} onOpenChange={setOpen}>
