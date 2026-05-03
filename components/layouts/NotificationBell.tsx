@@ -1,8 +1,11 @@
 // components/NotificationBell.tsx
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { Bell, MessageCircle, Heart, ThumbsUp, Bookmark, CheckCheck, Coins, Flame, Info, XCircle } from 'lucide-react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import {
+    Bell, MessageCircle, Heart, ThumbsUp, Bookmark,
+    CheckCheck, Coins, Flame, Info, XCircle,
+} from 'lucide-react';
 import { useSocket } from '@/providers/socket.provider';
 import { useAuthStore } from '@/store/auth.store';
 import {
@@ -17,6 +20,8 @@ import Link from 'next/link';
 import { notificationApi } from '@/lib/api/notification.api';
 import type { INotification } from '@/types/notification.type';
 
+// ─── Types ────────────────────────────────────────────────────────────────────
+
 const REACTION_NAMES: Record<string, string> = {
     like: '👍 thích',
     love: '❤️ yêu thích',
@@ -26,6 +31,16 @@ const REACTION_NAMES: Record<string, string> = {
     sad: '😢 buồn',
     angry: '😠 phẫn nộ',
 };
+
+// Loại notification chỉ dành cho admin — KHÔNG hiển thị trong Bell người dùng thường
+const ADMIN_ONLY_TYPES: INotification['type'][] = [
+    'role_request_pending' as INotification['type'],
+    'new_user_registered' as INotification['type'],
+    'post_reported' as INotification['type'],
+    'comment_reported' as INotification['type'],
+];
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function formatTime(dateString: string): string {
     const date = new Date(dateString);
@@ -40,6 +55,10 @@ function formatTime(dateString: string): string {
     if (diffHours < 24) return `${diffHours} giờ trước`;
     if (diffDays < 7) return `${diffDays} ngày trước`;
     return date.toLocaleDateString('vi-VN');
+}
+
+function isAdminOnlyType(type: INotification['type']): boolean {
+    return ADMIN_ONLY_TYPES.includes(type);
 }
 
 function NotificationIcon({ type }: { type: INotification['type'] }) {
@@ -127,25 +146,22 @@ function getNotificationMessage(notification: INotification): string {
     }
 }
 
+const isSystemType = (type: INotification['type']) =>
+    ['first_login_bonus', 'streak_bonus', 'system', 'role_request_approved', 'role_request_rejected'].includes(type);
+
 const isRoleRequestType = (type: INotification['type']) =>
     type === 'role_request_approved' || type === 'role_request_rejected';
 
-function NotificationContent({ data }: { data: INotification }) {
-    const isRoleRequest = isRoleRequestType(data.type);
+// ─── NotificationContent ──────────────────────────────────────────────────────
 
+function NotificationContent({ data }: { data: INotification }) {
     return (
         <div className="flex-1 min-w-0">
-            {isRoleRequest ? (
-                <p className="text-sm text-gray-800 dark:text-gray-200">
-                    {data.content}
-                </p>
-            ) : (
-                <p className="text-sm text-gray-800 dark:text-gray-200">
-                    {getNotificationMessage(data)}
-                </p>
-            )}
+            <p className="text-sm text-gray-800 dark:text-gray-200">
+                {isRoleRequestType(data.type) ? data.content : getNotificationMessage(data)}
+            </p>
 
-            {!isRoleRequest && (data.meta?.coins ?? 0) > 0 && (
+            {!isRoleRequestType(data.type) && (data.meta?.coins ?? 0) > 0 && (
                 <p className="text-xs text-yellow-600 font-medium mt-0.5">
                     +{data.meta!.coins} xu
                 </p>
@@ -153,23 +169,14 @@ function NotificationContent({ data }: { data: INotification }) {
 
             <div className="flex items-center gap-2 mt-1.5">
                 <NotificationIcon type={data.type} />
-                <span className="text-xs text-gray-400">
-                    {formatTime(data.createdAt)}
-                </span>
-                {!data.read && (
-                    <span className="w-2 h-2 bg-main rounded-full" />
-                )}
+                <span className="text-xs text-gray-400">{formatTime(data.createdAt)}</span>
+                {!data.read && <span className="w-2 h-2 bg-main rounded-full" />}
             </div>
         </div>
     );
 }
 
-const isSystemNotification = (type: INotification['type']) =>
-    type === 'first_login_bonus' ||
-    type === 'streak_bonus' ||
-    type === 'system' ||
-    type === 'role_request_approved' ||
-    type === 'role_request_rejected';
+// ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function NotificationBell() {
     const { user, token } = useAuthStore();
@@ -180,56 +187,89 @@ export default function NotificationBell() {
     const [isLoading, setIsLoading] = useState(false);
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
-    const [isInitialLoad, setIsInitialLoad] = useState(true);
 
-    const fetchNotifications = useCallback(async (pageNum: number = 1) => {
-        if (!token || !user?._id) return;
+    // Dùng ref để tránh fetch trùng khi open thay đổi cùng lúc socket fire
+    const isFetchingRef = useRef(false);
 
-        setIsLoading(true);
-        try {
-            const data = await notificationApi.getMyNotifications(pageNum);
-            if (pageNum === 1) {
-                setNotifications(data.notifications);
-                setUnreadCount(data.unreadCount);
-            } else {
-                setNotifications(prev => [...prev, ...data.notifications]);
+    // ─── Lọc notification theo role ────────────────────────────────────────────
+    // Admin thấy tất cả, user thường không thấy ADMIN_ONLY_TYPES
+    const filterByRole = useCallback(
+        (list: INotification[]): INotification[] => {
+            if (user?.role === 'admin') return list;
+            return list.filter(n => !isAdminOnlyType(n.type));
+        },
+        [user?.role]
+    );
+
+    // ─── Fetch từ API ───────────────────────────────────────────────────────────
+    const fetchNotifications = useCallback(
+        async (pageNum: number = 1) => {
+            if (!token || !user?._id || isFetchingRef.current) return;
+
+            isFetchingRef.current = true;
+            setIsLoading(true);
+            try {
+                const data = await notificationApi.getMyNotifications(pageNum);
+                const filtered = filterByRole(data.notifications);
+
+                if (pageNum === 1) {
+                    setNotifications(filtered);
+                    setUnreadCount(filtered.filter(n => !n.read).length);
+                } else {
+                    setNotifications(prev => {
+                        const existingIds = new Set(prev.map(n => n._id));
+                        const newItems = filtered.filter(n => !existingIds.has(n._id));
+                        return [...prev, ...newItems];
+                    });
+                }
+                setPage(data.page);
+                setTotalPages(data.totalPages);
+            } catch (error) {
+                console.error('Fetch notifications error:', error);
+            } finally {
+                setIsLoading(false);
+                isFetchingRef.current = false;
             }
-            setPage(data.page);
-            setTotalPages(data.totalPages);
-        } catch (error) {
-            console.error('Fetch notifications error:', error);
-        } finally {
-            setIsLoading(false);
-            if (isInitialLoad) setIsInitialLoad(false);
-        }
-    }, [user?._id, token, isInitialLoad]);
-
-    const fetchUnreadCount = useCallback(async () => {
-        if (!token || !user?._id) return;
-
-        try {
-            const count = await notificationApi.getUnreadCount();
-            setUnreadCount(count);
-        } catch (error) {
-            console.error('Fetch unread count error:', error);
-        }
-    }, [user?._id, token]);
+        },
+        [token, user?._id, filterByRole]
+    );
 
     // Initial load
     useEffect(() => {
         if (token && user?._id) {
             fetchNotifications(1);
-            fetchUnreadCount();
         }
-    }, [token, user?._id, fetchNotifications, fetchUnreadCount]);
+    }, [token, user?._id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    // Refresh when opening popup
+    // Khi mở Bell: chỉ fetch lại nếu có unread (tránh fetch thừa)
     useEffect(() => {
-        if (open && token && user?._id) {
+        if (open && token && user?._id && unreadCount > 0) {
             fetchNotifications(1);
-            fetchUnreadCount();
         }
-    }, [open, token, user?._id, fetchNotifications, fetchUnreadCount]);
+    }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // ─── Socket: nhận notification mới realtime ─────────────────────────────────
+    useEffect(() => {
+        if (!socket || !isConnected || !user?._id) return;
+
+        const handler = (data: INotification) => {
+            // Bỏ qua nếu không phải role phù hợp
+            if (isAdminOnlyType(data.type) && user.role !== 'admin') return;
+
+            setNotifications(prev => {
+                // Chống duplicate: nếu đã có _id này thì bỏ qua
+                if (prev.some(n => n._id === data._id)) return prev;
+                const updated = [data, ...prev];
+                setUnreadCount(updated.filter(n => !n.read).length);
+                return updated;
+            });
+        };
+
+        socket.on('new_notification', handler);
+        return () => { socket.off('new_notification', handler); };
+    }, [socket, isConnected, user?._id, user?.role]);
+
+    // ─── Actions ────────────────────────────────────────────────────────────────
 
     const markAsRead = useCallback(async (notificationId: string) => {
         try {
@@ -249,11 +289,8 @@ export default function NotificationBell() {
     const markAllAsRead = useCallback(async () => {
         try {
             await notificationApi.markAllAsRead();
-            setNotifications(prev => {
-                const updated = prev.map(n => ({ ...n, read: true }));
-                setUnreadCount(0);
-                return updated;
-            });
+            setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+            setUnreadCount(0);
         } catch (error) {
             console.error('Mark all as read error:', error);
         }
@@ -265,24 +302,9 @@ export default function NotificationBell() {
         }
     };
 
-    // Socket realtime
-    useEffect(() => {
-        if (!socket || !isConnected || !user?._id) return;
-
-        const handleNewNotification = (data: INotification) => {
-            setNotifications(prev => {
-                if (prev.some(n => n._id === data._id)) return prev;
-                const updated = [data, ...prev];
-                setUnreadCount(updated.filter(n => !n.read).length);
-                return updated;
-            });
-        };
-
-        socket.on('new_notification', handleNewNotification);
-        return () => { socket.off('new_notification', handleNewNotification); };
-    }, [socket, isConnected, user?._id]);
-
     if (!token || !user?._id) return null;
+
+    // ─── Render ─────────────────────────────────────────────────────────────────
 
     return (
         <Popover open={open} onOpenChange={setOpen}>
@@ -326,15 +348,19 @@ export default function NotificationBell() {
                         <div className="flex flex-col items-center justify-center py-12 text-gray-500">
                             <Bell className="w-12 h-12 mb-3 opacity-50" />
                             <p className="text-sm">Chưa có thông báo nào</p>
-                            <p className="text-xs text-gray-400 mt-1">Khi có hoạt động mới, thông báo sẽ hiển thị tại đây</p>
+                            <p className="text-xs text-gray-400 mt-1">
+                                Khi có hoạt động mới, thông báo sẽ hiển thị tại đây
+                            </p>
                         </div>
                     ) : (
                         <div className="divide-y divide-gray-100 dark:divide-gray-800">
-                            {notifications.map((notification) => {
-                                const isSystem = isSystemNotification(notification.type);
+                            {notifications.map(notification => {
+                                const isSystem = isSystemType(notification.type);
+
                                 const content = (
                                     <div
-                                        className={`flex gap-3 p-4 ${!notification.read ? 'bg-blue-50/50 dark:bg-blue-950/20' : ''} hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer`}
+                                        className={`flex gap-3 p-4 ${!notification.read ? 'bg-blue-50/50 dark:bg-blue-950/20' : ''
+                                            } hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer`}
                                         onClick={() => !notification.read && markAsRead(notification._id)}
                                     >
                                         {isSystem ? (
@@ -353,9 +379,10 @@ export default function NotificationBell() {
                                     </div>
                                 );
 
-                                const linkHref = notification.postSlug || notification.postId
-                                    ? `/baiviet/${notification.postSlug || notification.postId}`
-                                    : null;
+                                const linkHref =
+                                    notification.postSlug || notification.postId
+                                        ? `/baiviet/${notification.postSlug || notification.postId}`
+                                        : null;
 
                                 if (!linkHref || isSystem) {
                                     return <div key={notification._id}>{content}</div>;

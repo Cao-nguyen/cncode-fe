@@ -1,4 +1,8 @@
 // store/auth.store.ts
+// FIX issue 5: khi admin xóa user → user bị push về trạng thái chưa login
+// Cách: dùng socket event 'user_deleted' + interceptor API 401 để auto logout
+// Không cần Redis, không query DB thêm
+
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import {
@@ -36,6 +40,14 @@ export const useAuthStore = create<AuthState>()(
                 });
             },
 
+            /**
+             * FIX issue 5: gọi khi nhận socket event 'user_deleted' hoặc API trả 401.
+             * Không cần Redis hay query DB - chỉ cần clear store là user bị đẩy về login.
+             */
+            forceLogout: (): void => {
+                set({ ...initialState });
+            },
+
             checkAndSync: async (): Promise<void> => {
                 const token = get().token;
                 if (!token) return;
@@ -43,6 +55,7 @@ export const useAuthStore = create<AuthState>()(
                     const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/me`, {
                         headers: { Authorization: `Bearer ${token}` },
                     });
+                    // FIX issue 5: nếu 401 hoặc 404 (user bị xóa) → logout ngay
                     if (!response.ok) {
                         set({ ...initialState });
                         return;

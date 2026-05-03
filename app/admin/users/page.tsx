@@ -5,7 +5,6 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuthStore } from '@/store/auth.store';
 import { useSocket } from '@/providers/socket.provider';
 import { userApi, IUser, IUserFilters, IUserStats, IProvinceStat } from '@/lib/api/user.api';
-import { notificationApi } from '@/lib/api/notification.api';
 import {
     Search,
     Filter,
@@ -74,14 +73,6 @@ const CustomBarTooltip = ({ active, payload, label }: { active?: boolean; payloa
         );
     }
     return null;
-};
-
-const sendSystemNotification = async (userIds: string[], title: string, content: string, type: 'system' | 'role_request_approved' | 'role_request_rejected' = 'system') => {
-    try {
-        await notificationApi.sendToUsers(userIds, { title, content, type, meta: {} });
-    } catch (error) {
-        console.error('Send notification error:', error);
-    }
 };
 
 export default function AdminUsersPage() {
@@ -273,18 +264,23 @@ export default function AdminUsersPage() {
         if (!token) return;
         setActionLoading({ type: 'approve', userId });
         try {
-            const user = pendingTeachers.find(u => u._id === userId);
             const result = await userApi.approveTeacherRequest(userId, approved, token);
-            if (result.success && user) {
-                await sendSystemNotification(
-                    [userId],
-                    approved ? 'Yêu cầu giáo viên được duyệt' : 'Yêu cầu giáo viên bị từ chối',
-                    approved ? `Chúc mừng! Yêu cầu trở thành giáo viên của bạn đã được duyệt.` : `Rất tiếc! Yêu cầu trở thành giáo viên của bạn đã bị từ chối.`,
-                    approved ? 'role_request_approved' : 'role_request_rejected'
-                );
+            if (result.success) {
                 setPendingTeachers(prev => prev.filter(u => u._id !== userId));
                 if (approved) {
-                    setUsers(prev => [...prev, { ...user, role: 'teacher', requestedRole: null }]);
+                    setUsers(prev => {
+                        const existingUserIndex = prev.findIndex(u => u._id === userId);
+                        if (existingUserIndex !== -1) {
+                            const updatedUsers = [...prev];
+                            updatedUsers[existingUserIndex] = {
+                                ...updatedUsers[existingUserIndex],
+                                role: 'teacher',
+                                requestedRole: null
+                            };
+                            return updatedUsers;
+                        }
+                        return prev;
+                    });
                 }
                 fetchStats();
                 if (activeTab === 'all' && page === 1) fetchUsers(false);
@@ -302,14 +298,11 @@ export default function AdminUsersPage() {
         try {
             const result = await userApi.changeUserRole(selectedUser._id, selectedRole, token);
             if (result.success) {
-                const roleLabel = selectedRole === 'teacher' ? 'Giáo viên' : selectedRole === 'admin' ? 'Quản trị viên' : 'Người dùng';
-                await sendSystemNotification(
-                    [selectedUser._id],
-                    'Vai trò của bạn đã được thay đổi',
-                    `Quản trị viên đã thay đổi vai trò của bạn thành ${roleLabel}.`,
-                    'system'
-                );
-                setUsers(prev => prev.map(user => user._id === selectedUser._id ? { ...user, role: selectedRole as 'user' | 'teacher' | 'admin' } : user));
+                setUsers(prev => prev.map(user =>
+                    user._id === selectedUser._id
+                        ? { ...user, role: selectedRole as 'user' | 'teacher' | 'admin' }
+                        : user
+                ));
                 if (selectedRole === 'teacher') {
                     setPendingTeachers(prev => prev.filter(user => user._id !== selectedUser._id));
                 }
@@ -330,13 +323,6 @@ export default function AdminUsersPage() {
         try {
             const result = await userApi.markViolation(selectedUser._id, violationReason, violationAction, token);
             if (result.success) {
-                const actionText = violationAction === 'ban' ? 'khóa tài khoản' : violationAction === 'mute' ? 'cấm chat' : 'cảnh cáo';
-                await sendSystemNotification(
-                    [selectedUser._id],
-                    'Bạn đã bị xử lý vi phạm',
-                    `Bạn đã bị ${actionText} với lý do: ${violationReason}`,
-                    'system'
-                );
                 setShowViolationModal(false);
                 setViolationReason('');
                 setViolationAction('warn');
@@ -354,14 +340,11 @@ export default function AdminUsersPage() {
         try {
             const result = await userApi.adjustUserCoins(selectedUser._id, coinAmount, coinReason, token);
             if (result.success) {
-                const action = coinAmount > 0 ? `cộng ${coinAmount}` : `trừ ${Math.abs(coinAmount)}`;
-                await sendSystemNotification(
-                    [selectedUser._id],
-                    'Số xu của bạn đã được cập nhật',
-                    `Quản trị viên đã ${action} xu. Lý do: ${coinReason || 'Không có lý do'}`,
-                    'system'
-                );
-                setUsers(prev => prev.map(user => user._id === selectedUser._id ? { ...user, coins: user.coins + coinAmount } : user));
+                setUsers(prev => prev.map(user =>
+                    user._id === selectedUser._id
+                        ? { ...user, coins: user.coins + coinAmount }
+                        : user
+                ));
                 setShowCoinModal(false);
                 setCoinAmount(0);
                 setCoinReason('');
@@ -389,11 +372,11 @@ export default function AdminUsersPage() {
     const getRoleBadge = (role: string) => {
         switch (role) {
             case 'admin':
-                return <span className="px-1.5 sm:px-2 py-0.5 sm:py-1 bg-red-100 text-red-700 dark:bg-red-950/30 dark:text-red-400 rounded-lg text-[10px] sm:text-xs font-medium">Admin</span>;
+                return <span className="inline-block px-1.5 sm:px-2 py-0.5 sm:py-1 bg-red-100 text-red-700 dark:bg-red-950/30 dark:text-red-400 rounded-lg text-[10px] sm:text-xs font-medium whitespace-nowrap">Admin</span>;
             case 'teacher':
-                return <span className="px-1.5 sm:px-2 py-0.5 sm:py-1 bg-green-100 text-green-700 dark:bg-green-950/30 dark:text-green-400 rounded-lg text-[10px] sm:text-xs font-medium">Giáo viên</span>;
+                return <span className="inline-block px-1.5 sm:px-2 py-0.5 sm:py-1 bg-green-100 text-green-700 dark:bg-green-950/30 dark:text-green-400 rounded-lg text-[10px] sm:text-xs font-medium whitespace-nowrap">Giáo viên</span>;
             default:
-                return <span className="px-1.5 sm:px-2 py-0.5 sm:py-1 bg-main text-white rounded-lg text-[10px] sm:text-xs font-medium">Người dùng</span>;
+                return <span className="inline-block px-1.5 sm:px-2 py-0.5 sm:py-1 bg-main text-white rounded-lg text-[10px] sm:text-xs font-medium whitespace-nowrap">Người dùng</span>;
         }
     };
 
@@ -591,82 +574,125 @@ export default function AdminUsersPage() {
             {/* Users Table */}
             <div className="rounded-xl shadow-sm border border-main/20 overflow-hidden bg-white dark:bg-gray-900">
                 <div className="overflow-x-auto">
-                    <table className="w-full min-w-[800px] lg:min-w-full">
+                    <table className="w-full min-w-[900px] lg:min-w-full">
                         <thead className="bg-main/5 border-b border-main/20">
                             <tr>
-                                <th className="text-left px-3 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-semibold text-main">Người dùng</th>
-                                <th className="text-left px-3 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-semibold text-main">Vai trò</th>
-                                <th className="text-left px-3 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-semibold text-main">Tỉnh/TP</th>
-                                <th className="text-left px-3 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-semibold text-main">Xu</th>
-                                {!isMobile && !isTablet && <th className="text-left px-3 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-semibold text-main">Streak</th>}
-                                <th className="text-left px-3 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-semibold text-main">Tham gia</th>
-                                <th className="text-center px-3 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-semibold text-main">Thao tác</th>
+                                <th className="text-left px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm font-semibold text-main whitespace-nowrap">Người dùng</th>
+                                <th className="text-left px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm font-semibold text-main whitespace-nowrap">Vai trò</th>
+                                <th className="text-left px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm font-semibold text-main whitespace-nowrap">Tỉnh/TP</th>
+                                <th className="text-left px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm font-semibold text-main whitespace-nowrap">Xu</th>
+                                <th className="text-left px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm font-semibold text-main whitespace-nowrap">Streak</th>
+                                <th className="text-left px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm font-semibold text-main whitespace-nowrap">Tham gia</th>
+                                <th className="text-center px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm font-semibold text-main whitespace-nowrap">Thao tác</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-main/10">
                             {(activeTab === 'all' ? users : pendingTeachers).map((user) => (
                                 <tr key={user._id} className="hover:bg-main/5 transition">
-                                    <td className="px-3 sm:px-6 py-3 sm:py-4">
+                                    <td className="px-3 sm:px-4 py-3 sm:py-4">
                                         <div className="flex items-center gap-2 sm:gap-3">
                                             <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-main/10 overflow-hidden flex-shrink-0">
                                                 {user.avatar ? <Image src={user.avatar} alt={user.fullName} width={40} height={40} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-base sm:text-lg font-semibold text-main">{user.fullName.charAt(0).toUpperCase()}</div>}
                                             </div>
-                                            <div>
-                                                <p className="font-medium text-sm sm:text-base text-gray-900 dark:text-white">{user.fullName}</p>
-                                                <p className="text-xs sm:text-sm text-gray-500 truncate max-w-[120px] sm:max-w-none">{user.email}</p>
-                                                {user.username && <p className="text-[10px] sm:text-xs text-main/60">@{user.username}</p>}
+                                            <div className="min-w-0">
+                                                <p className="font-medium text-sm sm:text-base text-gray-900 dark:text-white truncate max-w-[120px] sm:max-w-[180px] lg:max-w-[200px]">{user.fullName}</p>
+                                                <p className="text-xs sm:text-sm text-gray-500 truncate max-w-[110px] sm:max-w-[160px] lg:max-w-[180px]">{user.email}</p>
+                                                {user.username && <p className="text-[10px] sm:text-xs text-main/60 truncate max-w-[110px] sm:max-w-[160px] lg:max-w-[180px]">@{user.username}</p>}
                                             </div>
                                         </div>
                                     </td>
-                                    <td className="px-3 sm:px-6 py-3 sm:py-4">
-                                        <div className="space-y-1">
-                                            {getRoleBadge(user.role)}
+                                    <td className="px-3 sm:px-4 py-3 sm:py-4">
+                                        <div className="flex flex-col gap-1.5">
+                                            <div className="inline-block w-fit">
+                                                {getRoleBadge(user.role)}
+                                            </div>
                                             {activeTab === 'pending' && user.requestedRole === 'teacher' && (
-                                                <div className="flex items-center gap-1 mt-1">
-                                                    <button onClick={() => handleApproveTeacher(user._id, true)} disabled={actionLoading?.userId === user._id} className="px-1.5 sm:px-2 py-0.5 sm:py-1 bg-green-100 text-green-700 rounded text-[10px] sm:text-xs hover:bg-green-200 disabled:opacity-50">
-                                                        {actionLoading?.userId === user._id ? <Loader2 className="w-2 h-2 animate-spin inline" /> : <CheckCircle size={10} className="inline mr-0.5" />}Duyệt
+                                                <div className="flex flex-row items-center gap-1">
+                                                    <button
+                                                        onClick={() => handleApproveTeacher(user._id, true)}
+                                                        disabled={actionLoading?.userId === user._id}
+                                                        className="inline-flex items-center justify-center gap-0.5 px-1.5 py-0.5 bg-green-100 text-green-700 rounded-md text-[10px] sm:text-xs hover:bg-green-200 disabled:opacity-50 transition whitespace-nowrap"
+                                                    >
+                                                        {actionLoading?.userId === user._id ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <CheckCircle size={10} />}
+                                                        <span>Duyệt</span>
                                                     </button>
-                                                    <button onClick={() => handleApproveTeacher(user._id, false)} disabled={actionLoading?.userId === user._id} className="px-1.5 sm:px-2 py-0.5 sm:py-1 bg-red-100 text-red-700 rounded text-[10px] sm:text-xs hover:bg-red-200 disabled:opacity-50">
-                                                        <XCircle size={10} className="inline mr-0.5" />Từ chối
+                                                    <button
+                                                        onClick={() => handleApproveTeacher(user._id, false)}
+                                                        disabled={actionLoading?.userId === user._id}
+                                                        className="inline-flex items-center justify-center gap-0.5 px-1.5 py-0.5 bg-red-100 text-red-700 rounded-md text-[10px] sm:text-xs hover:bg-red-200 disabled:opacity-50 transition whitespace-nowrap"
+                                                    >
+                                                        <XCircle size={10} />
+                                                        <span>Từ chối</span>
                                                     </button>
                                                 </div>
                                             )}
                                         </div>
                                     </td>
-                                    <td className="px-3 sm:px-6 py-3 sm:py-4">
-                                        <div className="flex items-center gap-0.5 sm:gap-1">
-                                            <MapPin size={isMobile ? 12 : 14} className="text-main/50" />
-                                            <span className="text-xs sm:text-sm text-gray-700 dark:text-gray-300">{user.province || '---'}</span>
+                                    <td className="px-3 sm:px-4 py-3 sm:py-4">
+                                        <div className="flex items-center gap-1">
+                                            <MapPin size={12} className="text-main/50 flex-shrink-0" />
+                                            <span className="text-xs sm:text-sm text-gray-700 dark:text-gray-300 truncate max-w-[80px] sm:max-w-[110px] lg:max-w-[130px]">{user.province || '---'}</span>
                                         </div>
                                     </td>
-                                    <td className="px-3 sm:px-6 py-3 sm:py-4">
-                                        <div className="flex items-center gap-1 sm:gap-2">
-                                            <span className="font-semibold text-main text-sm sm:text-base">{user.coins.toLocaleString()}</span>
-                                            <button onClick={() => { setSelectedUser(user); setShowCoinModal(true); }} className="p-0.5 sm:p-1 text-gray-400 hover:text-main rounded transition" title="Điều chỉnh xu">
-                                                <Coins size={isMobile ? 12 : 14} />
+                                    <td className="px-3 sm:px-4 py-3 sm:py-4">
+                                        <div className="flex items-center gap-1 sm:gap-1.5">
+                                            <span className="font-semibold text-main text-sm sm:text-base whitespace-nowrap">{user.coins.toLocaleString()}</span>
+                                            <button
+                                                onClick={() => { setSelectedUser(user); setShowCoinModal(true); }}
+                                                className="p-0.5 sm:p-1 text-gray-400 hover:text-main rounded transition flex-shrink-0"
+                                                title="Điều chỉnh xu"
+                                            >
+                                                <Coins size={12} />
                                             </button>
                                         </div>
                                     </td>
-                                    {!isMobile && !isTablet && (
-                                        <td className="px-3 sm:px-6 py-3 sm:py-4">
-                                            <span className="text-main text-sm sm:text-base">{user.streak}</span>
-                                        </td>
-                                    )}
-                                    <td className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-gray-500">{format(new Date(user.createdAt), 'dd/MM/yyyy')}</td>
-                                    <td className="px-3 sm:px-6 py-3 sm:py-4">
-                                        <div className="flex items-center justify-center gap-0.5 sm:gap-1 flex-wrap">
-                                            <button onClick={() => { setSelectedUser(user); setShowUserModal(true); }} className="p-1 sm:p-2 text-main hover:bg-main/10 rounded-lg transition" title="Chi tiết"><Eye size={isMobile ? 14 : 18} /></button>
-                                            <button onClick={() => { setSelectedUser(user); setShowRoleModal(true); setSelectedRole(user.role); }} className="p-1 sm:p-2 text-purple-600 hover:bg-purple-100 rounded-lg transition" title="Đổi vai trò"><UserCog size={isMobile ? 14 : 18} /></button>
-                                            <button onClick={() => { setSelectedUser(user); setShowViolationModal(true); }} className="p-1 sm:p-2 text-red-600 hover:bg-red-100 rounded-lg transition" title="Vi phạm"><AlertTriangle size={isMobile ? 14 : 18} /></button>
-                                            <button onClick={() => handleDeleteUser(user)} disabled={actionLoading?.userId === user._id} className="p-1 sm:p-2 text-red-600 hover:bg-red-100 rounded-lg transition disabled:opacity-50" title="Xóa">
-                                                {actionLoading?.userId === user._id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 size={isMobile ? 14 : 18} />}
+                                    <td className="px-3 sm:px-4 py-3 sm:py-4">
+                                        <span className="text-main text-sm sm:text-base font-medium whitespace-nowrap">{user.streak}</span>
+                                    </td>
+                                    <td className="px-3 sm:px-4 py-3 sm:py-4">
+                                        <span className="text-xs sm:text-sm text-gray-500 whitespace-nowrap">{format(new Date(user.createdAt), 'dd/MM/yyyy')}</span>
+                                    </td>
+                                    <td className="px-3 sm:px-4 py-3 sm:py-4">
+                                        <div className="flex items-center justify-center gap-0.5 sm:gap-1">
+                                            <button
+                                                onClick={() => { setSelectedUser(user); setShowUserModal(true); }}
+                                                className="p-1 sm:p-1.5 text-main hover:bg-main/10 rounded-lg transition"
+                                                title="Chi tiết"
+                                            >
+                                                <Eye size={isTablet ? 12 : 14} />
+                                            </button>
+                                            <button
+                                                onClick={() => { setSelectedUser(user); setShowRoleModal(true); setSelectedRole(user.role); }}
+                                                className="p-1 sm:p-1.5 text-purple-600 hover:bg-purple-100 rounded-lg transition"
+                                                title="Đổi vai trò"
+                                            >
+                                                <UserCog size={isTablet ? 12 : 14} />
+                                            </button>
+                                            <button
+                                                onClick={() => { setSelectedUser(user); setShowViolationModal(true); }}
+                                                className="p-1 sm:p-1.5 text-red-600 hover:bg-red-100 rounded-lg transition"
+                                                title="Vi phạm"
+                                            >
+                                                <AlertTriangle size={isTablet ? 12 : 14} />
+                                            </button>
+                                            <button
+                                                onClick={() => handleDeleteUser(user)}
+                                                disabled={actionLoading?.userId === user._id}
+                                                className="p-1 sm:p-1.5 text-red-600 hover:bg-red-100 rounded-lg transition disabled:opacity-50"
+                                                title="Xóa"
+                                            >
+                                                {actionLoading?.userId === user._id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 size={isTablet ? 12 : 14} />}
                                             </button>
                                         </div>
                                     </td>
                                 </tr>
                             ))}
-                            {activeTab === 'all' && users.length === 0 && !loading && <tr><td colSpan={7} className="text-center py-8 text-gray-500">Không có người dùng nào</td></tr>}
-                            {activeTab === 'pending' && pendingTeachers.length === 0 && !loadingPending && <tr><td colSpan={7} className="text-center py-8 text-gray-500">Không có giáo viên nào chờ duyệt</td></tr>}
+                            {activeTab === 'all' && users.length === 0 && !loading && (
+                                <tr><td colSpan={7} className="text-center py-8 text-gray-500">Không có người dùng nào</td></tr>
+                            )}
+                            {activeTab === 'pending' && pendingTeachers.length === 0 && !loadingPending && (
+                                <tr><td colSpan={7} className="text-center py-8 text-gray-500">Không có giáo viên nào chờ duyệt</td></tr>
+                            )}
                         </tbody>
                     </table>
                 </div>
@@ -697,7 +723,7 @@ export default function AdminUsersPage() {
                 )}
             </div>
 
-            {/* Modals */}
+            {/* Modal: Chi tiết user */}
             {showUserModal && selectedUser && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowUserModal(false)}>
                     <div className="bg-white dark:bg-gray-900 rounded-xl w-full max-w-[90%] sm:max-w-2xl max-h-[90vh] overflow-y-auto border border-main/20" onClick={(e) => e.stopPropagation()}>
@@ -728,6 +754,7 @@ export default function AdminUsersPage() {
                 </div>
             )}
 
+            {/* Modal: Đổi vai trò */}
             {showRoleModal && selectedUser && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowRoleModal(false)}>
                     <div className="bg-white dark:bg-gray-900 rounded-xl w-full max-w-[90%] sm:max-w-md border border-main/20" onClick={(e) => e.stopPropagation()}>
@@ -744,6 +771,7 @@ export default function AdminUsersPage() {
                 </div>
             )}
 
+            {/* Modal: Vi phạm */}
             {showViolationModal && selectedUser && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowViolationModal(false)}>
                     <div className="bg-white dark:bg-gray-900 rounded-xl w-full max-w-[90%] sm:max-w-md border border-main/20" onClick={(e) => e.stopPropagation()}>
@@ -760,6 +788,7 @@ export default function AdminUsersPage() {
                 </div>
             )}
 
+            {/* Modal: Điều chỉnh xu */}
             {showCoinModal && selectedUser && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowCoinModal(false)}>
                     <div className="bg-white dark:bg-gray-900 rounded-xl w-full max-w-[90%] sm:max-w-md border border-main/20" onClick={(e) => e.stopPropagation()}>

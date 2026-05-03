@@ -5,7 +5,7 @@ import Link from "next/link";
 
 const SOCIALS = [
     { size: 30, icon: "/icons/pb.svg", link: "https://zalo.me/0394217863", big: true },
-    { size: 30, icon: "/icons/ttb.svg", link: "/", big: true },
+    { size: 30, icon: "/icons/ttb.svg", link: "https://www.tiktok.com/@cncode.io.vn?lang=vi-VN", big: true },
     { size: 34, icon: "/icons/fbb.svg", link: "https://www.facebook.com/cncode.edu.vn" },
     { size: 34, icon: "/icons/ytbb.svg", link: "https://www.youtube.com/@CNcode-edu" },
 ];

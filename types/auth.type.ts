@@ -7,6 +7,7 @@ export interface User {
     fullName: string;
     avatar?: string;
     role: UserRole;
+    requestedRole?: 'teacher' | null; // FIX: thêm field này để socket.provider có thể reset về null
     isActive: boolean;
     emailVerified: boolean;
     isOnboarded?: boolean;
@@ -94,6 +95,7 @@ export interface AuthState {
     setUser: (user: User | null) => void;
     setIsOnboarded: (value: boolean) => void;
     checkAndSync: () => Promise<void>;
+    forceLogout: () => void;
 }
 
 export interface IGoogleLoginResponse {

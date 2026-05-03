@@ -1,7 +1,6 @@
 // providers/socket.provider.tsx
 'use client';
 
-import { toast } from 'sonner';
 import {
     createContext,
     useContext,
@@ -13,12 +12,12 @@ import {
     type ReactNode,
 } from 'react';
 import { io, type Socket } from 'socket.io-client';
+import { toast } from 'sonner';
 import { useAuthStore } from '@/store/auth.store';
 import type {
     CoinsUpdatedPayload,
     StreakUpdatedPayload,
     RoleChangedPayload,
-    NotificationPayload
 } from '@/types/notification.type';
 
 interface SocketContextType {
@@ -50,21 +49,28 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     const [socketId, setSocketId] = useState<string | undefined>(undefined);
     const registeredRef = useRef(false);
 
-    const joinPostRoom = useCallback((postSlug: string) => {
-        if (socketState && isConnected) {
-            socketState.emit('join_post_room', { postSlug });
-        }
-    }, [socketState, isConnected]);
+    const joinPostRoom = useCallback(
+        (postSlug: string) => {
+            if (socketState?.connected) {
+                socketState.emit('join_post_room', { postSlug });
+            }
+        },
+        [socketState]
+    );
 
-    const leavePostRoom = useCallback((postSlug: string) => {
-        if (socketState && isConnected) {
-            socketState.emit('leave_post_room', { postSlug });
-        }
-    }, [socketState, isConnected]);
+    const leavePostRoom = useCallback(
+        (postSlug: string) => {
+            if (socketState?.connected) {
+                socketState.emit('leave_post_room', { postSlug });
+            }
+        },
+        [socketState]
+    );
 
-    // ─── Khởi tạo socket connection ───────────────────────────────
+    // ─── Khởi tạo socket ────────────────────────────────────────────
     useEffect(() => {
         if (!user?._id || !token) return;
+        // Nếu đã có kết nối đang chạy thì không tạo mới
         if (socketRef.current?.connected) return;
 
         const instance = io(BASE_URL, {
@@ -81,35 +87,25 @@ export function SocketProvider({ children }: { children: ReactNode }) {
         socketRef.current = instance;
 
         instance.on('connect', () => {
-            console.log('🔌 Socket connected:', instance.id);
             setIsConnected(true);
             setSocketId(instance.id);
             setSocketState(instance);
             registeredRef.current = false;
         });
 
-        instance.on('disconnect', (reason) => {
-            console.log('🔌 Socket disconnected:', reason);
+        instance.on('disconnect', () => {
             setIsConnected(false);
             setSocketId(undefined);
             registeredRef.current = false;
         });
 
-        instance.on('connect_error', (error) => {
-            console.error('🔌 Socket connection error:', error);
+        instance.on('connect_error', () => {
             setIsConnected(false);
         });
 
-        instance.on('reconnect', () => {
-            setIsConnected(true);
-            registeredRef.current = false;
-        });
-
         return () => {
-            if (socketRef.current) {
-                socketRef.current.disconnect();
-                socketRef.current = null;
-            }
+            instance.disconnect();
+            socketRef.current = null;
             setSocketState(null);
             setIsConnected(false);
             setSocketId(undefined);
@@ -117,120 +113,127 @@ export function SocketProvider({ children }: { children: ReactNode }) {
         };
     }, [user?._id, token]);
 
-    // ─── Register user vào room ───────────────────────────────────
+    // ─── Register vào room cá nhân ──────────────────────────────────
     useEffect(() => {
         if (!socketState || !isConnected || !user?._id || registeredRef.current) return;
 
         socketState.emit('register', {
             userId: user._id,
-            sessionId: localStorage.getItem('sessionId') || null
+            sessionId: typeof window !== 'undefined' ? localStorage.getItem('sessionId') : null,
         });
         registeredRef.current = true;
-        console.log('📡 User registered with socket:', user._id);
     }, [socketState, isConnected, user?._id]);
 
-    // ─── force_logout: bị xóa tài khoản hoặc bị ban ─────────────
+    // ─── force_logout ────────────────────────────────────────────────
     useEffect(() => {
         if (!socketState || !isConnected) return;
 
-        const handleForceLogout = (data: { code: string; message: string }) => {
+        const handler = (data: { code?: string; message: string }) => {
             const isBanned = data.code === 'USER_BANNED';
-
             toast.error(isBanned ? '🔴 Tài khoản bị khóa' : '⛔ Tài khoản bị xóa', {
                 description: data.message || 'Vui lòng liên hệ quản trị viên',
                 duration: 6000,
             });
-
-            const { logout } = useAuthStore.getState();
-            logout();
-
+            useAuthStore.getState().logout();
             localStorage.removeItem('token');
             localStorage.removeItem('auth-storage');
-
             window.location.href = '/';
         };
 
-        socketState.on('force_logout', handleForceLogout);
-        return () => { socketState.off('force_logout', handleForceLogout); };
+        socketState.on('force_logout', handler);
+        return () => { socketState.off('force_logout', handler); };
     }, [socketState, isConnected]);
 
-    // ─── Role changed ─────────────────────────────────────────────
+    // ─── role_changed ─────────────────────────────────────────────────
     useEffect(() => {
         if (!socketState || !isConnected) return;
 
-        const handleRoleChanged = (data: RoleChangedPayload) => {
-            console.log('📡 Role changed:', data);
-            if (user && data.newRole !== user.role) {
-                setUser({ ...user, role: data.newRole });
+        const handler = (data: RoleChangedPayload) => {
+            const currentUser = useAuthStore.getState().user;
+            if (currentUser && data.newRole !== currentUser.role) {
+                // FIX: reset requestedRole khi role thay đổi
+                setUser({ ...currentUser, role: data.newRole, requestedRole: null });
             }
         };
 
-        socketState.on('role_changed', handleRoleChanged);
-        return () => { socketState.off('role_changed', handleRoleChanged); };
-    }, [socketState, isConnected, user, setUser]);
+        socketState.on('role_changed', handler);
+        return () => { socketState.off('role_changed', handler); };
+    }, [socketState, isConnected, setUser]);
 
-    // ─── Coins updated ────────────────────────────────────────────
+    // ─── role_request_resolved ────────────────────────────────────────
+    // FIX: Lắng nghe event mới để reset requestedRole khi admin approve/reject
+    // Xử lý cả trường hợp rejected (role không đổi nhưng requestedRole phải = null)
     useEffect(() => {
         if (!socketState || !isConnected) return;
 
-        const handleCoinsUpdated = (data: CoinsUpdatedPayload) => {
-            console.log('📡 Coins updated:', data);
+        const handler = (data: { approved: boolean; newRole: string }) => {
+            const currentUser = useAuthStore.getState().user;
+            if (currentUser) {
+                setUser({
+                    ...currentUser,
+                    role: data.newRole as typeof currentUser.role,
+                    requestedRole: null,
+                });
+            }
+        };
+
+        socketState.on('role_request_resolved', handler);
+        return () => { socketState.off('role_request_resolved', handler); };
+    }, [socketState, isConnected, setUser]);
+
+    // ─── coins_updated ────────────────────────────────────────────────
+    useEffect(() => {
+        if (!socketState || !isConnected) return;
+
+        const handler = (data: CoinsUpdatedPayload) => {
             const currentCoins = useAuthStore.getState().coins;
             const diff = data.coins - currentCoins;
             if (diff !== 0) updateCoins(diff);
         };
 
-        socketState.on('coins_updated', handleCoinsUpdated);
-        return () => { socketState.off('coins_updated', handleCoinsUpdated); };
+        socketState.on('coins_updated', handler);
+        return () => { socketState.off('coins_updated', handler); };
     }, [socketState, isConnected, updateCoins]);
 
-    // ─── Streak updated ───────────────────────────────────────────
+    // ─── streak_updated ───────────────────────────────────────────────
     useEffect(() => {
         if (!socketState || !isConnected) return;
 
-        const handleStreakUpdated = (data: StreakUpdatedPayload) => {
-            console.log('📡 Streak updated:', data);
+        const handler = (data: StreakUpdatedPayload) => {
             updateStreak(data.streak);
             const currentCoins = useAuthStore.getState().coins;
             const diff = data.totalCoins - currentCoins;
             if (diff !== 0) updateCoins(diff);
         };
 
-        socketState.on('streak_updated', handleStreakUpdated);
-        return () => { socketState.off('streak_updated', handleStreakUpdated); };
+        socketState.on('streak_updated', handler);
+        return () => { socketState.off('streak_updated', handler); };
     }, [socketState, isConnected, updateStreak, updateCoins]);
 
-    // ─── New notification (chỉ log — NotificationBell tự handle) ──
+    // ─── profile_updated ──────────────────────────────────────────────
     useEffect(() => {
         if (!socketState || !isConnected) return;
 
-        const handleNewNotification = (data: NotificationPayload) => {
-            console.log('📡 New notification:', data);
+        const handler = (data: { user: typeof user }) => {
+            if (data.user) setUser(data.user);
         };
 
-        socketState.on('new_notification', handleNewNotification);
-        return () => { socketState.off('new_notification', handleNewNotification); };
-    }, [socketState, isConnected]);
+        socketState.on('profile_updated', handler);
+        return () => { socketState.off('profile_updated', handler); };
+    }, [socketState, isConnected, setUser]);
 
-    // ─── Post room events ─────────────────────────────────────────
+    // ─── avatar_updated ───────────────────────────────────────────────
     useEffect(() => {
-        if (!socketState) return;
+        if (!socketState || !isConnected) return;
 
-        const handleJoined = (data: { postSlug: string }) => {
-            console.log('📡 Joined post room:', data.postSlug);
-        };
-        const handleLeft = (data: { postSlug: string }) => {
-            console.log('📡 Left post room:', data.postSlug);
+        const handler = (data: { avatar: string }) => {
+            const currentUser = useAuthStore.getState().user;
+            if (currentUser) setUser({ ...currentUser, avatar: data.avatar });
         };
 
-        socketState.on('joined_post_room', handleJoined);
-        socketState.on('left_post_room', handleLeft);
-
-        return () => {
-            socketState.off('joined_post_room', handleJoined);
-            socketState.off('left_post_room', handleLeft);
-        };
-    }, [socketState]);
+        socketState.on('avatar_updated', handler);
+        return () => { socketState.off('avatar_updated', handler); };
+    }, [socketState, isConnected, setUser]);
 
     const value = useMemo<SocketContextType>(
         () => ({ socket: socketState, isConnected, socketId, joinPostRoom, leavePostRoom }),

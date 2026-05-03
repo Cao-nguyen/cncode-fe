@@ -551,9 +551,10 @@ export default function Header() {
                     <Link href="/">
                         <Image src="/images/logo.png" alt="Logo" width={60} height={30} className="object-contain" priority />
                     </Link>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-3">
                         {displayUser && (
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-3">
+                                {/* FIX: Tăng gap và thêm margin để coins và streak không dính nhau */}
                                 <div className="relative flex items-center">
                                     <div className="border border-gray-300 rounded-2xl pl-1.5 pr-3 py-0.5">
                                         <p className="text-main text-[10px] font-medium">{formatNumber(displayCoins)}</p>
