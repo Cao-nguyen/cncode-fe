@@ -1,3 +1,6 @@
+// components/custom/CustomInputSearch.tsx
+'use client'
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Search, X, Mic, Loader2 } from 'lucide-react';
 
@@ -54,16 +57,13 @@ export const CustomInputSearch: React.FC<CustomInputSearchProps> = ({
     const inputRef = useRef<HTMLInputElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
 
-    // Debounce search
     useEffect(() => {
         const handler = setTimeout(() => {
             setDebouncedValue(inputValue);
         }, debounceDelay);
-
         return () => clearTimeout(handler);
     }, [inputValue, debounceDelay]);
 
-    // Trigger search on debounced value change
     useEffect(() => {
         if (debouncedValue !== value) {
             onSearch?.(debouncedValue);
@@ -71,12 +71,10 @@ export const CustomInputSearch: React.FC<CustomInputSearchProps> = ({
         }
     }, [debouncedValue]);
 
-    // Update input value when prop changes
     useEffect(() => {
         setInputValue(value);
     }, [value]);
 
-    // Handle click outside
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
@@ -147,22 +145,22 @@ export const CustomInputSearch: React.FC<CustomInputSearchProps> = ({
                 return 'px-3 py-1.5 text-sm';
             case 'large':
                 return 'px-5 py-3 text-lg';
-            default:
-                return 'px-4 py-2 text-base';
+            default: // medium - đồng bộ py-2.5 với CustomSelect
+                return 'px-4 py-2.5 text-base';
         }
     };
 
     const getVariantClasses = () => {
-        const baseClasses = 'w-full rounded-lg transition-all duration-200 outline-none';
-        const focusClasses = 'focus:ring-2 focus:ring-blue-500 focus:border-blue-500';
+        const baseClasses = 'w-full rounded-[var(--cn-radius-sm)] transition-all duration-200 outline-none';
+        const focusClasses = 'focus:ring-2 focus:ring-[var(--cn-primary)]/20 focus:border-[var(--cn-primary)]';
 
         switch (variant) {
             case 'filled':
-                return `${baseClasses} bg-gray-100 border border-transparent hover:bg-gray-200 ${focusClasses}`;
+                return `${baseClasses} bg-[var(--cn-bg-section)] border border-transparent hover:bg-[var(--cn-hover)] ${focusClasses}`;
             case 'outline':
-                return `${baseClasses} bg-transparent border-2 border-gray-300 hover:border-gray-400 ${focusClasses}`;
+                return `${baseClasses} bg-transparent border-2 border-[var(--cn-border)] hover:border-[var(--cn-primary)] ${focusClasses}`;
             default:
-                return `${baseClasses} bg-white border border-gray-300 hover:border-gray-400 ${focusClasses}`;
+                return `${baseClasses} bg-[var(--cn-bg-card)] border border-[var(--cn-border)] hover:border-[var(--cn-primary)] ${focusClasses}`;
         }
     };
 
@@ -173,16 +171,14 @@ export const CustomInputSearch: React.FC<CustomInputSearchProps> = ({
     return (
         <div ref={containerRef} className={`relative ${className}`}>
             <form onSubmit={handleSubmit} className="relative">
-                {/* Search Icon */}
                 <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
                     {isLoading ? (
-                        <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />
+                        <Loader2 className="w-4 h-4 text-[var(--cn-primary)] animate-spin" />
                     ) : (
-                        <Search className="w-4 h-4 text-gray-400" />
+                        <Search className="w-4 h-4 text-[var(--cn-text-muted)]" />
                     )}
                 </div>
 
-                {/* Input Field */}
                 <input
                     ref={inputRef}
                     type="text"
@@ -191,17 +187,15 @@ export const CustomInputSearch: React.FC<CustomInputSearchProps> = ({
                     onFocus={handleFocus}
                     placeholder={placeholder}
                     autoFocus={autoFocus}
-                    className={`${getSizeClasses()} ${getVariantClasses()} pl-9 ${inputValue ? 'pr-20' : 'pr-9'
-                        }`}
+                    className={`${getSizeClasses()} ${getVariantClasses()} pl-9 ${inputValue ? 'pr-20' : 'pr-9'}`}
                 />
 
-                {/* Action Buttons */}
                 <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center gap-1">
                     {showMic && onMicClick && (
                         <button
                             type="button"
                             onClick={onMicClick}
-                            className="p-1 text-gray-400 hover:text-blue-600 transition-colors rounded-full hover:bg-gray-100"
+                            className="p-1 text-[var(--cn-text-muted)] hover:text-[var(--cn-primary)] transition-colors rounded-full hover:bg-[var(--cn-hover)]"
                             title="Tìm kiếm bằng giọng nói"
                         >
                             <Mic className="w-4 h-4" />
@@ -212,7 +206,7 @@ export const CustomInputSearch: React.FC<CustomInputSearchProps> = ({
                         <button
                             type="button"
                             onClick={handleClear}
-                            className="p-1 text-gray-400 hover:text-gray-600 transition-colors rounded-full hover:bg-gray-100"
+                            className="p-1 text-[var(--cn-text-muted)] hover:text-[var(--cn-text-main)] transition-colors rounded-full hover:bg-[var(--cn-hover)]"
                             title="Xóa"
                         >
                             <X className="w-4 h-4" />
@@ -221,52 +215,49 @@ export const CustomInputSearch: React.FC<CustomInputSearchProps> = ({
                 </div>
             </form>
 
-            {/* Suggestions Dropdown */}
             {(showSuggestions && hasSuggestions) || (showRecent && hasRecent) ? (
-                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden animate-slideDown">
-                    {/* Recent Searches */}
+                <div className="absolute z-10 w-full mt-1 bg-[var(--cn-bg-card)] border border-[var(--cn-border)] rounded-[var(--cn-radius-sm)] shadow-[var(--cn-shadow-md)] overflow-hidden animate-slideDown">
                     {showRecent && hasRecent && (
                         <div>
-                            <div className="px-4 py-2 bg-gray-50 border-b border-gray-100">
-                                <span className="text-xs font-medium text-gray-500 uppercase">Tìm kiếm gần đây</span>
+                            <div className="px-4 py-2 bg-[var(--cn-bg-section)] border-b border-[var(--cn-border)]">
+                                <span className="text-xs font-medium text-[var(--cn-text-muted)] uppercase">Tìm kiếm gần đây</span>
                             </div>
                             {recentSearches.slice(0, 5).map((recent, index) => (
                                 <button
                                     key={index}
                                     onClick={() => handleRecentClick(recent)}
-                                    className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-2 transition-colors"
+                                    className="w-full px-4 py-2 text-left hover:bg-[var(--cn-hover)] flex items-center gap-2 transition-colors"
                                 >
-                                    <Search className="w-3 h-3 text-gray-400" />
-                                    <span className="text-sm text-gray-700">{recent}</span>
+                                    <Search className="w-3 h-3 text-[var(--cn-text-muted)]" />
+                                    <span className="text-sm text-[var(--cn-text-main)]">{recent}</span>
                                 </button>
                             ))}
                         </div>
                     )}
 
-                    {/* Search Suggestions */}
                     {showSuggestions && hasSuggestions && (
                         <div>
                             {showRecent && hasRecent && (
-                                <div className="border-t border-gray-100"></div>
+                                <div className="border-t border-[var(--cn-border)]"></div>
                             )}
-                            <div className="px-4 py-2 bg-gray-50 border-b border-gray-100">
-                                <span className="text-xs font-medium text-gray-500 uppercase">Gợi ý</span>
+                            <div className="px-4 py-2 bg-[var(--cn-bg-section)] border-b border-[var(--cn-border)]">
+                                <span className="text-xs font-medium text-[var(--cn-text-muted)] uppercase">Gợi ý</span>
                             </div>
                             {allSuggestions.map((suggestion) => (
                                 <button
                                     key={suggestion.id}
                                     onClick={() => handleSuggestionClick(suggestion)}
-                                    className="w-full px-4 py-2 text-left hover:bg-gray-50 transition-colors group"
+                                    className="w-full px-4 py-2 text-left hover:bg-[var(--cn-hover)] transition-colors group"
                                 >
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-2">
-                                            <Search className="w-3 h-3 text-gray-400 group-hover:text-blue-500" />
-                                            <span className="text-sm text-gray-700 group-hover:text-blue-600">
+                                            <Search className="w-3 h-3 text-[var(--cn-text-muted)] group-hover:text-[var(--cn-primary)]" />
+                                            <span className="text-sm text-[var(--cn-text-main)] group-hover:text-[var(--cn-primary)]">
                                                 {suggestion.label}
                                             </span>
                                         </div>
                                         {suggestion.type && (
-                                            <span className="text-xs text-gray-400">{suggestion.type}</span>
+                                            <span className="text-xs text-[var(--cn-text-muted)]">{suggestion.type}</span>
                                         )}
                                     </div>
                                 </button>
@@ -276,10 +267,9 @@ export const CustomInputSearch: React.FC<CustomInputSearchProps> = ({
                 </div>
             ) : null}
 
-            {/* Loading Overlay */}
             {isLoading && inputValue && (
                 <div className="absolute right-12 top-1/2 transform -translate-y-1/2">
-                    <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />
+                    <Loader2 className="w-4 h-4 text-[var(--cn-primary)] animate-spin" />
                 </div>
             )}
         </div>

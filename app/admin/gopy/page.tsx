@@ -275,7 +275,7 @@ export default function AdminFeedbackPage() {
                     />
                 </div>
                 <div className="w-48">
-                    <div className="[&_button]:!py-2.5 [&_button]:h-[42px]">
+                    <div>
                         <CustomSelect
                             value={selectedCategory}
                             onChange={(value) => setSelectedCategory(value)}
@@ -289,7 +289,7 @@ export default function AdminFeedbackPage() {
                         setPage(1);
                         fetchFeedbacks();
                     }}
-                    className="px-4 bg-[var(--cn-primary)] text-white rounded-[var(--cn-radius-md)] hover:bg-[var(--cn-primary-hover)] transition text-sm h-[42px] flex items-center justify-center"
+                    className="px-4 bg-[var(--cn-primary)] text-white rounded-[var(--cn-radius-md)] hover:bg-[var(--cn-primary-hover)] transition text-sm h-[45px] flex items-center justify-center"
                 >
                     Tìm kiếm
                 </button>

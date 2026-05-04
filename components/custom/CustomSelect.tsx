@@ -1,4 +1,4 @@
-// /components/custom/CustomSelect.tsx
+// components/custom/CustomSelect.tsx
 'use client'
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';

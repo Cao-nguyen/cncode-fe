@@ -1,3 +1,4 @@
+// app/settings/page.tsx
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -19,6 +20,10 @@ import {
     CheckCircle,
 } from 'lucide-react';
 import Image from 'next/image';
+import { CustomInput } from '@/components/custom/CustomInput';
+import { CustomSelect } from '@/components/custom/CustomSelect';
+import { CustomTextarea } from '@/components/custom/CustomTextarea';
+import { CustomButton } from '@/components/custom/CustomButton';
 
 interface FormData {
     fullName: string;
@@ -46,10 +51,15 @@ const PROVINCES: string[] = [
     'Tuyên Quang', 'Vĩnh Long', 'Vĩnh Phúc', 'Yên Bái',
 ];
 
-const CLASSES: string[] = Array.from({ length: 12 }, (_, i) => `Lớp ${i + 1}`);
+const CLASSES: string[] = [
+    ...Array.from({ length: 12 }, (_, i) => `Lớp ${i + 1}`),
+    'Sinh viên',
+    'Khác'
+];
 
-// Mirrors the store's User type exactly — timestamps are Date, not string.
-// Extended with optional profile fields the API may populate after a fetch.
+const PROVINCE_OPTIONS = PROVINCES.map(p => ({ value: p, label: p }));
+const CLASS_OPTIONS = CLASSES.map(c => ({ value: c, label: c }));
+
 interface StoreUser {
     _id: string;
     fullName: string;
@@ -62,7 +72,6 @@ interface StoreUser {
     lastActiveAt?: Date;
     createdAt?: Date;
     updatedAt?: Date;
-    // Profile-only fields not always present in the base store shape
     class?: string;
     province?: string;
     school?: string;
@@ -71,11 +80,9 @@ interface StoreUser {
     requestedRole?: 'teacher' | null;
 }
 
-// Helper: safely convert Date | undefined to ISO string
 const toISOString = (value: Date | undefined): string =>
     value instanceof Date ? value.toISOString() : new Date().toISOString();
 
-// Helper: extract a plain IUser from the store user shape
 const storeUserToIUser = (u: StoreUser): IUser => ({
     _id: u._id,
     fullName: u.fullName,
@@ -115,7 +122,6 @@ const SettingsPage = () => {
     const { token, logout, updateCoins, updateStreak, user: rawStoreUser, setUser } = useAuthStore();
     const { socket, isConnected } = useSocket();
 
-    // Cast once at the boundary — StoreUser mirrors the actual store User shape.
     const storeUser = rawStoreUser as unknown as StoreUser | null;
 
     const [user, setUserState] = useState<IUser | null>(null);
@@ -135,8 +141,6 @@ const SettingsPage = () => {
         birthday: '',
         bio: '',
     });
-
-    // ─── Fetch profile ────────────────────────────────────────────────────────
 
     const fetchUserProfile = useCallback(async () => {
         if (!token) {
@@ -170,13 +174,10 @@ const SettingsPage = () => {
         }
     }, [token, fetchUserProfile]);
 
-    // ─── Sync store → local state khi role hoặc requestedRole thay đổi ────────
     useEffect(() => {
         if (!storeUser || !user) return;
         const converted = storeUserToIUser(storeUser);
 
-        // FIX: so sánh thêm requestedRole để bắt được cả trường hợp rejected
-        // (role không đổi nhưng requestedRole đã được reset về null)
         const roleChanged = converted.role !== user.role;
         const requestedRoleChanged = converted.requestedRole !== user.requestedRole;
 
@@ -186,7 +187,6 @@ const SettingsPage = () => {
         }
     }, [storeUser, user]);
 
-    // ─── Socket: role_changed ─────────────────────────────────────────────────
     useEffect(() => {
         if (!socket || !isConnected) return;
 
@@ -200,15 +200,10 @@ const SettingsPage = () => {
         return () => { socket.off('role_changed', handleRoleChanged); };
     }, [socket, isConnected, user, fetchUserProfile]);
 
-    // ─── Socket: role_request_resolved ───────────────────────────────────────
-    // FIX: Lắng nghe event mới từ backend khi admin approve/reject request.
-    // Cập nhật trực tiếp local state để UI phản ánh ngay lập tức,
-    // đồng thời fetch lại để đảm bảo data đồng bộ hoàn toàn.
     useEffect(() => {
         if (!socket || !isConnected) return;
 
         const handleRoleRequestResolved = (data: { approved: boolean; newRole: string }) => {
-            // Cập nhật local state ngay để UI phản hồi tức thì
             setUserState(prev => {
                 if (!prev) return null;
                 return {
@@ -217,7 +212,6 @@ const SettingsPage = () => {
                     requestedRole: null,
                 };
             });
-            // Fetch lại để đảm bảo đồng bộ hoàn toàn với server
             fetchUserProfile();
         };
 
@@ -225,7 +219,6 @@ const SettingsPage = () => {
         return () => { socket.off('role_request_resolved', handleRoleRequestResolved); };
     }, [socket, isConnected, fetchUserProfile]);
 
-    // ─── Socket: coins_updated ────────────────────────────────────────────────
     useEffect(() => {
         if (!socket || !isConnected) return;
 
@@ -239,7 +232,6 @@ const SettingsPage = () => {
         return () => { socket.off('coins_updated', handleCoinsUpdated); };
     }, [socket, isConnected, user, updateCoins]);
 
-    // ─── Socket: streak_updated ───────────────────────────────────────────────
     useEffect(() => {
         if (!socket || !isConnected) return;
 
@@ -253,13 +245,8 @@ const SettingsPage = () => {
         return () => { socket.off('streak_updated', handleStreakUpdated); };
     }, [socket, isConnected, user, updateStreak]);
 
-    // ─── Handlers ─────────────────────────────────────────────────────────────
-
-    const handleInputChange = (
-        e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
-    ) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
+    const handleInputChange = (field: keyof FormData, value: string) => {
+        setFormData(prev => ({ ...prev, [field]: value }));
     };
 
     const handleUpdateProfile = async (e: React.FormEvent) => {
@@ -320,14 +307,10 @@ const SettingsPage = () => {
         router.push('/login');
     };
 
-    // ─── Derived state ────────────────────────────────────────────────────────
-
     const currentUser: IUser | null = user ?? (storeUser ? storeUserToIUser(storeUser) : null);
 
     if (loading) return <Loading text="Đang tải thông tin..." />;
     if (!currentUser) return null;
-
-    // ─── Helpers ──────────────────────────────────────────────────────────────
 
     const getRoleLabel = (role: string) => {
         switch (role) {
@@ -341,25 +324,23 @@ const SettingsPage = () => {
         switch (role) {
             case 'admin': return 'bg-red-100 text-red-700 dark:bg-red-950/30 dark:text-red-400';
             case 'teacher': return 'bg-green-100 text-green-700 dark:bg-green-950/30 dark:text-green-400';
-            default: return 'bg-main text-white';
+            default: return 'bg-[var(--cn-primary)] text-white';
         }
     };
 
-    // ─── Render ───────────────────────────────────────────────────────────────
-
     return (
         <div className="max-w-5xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
-            <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+            <div className="bg-[var(--cn-bg-card)] rounded-[var(--cn-radius-md)] border border-[var(--cn-border)] shadow-[var(--cn-shadow-sm)] overflow-hidden">
 
                 {/* Header */}
-                <div className="border-b border-gray-200 dark:border-gray-800 p-4 sm:p-6">
-                    <h1 className="text-xl sm:text-2xl font-bold text-main">Cài đặt tài khoản</h1>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Quản lý thông tin cá nhân</p>
+                <div className="border-b border-[var(--cn-border)] p-4 sm:p-6">
+                    <h1 className="text-xl sm:text-2xl font-bold text-[var(--cn-primary)]">Cài đặt tài khoản</h1>
+                    <p className="text-xs sm:text-sm text-[var(--cn-text-muted)] mt-1">Quản lý thông tin cá nhân</p>
                 </div>
 
                 {/* Avatar + name */}
-                <div className="flex flex-col items-center py-6 sm:py-8 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/30">
-                    <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden bg-white dark:bg-gray-900 ring-4 ring-gray-200 dark:ring-gray-700 flex items-center justify-center">
+                <div className="flex flex-col items-center py-6 sm:py-8 border-b border-[var(--cn-border)] bg-[var(--cn-bg-section)]">
+                    <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden bg-[var(--cn-bg-card)] ring-4 ring-[var(--cn-border)] flex items-center justify-center">
                         {currentUser.avatar ? (
                             <Image
                                 src={currentUser.avatar}
@@ -369,18 +350,18 @@ const SettingsPage = () => {
                                 className="w-full h-full object-cover"
                             />
                         ) : (
-                            <User className="w-10 h-10 sm:w-12 sm:h-12 text-gray-400" />
+                            <User className="w-10 h-10 sm:w-12 sm:h-12 text-[var(--cn-text-muted)]" />
                         )}
                     </div>
                     <div className="mt-3 text-center">
-                        <h2 className="font-semibold text-gray-900 dark:text-white text-base sm:text-lg">
+                        <h2 className="font-semibold text-[var(--cn-text-main)] text-base sm:text-lg">
                             {currentUser.fullName}
                         </h2>
-                        <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 break-all px-2">
+                        <p className="text-xs sm:text-sm text-[var(--cn-text-muted)] break-all px-2">
                             {currentUser.email}
                         </p>
-                        <div className="mt-2 inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium">
-                            <span className={`px-2 py-0.5 rounded-full ${getRoleBadgeClass(currentUser.role)}`}>
+                        <div className="mt-2 inline-flex items-center gap-1">
+                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getRoleBadgeClass(currentUser.role)}`}>
                                 {getRoleLabel(currentUser.role)}
                             </span>
                         </div>
@@ -391,165 +372,118 @@ const SettingsPage = () => {
                 <div className="p-4 sm:p-6">
                     <form onSubmit={handleUpdateProfile} className="space-y-4 sm:space-y-6">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Họ và tên
-                                </label>
-                                <input
-                                    type="text"
-                                    name="fullName"
-                                    value={formData.fullName}
-                                    onChange={handleInputChange}
-                                    required
-                                    className="w-full px-3 sm:px-4 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-main/50 text-gray-900 dark:text-white text-sm sm:text-base"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Tên người dùng
-                                </label>
-                                <input
-                                    type="text"
-                                    name="username"
-                                    value={formData.username}
-                                    onChange={handleInputChange}
-                                    className="w-full px-3 sm:px-4 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-main/50 text-gray-900 dark:text-white text-sm sm:text-base"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Lớp
-                                </label>
-                                <select
-                                    name="class"
-                                    value={formData.class}
-                                    onChange={handleInputChange}
-                                    className="w-full px-3 sm:px-4 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-main/50 text-gray-900 dark:text-white text-sm sm:text-base"
-                                >
-                                    <option value="">Chọn lớp</option>
-                                    {CLASSES.map(cls => (
-                                        <option key={cls} value={cls}>{cls}</option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Tỉnh/Thành phố
-                                </label>
-                                <select
-                                    name="province"
-                                    value={formData.province}
-                                    onChange={handleInputChange}
-                                    className="w-full px-3 sm:px-4 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-main/50 text-gray-900 dark:text-white text-sm sm:text-base"
-                                >
-                                    <option value="">Chọn tỉnh/thành phố</option>
-                                    {PROVINCES.map(province => (
-                                        <option key={province} value={province}>{province}</option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Trường học
-                                </label>
-                                <input
-                                    type="text"
-                                    name="school"
-                                    value={formData.school}
-                                    onChange={handleInputChange}
-                                    className="w-full px-3 sm:px-4 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-main/50 text-gray-900 dark:text-white text-sm sm:text-base"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Ngày sinh
-                                </label>
-                                <input
-                                    type="date"
-                                    name="birthday"
-                                    value={formData.birthday}
-                                    onChange={handleInputChange}
-                                    className="w-full px-3 sm:px-4 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-main/50 text-gray-900 dark:text-white text-sm sm:text-base"
-                                />
-                            </div>
+                            <CustomInput
+                                label="Họ và tên"
+                                value={formData.fullName}
+                                onChange={(e) => handleInputChange('fullName', e.target.value)}
+                                required
+                            />
+                            <CustomInput
+                                label="Tên người dùng"
+                                value={formData.username}
+                                onChange={(e) => handleInputChange('username', e.target.value)}
+                                placeholder="username"
+                                prefix="@"
+                            />
+                            <CustomSelect
+                                label="Lớp"
+                                value={formData.class}
+                                onChange={(value) => handleInputChange('class', value)}
+                                options={CLASS_OPTIONS}
+                                placeholder="Chọn lớp"
+                            />
+                            <CustomSelect
+                                label="Tỉnh/Thành phố"
+                                value={formData.province}
+                                onChange={(value) => handleInputChange('province', value)}
+                                options={PROVINCE_OPTIONS}
+                                placeholder="Chọn tỉnh/thành phố"
+                            />
+                            <CustomInput
+                                label="Trường học"
+                                value={formData.school}
+                                onChange={(e) => handleInputChange('school', e.target.value)}
+                                placeholder="Nhập tên trường"
+                            />
+                            <CustomInput
+                                label="Ngày sinh"
+                                type="date"
+                                value={formData.birthday}
+                                onChange={(e) => handleInputChange('birthday', e.target.value)}
+                            />
                             <div className="sm:col-span-2">
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Giới thiệu bản thân
-                                </label>
-                                <textarea
-                                    name="bio"
+                                <CustomTextarea
+                                    label="Giới thiệu bản thân"
                                     value={formData.bio}
-                                    onChange={handleInputChange}
-                                    rows={4}
+                                    onChange={(value) => handleInputChange('bio', value)}
                                     placeholder="Chia sẻ một chút về bản thân..."
-                                    className="w-full px-3 sm:px-4 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-main/50 text-gray-900 dark:text-white resize-none text-sm sm:text-base"
+                                    rows={4}
+                                    maxLength={500}
                                 />
                             </div>
                         </div>
-                        <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-800">
-                            <button
+                        <div className="flex justify-end gap-3 pt-4 border-t border-[var(--cn-border)]">
+                            <CustomButton
                                 type="submit"
+                                variant="primary"
+                                loading={saving}
                                 disabled={saving}
-                                className="px-4 sm:px-6 py-2 bg-main text-white rounded-lg hover:bg-main/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
                             >
-                                {saving && <Loader2 className="w-4 h-4 inline animate-spin mr-2" />}
                                 {saving ? 'Đang lưu...' : 'Lưu thay đổi'}
-                            </button>
+                            </CustomButton>
                         </div>
                     </form>
 
                     {/* Nâng cấp tài khoản */}
                     {currentUser.role === 'user' && (
-                        <div className="mt-6 bg-gray-50 dark:bg-gray-800/30 rounded-lg p-4 sm:p-6 border border-gray-200 dark:border-gray-800">
-                            <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-3 sm:mb-4 flex items-center gap-2">
-                                <Award className="w-5 h-5 text-main" />
+                        <div className="mt-6 bg-[var(--cn-bg-section)] rounded-[var(--cn-radius-md)] p-4 sm:p-6 border border-[var(--cn-border)]">
+                            <h3 className="text-base sm:text-lg font-semibold text-[var(--cn-text-main)] mb-3 sm:mb-4 flex items-center gap-2">
+                                <Award className="w-5 h-5 text-[var(--cn-primary)]" />
                                 Nâng cấp tài khoản
                             </h3>
-                            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                            <p className="text-xs sm:text-sm text-[var(--cn-text-muted)] mb-4">
                                 Đăng ký trở thành giáo viên để đăng tải bài giảng và chia sẻ kiến thức với cộng đồng.
                             </p>
                             {currentUser.requestedRole === 'teacher' ? (
-                                <div className="flex items-center gap-2 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                                <div className="flex items-center gap-2 p-3 bg-green-50 dark:bg-green-900/20 rounded-[var(--cn-radius-sm)] border border-green-200 dark:border-green-800">
                                     <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0" />
-                                    <span className="text-sm text-gray-700 dark:text-gray-300">
+                                    <span className="text-xs sm:text-sm text-[var(--cn-text-sub)]">
                                         Yêu cầu của bạn đã được gửi. Vui lòng chờ admin duyệt.
                                     </span>
                                 </div>
                             ) : (
-                                <button
+                                <CustomButton
                                     onClick={handleRequestRole}
                                     disabled={requestingRole}
-                                    className="px-4 sm:px-6 py-2 bg-main text-white rounded-lg hover:bg-main/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-sm sm:text-base"
+                                    loading={requestingRole}
+                                    variant="primary"
                                 >
-                                    {requestingRole
-                                        ? <Loader2 className="w-4 h-4 animate-spin" />
-                                        : <Award className="w-4 h-4" />}
                                     {requestingRole ? 'Đang gửi...' : 'Đăng ký làm giáo viên'}
-                                </button>
+                                </CustomButton>
                             )}
                         </div>
                     )}
 
                     {/* Thống kê tài khoản */}
-                    <div className="mt-6 bg-gray-50 dark:bg-gray-800/30 rounded-lg p-4 sm:p-6 border border-gray-200 dark:border-gray-800">
-                        <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-3 sm:mb-4 flex items-center gap-2">
-                            <Coins className="w-5 h-5 text-main" />
+                    <div className="mt-6 bg-[var(--cn-bg-section)] rounded-[var(--cn-radius-md)] p-4 sm:p-6 border border-[var(--cn-border)]">
+                        <h3 className="text-base sm:text-lg font-semibold text-[var(--cn-text-main)] mb-3 sm:mb-4 flex items-center gap-2">
+                            <Coins className="w-5 h-5 text-[var(--cn-primary)]" />
                             Thống kê tài khoản
                         </h3>
                         <div className="grid grid-cols-2 gap-3 sm:gap-4">
-                            <div className="p-3 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800">
-                                <div className="flex items-center gap-1 text-main mb-1">
+                            <div className="p-3 bg-[var(--cn-bg-card)] rounded-[var(--cn-radius-sm)] border border-[var(--cn-border)]">
+                                <div className="flex items-center gap-1 text-[var(--cn-primary)] mb-1">
                                     <Coins className="w-4 h-4" />
-                                    <span className="text-xs text-gray-500">Xu của bạn</span>
+                                    <span className="text-[10px] sm:text-xs text-[var(--cn-text-muted)]">Xu của bạn</span>
                                 </div>
-                                <div className="text-xl sm:text-2xl font-bold text-main">
+                                <div className="text-xl sm:text-2xl font-bold text-[var(--cn-primary)]">
                                     {currentUser.coins.toLocaleString()}
                                 </div>
                             </div>
-                            <div className="p-3 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800">
+                            <div className="p-3 bg-[var(--cn-bg-card)] rounded-[var(--cn-radius-sm)] border border-[var(--cn-border)]">
                                 <div className="flex items-center gap-1 text-orange-500 mb-1">
                                     <Flame className="w-4 h-4" />
-                                    <span className="text-xs text-gray-500">Streak</span>
+                                    <span className="text-[10px] sm:text-xs text-[var(--cn-text-muted)]">Streak</span>
                                 </div>
                                 <div className="text-xl sm:text-2xl font-bold text-orange-500">
                                     {currentUser.streak} ngày
@@ -559,32 +493,32 @@ const SettingsPage = () => {
                     </div>
 
                     {/* Xóa tài khoản */}
-                    <div className="mt-6 bg-red-50 dark:bg-red-950/20 rounded-lg p-4 sm:p-6 border border-red-200 dark:border-red-800">
+                    <div className="mt-6 bg-red-50 dark:bg-red-950/20 rounded-[var(--cn-radius-md)] p-4 sm:p-6 border border-red-200 dark:border-red-800">
                         <h3 className="text-base sm:text-lg font-semibold text-red-600 dark:text-red-400 mb-3 sm:mb-4 flex items-center gap-2">
                             <Trash2 className="w-5 h-5" />
                             Xóa tài khoản
                         </h3>
-                        <p className="text-sm text-red-600 dark:text-red-400 mb-4">
+                        <p className="text-xs sm:text-sm text-red-600 dark:text-red-400 mb-4">
                             Cảnh báo: Hành động này không thể hoàn tác. Tất cả dữ liệu của bạn sẽ bị xóa vĩnh viễn.
                         </p>
-                        <button
+                        <CustomButton
                             onClick={() => setShowDeleteConfirm(true)}
-                            className="px-4 sm:px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2 text-sm sm:text-base"
+                            variant="danger"
                         >
                             <Trash2 className="w-4 h-4" />
                             Xóa tài khoản vĩnh viễn
-                        </button>
+                        </CustomButton>
                     </div>
 
                     {/* Đăng xuất */}
-                    <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-800">
-                        <button
+                    <div className="mt-6 pt-4 border-t border-[var(--cn-border)]">
+                        <CustomButton
                             onClick={handleLogout}
-                            className="px-4 sm:px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors flex items-center gap-2 text-sm sm:text-base"
+                            variant="secondary"
                         >
                             <LogOut className="w-4 h-4" />
                             Đăng xuất
-                        </button>
+                        </CustomButton>
                     </div>
                 </div>
             </div>
@@ -592,24 +526,24 @@ const SettingsPage = () => {
             {/* Modal xác nhận xóa tài khoản */}
             {showDeleteConfirm && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-                    <div className="bg-white dark:bg-gray-900 rounded-xl w-full max-w-md border border-red-200 dark:border-red-800 shadow-xl">
-                        <div className="p-4 sm:p-5 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center">
+                    <div className="bg-[var(--cn-bg-card)] rounded-[var(--cn-radius-md)] w-full max-w-md border border-red-200 dark:border-red-800 shadow-[var(--cn-shadow-lg)]">
+                        <div className="p-4 sm:p-5 border-b border-[var(--cn-border)] flex justify-between items-center">
                             <div className="flex items-center gap-2 text-red-600">
                                 <AlertTriangle className="w-5 h-5" />
                                 <h2 className="text-lg font-semibold">Xác nhận xóa tài khoản</h2>
                             </div>
                             <button
                                 onClick={() => setShowDeleteConfirm(false)}
-                                className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition"
+                                className="p-1 hover:bg-[var(--cn-hover)] rounded-[var(--cn-radius-sm)] transition"
                             >
-                                <X className="w-5 h-5 text-gray-500" />
+                                <X className="w-5 h-5 text-[var(--cn-text-muted)]" />
                             </button>
                         </div>
                         <div className="p-4 sm:p-5 space-y-4">
-                            <p className="text-gray-700 dark:text-gray-300 text-sm">
-                                Bạn có chắc chắn muốn xóa tài khoản <strong>{currentUser.fullName}</strong>?
+                            <p className="text-[var(--cn-text-sub)] text-sm">
+                                Bạn có chắc chắn muốn xóa tài khoản <strong className="text-[var(--cn-text-main)]">{currentUser.fullName}</strong>?
                             </p>
-                            <div className="bg-red-50 dark:bg-red-950/20 p-3 rounded-lg border border-red-200 dark:border-red-800">
+                            <div className="bg-red-50 dark:bg-red-950/20 p-3 rounded-[var(--cn-radius-sm)] border border-red-200 dark:border-red-800">
                                 <p className="text-sm text-red-600 dark:text-red-400 font-medium">
                                     ⚠️ Hành động này sẽ xóa vĩnh viễn:
                                 </p>
@@ -621,23 +555,23 @@ const SettingsPage = () => {
                                 </ul>
                             </div>
                             <div className="flex gap-3">
-                                <button
+                                <CustomButton
                                     onClick={() => setShowDeleteConfirm(false)}
                                     disabled={deleting}
-                                    className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 text-sm transition"
+                                    variant="secondary"
+                                    className="flex-1"
                                 >
                                     Hủy
-                                </button>
-                                <button
+                                </CustomButton>
+                                <CustomButton
                                     onClick={handleDeleteAccount}
                                     disabled={deleting}
-                                    className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition disabled:opacity-50 flex items-center justify-center gap-2 text-sm"
+                                    loading={deleting}
+                                    variant="danger"
+                                    className="flex-1"
                                 >
-                                    {deleting
-                                        ? <Loader2 className="w-4 h-4 animate-spin" />
-                                        : <Trash2 className="w-4 h-4" />}
                                     {deleting ? 'Đang xóa...' : 'Xóa vĩnh viễn'}
-                                </button>
+                                </CustomButton>
                             </div>
                         </div>
                     </div>
