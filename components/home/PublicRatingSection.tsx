@@ -1,3 +1,4 @@
+// components/public/PublicRatingSection.tsx
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -79,13 +80,13 @@ function RatingModal({ isOpen, onClose, onSubmit, initialRating = 0, initialCont
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
-            <div className="bg-white dark:bg-gray-900 rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-                <div className="sticky top-0 bg-white dark:bg-gray-900 p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+            <div className="bg-[var(--cn-bg-card)] rounded-[var(--cn-radius-md)] w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-[var(--cn-shadow-lg)]" onClick={(e) => e.stopPropagation()}>
+                <div className="sticky top-0 bg-[var(--cn-bg-card)] p-4 border-b border-[var(--cn-border)] flex justify-between items-center">
+                    <h3 className="text-lg font-semibold text-[var(--cn-text-main)]">
                         {isEdit ? 'Chỉnh sửa đánh giá' : 'Đánh giá của bạn'}
                     </h3>
-                    <button onClick={onClose} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition">
-                        <X size={20} data-filled={true} />
+                    <button onClick={onClose} className="p-1 hover:bg-[var(--cn-hover)] rounded-[var(--cn-radius-sm)] transition text-[var(--cn-text-muted)]">
+                        <X size={20} />
                     </button>
                 </div>
                 <div className="p-6 space-y-4">
@@ -97,14 +98,14 @@ function RatingModal({ isOpen, onClose, onSubmit, initialRating = 0, initialCont
                         onChange={(e) => setContent(e.target.value)}
                         placeholder="Chia sẻ cảm nhận của bạn về CNcode..."
                         rows={4}
-                        className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-main/50 text-gray-900 dark:text-white resize-none text-sm"
+                        className="w-full px-4 py-3 bg-[var(--cn-bg-section)] border border-[var(--cn-border)] rounded-[var(--cn-radius-sm)] focus:outline-none focus:ring-2 focus:ring-[var(--cn-primary)]/50 text-[var(--cn-text-main)] resize-none text-sm"
                     />
                     <button
                         onClick={handleSubmit}
                         disabled={submitting || rating === 0 || !content.trim()}
-                        className="w-full py-3 bg-main text-white rounded-lg hover:bg-main/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                        className="w-full py-3 bg-[var(--cn-primary)] text-white rounded-[var(--cn-radius-sm)] hover:bg-[var(--cn-primary-hover)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                     >
-                        {submitting ? <Loader2 className="w-4 h-4 animate-spin" data-filled={true} /> : <Send className="w-4 h-4" data-filled={true} />}
+                        {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                         <span>{isEdit ? 'Cập nhật' : 'Gửi đánh giá'}</span>
                     </button>
                 </div>
@@ -126,20 +127,20 @@ function RatingStats({ stats, onOpenModal, hasUserRated, onEditRating, onDeleteR
 
     if (!token) {
         return (
-            <div className="bg-gradient-to-r from-main/10 to-main/5 rounded-xl p-6 text-center">
-                <Star className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" data-filled={true} />
-                <p className="text-gray-500 dark:text-gray-400">Đăng nhập để đánh giá</p>
+            <div className="bg-gradient-to-r from-[var(--cn-primary)]/10 to-[var(--cn-primary)]/5 rounded-[var(--cn-radius-md)] p-6 text-center">
+                <Star className="w-12 h-12 text-[var(--cn-text-muted)] mx-auto mb-3" />
+                <p className="text-[var(--cn-text-sub)]">Đăng nhập để đánh giá</p>
             </div>
         );
     }
 
     return (
-        <div className="bg-gradient-to-r from-main/10 to-main/5 rounded-xl p-6">
+        <div className="bg-gradient-to-r from-[var(--cn-primary)]/10 to-[var(--cn-primary)]/5 rounded-[var(--cn-radius-md)] p-6">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div className="text-center sm:text-left">
-                    <div className="text-3xl font-bold text-main">{stats.average.toFixed(1)}</div>
+                    <div className="text-3xl font-bold text-[var(--cn-primary)]">{stats.average.toFixed(1)}</div>
                     <StarRating rating={Math.round(stats.average)} readonly size={16} />
-                    <div className="text-xs text-gray-500 mt-1">{stats.total} đánh giá</div>
+                    <div className="text-xs text-[var(--cn-text-muted)] mt-1">{stats.total} đánh giá</div>
                 </div>
 
                 <div className="flex-1 w-full max-w-[200px]">
@@ -148,11 +149,11 @@ function RatingStats({ stats, onOpenModal, hasUserRated, onEditRating, onDeleteR
                         const percent = stats.total > 0 ? (count / stats.total) * 100 : 0;
                         return (
                             <div key={star} className="flex items-center gap-2 text-xs">
-                                <span className="w-8">{star}★</span>
-                                <div className="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                                <span className="w-8 text-[var(--cn-text-sub)]">{star}★</span>
+                                <div className="flex-1 h-1.5 bg-[var(--cn-border)] rounded-full overflow-hidden">
                                     <div className="h-full bg-yellow-400 rounded-full" style={{ width: `${percent}%` }} />
                                 </div>
-                                <span className="w-8 text-gray-500">{count}</span>
+                                <span className="w-8 text-[var(--cn-text-muted)]">{count}</span>
                             </div>
                         );
                     })}
@@ -163,36 +164,36 @@ function RatingStats({ stats, onOpenModal, hasUserRated, onEditRating, onDeleteR
                         <div className="flex items-center gap-2">
                             <button
                                 onClick={onEditRating}
-                                className="p-2 text-main hover:bg-main/10 rounded-lg transition-colors"
+                                className="p-2 text-[var(--cn-primary)] hover:bg-[var(--cn-primary)]/10 rounded-[var(--cn-radius-sm)] transition-colors"
                                 title="Chỉnh sửa đánh giá"
                             >
-                                <Pencil size={16} data-filled={true} />
+                                <Pencil size={16} />
                             </button>
                             <button
                                 onClick={onDeleteRating}
-                                className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                className="p-2 text-red-500 hover:bg-red-50 rounded-[var(--cn-radius-sm)] transition-colors"
                                 title="Xóa đánh giá"
                             >
-                                <Trash2 size={16} data-filled={true} />
+                                <Trash2 size={16} />
                             </button>
                         </div>
                     )}
                     <button
                         onClick={onOpenModal}
                         disabled={hasUserRated}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors text-sm font-medium whitespace-nowrap ${hasUserRated
+                        className={`flex items-center gap-2 px-4 py-2 rounded-[var(--cn-radius-sm)] transition-colors text-sm font-medium whitespace-nowrap ${hasUserRated
                             ? 'bg-green-100 text-green-600 cursor-default'
-                            : 'bg-main text-white hover:bg-main/80'
+                            : 'bg-[var(--cn-primary)] text-white hover:bg-[var(--cn-primary-hover)]'
                             }`}
                     >
                         {hasUserRated ? (
                             <>
-                                <CheckCircle size={16} data-filled={true} />
+                                <CheckCircle size={16} />
                                 <span>Đã đánh giá</span>
                             </>
                         ) : (
                             <>
-                                <MessageCircle size={16} data-filled={true} />
+                                <MessageCircle size={16} />
                                 <span>Viết đánh giá</span>
                             </>
                         )}
@@ -215,6 +216,8 @@ function RatingSlideshow({ ratings, loading, onEdit, onDelete, currentUserId, on
     const [currentIndex, setCurrentIndex] = useState(0);
     const [isAnimating, setIsAnimating] = useState(false);
     const [deletingId, setDeletingId] = useState<string | null>(null);
+    const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+    const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
     useEffect(() => {
         setCurrentIndex(0);
@@ -234,14 +237,21 @@ function RatingSlideshow({ ratings, loading, onEdit, onDelete, currentUserId, on
         setTimeout(() => setIsAnimating(false), 300);
     }, [ratings.length, isAnimating]);
 
-    const handleDelete = async (ratingId: string) => {
-        if (!confirm('Bạn có chắc chắn muốn xóa đánh giá này?')) return;
+    const handleDeleteClick = (ratingId: string) => {
+        setPendingDeleteId(ratingId);
+        setDeleteModalOpen(true);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!pendingDeleteId) return;
 
         try {
-            setDeletingId(ratingId);
-            await onDelete(ratingId);
+            setDeletingId(pendingDeleteId);
+            await onDelete(pendingDeleteId);
             onRefresh();
             toast.success('Xóa đánh giá thành công');
+            setDeleteModalOpen(false);
+            setPendingDeleteId(null);
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Xóa đánh giá thất bại';
             toast.error(errorMessage);
@@ -250,20 +260,25 @@ function RatingSlideshow({ ratings, loading, onEdit, onDelete, currentUserId, on
         }
     };
 
+    const handleCloseDeleteModal = () => {
+        setDeleteModalOpen(false);
+        setPendingDeleteId(null);
+    };
+
     if (loading && ratings.length === 0) {
         return (
             <div className="flex justify-center py-12">
-                <Loader2 className="w-8 h-8 animate-spin text-main" data-filled={true} />
+                <Loader2 className="w-8 h-8 animate-spin text-[var(--cn-primary)]" />
             </div>
         );
     }
 
     if (ratings.length === 0) {
         return (
-            <div className="text-center py-12 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700">
-                <Star className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" data-filled={true} />
-                <p className="text-gray-500 dark:text-gray-400">Chưa có đánh giá nào</p>
-                <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">Hãy là người đầu tiên đánh giá!</p>
+            <div className="text-center py-12 bg-[var(--cn-bg-card)] rounded-[var(--cn-radius-md)] border border-[var(--cn-border)]">
+                <Star className="w-12 h-12 text-[var(--cn-text-muted)] mx-auto mb-3" />
+                <p className="text-[var(--cn-text-sub)]">Chưa có đánh giá nào</p>
+                <p className="text-sm text-[var(--cn-text-muted)] mt-1">Hãy là người đầu tiên đánh giá!</p>
             </div>
         );
     }
@@ -272,7 +287,7 @@ function RatingSlideshow({ ratings, loading, onEdit, onDelete, currentUserId, on
     if (!currentRating) {
         return (
             <div className="flex justify-center py-12">
-                <Loader2 className="w-8 h-8 animate-spin text-main" data-filled={true} />
+                <Loader2 className="w-8 h-8 animate-spin text-[var(--cn-primary)]" />
             </div>
         );
     }
@@ -280,92 +295,141 @@ function RatingSlideshow({ ratings, loading, onEdit, onDelete, currentUserId, on
     const isOwnRating = currentRating.userId?._id === currentUserId;
 
     return (
-        <div className="relative bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
-            {ratings.length > 1 && (
-                <>
-                    <button
-                        onClick={prevSlide}
-                        className="absolute left-2 top-1/2 -translate-y-1/2 z-10 p-1.5 rounded-full bg-white/80 dark:bg-gray-800/80 shadow-md hover:bg-white dark:hover:bg-gray-800 transition-colors"
-                    >
-                        <ChevronLeft size={20} className="text-gray-600 dark:text-gray-300" data-filled={true} />
-                    </button>
-                    <button
-                        onClick={nextSlide}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 z-10 p-1.5 rounded-full bg-white/80 dark:bg-gray-800/80 shadow-md hover:bg-white dark:hover:bg-gray-800 transition-colors"
-                    >
-                        <ChevronRight size={20} className="text-gray-600 dark:text-gray-300" data-filled={true} />
-                    </button>
-                </>
-            )}
+        <>
+            <div className="relative bg-[var(--cn-bg-card)] rounded-[var(--cn-radius-md)] border border-[var(--cn-border)] shadow-[var(--cn-shadow-sm)] overflow-hidden">
+                {ratings.length > 1 && (
+                    <>
+                        <button
+                            onClick={prevSlide}
+                            className="absolute left-2 top-1/2 -translate-y-1/2 z-10 p-1.5 rounded-full bg-white/80 dark:bg-gray-800/80 shadow-[var(--cn-shadow-sm)] hover:bg-white dark:hover:bg-gray-800 transition-colors"
+                        >
+                            <ChevronLeft size={20} className="text-[var(--cn-text-sub)]" />
+                        </button>
+                        <button
+                            onClick={nextSlide}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 z-10 p-1.5 rounded-full bg-white/80 dark:bg-gray-800/80 shadow-[var(--cn-shadow-sm)] hover:bg-white dark:hover:bg-gray-800 transition-colors"
+                        >
+                            <ChevronRight size={20} className="text-[var(--cn-text-sub)]" />
+                        </button>
+                    </>
+                )}
 
-            <div className={`p-6 transition-opacity duration-300 ${isAnimating ? 'opacity-0' : 'opacity-100'}`}>
-                <div className="flex flex-col items-center text-center">
-                    <div className="w-16 h-16 rounded-full bg-main/10 overflow-hidden mb-4">
-                        {currentRating.userId?.avatar ? (
-                            <Image
-                                src={currentRating.userId.avatar}
-                                alt={currentRating.userId.fullName || 'User'}
-                                width={64}
-                                height={64}
-                                className="w-full h-full object-cover"
-                            />
-                        ) : (
-                            <div className="w-full h-full flex items-center justify-center text-main text-xl font-semibold">
-                                {(currentRating.userId?.fullName?.charAt(0) || 'U').toUpperCase()}
-                            </div>
-                        )}
-                    </div>
+                <div className={`p-6 transition-opacity duration-300 ${isAnimating ? 'opacity-0' : 'opacity-100'}`}>
+                    <div className="flex flex-col items-center text-center">
+                        <div className="w-16 h-16 rounded-full bg-[var(--cn-primary)]/10 overflow-hidden mb-4">
+                            {currentRating.userId?.avatar ? (
+                                <Image
+                                    src={currentRating.userId.avatar}
+                                    alt={currentRating.userId.fullName || 'User'}
+                                    width={64}
+                                    height={64}
+                                    className="w-full h-full object-cover"
+                                />
+                            ) : (
+                                <div className="w-full h-full flex items-center justify-center text-[var(--cn-primary)] text-xl font-semibold">
+                                    {(currentRating.userId?.fullName?.charAt(0) || 'U').toUpperCase()}
+                                </div>
+                            )}
+                        </div>
 
-                    <div className="flex items-center gap-2 flex-wrap justify-center">
-                        <p className="font-semibold text-gray-900 dark:text-white text-base">
-                            {currentRating.userId?.fullName || 'Người dùng'}
+                        <div className="flex items-center gap-2 flex-wrap justify-center">
+                            <p className="font-semibold text-[var(--cn-text-main)] text-base">
+                                {currentRating.userId?.fullName || 'Người dùng'}
+                            </p>
+                            {isOwnRating && (
+                                <div className="flex items-center gap-1">
+                                    <button
+                                        onClick={() => onEdit(currentRating)}
+                                        className="p-1 text-[var(--cn-primary)] hover:bg-[var(--cn-primary)]/10 rounded-[var(--cn-radius-sm)] transition-colors"
+                                        title="Chỉnh sửa"
+                                    >
+                                        <Pencil size={14} />
+                                    </button>
+                                    <button
+                                        onClick={() => handleDeleteClick(currentRating._id)}
+                                        disabled={deletingId === currentRating._id}
+                                        className="p-1 text-red-500 hover:bg-red-50 rounded-[var(--cn-radius-sm)] transition-colors disabled:opacity-50"
+                                        title="Xóa"
+                                    >
+                                        {deletingId === currentRating._id ? (
+                                            <Loader2 className="w-3 h-3 animate-spin" />
+                                        ) : (
+                                            <Trash2 size={14} />
+                                        )}
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+
+                        <p className="text-xs text-[var(--cn-text-muted)] mt-1">
+                            {format(new Date(currentRating.createdAt), 'dd/MM/yyyy', { locale: vi })}
                         </p>
-                        {isOwnRating && (
-                            <div className="flex items-center gap-1">
-                                <button
-                                    onClick={() => onEdit(currentRating)}
-                                    className="p-1 text-main hover:bg-main/10 rounded-lg transition-colors"
-                                    title="Chỉnh sửa"
-                                >
-                                    <Pencil size={14} data-filled={true} />
-                                </button>
-                                <button
-                                    onClick={() => handleDelete(currentRating._id)}
-                                    disabled={deletingId === currentRating._id}
-                                    className="p-1 text-red-500 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
-                                    title="Xóa"
-                                >
-                                    {deletingId === currentRating._id ? (
-                                        <Loader2 className="w-3 h-3 animate-spin" data-filled={true} />
-                                    ) : (
-                                        <Trash2 size={14} data-filled={true} />
-                                    )}
-                                </button>
-                            </div>
-                        )}
-                    </div>
 
-                    <p className="text-xs text-gray-400 mt-1">
-                        {format(new Date(currentRating.createdAt), 'dd/MM/yyyy', { locale: vi })}
-                    </p>
+                        <div className="mt-3">
+                            <StarRating rating={currentRating.rating} readonly size={20} />
+                        </div>
 
-                    <div className="mt-3">
-                        <StarRating rating={currentRating.rating} readonly size={20} />
-                    </div>
-
-                    <div className="mt-4 max-w-md">
-                        <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed italic">
-                            {`"${currentRating.content}"`}
-                        </p>
+                        <div className="mt-4 max-w-md">
+                            <p className="text-[var(--cn-text-sub)] text-sm leading-relaxed italic">
+                                {`"${currentRating.content}"`}
+                            </p>
+                        </div>
                     </div>
                 </div>
+
+                {ratings.length > 1 && (
+                    <div className="absolute bottom-3 right-3 text-xs text-[var(--cn-text-muted)] bg-[var(--cn-bg-section)] px-2 py-0.5 rounded-full">
+                        {currentIndex + 1} / {ratings.length}
+                    </div>
+                )}
             </div>
 
-            {ratings.length > 1 && (
-                <div className="absolute bottom-3 right-3 text-xs text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full">
-                    {currentIndex + 1} / {ratings.length}
+            {/* Delete Confirmation Modal */}
+            <DeleteConfirmModal
+                isOpen={deleteModalOpen}
+                onClose={handleCloseDeleteModal}
+                onConfirm={handleConfirmDelete}
+                isDeleting={deletingId !== null}
+            />
+        </>
+    );
+}
+
+function DeleteConfirmModal({ isOpen, onClose, onConfirm, isDeleting }: {
+    isOpen: boolean;
+    onClose: () => void;
+    onConfirm: () => void;
+    isDeleting: boolean;
+}) {
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
+            <div className="bg-[var(--cn-bg-card)] rounded-[var(--cn-radius-md)] w-full max-w-md shadow-[var(--cn-shadow-lg)]" onClick={(e) => e.stopPropagation()}>
+                <div className="p-4 border-b border-[var(--cn-border)]">
+                    <h3 className="text-lg font-semibold text-[var(--cn-text-main)]">Xác nhận xóa</h3>
                 </div>
-            )}
+                <div className="p-6">
+                    <p className="text-[var(--cn-text-sub)]">Bạn có chắc chắn muốn xóa đánh giá này không?</p>
+                    <p className="text-sm text-[var(--cn-text-muted)] mt-2">Hành động này không thể hoàn tác.</p>
+                </div>
+                <div className="flex gap-3 p-4 pt-0">
+                    <button
+                        onClick={onClose}
+                        className="flex-1 px-4 py-2 border border-[var(--cn-border)] text-[var(--cn-text-sub)] rounded-[var(--cn-radius-sm)] hover:bg-[var(--cn-hover)] transition-colors"
+                    >
+                        Hủy
+                    </button>
+                    <button
+                        onClick={onConfirm}
+                        disabled={isDeleting}
+                        className="flex-1 px-4 py-2 bg-red-500 text-white rounded-[var(--cn-radius-sm)] hover:bg-red-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                    >
+                        {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                        <span>{isDeleting ? 'Đang xóa...' : 'Xóa'}</span>
+                    </button>
+                </div>
+            </div>
         </div>
     );
 }
@@ -522,10 +586,10 @@ export default function PublicRatingSection() {
         <>
             <div className="max-w-6xl mx-auto px-4 py-12">
                 <div className="text-center mb-8">
-                    <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
+                    <h2 className="text-2xl sm:text-3xl font-bold text-[var(--cn-text-main)]">
                         Học viên nói gì về CNcode?
                     </h2>
-                    <p className="text-sm text-gray-500 mt-2">Tham khảo đánh giá từ cộng đồng</p>
+                    <p className="text-sm text-[var(--cn-text-muted)] mt-2">Tham khảo đánh giá từ cộng đồng</p>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

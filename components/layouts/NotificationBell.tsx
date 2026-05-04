@@ -1,23 +1,17 @@
+// /components/custom/NotificationBell.tsx
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
     Bell, MessageCircle, Heart, ThumbsUp, Bookmark,
-    CheckCheck, Coins, Flame, Info, XCircle,
+    CheckCheck, Coins, Flame, Info, XCircle, Loader2
 } from 'lucide-react';
 import { useSocket } from '@/providers/socket.provider';
 import { useAuthStore } from '@/store/auth.store';
-import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
-} from '@/components/ui/popover';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { notificationApi } from '@/lib/api/notification.api';
 import type { INotification } from '@/types/notification.type';
+import { CustomButton } from '../custom/CustomButton';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -31,7 +25,6 @@ const REACTION_NAMES: Record<string, string> = {
     angry: '😠 phẫn nộ',
 };
 
-// Loại notification chỉ dành cho admin — KHÔNG hiển thị trong Bell người dùng thường
 const ADMIN_ONLY_TYPES: INotification['type'][] = [
     'role_request_pending' as INotification['type'],
     'new_user_registered' as INotification['type'],
@@ -61,61 +54,89 @@ function isAdminOnlyType(type: INotification['type']): boolean {
 }
 
 function NotificationIcon({ type }: { type: INotification['type'] }) {
+    const iconClass = "w-3.5 h-3.5 sm:w-4 sm:h-4";
+
     switch (type) {
         case 'comment':
         case 'reply_comment':
-            return <MessageCircle className="w-4 h-4 text-blue-500" />;
+            return <MessageCircle className={`${iconClass} text-blue-500`} />;
         case 'like_post':
-            return <ThumbsUp className="w-4 h-4 text-red-500" />;
+            return <ThumbsUp className={`${iconClass} text-red-500`} />;
         case 'reaction_comment':
-            return <Heart className="w-4 h-4 text-purple-500" />;
+            return <Heart className={`${iconClass} text-purple-500`} />;
         case 'bookmark':
-            return <Bookmark className="w-4 h-4 text-yellow-500" />;
+            return <Bookmark className={`${iconClass} text-yellow-500`} />;
         case 'first_login_bonus':
-            return <Coins className="w-4 h-4 text-yellow-500" />;
+            return <Coins className={`${iconClass} text-yellow-500`} />;
         case 'streak_bonus':
-            return <Flame className="w-4 h-4 text-orange-500" />;
+            return <Flame className={`${iconClass} text-orange-500`} />;
         case 'role_request_approved':
-            return <CheckCheck className="w-4 h-4 text-green-500" />;
+            return <CheckCheck className={`${iconClass} text-green-500`} />;
         case 'role_request_rejected':
-            return <XCircle className="w-4 h-4 text-red-500" />;
+            return <XCircle className={`${iconClass} text-red-500`} />;
         default:
-            return <Info className="w-4 h-4 text-gray-500" />;
+            return <Info className={`${iconClass} text-gray-500`} />;
     }
 }
 
 function SystemAvatar({ type }: { type: INotification['type'] }) {
+    const sizeClass = "w-8 h-8 sm:w-10 sm:h-10";
+    const textClass = "text-base sm:text-lg";
+
     if (type === 'first_login_bonus') {
         return (
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center flex-shrink-0 text-lg">
+            <div className={`${sizeClass} rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center flex-shrink-0 ${textClass}`}>
                 🎉
             </div>
         );
     }
     if (type === 'streak_bonus') {
         return (
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center flex-shrink-0 text-lg">
+            <div className={`${sizeClass} rounded-full bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center flex-shrink-0 ${textClass}`}>
                 🔥
             </div>
         );
     }
     if (type === 'role_request_approved') {
         return (
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center flex-shrink-0 text-lg">
+            <div className={`${sizeClass} rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center flex-shrink-0 ${textClass}`}>
                 ✅
             </div>
         );
     }
     if (type === 'role_request_rejected') {
         return (
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-400 to-rose-500 flex items-center justify-center flex-shrink-0 text-lg">
+            <div className={`${sizeClass} rounded-full bg-gradient-to-br from-red-400 to-rose-500 flex items-center justify-center flex-shrink-0 ${textClass}`}>
                 ❌
             </div>
         );
     }
     return (
-        <div className="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center flex-shrink-0">
-            <Bell className="w-5 h-5 text-gray-400" />
+        <div className={`${sizeClass} rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center flex-shrink-0`}>
+            <Bell className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
+        </div>
+    );
+}
+
+function UserAvatar({ avatar, name }: { avatar?: string; name?: string }) {
+    const getInitials = (fullName?: string) => {
+        if (!fullName) return 'N';
+        return fullName.charAt(0).toUpperCase();
+    };
+
+    return (
+        <div className="flex-shrink-0">
+            {avatar ? (
+                <img
+                    src={avatar}
+                    alt={name || 'Avatar'}
+                    className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover"
+                />
+            ) : (
+                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[var(--cn-primary)] flex items-center justify-center text-white text-sm sm:text-base font-semibold">
+                    {getInitials(name)}
+                </div>
+            )}
         </div>
     );
 }
@@ -125,7 +146,7 @@ function getNotificationMessage(notification: INotification): string {
 
     switch (notification.type) {
         case 'first_login_bonus':
-            return notification.content || `Chào mừng! Bạn nhận được ${notification.meta?.coins ?? 100} xu khi đăng nhập lần đầu.`;
+            return notification.content || `Chào mừng ${senderName}! Bạn nhận được ${notification.meta?.coins ?? 100} xu khi đăng nhập lần đầu.`;
         case 'streak_bonus':
             return notification.content || `🔥 Bạn nhận được ${notification.meta?.coins} xu thưởng streak!`;
         case 'comment':
@@ -151,27 +172,81 @@ const isSystemType = (type: INotification['type']) =>
 const isRoleRequestType = (type: INotification['type']) =>
     type === 'role_request_approved' || type === 'role_request_rejected';
 
-// ─── NotificationContent ──────────────────────────────────────────────────────
+// ─── Notification Item Component ──────────────────────────────────────────────
 
-function NotificationContent({ data }: { data: INotification }) {
-    return (
-        <div className="flex-1 min-w-0">
-            <p className="text-sm text-gray-800 dark:text-gray-200">
-                {isRoleRequestType(data.type) ? data.content : getNotificationMessage(data)}
-            </p>
+interface NotificationItemProps {
+    notification: INotification;
+    onMarkAsRead: (id: string) => void;
+    onClose: () => void;
+}
 
-            {!isRoleRequestType(data.type) && (data.meta?.coins ?? 0) > 0 && (
-                <p className="text-xs text-yellow-600 font-medium mt-0.5">
-                    +{data.meta!.coins} xu
-                </p>
+function NotificationItem({ notification, onMarkAsRead, onClose }: NotificationItemProps) {
+    const isSystem = isSystemType(notification.type);
+    const isRead = notification.read;
+    const linkHref = notification.postSlug || notification.postId
+        ? `/baiviet/${notification.postSlug || notification.postId}`
+        : null;
+
+    const content = (
+        <div
+            className={`flex gap-2 sm:gap-3 p-3 sm:p-4 transition-colors cursor-pointer ${!isRead ? 'bg-blue-50/50 dark:bg-blue-950/20' : ''
+                } hover:bg-gray-50 dark:hover:bg-gray-800/50`}
+            onClick={() => !isRead && onMarkAsRead(notification._id)}
+        >
+            {isSystem ? (
+                <SystemAvatar type={notification.type} />
+            ) : (
+                <UserAvatar
+                    avatar={notification.senderId?.avatar}
+                    name={notification.senderId?.fullName}
+                />
             )}
 
-            <div className="flex items-center gap-2 mt-1.5">
-                <NotificationIcon type={data.type} />
-                <span className="text-xs text-gray-400">{formatTime(data.createdAt)}</span>
-                {!data.read && <span className="w-2 h-2 bg-main rounded-full" />}
+            <div className="flex-1 min-w-0">
+                <p className="text-xs sm:text-sm text-gray-800 dark:text-gray-200 break-words">
+                    {isRoleRequestType(notification.type) ? notification.content : getNotificationMessage(notification)}
+                </p>
+
+                {!isRoleRequestType(notification.type) && (notification.meta?.coins ?? 0) > 0 && (
+                    <p className="text-[10px] sm:text-xs text-yellow-600 font-medium mt-0.5">
+                        +{notification.meta!.coins} xu
+                    </p>
+                )}
+
+                {!isRead && (
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onMarkAsRead(notification._id);
+                        }}
+                        className="text-[10px] sm:text-xs text-blue-500 hover:text-blue-600 mt-1"
+                    >
+                        Đánh dấu đã đọc
+                    </button>
+                )}
+
+                <div className="flex items-center gap-1.5 sm:gap-2 mt-1 sm:mt-1.5">
+                    <NotificationIcon type={notification.type} />
+                    <span className="text-[10px] sm:text-xs text-gray-400">
+                        {formatTime(notification.createdAt)}
+                    </span>
+                    {!isRead && <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-[var(--cn-primary)] rounded-full" />}
+                </div>
             </div>
         </div>
+    );
+
+    if (!linkHref || isSystem) {
+        return <div>{content}</div>;
+    }
+
+    return (
+        <Link href={linkHref} onClick={() => {
+            if (!isRead) onMarkAsRead(notification._id);
+            onClose();
+        }} className="block">
+            {content}
+        </Link>
     );
 }
 
@@ -188,7 +263,9 @@ export default function NotificationBell() {
     const [totalPages, setTotalPages] = useState(1);
 
     const isFetchingRef = useRef(false);
+    const dropdownRef = useRef<HTMLDivElement>(null); // Thêm ref cho dropdown
 
+    // Filter by role
     const filterByRole = useCallback(
         (list: INotification[]): INotification[] => {
             if (user?.role === 'admin') return list;
@@ -197,6 +274,7 @@ export default function NotificationBell() {
         [user?.role]
     );
 
+    // Fetch notifications
     const fetchNotifications = useCallback(
         async (pageNum: number = 1) => {
             if (!token || !user?._id || isFetchingRef.current) return;
@@ -229,57 +307,56 @@ export default function NotificationBell() {
         [token, user?._id, filterByRole]
     );
 
+    // Click outside to close
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setOpen(false);
+            }
+        };
+
+        if (open) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [open]);
+
+    // Initial fetch
     useEffect(() => {
         if (token && user?._id) {
             fetchNotifications(1);
         }
     }, [token, user?._id]);
 
+    // Fetch when open
     useEffect(() => {
         if (open && token && user?._id && unreadCount > 0) {
             fetchNotifications(1);
         }
     }, [open]);
 
-    // ─── Socket: nhận notification mới realtime ─────────────────────────────────
+    // Socket
     useEffect(() => {
-        if (!socket || !isConnected) {
-            console.log('❌ Socket not connected');
-            return;
-        }
-        if (!user?._id) {
-            console.log('❌ No user ID');
-            return;
-        }
+        if (!socket || !isConnected || !user?._id) return;
 
         const handler = (data: INotification) => {
-            console.log('🔔 Received new_notification:', data);
-
-            // Bỏ qua nếu không phải role phù hợp
-            if (isAdminOnlyType(data.type) && user.role !== 'admin') {
-                console.log('⏭️ Skipping admin-only notification for non-admin');
-                return;
-            }
+            if (isAdminOnlyType(data.type) && user.role !== 'admin') return;
 
             setNotifications(prev => {
-                // Chống duplicate
-                if (prev.some(n => n._id === data._id)) {
-                    console.log('⏭️ Duplicate notification, skipping');
-                    return prev;
-                }
+                if (prev.some(n => n._id === data._id)) return prev;
                 const updated = [data, ...prev];
                 setUnreadCount(updated.filter(n => !n.read).length);
-                console.log('✅ Added new notification, total:', updated.length);
                 return updated;
             });
         };
 
         socket.on('new_notification', handler);
-        console.log('🎧 Listening for new_notification events');
 
         return () => {
             socket.off('new_notification', handler);
-            console.log('🔇 Stopped listening for new_notification');
         };
     }, [socket, isConnected, user?._id, user?.role]);
 
@@ -317,119 +394,88 @@ export default function NotificationBell() {
     if (!token || !user?._id) return null;
 
     return (
-        <Popover open={open} onOpenChange={setOpen}>
-            <PopoverTrigger asChild>
-                <button
-                    type="button"
-                    className="relative p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition"
-                    aria-label="Thông báo"
-                >
-                    <Bell className="w-5 h-5" />
-                    {unreadCount > 0 && (
-                        <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1">
-                            {unreadCount > 99 ? '99+' : unreadCount}
-                        </span>
-                    )}
-                </button>
-            </PopoverTrigger>
+        <div className="relative inline-block" ref={dropdownRef}>
+            <button
+                type="button"
+                onClick={() => setOpen(!open)}
+                className="relative p-1.5 sm:p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                aria-label="Thông báo"
+            >
+                <Bell className="w-4 h-4 sm:w-5 sm:h-5 text-[var(--cn-text-sub)]" />
+                {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 min-w-[16px] h-[16px] sm:min-w-[18px] sm:h-[18px] bg-red-500 text-white text-[9px] sm:text-[10px] font-bold rounded-full flex items-center justify-center px-[3px] sm:px-1 whitespace-nowrap">
+                        {unreadCount > 99 ? '99+' : unreadCount}
+                    </span>
+                )}
+            </button>
 
-            <PopoverContent className="w-[380px] p-0 mr-4" align="end" sideOffset={5}>
-                <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-800">
-                    <h3 className="font-semibold text-gray-900 dark:text-white">
-                        Thông báo
+            {open && (
+                <div className="absolute right-0 mt-2 
+                    w-80 max-w-[calc(100vw-32px)] sm:w-[380px] lg:w-[420px]
+                    bg-[var(--cn-bg-card)] border border-[var(--cn-border)] rounded-[var(--cn-radius-md)] shadow-[var(--cn-shadow-lg)] z-20 overflow-hidden animate-slideDown">
+
+                    <div className="sticky top-0 z-10 flex items-center justify-between p-3 sm:p-4 border-b border-[var(--cn-border)] bg-[var(--cn-bg-card)]">
+                        <h3 className="text-sm sm:text-base font-semibold text-[var(--cn-text-main)]">
+                            Thông báo
+                            {unreadCount > 0 && (
+                                <span className="ml-2 text-xs text-[var(--cn-text-muted)]">
+                                    ({unreadCount})
+                                </span>
+                            )}
+                        </h3>
                         {unreadCount > 0 && (
-                            <span className="ml-2 text-xs text-gray-500">({unreadCount} chưa đọc)</span>
-                        )}
-                    </h3>
-                    {unreadCount > 0 && (
-                        <Button variant="ghost" size="sm" onClick={markAllAsRead} className="text-xs h-8">
-                            <CheckCheck className="w-3.5 h-3.5 mr-1" />
-                            Đọc tất cả
-                        </Button>
-                    )}
-                </div>
-
-                <ScrollArea className="h-[400px]">
-                    {isLoading && notifications.length === 0 ? (
-                        <div className="flex items-center justify-center py-12">
-                            <div className="animate-spin rounded-full h-6 w-6 border-2 border-gray-300 border-t-main" />
-                        </div>
-                    ) : notifications.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-12 text-gray-500">
-                            <Bell className="w-12 h-12 mb-3 opacity-50" />
-                            <p className="text-sm">Chưa có thông báo nào</p>
-                            <p className="text-xs text-gray-400 mt-1">
-                                Khi có hoạt động mới, thông báo sẽ hiển thị tại đây
-                            </p>
-                        </div>
-                    ) : (
-                        <div className="divide-y divide-gray-100 dark:divide-gray-800">
-                            {notifications.map(notification => {
-                                const isSystem = isSystemType(notification.type);
-
-                                const content = (
-                                    <div
-                                        className={`flex gap-3 p-4 ${!notification.read ? 'bg-blue-50/50 dark:bg-blue-950/20' : ''
-                                            } hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer`}
-                                        onClick={() => !notification.read && markAsRead(notification._id)}
-                                    >
-                                        {isSystem ? (
-                                            <SystemAvatar type={notification.type} />
-                                        ) : (
-                                            <div className="flex-shrink-0">
-                                                <Avatar className="w-10 h-10">
-                                                    <AvatarImage src={notification.senderId?.avatar} />
-                                                    <AvatarFallback className="bg-main text-white text-sm">
-                                                        {notification.senderId?.fullName?.charAt(0) || 'N'}
-                                                    </AvatarFallback>
-                                                </Avatar>
-                                            </div>
-                                        )}
-                                        <NotificationContent data={notification} />
-                                    </div>
-                                );
-
-                                const linkHref =
-                                    notification.postSlug || notification.postId
-                                        ? `/baiviet/${notification.postSlug || notification.postId}`
-                                        : null;
-
-                                if (!linkHref || isSystem) {
-                                    return <div key={notification._id}>{content}</div>;
-                                }
-
-                                return (
-                                    <Link
-                                        key={notification._id}
-                                        href={linkHref}
-                                        onClick={() => {
-                                            if (!notification.read) markAsRead(notification._id);
-                                            setOpen(false);
-                                        }}
-                                        className="block"
-                                    >
-                                        {content}
-                                    </Link>
-                                );
-                            })}
-                        </div>
-                    )}
-
-                    {totalPages > 1 && page < totalPages && (
-                        <div className="p-3 text-center border-t border-gray-200 dark:border-gray-800">
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={loadMore}
-                                disabled={isLoading}
-                                className="text-xs"
+                            <button
+                                onClick={markAllAsRead}
+                                className="flex items-center gap-1 text-xs text-[var(--cn-primary)] hover:text-[var(--cn-primary-hover)] transition-colors"
                             >
-                                {isLoading ? 'Đang tải...' : 'Xem thêm'}
-                            </Button>
-                        </div>
-                    )}
-                </ScrollArea>
-            </PopoverContent>
-        </Popover>
+                                <CheckCheck className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                                <span className="hidden sm:inline">Đọc tất cả</span>
+                                <span className="sm:hidden">Đọc hết</span>
+                            </button>
+                        )}
+                    </div>
+
+                    <div className="max-h-[400px] overflow-y-auto">
+                        {isLoading && notifications.length === 0 ? (
+                            <div className="flex items-center justify-center py-8">
+                                <Loader2 className="w-5 h-5 sm:w-6 sm:h-6 text-[var(--cn-primary)] animate-spin" />
+                            </div>
+                        ) : notifications.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center py-8 text-[var(--cn-text-muted)]">
+                                <Bell className="w-10 h-10 sm:w-12 sm:h-12 mb-2 opacity-50" />
+                                <p className="text-xs sm:text-sm">Chưa có thông báo nào</p>
+                            </div>
+                        ) : (
+                            <div className="divide-y divide-[var(--cn-border)]">
+                                {notifications.map(notification => (
+                                    <NotificationItem
+                                        key={notification._id}
+                                        notification={notification}
+                                        onMarkAsRead={markAsRead}
+                                        onClose={() => setOpen(false)}
+                                    />
+                                ))}
+                            </div>
+                        )}
+
+                        {totalPages > 1 && page < totalPages && (
+                            <div className="p-2 sm:p-3 text-center border-t border-[var(--cn-border)]">
+                                <CustomButton
+                                    variant="outline-primary"
+                                    size="small"
+                                    onClick={loadMore}
+                                    disabled={isLoading}
+                                    loading={isLoading}
+                                    fullWidth
+                                    className="text-xs sm:text-sm"
+                                >
+                                    {isLoading ? 'Đang tải...' : 'Xem thêm'}
+                                </CustomButton>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+        </div>
     );
 }

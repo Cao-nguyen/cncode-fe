@@ -1,7 +1,4 @@
 // app/admin/affiliate/page.tsx
-// FIX issue 10: trang affiliate admin hiển thị đầy đủ dữ liệu
-// FIX issue 11: dùng affiliate.api.ts và affiliate.type.ts riêng
-
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -43,7 +40,6 @@ export default function AdminAffiliatePage() {
                 setTotal(t);
                 setTotalPages(tp);
 
-                // Tính tổng từ current page (nếu muốn tổng toàn bộ thì cần API riêng)
                 setTotals({
                     registered: data.reduce((a, b) => a + b.totalRegistered, 0),
                     posted: data.reduce((a, b) => a + b.totalPosted, 0),
@@ -82,90 +78,74 @@ export default function AdminAffiliatePage() {
         return <Loading text="Đang tải dữ liệu" />;
     }
 
+    const summaryCards = [
+        { title: "Đã đăng ký", value: totals.registered.toLocaleString(), icon: <Users size={18} />, color: "text-blue-500", bg: "bg-blue-50" },
+        { title: "Bài viết", value: totals.posted.toLocaleString(), icon: <FileText size={18} />, color: "text-green-500", bg: "bg-green-50" },
+        { title: "Bài tập", value: totals.quizTaken.toLocaleString(), icon: <TrendingUp size={18} />, color: "text-purple-500", bg: "bg-purple-50" },
+        { title: "Xu kiếm được", value: totals.coins.toLocaleString(), icon: <Coins size={18} />, color: "text-yellow-500", bg: "bg-yellow-50" },
+        { title: "Tổng click", value: totals.clicks.toLocaleString(), icon: <MousePointerClick size={18} />, color: "text-gray-500", bg: "bg-gray-100" },
+    ];
+
     return (
         <div className="space-y-4 sm:space-y-6">
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
-                    <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Tiếp thị liên kết</h1>
-                    <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+                    <h1 className="text-xl sm:text-2xl font-bold text-[var(--cn-text-main)]">Tiếp thị liên kết</h1>
+                    <p className="text-xs sm:text-sm text-[var(--cn-text-muted)] mt-0.5">
                         Quản lý link giới thiệu của người dùng • Tổng {total} người
                     </p>
                 </div>
                 <div className="flex items-center gap-2">
                     <div className="relative">
-                        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--cn-text-muted)]" />
                         <input
                             type="text"
                             value={searchInput}
                             onChange={(e) => setSearchInput(e.target.value)}
                             onKeyDown={handleKeyDown}
                             placeholder="Tìm theo email hoặc tên..."
-                            className="pl-9 pr-3 py-1.5 text-sm border border-main/30 rounded-lg focus:border-main focus:ring-2 focus:ring-main/20 outline-none bg-white dark:bg-gray-900 dark:text-white w-52"
+                            className="pl-9 pr-3 py-1.5 text-sm border border-[var(--cn-border)] rounded-[var(--cn-radius-sm)] focus:border-[var(--cn-primary)] focus:ring-2 focus:ring-[var(--cn-primary)]/20 outline-none bg-[var(--cn-bg-card)] text-[var(--cn-text-main)] w-52"
                         />
                     </div>
-                    <button onClick={handleSearch} className="px-3 py-1.5 bg-main text-white rounded-lg text-sm hover:bg-main/80 transition">
+                    <button onClick={handleSearch} className="px-3 py-1.5 bg-[var(--cn-primary)] text-white rounded-[var(--cn-radius-sm)] text-sm hover:bg-[var(--cn-primary-hover)] transition">
                         Tìm
                     </button>
                 </div>
             </div>
 
-            {/* Summary Cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-                <div className="rounded-xl p-3 sm:p-4 bg-white dark:bg-gray-900 border border-main/20 shadow-sm">
-                    <div className="flex items-center gap-2 text-blue-500 mb-1">
-                        <Users size={16} />
-                        <span className="text-xs text-gray-500">Đã đăng ký</span>
+            {/* Summary Cards - Custom không dùng DashboardCard */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                {summaryCards.map((card) => (
+                    <div key={card.title} className="bg-[var(--cn-bg-card)] rounded-[var(--cn-radius-md)] p-3 sm:p-4 border border-[var(--cn-border)] shadow-[var(--cn-shadow-sm)]">
+                        <div className="flex items-center gap-2 mb-2">
+                            <div className={`p-1.5 rounded-lg ${card.bg}`}>
+                                <div className={card.color}>{card.icon}</div>
+                            </div>
+                        </div>
+                        <p className="text-xs text-[var(--cn-text-muted)]">{card.title}</p>
+                        <p className="text-xl sm:text-2xl font-bold text-[var(--cn-text-main)] mt-1">{card.value}</p>
                     </div>
-                    <p className="text-xl font-bold text-blue-600">{totals.registered.toLocaleString()}</p>
-                </div>
-                <div className="rounded-xl p-3 sm:p-4 bg-white dark:bg-gray-900 border border-green-200 shadow-sm">
-                    <div className="flex items-center gap-2 text-green-500 mb-1">
-                        <FileText size={16} />
-                        <span className="text-xs text-gray-500">Bài viết</span>
-                    </div>
-                    <p className="text-xl font-bold text-green-600">{totals.posted.toLocaleString()}</p>
-                </div>
-                <div className="rounded-xl p-3 sm:p-4 bg-white dark:bg-gray-900 border border-purple-200 shadow-sm">
-                    <div className="flex items-center gap-2 text-purple-500 mb-1">
-                        <TrendingUp size={16} />
-                        <span className="text-xs text-gray-500">Bài tập</span>
-                    </div>
-                    <p className="text-xl font-bold text-purple-600">{totals.quizTaken.toLocaleString()}</p>
-                </div>
-                <div className="rounded-xl p-3 sm:p-4 bg-white dark:bg-gray-900 border border-main/20 shadow-sm">
-                    <div className="flex items-center gap-2 text-main mb-1">
-                        <Coins size={16} />
-                        <span className="text-xs text-gray-500">Xu kiếm được</span>
-                    </div>
-                    <p className="text-xl font-bold text-main">{totals.coins.toLocaleString()}</p>
-                </div>
-                <div className="rounded-xl p-3 sm:p-4 bg-white dark:bg-gray-900 border border-gray-200 shadow-sm col-span-2 sm:col-span-1">
-                    <div className="flex items-center gap-2 text-gray-500 mb-1">
-                        <MousePointerClick size={16} />
-                        <span className="text-xs text-gray-500">Tổng click</span>
-                    </div>
-                    <p className="text-xl font-bold text-gray-700 dark:text-gray-300">{totals.clicks.toLocaleString()}</p>
-                </div>
+                ))}
             </div>
 
             {/* Table */}
-            <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-main/20 overflow-hidden">
+            <div className="bg-[var(--cn-bg-card)] rounded-[var(--cn-radius-md)] shadow-[var(--cn-shadow-sm)] border border-[var(--cn-border)] overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full min-w-[800px]">
-                        <thead className="bg-main/5 border-b border-main/20">
+                        <thead className="bg-[var(--cn-primary)]/5 border-b border-[var(--cn-border)]">
                             <tr>
-                                <th className="text-left p-3 sm:p-4 text-xs sm:text-sm font-semibold text-main">Người dùng</th>
-                                <th className="text-left p-3 sm:p-4 text-xs sm:text-sm font-semibold text-main">Mã & Link</th>
-                                <th className="text-center p-3 sm:p-4 text-xs sm:text-sm font-semibold text-main">Click</th>
-                                <th className="text-center p-3 sm:p-4 text-xs sm:text-sm font-semibold text-main">Đăng ký</th>
-                                <th className="text-center p-3 sm:p-4 text-xs sm:text-sm font-semibold text-main">Bài viết</th>
-                                <th className="text-center p-3 sm:p-4 text-xs sm:text-sm font-semibold text-main">Bài tập</th>
-                                <th className="text-center p-3 sm:p-4 text-xs sm:text-sm font-semibold text-main">Xu</th>
-                                <th className="text-center p-3 sm:p-4 text-xs sm:text-sm font-semibold text-main">Ngày tạo</th>
+                                <th className="text-left p-3 sm:p-4 text-xs sm:text-sm font-semibold text-[var(--cn-primary)]">Người dùng</th>
+                                <th className="text-left p-3 sm:p-4 text-xs sm:text-sm font-semibold text-[var(--cn-primary)]">Mã & Link</th>
+                                <th className="text-center p-3 sm:p-4 text-xs sm:text-sm font-semibold text-[var(--cn-primary)]">Click</th>
+                                <th className="text-center p-3 sm:p-4 text-xs sm:text-sm font-semibold text-[var(--cn-primary)]">Đăng ký</th>
+                                <th className="text-center p-3 sm:p-4 text-xs sm:text-sm font-semibold text-[var(--cn-primary)]">Bài viết</th>
+                                <th className="text-center p-3 sm:p-4 text-xs sm:text-sm font-semibold text-[var(--cn-primary)]">Bài tập</th>
+                                <th className="text-center p-3 sm:p-4 text-xs sm:text-sm font-semibold text-[var(--cn-primary)]">Xu</th>
+                                <th className="text-center p-3 sm:p-4 text-xs sm:text-sm font-semibold text-[var(--cn-primary)]">Ngày tạo</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-main/10">
+                        <tbody className="divide-y divide-[var(--cn-border)]">
                             {isLoading ? (
                                 <tr>
                                     <td colSpan={8} className="py-12">
@@ -174,42 +154,42 @@ export default function AdminAffiliatePage() {
                                 </tr>
                             ) : stats.length === 0 ? (
                                 <tr>
-                                    <td colSpan={8} className="text-center py-12 text-gray-500">
+                                    <td colSpan={8} className="text-center py-12 text-[var(--cn-text-muted)]">
                                         <div className="flex flex-col items-center gap-2">
-                                            <TrendingUp size={40} className="text-gray-300" />
+                                            <TrendingUp size={40} className="text-[var(--cn-text-muted)]" />
                                             <p className="text-sm">Chưa có dữ liệu affiliate</p>
                                         </div>
                                     </td>
                                 </tr>
                             ) : (
                                 stats.map((stat) => (
-                                    <tr key={stat._id} className="hover:bg-main/5 transition">
+                                    <tr key={stat._id} className="hover:bg-[var(--cn-hover)] transition">
                                         <td className="p-3 sm:p-4">
                                             <div>
-                                                <p className="font-medium text-sm text-gray-900 dark:text-white">{stat.user?.fullName || 'N/A'}</p>
-                                                <p className="text-xs text-gray-500">{stat.user?.email}</p>
-                                                {stat.user?.username && <p className="text-xs text-main">@{stat.user.username}</p>}
+                                                <p className="font-medium text-sm text-[var(--cn-text-main)]">{stat.user?.fullName || 'N/A'}</p>
+                                                <p className="text-xs text-[var(--cn-text-muted)]">{stat.user?.email}</p>
+                                                {stat.user?.username && <p className="text-xs text-[var(--cn-primary)]">@{stat.user.username}</p>}
                                             </div>
                                         </td>
                                         <td className="p-3 sm:p-4">
                                             <div className="space-y-1">
                                                 <div className="flex items-center gap-1">
-                                                    <code className="text-xs font-mono font-semibold text-main bg-main/5 px-2 py-0.5 rounded">
+                                                    <code className="text-xs font-mono font-semibold text-[var(--cn-primary)] bg-[var(--cn-primary)]/5 px-2 py-0.5 rounded">
                                                         {stat.code}
                                                     </code>
                                                     <button
                                                         onClick={() => handleCopy(stat.code, `code-${stat._id}`)}
-                                                        className="p-1 text-gray-400 hover:text-main transition"
+                                                        className="p-1 text-[var(--cn-text-muted)] hover:text-[var(--cn-primary)] transition"
                                                         title="Copy mã"
                                                     >
                                                         {copiedId === `code-${stat._id}` ? <Check size={12} className="text-green-500" /> : <Copy size={12} />}
                                                     </button>
                                                 </div>
                                                 <div className="flex items-center gap-1">
-                                                    <span className="text-[10px] text-gray-400 truncate max-w-[140px]">{stat.link}</span>
+                                                    <span className="text-[10px] text-[var(--cn-text-muted)] truncate max-w-[140px]">{stat.link}</span>
                                                     <button
                                                         onClick={() => handleCopy(stat.link, `link-${stat._id}`)}
-                                                        className="p-1 text-gray-400 hover:text-main transition flex-shrink-0"
+                                                        className="p-1 text-[var(--cn-text-muted)] hover:text-[var(--cn-primary)] transition flex-shrink-0"
                                                         title="Copy link"
                                                     >
                                                         {copiedId === `link-${stat._id}` ? <Check size={10} className="text-green-500" /> : <Copy size={10} />}
@@ -217,12 +197,12 @@ export default function AdminAffiliatePage() {
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="p-3 sm:p-4 text-center text-sm text-gray-600 dark:text-gray-400">{stat.clicks.toLocaleString()}</td>
+                                        <td className="p-3 sm:p-4 text-center text-sm text-[var(--cn-text-sub)]">{stat.clicks.toLocaleString()}</td>
                                         <td className="p-3 sm:p-4 text-center font-semibold text-sm text-blue-600">{stat.totalRegistered}</td>
                                         <td className="p-3 sm:p-4 text-center font-semibold text-sm text-green-600">{stat.totalPosted}</td>
                                         <td className="p-3 sm:p-4 text-center font-semibold text-sm text-purple-600">{stat.totalTakenQuiz}</td>
-                                        <td className="p-3 sm:p-4 text-center font-semibold text-sm text-main">{stat.totalCoinsEarned.toLocaleString()}</td>
-                                        <td className="p-3 sm:p-4 text-center text-xs text-gray-500">
+                                        <td className="p-3 sm:p-4 text-center font-semibold text-sm text-[var(--cn-primary)]">{stat.totalCoinsEarned.toLocaleString()}</td>
+                                        <td className="p-3 sm:p-4 text-center text-xs text-[var(--cn-text-muted)]">
                                             {format(new Date(stat.createdAt), 'dd/MM/yyyy')}
                                         </td>
                                     </tr>
@@ -233,17 +213,23 @@ export default function AdminAffiliatePage() {
                 </div>
 
                 {totalPages > 1 && (
-                    <div className="border-t border-main/20 px-4 py-3 flex items-center justify-between">
-                        <div className="text-sm text-gray-500">Tổng {total} người dùng có affiliate</div>
+                    <div className="border-t border-[var(--cn-border)] px-4 py-3 flex items-center justify-between">
+                        <div className="text-sm text-[var(--cn-text-muted)]">Tổng {total} người dùng có affiliate</div>
                         <div className="flex items-center gap-1">
-                            <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
-                                className="p-1.5 border border-main/20 rounded-lg disabled:opacity-50 hover:bg-main/5">
-                                <ChevronLeft size={16} />
+                            <button
+                                onClick={() => setPage(p => Math.max(1, p - 1))}
+                                disabled={page === 1}
+                                className="p-1.5 border border-[var(--cn-border)] rounded-[var(--cn-radius-sm)] disabled:opacity-50 hover:bg-[var(--cn-hover)] transition"
+                            >
+                                <ChevronLeft size={16} className="text-[var(--cn-text-sub)]" />
                             </button>
-                            <span className="px-3 text-sm font-medium">{page} / {totalPages}</span>
-                            <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
-                                className="p-1.5 border border-main/20 rounded-lg disabled:opacity-50 hover:bg-main/5">
-                                <ChevronRight size={16} />
+                            <span className="px-3 text-sm font-medium text-[var(--cn-text-main)]">{page} / {totalPages}</span>
+                            <button
+                                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                                disabled={page === totalPages}
+                                className="p-1.5 border border-[var(--cn-border)] rounded-[var(--cn-radius-sm)] disabled:opacity-50 hover:bg-[var(--cn-hover)] transition"
+                            >
+                                <ChevronRight size={16} className="text-[var(--cn-text-sub)]" />
                             </button>
                         </div>
                     </div>

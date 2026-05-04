@@ -1,7 +1,7 @@
 // app/admin/users/page.tsx
 'use client';
 
-import CustomTextarea from '@/components/ui/CustomTextarea';
+import { CustomTextarea } from '@/components/custom/CustomTextarea';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuthStore } from '@/store/auth.store';
 import { useSocket } from '@/providers/socket.provider';
@@ -44,8 +44,8 @@ import {
     Legend,
     ResponsiveContainer
 } from 'recharts';
-import CustomSelect from '@/components/ui/CustomSelect';
-import CustomInput from '@/components/ui/CustomInput';
+import { CustomSelect } from '@/components/custom/CustomSelect';
+import { CustomInput } from '@/components/custom/CustomInput';
 
 const ROLE_OPTIONS = [
     { value: '', label: 'Tất cả vai trò' },

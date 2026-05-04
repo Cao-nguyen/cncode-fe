@@ -1,3 +1,4 @@
+// components/shortlink/CreateShortLink.tsx
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -63,7 +64,6 @@ export function CreateShortLink() {
     const useCustom = watch('useCustom');
     const customAlias = watch('customAlias') ?? '';
 
-    // Auto-check alias with debounce
     useEffect(() => {
         if (!useCustom) return;
 
@@ -141,14 +141,14 @@ export function CreateShortLink() {
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                 {/* URL gốc */}
                 <div className="flex flex-col gap-1.5">
-                    <label className="uppercase text-xs font-semibold tracking-wide text-gray-600 dark:text-gray-400">
+                    <label className="uppercase text-xs font-semibold tracking-wide text-[var(--cn-text-sub)]">
                         Đường dẫn gốc
                     </label>
                     <div className="relative">
                         <Link21
                             size={15}
                             variant="Outline"
-                            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                            className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--cn-text-muted)] pointer-events-none"
                         />
                         <input
                             {...register('originalUrl')}
@@ -157,12 +157,12 @@ export function CreateShortLink() {
                             autoCapitalize="none"
                             autoCorrect="off"
                             placeholder="https://example.com/duong-dan-rat-dai"
-                            className="w-full pl-9 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 focus:border-main focus:ring-2 focus:ring-main/20 outline-none transition-all text-sm"
+                            className="w-full pl-9 pr-4 py-3 rounded-[var(--cn-radius-md)] border border-[var(--cn-border)] bg-[var(--cn-bg-card)] focus:border-[var(--cn-primary)] focus:ring-2 focus:ring-[var(--cn-primary)]/20 outline-none transition-all text-sm text-[var(--cn-text-main)] placeholder:text-[var(--cn-text-muted)]"
                         />
                     </div>
                     {errors.originalUrl && (
                         <p className="flex items-center gap-1 text-xs text-red-500">
-                            <Warning2 size={12} variant="Bold" />
+                            <Warning2 size={12} variant="Outline" />
                             {errors.originalUrl.message}
                         </p>
                     )}
@@ -179,31 +179,31 @@ export function CreateShortLink() {
                             setCheckedAlias('');
                         }
                     }}
-                    className="flex items-center gap-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-main transition-colors active:scale-95"
+                    className="flex items-center gap-2 text-sm font-medium text-[var(--cn-text-sub)] hover:text-[var(--cn-primary)] transition-colors active:scale-95"
                 >
                     {useCustom
-                        ? <TickSquare size={18} variant="Bold" className="text-main" />
-                        : <Square size={18} variant="Outline" className="text-gray-400 dark:text-gray-500" />
+                        ? <TickSquare size={18} variant="Bold" className="text-[var(--cn-primary)]" />
+                        : <Square size={18} variant="Outline" className="text-[var(--cn-text-muted)]" />
                     }
                     Tùy chỉnh đường dẫn
-                    <Heart size={13} variant="Bold" className="text-main" />
+                    <Heart size={13} variant="Bold" className="text-[var(--cn-primary)]" />
                 </button>
 
                 {/* Custom alias */}
                 {useCustom && (
                     <div className="flex flex-col gap-1.5">
-                        <label className="uppercase text-xs font-semibold tracking-wide text-gray-600 dark:text-gray-400">
+                        <label className="uppercase text-xs font-semibold tracking-wide text-[var(--cn-text-sub)]">
                             Alias tùy chỉnh
                         </label>
                         <div
-                            className={`flex rounded-xl border overflow-hidden transition-colors ${aliasState === 'taken'
-                                ? 'border-red-400 dark:border-red-600'
+                            className={`flex rounded-[var(--cn-radius-md)] border overflow-hidden transition-colors ${aliasState === 'taken'
+                                ? 'border-red-400'
                                 : aliasState === 'available'
-                                    ? 'border-green-400 dark:border-green-600'
-                                    : 'border-gray-200 dark:border-gray-700 focus-within:border-main'
+                                    ? 'border-green-400'
+                                    : 'border-[var(--cn-border)] focus-within:border-[var(--cn-primary)]'
                                 }`}
                         >
-                            <span className="flex items-center px-2.5 text-xs text-gray-500 bg-gray-50 dark:bg-gray-800 border-r border-inherit whitespace-nowrap shrink-0">
+                            <span className="flex items-center px-2.5 text-xs text-[var(--cn-text-muted)] bg-[var(--cn-bg-section)] border-r border-inherit whitespace-nowrap shrink-0">
                                 cncode.io.vn/s/
                             </span>
                             <div className="relative flex-1">
@@ -214,13 +214,12 @@ export function CreateShortLink() {
                                     value={customAlias}
                                     onChange={(e) => setValue('customAlias', e.target.value)}
                                     placeholder="alias-cua-ban"
-                                    className="w-full px-3 py-3 pr-8 outline-none bg-white dark:bg-gray-900 text-sm"
+                                    className="w-full px-3 py-3 pr-8 outline-none bg-[var(--cn-bg-card)] text-sm text-[var(--cn-text-main)] placeholder:text-[var(--cn-text-muted)]"
                                 />
-                                {/* Inline status indicator */}
                                 {aliasState === 'checking' && (
                                     <Loader2
                                         size={14}
-                                        className="animate-spin absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400"
+                                        className="animate-spin absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--cn-text-muted)]"
                                     />
                                 )}
                                 {aliasState === 'available' && (
@@ -241,18 +240,18 @@ export function CreateShortLink() {
                         </div>
                         {aliasState === 'taken' && (
                             <p className="flex items-center gap-1 text-xs text-red-500">
-                                <Warning2 size={11} variant="Bold" />
+                                <Warning2 size={11} variant="Outline" />
                                 Alias này đã được sử dụng
                             </p>
                         )}
                         {aliasState === 'available' && (
-                            <p className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
+                            <p className="flex items-center gap-1 text-xs text-green-600">
                                 <TickCircle size={11} variant="Bold" />
                                 Alias có thể sử dụng
                             </p>
                         )}
                         {customAlias.trim().length > 0 && customAlias.trim().length < 3 && aliasState === 'idle' && (
-                            <p className="flex items-center gap-1 text-xs text-gray-400">
+                            <p className="flex items-center gap-1 text-xs text-[var(--cn-text-muted)]">
                                 Cần ít nhất 3 ký tự
                             </p>
                         )}
@@ -261,9 +260,9 @@ export function CreateShortLink() {
 
                 {/* Expiry */}
                 <div className="flex flex-col gap-1.5">
-                    <label className="uppercase text-xs font-semibold tracking-wide text-gray-600 dark:text-gray-400">
+                    <label className="uppercase text-xs font-semibold tracking-wide text-[var(--cn-text-sub)]">
                         Hết hạn sau{' '}
-                        <span className="font-normal text-gray-400 normal-case">(ngày, để trống = vĩnh viễn)</span>
+                        <span className="font-normal text-[var(--cn-text-muted)] normal-case">(ngày, để trống = vĩnh viễn)</span>
                     </label>
                     <input
                         type="number"
@@ -271,11 +270,11 @@ export function CreateShortLink() {
                         min={1}
                         {...register('expiresInDays')}
                         placeholder="Ví dụ: 30"
-                        className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 focus:border-main focus:ring-2 focus:ring-main/20 outline-none transition-all text-sm"
+                        className="w-full px-4 py-3 rounded-[var(--cn-radius-md)] border border-[var(--cn-border)] bg-[var(--cn-bg-card)] focus:border-[var(--cn-primary)] focus:ring-2 focus:ring-[var(--cn-primary)]/20 outline-none transition-all text-sm text-[var(--cn-text-main)] placeholder:text-[var(--cn-text-muted)]"
                     />
                     {errors.expiresInDays && (
                         <p className="flex items-center gap-1 text-xs text-red-500">
-                            <Warning2 size={12} variant="Bold" />
+                            <Warning2 size={12} variant="Outline" />
                             {errors.expiresInDays.message}
                         </p>
                     )}
@@ -285,7 +284,7 @@ export function CreateShortLink() {
                 <button
                     type="submit"
                     disabled={isCreating || (useCustom && aliasState === 'checking')}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-main text-white font-semibold transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                    className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-[var(--cn-radius-md)] bg-[var(--cn-primary)] text-white font-semibold transition-all hover:bg-[var(--cn-primary-hover)] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed text-sm"
                 >
                     {isCreating ? (
                         <>
@@ -303,25 +302,25 @@ export function CreateShortLink() {
 
             {/* Result */}
             {createdLink && (
-                <div className="p-4 rounded-xl border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950/30 space-y-3">
+                <div className="p-4 rounded-[var(--cn-radius-md)] border border-green-200 bg-green-50 space-y-3">
                     <div className="flex items-center gap-2">
-                        <TickCircle size={15} className="text-green-600 shrink-0" variant="Bold" />
-                        <span className="text-sm font-semibold text-green-700 dark:text-green-400">
+                        <TickCircle size={15} variant="Bold" className="text-green-600 shrink-0" />
+                        <span className="text-sm font-semibold text-green-700">
                             Link đã tạo thành công!
                         </span>
                     </div>
-                    <div className="flex items-center justify-between gap-3 p-3 rounded-xl bg-white dark:bg-gray-900 border border-green-100 dark:border-green-800">
+                    <div className="flex items-center justify-between gap-3 p-3 rounded-[var(--cn-radius-md)] bg-white border border-green-100">
                         <a
                             href={createdLink.shortUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-sm font-medium text-main hover:underline truncate"
+                            className="text-sm font-medium text-[var(--cn-primary)] hover:underline truncate"
                         >
                             {createdLink.shortUrl}
                         </a>
                         <CopyButton text={createdLink.shortUrl} />
                     </div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                    <p className="text-xs text-[var(--cn-text-muted)] truncate">
                         Gốc: {createdLink.originalUrl}
                     </p>
                 </div>

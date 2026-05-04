@@ -8,9 +8,9 @@ import { feedbackApi, IFeedback } from '@/lib/api/feedback.api';
 import FeedbackCard from '@/components/feedback/FeedbackCard';
 import { Loader2, Filter, X, Send, Plus, Bug, Sparkles, Zap, Lightbulb } from 'lucide-react';
 import { toast } from 'sonner';
-import CustomSelect from '@/components/ui/CustomSelect';
-import CustomInput from '@/components/ui/CustomInput';
-import CustomTextarea from '@/components/ui/CustomTextarea';
+import { CustomSelect } from '@/components/custom/CustomSelect';
+import { CustomInput } from '@/components/custom/CustomInput';
+import { CustomTextarea } from '@/components/custom/CustomTextarea';
 
 const CATEGORIES = [
     { value: 'all', label: 'Tất cả' },
@@ -28,11 +28,23 @@ const STATUS_FILTERS = [
 ];
 
 const CREATE_CATEGORIES = [
-    { value: 'bug', label: 'Lỗi/Bug' },
-    { value: 'feature', label: 'Tính năng mới' },
-    { value: 'improvement', label: 'Cải tiến' },
-    { value: 'other', label: 'Khác' }
+    { value: 'bug', label: '🐛 Lỗi/Bug' },
+    { value: 'feature', label: '✨ Tính năng mới' },
+    { value: 'improvement', label: '⚡ Cải tiến' },
+    { value: 'other', label: '💡 Khác' }
 ];
+
+const getStatusLabel = (status: string): string => {
+    const labels: Record<string, string> = {
+        pending: 'Chờ xử lý',
+        viewed: 'Đã xem',
+        approved: 'Đã duyệt',
+        in_progress: 'Đang cải tiến',
+        completed: 'Hoàn thành',
+        rejected: 'Từ chối'
+    };
+    return labels[status] || status;
+};
 
 export default function FeedbackPage() {
     const { token, user } = useAuthStore();
@@ -188,66 +200,62 @@ export default function FeedbackPage() {
         }
     };
 
-    const getCategoryIcon = (category: string) => {
-        switch (category) {
-            case 'bug': return <Bug size={14} className="inline mr-1" data-filled={true} />;
-            case 'feature': return <Sparkles size={14} className="inline mr-1" data-filled={true} />;
-            case 'improvement': return <Zap size={14} className="inline mr-1" data-filled={true} />;
-            default: return <Lightbulb size={14} className="inline mr-1" data-filled={true} />;
-        }
-    };
-
     return (
-        <div className="max-w-6xl mx-auto px-4 py-8">
-            <div className="text-center mb-8">
-                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
+        <div className="max-w-6xl mx-auto px-4 py-6 sm:py-8">
+            {/* Header */}
+            <div className="text-center mb-6 sm:mb-8">
+                <h1 className="text-2xl sm:text-3xl font-bold text-[var(--cn-text-main)]">
                     Góp ý & Phản hồi
                 </h1>
-                <p className="text-gray-500 dark:text-gray-400 mt-2">
+                <p className="text-xs sm:text-sm text-[var(--cn-text-muted)] mt-2">
                     Đóng góp ý kiến của bạn để CNcode ngày càng hoàn thiện hơn
                 </p>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 mb-6">
-                {Object.entries(stats.byStatus || {}).slice(0, 5).map(([status, count]) => (
-                    <div key={status} className="bg-white dark:bg-gray-900 rounded-xl p-3 text-center border border-gray-200 dark:border-gray-700">
-                        <div className="text-xl font-bold text-main">{count as number}</div>
-                        <div className="text-xs text-gray-500">
-                            {status === 'pending' && 'Chờ xử lý'}
-                            {status === 'viewed' && 'Đã xem'}
-                            {status === 'approved' && 'Đã duyệt'}
-                            {status === 'in_progress' && 'Đang cải tiến'}
-                            {status === 'completed' && 'Hoàn thành'}
+            {/* Stats Cards */}
+            {Object.keys(stats.byStatus || {}).length > 0 && (
+                <div className={`grid gap-3 mb-6 ${Object.keys(stats.byStatus).length === 6
+                    ? 'grid-cols-3 sm:grid-cols-6'
+                    : 'grid-cols-2 sm:grid-cols-5'
+                    }`}>
+                    {Object.entries(stats.byStatus).map(([status, count]) => (
+                        <div key={status} className="bg-[var(--cn-bg-card)] rounded-[var(--cn-radius-md)] p-2 sm:p-3 text-center border border-[var(--cn-border)] shadow-[var(--cn-shadow-sm)]">
+                            <div className="text-lg sm:text-xl font-bold text-[var(--cn-primary)]">{count as number}</div>
+                            <div className="text-[9px] sm:text-xs text-[var(--cn-text-muted)]">
+                                {getStatusLabel(status)}
+                            </div>
                         </div>
-                    </div>
-                ))}
-            </div>
+                    ))}
+                </div>
+            )}
 
-            <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+            {/* Filters */}
+            <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center justify-between gap-3 mb-6">
                 <div className="flex flex-wrap gap-2">
-                    <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-800 rounded-xl p-1">
-                        <Filter size={14} className="mx-2 text-gray-500" data-filled={true} />
+                    {/* Category Filters */}
+                    <div className="flex flex-wrap gap-1 bg-[var(--cn-bg-section)] rounded-[var(--cn-radius-md)] p-1">
                         {CATEGORIES.map(cat => (
                             <button
                                 key={cat.value}
                                 onClick={() => setSelectedCategory(cat.value)}
-                                className={`px-3 py-1.5 text-sm rounded-md transition ${selectedCategory === cat.value
-                                    ? 'bg-main text-white'
-                                    : 'hover:bg-gray-200 dark:hover:bg-gray-700'
+                                className={`px-2.5 sm:px-3 py-1 sm:py-1.5 text-[11px] sm:text-sm rounded-[var(--cn-radius-sm)] transition ${selectedCategory === cat.value
+                                    ? 'bg-[var(--cn-primary)] text-white'
+                                    : 'text-[var(--cn-text-sub)] hover:bg-[var(--cn-hover)]'
                                     }`}
                             >
                                 {cat.label}
                             </button>
                         ))}
                     </div>
-                    <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 rounded-xl p-1">
+                    {/* Status Filters */}
+                    <div className="flex flex-wrap gap-1 bg-[var(--cn-bg-section)] rounded-[var(--cn-radius-md)] p-1">
                         {STATUS_FILTERS.map(status => (
                             <button
                                 key={status.value}
                                 onClick={() => setSelectedStatus(status.value)}
-                                className={`px-3 py-1.5 text-sm rounded-md transition ${selectedStatus === status.value
-                                    ? 'bg-main text-white'
-                                    : 'hover:bg-gray-200 dark:hover:bg-gray-700'
+                                className={`px-2.5 sm:px-3 py-1 sm:py-1.5 text-[11px] sm:text-sm rounded-[var(--cn-radius-sm)] transition ${selectedStatus === status.value
+                                    ? 'bg-[var(--cn-primary)] text-white'
+                                    : 'text-[var(--cn-text-sub)] hover:bg-[var(--cn-hover)]'
                                     }`}
                             >
                                 {status.label}
@@ -257,21 +265,22 @@ export default function FeedbackPage() {
                 </div>
                 <button
                     onClick={() => setShowCreateModal(true)}
-                    className="flex items-center gap-2 px-4 py-2 bg-main text-white rounded-xl hover:bg-main/80 transition"
+                    className="flex items-center justify-center gap-2 px-4 py-2 bg-[var(--cn-primary)] text-white rounded-[var(--cn-radius-md)] hover:bg-[var(--cn-primary-hover)] transition text-sm"
                 >
-                    <Plus size={16} data-filled={true} />
+                    <Plus size={16} />
                     <span>Gửi góp ý</span>
                 </button>
             </div>
 
+            {/* Feedbacks List */}
             {loading && page === 1 ? (
                 <div className="flex justify-center py-12">
-                    <Loader2 className="w-8 h-8 animate-spin text-main" data-filled={true} />
+                    <Loader2 className="w-6 h-6 sm:w-8 sm:h-8 animate-spin text-[var(--cn-primary)]" />
                 </div>
             ) : feedbacks.length === 0 ? (
-                <div className="text-center py-12 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700">
-                    <p className="text-gray-500">Chưa có góp ý nào</p>
-                    <p className="text-sm text-gray-400 mt-1">Hãy là người đầu tiên đóng góp ý kiến!</p>
+                <div className="text-center py-12 bg-[var(--cn-bg-card)] rounded-[var(--cn-radius-md)] border border-[var(--cn-border)]">
+                    <p className="text-sm text-[var(--cn-text-sub)]">Chưa có góp ý nào</p>
+                    <p className="text-xs text-[var(--cn-text-muted)] mt-1">Hãy là người đầu tiên đóng góp ý kiến!</p>
                 </div>
             ) : (
                 <div className="space-y-4">
@@ -287,14 +296,15 @@ export default function FeedbackPage() {
                 </div>
             )}
 
+            {/* Load More */}
             {page < totalPages && (
                 <div className="text-center mt-6">
                     <button
                         onClick={loadMore}
                         disabled={loading}
-                        className="px-6 py-2 border border-main text-main rounded-xl hover:bg-main/5 transition disabled:opacity-50"
+                        className="px-5 sm:px-6 py-2 border border-[var(--cn-primary)] text-[var(--cn-primary)] rounded-[var(--cn-radius-md)] hover:bg-[var(--cn-primary)]/5 transition disabled:opacity-50 text-sm"
                     >
-                        {loading ? <Loader2 className="w-4 h-4 animate-spin inline mr-2" data-filled={true} /> : null}
+                        {loading && <Loader2 className="w-4 h-4 animate-spin inline mr-2" />}
                         {loading ? 'Đang tải...' : 'Xem thêm'}
                     </button>
                 </div>
@@ -303,19 +313,19 @@ export default function FeedbackPage() {
             {/* Create Modal */}
             {showCreateModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowCreateModal(false)}>
-                    <div className="bg-white dark:bg-gray-900 rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-xl" onClick={e => e.stopPropagation()}>
-                        <div className="sticky top-0 bg-white dark:bg-gray-900 p-5 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center">
-                            <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Gửi góp ý</h3>
+                    <div className="bg-[var(--cn-bg-card)] rounded-[var(--cn-radius-md)] w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-[var(--cn-shadow-lg)]" onClick={e => e.stopPropagation()}>
+                        <div className="sticky top-0 bg-[var(--cn-bg-card)] p-4 sm:p-5 border-b border-[var(--cn-border)] flex justify-between items-center">
+                            <h3 className="text-lg sm:text-xl font-semibold text-[var(--cn-text-main)]">Gửi góp ý</h3>
                             <button
                                 onClick={() => setShowCreateModal(false)}
-                                className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition"
+                                className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-full bg-[var(--cn-bg-section)] hover:bg-[var(--cn-hover)] transition text-[var(--cn-text-muted)]"
                             >
-                                <X size={18} data-filled={true} />
+                                <X size={16} className="sm:w-[18px] sm:h-[18px]" />
                             </button>
                         </div>
-                        <form onSubmit={handleCreateFeedback} className="p-5 space-y-5">
+                        <form onSubmit={handleCreateFeedback} className="p-4 sm:p-5 space-y-4 sm:space-y-5">
                             <div>
-                                <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Danh mục</label>
+                                <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 text-[var(--cn-text-sub)]">Danh mục</label>
                                 <CustomSelect
                                     value={formData.category}
                                     onChange={(value) => setFormData(prev => ({ ...prev, category: value }))}
@@ -324,16 +334,16 @@ export default function FeedbackPage() {
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Tiêu đề</label>
+                                <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 text-[var(--cn-text-sub)]">Tiêu đề</label>
                                 <CustomInput
                                     value={formData.title}
-                                    onChange={(value) => setFormData(prev => ({ ...prev, title: value }))}
+                                    onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
                                     placeholder="Tóm tắt ngắn gọn về ý kiến của bạn"
                                     maxLength={200}
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Nội dung</label>
+                                <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 text-[var(--cn-text-sub)]">Nội dung</label>
                                 <CustomTextarea
                                     value={formData.content}
                                     onChange={(value) => setFormData(prev => ({ ...prev, content: value }))}
@@ -346,16 +356,16 @@ export default function FeedbackPage() {
                                 <button
                                     type="button"
                                     onClick={() => setShowCreateModal(false)}
-                                    className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-700 rounded-xl text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition"
+                                    className="flex-1 px-4 py-2.5 sm:py-3 border border-[var(--cn-border)] rounded-[var(--cn-radius-md)] text-[var(--cn-text-sub)] font-medium hover:bg-[var(--cn-hover)] transition text-sm"
                                 >
                                     Hủy
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={submitting}
-                                    className="flex-1 px-4 py-3 bg-main text-white rounded-xl font-medium hover:bg-main/80 transition disabled:opacity-50 flex items-center justify-center gap-2"
+                                    className="flex-1 px-4 py-2.5 sm:py-3 bg-[var(--cn-primary)] text-white rounded-[var(--cn-radius-md)] font-medium hover:bg-[var(--cn-primary-hover)] transition disabled:opacity-50 flex items-center justify-center gap-2 text-sm"
                                 >
-                                    {submitting ? <Loader2 className="w-4 h-4 animate-spin" data-filled={true} /> : <Send size={16} data-filled={true} />}
+                                    {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send size={16} />}
                                     {submitting ? 'Đang gửi...' : 'Gửi góp ý'}
                                 </button>
                             </div>

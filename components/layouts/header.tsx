@@ -110,7 +110,7 @@ function buildSections(
 const ROLE_BADGE: Record<string, string> = {
     admin: "bg-red-50 text-red-500",
     teacher: "bg-blue-50 text-blue-500",
-    student: "bg-green-50 text-green-600",
+    student: "bg-green-50 text-[var(--cn-success)]",
     user: "bg-gray-100 text-gray-500",
 };
 
@@ -161,32 +161,32 @@ function DesktopUserDrawer({ user, onLogout, onClose, open }: DrawerProps) {
             />
             <div
                 ref={drawerRef}
-                className="fixed top-0 right-0 bottom-0 z-[70] w-[308px] bg-white border-l border-gray-100 shadow-[-4px_0_24px_rgba(0,0,0,0.08)] flex flex-col transition-transform duration-300 will-change-transform"
+                className="fixed top-0 right-0 bottom-0 z-[70] w-[308px] bg-[var(--cn-bg-card)] border-l border-[var(--cn-border)] shadow-[var(--cn-shadow-lg)] flex flex-col transition-transform duration-300 will-change-transform"
                 style={{
                     transform: open ? "translateX(0)" : "translateX(100%)",
                 }}
             >
-                <div className="p-5 border-b border-gray-100 flex-shrink-0">
+                <div className="p-5 border-b border-[var(--cn-border)] flex-shrink-0">
                     <div className="flex items-center gap-3">
                         <div className="relative flex-shrink-0">
-                            <Avatar className="w-12 h-12 border-2 border-gray-100">
+                            <Avatar className="w-12 h-12 border-2 border-[var(--cn-border)]">
                                 <AvatarImage src={user.avatar} />
-                                <AvatarFallback className="text-[15px] font-bold bg-main text-white">
+                                <AvatarFallback className="text-[15px] font-bold bg-[var(--cn-primary)] text-white">
                                     {user.fullname?.charAt(0) || "U"}
                                 </AvatarFallback>
                             </Avatar>
                             <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white bg-green-500" />
                         </div>
                         <div className="flex-1 min-w-0">
-                            <p className="text-sm font-bold text-gray-900 truncate">{user.fullname}</p>
-                            <p className="text-xs text-gray-400 truncate mt-0.5">@{user.username}</p>
+                            <p className="text-sm font-bold text-[var(--cn-text-main)] truncate">{user.fullname}</p>
+                            <p className="text-xs text-[var(--cn-text-muted)] truncate mt-0.5">@{user.username}</p>
                             <span className={`inline-block mt-1.5 text-[10px] font-semibold px-2 py-0.5 rounded-full capitalize ${badgeClass}`}>
                                 {user.role}
                             </span>
                         </div>
                         <button
                             onClick={onClose}
-                            className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 transition-colors text-gray-400 flex-shrink-0"
+                            className="w-8 h-8 flex items-center justify-center rounded-full bg-[var(--cn-bg-section)] hover:bg-[var(--cn-hover)] transition-colors text-[var(--cn-text-muted)] flex-shrink-0"
                         >
                             <CloseCircle variant="Bold" className="w-[18px] h-[18px]" />
                         </button>
@@ -195,25 +195,25 @@ function DesktopUserDrawer({ user, onLogout, onClose, open }: DrawerProps) {
                 <div className="flex-1 overflow-y-auto no-scrollbar p-3">
                     {sections.map((section) => (
                         <div key={section.label} className="mb-3">
-                            <p className="text-[10px] font-semibold uppercase tracking-wider px-1 mb-1.5 text-gray-400">
+                            <p className="text-[10px] font-semibold uppercase tracking-wider px-1 mb-1.5 text-[var(--cn-text-muted)]">
                                 {section.label}
                             </p>
-                            <div className="rounded-2xl overflow-hidden bg-gray-50 border border-gray-100">
+                            <div className="rounded-2xl overflow-hidden bg-[var(--cn-bg-section)] border border-[var(--cn-border)]">
                                 {section.items.map((item, idx) => (
                                     <Link
                                         key={item.href}
                                         href={item.href}
                                         onClick={onClose}
-                                        className={`flex items-center gap-3 px-3 py-2.5 hover:bg-gray-100 transition-colors ${idx < section.items.length - 1 ? "border-b border-gray-100" : ""}`}
+                                        className={`flex items-center gap-3 px-3 py-2.5 hover:bg-[var(--cn-hover)] transition-colors ${idx < section.items.length - 1 ? "border-b border-[var(--cn-border)]" : ""}`}
                                     >
-                                        <div className="w-8 h-8 flex items-center justify-center rounded-xl bg-white text-main shadow-sm flex-shrink-0">
+                                        <div className="w-8 h-8 flex items-center justify-center rounded-xl bg-white text-[var(--cn-primary)] shadow-sm flex-shrink-0">
                                             {item.icon}
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <p className="text-[13px] font-semibold text-gray-800 truncate">{item.title}</p>
-                                            <p className="text-[11px] text-gray-400 truncate mt-0.5">{item.subtitle}</p>
+                                            <p className="text-[13px] font-semibold text-[var(--cn-text-main)] truncate">{item.title}</p>
+                                            <p className="text-[11px] text-[var(--cn-text-muted)] truncate mt-0.5">{item.subtitle}</p>
                                         </div>
-                                        <ArrowRight2 variant="Bold" className="w-3 h-3 text-gray-300 flex-shrink-0" />
+                                        <ArrowRight2 variant="Bold" className="w-3 h-3 text-[var(--cn-text-muted)] flex-shrink-0" />
                                     </Link>
                                 ))}
                             </div>
@@ -287,59 +287,59 @@ function MobileUserSheet({ user, onLogout, onClose, open }: MobileSheetProps) {
                 onClick={onClose}
             />
             <div
-                className="fixed bottom-0 left-0 right-0 z-[70] bg-white rounded-t-3xl flex flex-col transition-transform duration-300 will-change-transform"
+                className="fixed bottom-0 left-0 right-0 z-[70] bg-[var(--cn-bg-card)] rounded-t-3xl flex flex-col transition-transform duration-300 will-change-transform"
                 style={{
                     transform: open ? "translateY(0)" : "translateY(100%)",
                     maxHeight: "85dvh",
                 }}
             >
                 <div className="flex justify-center pt-3 pb-1 flex-shrink-0">
-                    <div className="w-10 h-1 bg-gray-300 rounded-full" />
+                    <div className="w-10 h-1 bg-[var(--cn-border)] rounded-full" />
                 </div>
                 <div className="px-4 pt-2 pb-4 flex items-center gap-3 flex-shrink-0">
                     <div className="relative flex-shrink-0">
-                        <Avatar className="w-12 h-12 border-2 border-gray-100">
+                        <Avatar className="w-12 h-12 border-2 border-[var(--cn-border)]">
                             <AvatarImage src={user.avatar} />
-                            <AvatarFallback className="text-base font-bold bg-main text-white">
+                            <AvatarFallback className="text-base font-bold bg-[var(--cn-primary)] text-white">
                                 {user.fullname?.charAt(0) || "U"}
                             </AvatarFallback>
                         </Avatar>
                         <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white bg-green-500" />
                     </div>
                     <div className="flex-1 min-w-0">
-                        <p className="text-[15px] font-bold text-gray-900 truncate">{user.fullname}</p>
-                        <p className="text-xs text-gray-400 truncate">@{user.username}</p>
+                        <p className="text-[15px] font-bold text-[var(--cn-text-main)] truncate">{user.fullname}</p>
+                        <p className="text-xs text-[var(--cn-text-muted)] truncate">@{user.username}</p>
                         <span className={`inline-block mt-0.5 text-[10px] font-semibold px-2 py-0.5 rounded-full capitalize ${badgeClass}`}>
                             {user.role}
                         </span>
                     </div>
-                    <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 flex-shrink-0">
+                    <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full bg-[var(--cn-bg-section)] text-[var(--cn-text-muted)] flex-shrink-0">
                         <CloseCircle variant="Bold" className="w-5 h-5" />
                     </button>
                 </div>
-                <div className="w-full h-px bg-gray-100 flex-shrink-0" />
+                <div className="w-full h-px bg-[var(--cn-border)] flex-shrink-0" />
                 <div className="flex-1 overflow-y-auto no-scrollbar pb-6">
                     {sections.map((section) => (
                         <div key={section.label} className="px-4 pt-4">
-                            <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2 px-1">
+                            <p className="text-[11px] font-semibold text-[var(--cn-text-muted)] uppercase tracking-wider mb-2 px-1">
                                 {section.label}
                             </p>
-                            <div className="bg-gray-50 rounded-2xl overflow-hidden border border-gray-100">
+                            <div className="bg-[var(--cn-bg-section)] rounded-2xl overflow-hidden border border-[var(--cn-border)]">
                                 {section.items.map((item, idx) => (
                                     <Link
                                         key={item.href}
                                         href={item.href}
                                         onClick={onClose}
-                                        className={`flex items-center gap-3 px-4 py-3 active:bg-gray-100 transition-colors ${idx < section.items.length - 1 ? "border-b border-gray-100" : ""}`}
+                                        className={`flex items-center gap-3 px-4 py-3 active:bg-[var(--cn-hover)] transition-colors ${idx < section.items.length - 1 ? "border-b border-[var(--cn-border)]" : ""}`}
                                     >
-                                        <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center text-main shadow-sm flex-shrink-0">
+                                        <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center text-[var(--cn-primary)] shadow-sm flex-shrink-0">
                                             {item.icon}
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <p className="text-[13px] font-semibold text-gray-800">{item.title}</p>
-                                            <p className="text-[11px] text-gray-400 truncate mt-0.5">{item.subtitle}</p>
+                                            <p className="text-[13px] font-semibold text-[var(--cn-text-main)]">{item.title}</p>
+                                            <p className="text-[11px] text-[var(--cn-text-muted)] truncate mt-0.5">{item.subtitle}</p>
                                         </div>
-                                        <ArrowRight2 variant="Bold" className="w-3.5 h-3.5 text-gray-300 flex-shrink-0" />
+                                        <ArrowRight2 variant="Bold" className="w-3.5 h-3.5 text-[var(--cn-text-muted)] flex-shrink-0" />
                                     </Link>
                                 ))}
                             </div>
@@ -490,7 +490,7 @@ export default function Header() {
 
     return (
         <>
-            <header className="hidden lg:block bg-white w-full h-[60px] fixed top-0 z-50 shadow-sm">
+            <header className="hidden lg:block bg-[var(--cn-bg-card)] w-full h-[60px] fixed top-0 z-50 shadow-[var(--cn-shadow-sm)]">
                 <div className="flex h-full justify-between items-center px-4">
                     <Link href="/" className="flex-shrink-0">
                         <Image src="/images/logo.png" alt="Logo CNcode" width={100} height={55} priority />
@@ -502,11 +502,11 @@ export default function Header() {
                                 <div key={item.link} className="relative h-full flex items-center">
                                     <Link
                                         href={item.link}
-                                        className={`px-3 py-2 font-bold text-sm transition-all duration-200 ${isActive ? "text-main" : "text-gray-700 hover:text-main"}`}
+                                        className={`px-3 py-2 font-bold text-sm transition-all duration-200 ${isActive ? "text-[var(--cn-primary)]" : "text-[var(--cn-text-sub)] hover:text-[var(--cn-primary)]"}`}
                                     >
                                         {item.title}
                                     </Link>
-                                    {isActive && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-main" />}
+                                    {isActive && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--cn-primary)]" />}
                                 </div>
                             );
                         })}
@@ -515,14 +515,14 @@ export default function Header() {
                         {displayUser && (
                             <div className="flex items-center gap-4">
                                 <div className="relative flex items-center">
-                                    <div className="border border-gray-300 rounded-2xl pl-2 pr-4 py-0.5">
-                                        <p className="text-main text-xs font-medium">{formatNumber(displayCoins)}</p>
+                                    <div className="border border-[var(--cn-border)] rounded-2xl pl-2 pr-4 py-0.5">
+                                        <p className="text-[var(--cn-primary)] text-xs font-medium">{formatNumber(displayCoins)}</p>
                                     </div>
                                     <Image src="/icons/coins.svg" alt="Coins" width={25} height={25} className="absolute -right-3" />
                                 </div>
                                 <div className="relative flex items-center">
-                                    <div className="border border-gray-300 rounded-2xl pl-2 pr-5 py-0.5">
-                                        <p className="text-main text-xs font-medium">{formatNumber(displayStreak)}</p>
+                                    <div className="border border-[var(--cn-border)] rounded-2xl pl-2 pr-5 py-0.5">
+                                        <p className="text-[var(--cn-primary)] text-xs font-medium">{formatNumber(displayStreak)}</p>
                                     </div>
                                     <Image src="/icons/streak.svg" alt="Streak" width={27} height={27} className="absolute -right-3" />
                                 </div>
@@ -531,22 +531,22 @@ export default function Header() {
                         <NotificationBell />
                         {displayUser ? (
                             <button onClick={() => setDrawerOpen(true)} className="relative p-0.5 rounded-full focus:outline-none group">
-                                <Avatar className="w-8 h-8 ring-2 ring-transparent group-hover:ring-main/30 transition-all">
+                                <Avatar className="w-8 h-8 ring-2 ring-transparent group-hover:ring-[var(--cn-primary)]/30 transition-all">
                                     <AvatarImage src={displayUser.avatar} />
-                                    <AvatarFallback className="text-xs font-bold bg-main text-white">
+                                    <AvatarFallback className="text-xs font-bold bg-[var(--cn-primary)] text-white">
                                         {displayUser.fullname?.charAt(0) || "U"}
                                     </AvatarFallback>
                                 </Avatar>
                                 <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-white" />
                             </button>
                         ) : (
-                            <Link href="/login" className="bg-main text-white px-4 py-2 rounded-lg font-bold text-sm">Đăng nhập</Link>
+                            <Link href="/login" className="bg-[var(--cn-primary)] text-white px-4 py-2 rounded-[var(--cn-radius-sm)] font-bold text-sm">Đăng nhập</Link>
                         )}
                     </div>
                 </div>
             </header>
 
-            <div className="lg:hidden fixed top-0 w-full h-10 bg-white z-50 border-b border-gray-200">
+            <div className="lg:hidden fixed top-0 w-full h-10 bg-[var(--cn-bg-card)] z-50 border-b border-[var(--cn-border)]">
                 <div className="flex h-full justify-between items-center px-2">
                     <Link href="/">
                         <Image src="/images/logo.png" alt="Logo" width={60} height={30} className="object-contain" priority />
@@ -554,16 +554,15 @@ export default function Header() {
                     <div className="flex items-center gap-3">
                         {displayUser && (
                             <div className="flex items-center gap-3">
-                                {/* FIX: Tăng gap và thêm margin để coins và streak không dính nhau */}
                                 <div className="relative flex items-center">
-                                    <div className="border border-gray-300 rounded-2xl pl-1.5 pr-3 py-0.5">
-                                        <p className="text-main text-[10px] font-medium">{formatNumber(displayCoins)}</p>
+                                    <div className="border border-[var(--cn-border)] rounded-2xl pl-1.5 pr-3 py-0.5">
+                                        <p className="text-[var(--cn-primary)] text-[10px] font-medium">{formatNumber(displayCoins)}</p>
                                     </div>
                                     <Image src="/icons/coins.svg" alt="Coins" width={18} height={18} className="absolute -right-2" />
                                 </div>
                                 <div className="relative flex items-center">
-                                    <div className="border border-gray-300 rounded-2xl pl-1.5 pr-4 py-0.5">
-                                        <p className="text-main text-[10px] font-medium">{formatNumber(displayStreak)}</p>
+                                    <div className="border border-[var(--cn-border)] rounded-2xl pl-1.5 pr-4 py-0.5">
+                                        <p className="text-[var(--cn-primary)] text-[10px] font-medium">{formatNumber(displayStreak)}</p>
                                     </div>
                                     <Image src="/icons/streak.svg" alt="Streak" width={20} height={20} className="absolute -right-2" />
                                 </div>
@@ -574,14 +573,14 @@ export default function Header() {
                             <button onClick={() => setSheetOpen(true)} className="relative">
                                 <Avatar className="w-6 h-6">
                                     <AvatarImage src={displayUser.avatar} />
-                                    <AvatarFallback className="text-[10px] font-bold bg-main text-white">
+                                    <AvatarFallback className="text-[10px] font-bold bg-[var(--cn-primary)] text-white">
                                         {displayUser.fullname?.charAt(0) || "U"}
                                     </AvatarFallback>
                                 </Avatar>
                                 <span className="absolute bottom-0 right-0 w-1.5 h-1.5 bg-green-500 rounded-full border border-white" />
                             </button>
                         ) : (
-                            <Link href="/login" className="bg-main text-white px-2 py-1 rounded text-[10px] font-bold">Đăng nhập</Link>
+                            <Link href="/login" className="bg-[var(--cn-primary)] text-white px-2 py-1 rounded text-[10px] font-bold">Đăng nhập</Link>
                         )}
                     </div>
                 </div>
@@ -591,14 +590,14 @@ export default function Header() {
             {displayUser && <MobileUserSheet user={displayUser} onLogout={handleLogout} onClose={() => setSheetOpen(false)} open={sheetOpen} />}
 
             <div className="lg:hidden fixed bottom-0 left-0 w-full z-40">
-                <div className="w-full h-14 bg-white border-t border-gray-200 rounded-t-2xl shadow-[0_-4px_20px_rgba(0,0,0,0.15)] flex items-center px-2">
+                <div className="w-full h-14 bg-[var(--cn-bg-card)] border-t border-[var(--cn-border)] rounded-t-2xl shadow-[0_-4px_20px_rgba(0,0,0,0.15)] flex items-center px-2">
                     {menuMobile.map((item) => {
                         const isActive = pathname === item.link;
                         const IconComp = item.icon;
                         return (
                             <Link key={item.link} href={item.link} className="flex-1 flex flex-col items-center justify-center gap-1 active:scale-95 transition-all">
-                                <IconComp variant="Bold" className={`w-5 h-5 ${isActive ? "text-main" : "text-gray-500"}`} />
-                                <span className={`text-[10px] font-medium ${isActive ? "text-main" : "text-gray-500"}`}>{item.title}</span>
+                                <IconComp variant="Bold" className={`w-5 h-5 ${isActive ? "text-[var(--cn-primary)]" : "text-[var(--cn-text-muted)]"}`} />
+                                <span className={`text-[10px] font-medium ${isActive ? "text-[var(--cn-primary)]" : "text-[var(--cn-text-muted)]"}`}>{item.title}</span>
                             </Link>
                         );
                     })}

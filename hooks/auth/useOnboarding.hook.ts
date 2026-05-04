@@ -1,3 +1,4 @@
+// /hooks/auth/useOnboarding.ts
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
@@ -20,7 +21,11 @@ const PROVINCES: string[] = [
   'Tuyên Quang', 'Vĩnh Long', 'Vĩnh Phúc', 'Yên Bái'
 ]
 
-const CLASSES: string[] = Array.from({ length: 12 }, (_, i) => `Lớp ${i + 1}`)
+const CLASSES: string[] = [
+  ...Array.from({ length: 12 }, (_, i) => `Lớp ${i + 1}`),
+  'Sinh viên',
+  'Khác'
+]
 
 interface ErrorsType {
   username?: string
@@ -152,7 +157,7 @@ export const useOnboarding = () => {
       }
     }
 
-    if (formData.bio.length > 500) {
+    if (formData.bio && formData.bio.length > 500) {
       newErrors.bio = 'Bio không được vượt quá 500 ký tự'
     }
 
