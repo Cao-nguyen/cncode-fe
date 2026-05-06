@@ -1,14 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import {
-    AuthState,
-    User,
-    LoginCredentials,
-    RegisterCredentials,
-    ChangePasswordData,
-    ForgotPasswordData,
-    ResetPasswordData,
-} from '@/types/auth.type';
+import { AuthState, User, LoginCredentials, RegisterCredentials, ChangePasswordData, ForgotPasswordData, ResetPasswordData } from '@/types/auth.type';
 
 const initialState = {
     user: null,
@@ -25,6 +17,11 @@ export const useAuthStore = create<AuthState>()(
         (set, get) => ({
             ...initialState,
 
+            // Thêm method để set hydrated
+            setHydrated: (state: boolean) => {
+                set({ _hasHydrated: state });
+            },
+
             setAuth: (user: User | null, token: string | null): void => {
                 set({
                     user,
@@ -38,7 +35,8 @@ export const useAuthStore = create<AuthState>()(
 
             forceLogout: (): void => {
                 localStorage.removeItem('token');
-                set({ ...initialState, _hasHydrated: get()._hasHydrated });
+                localStorage.removeItem('auth-storage');
+                set({ ...initialState, _hasHydrated: true }); // Giữ lại _hasHydrated = true
             },
 
             checkAndSync: async (): Promise<void> => {
@@ -51,7 +49,7 @@ export const useAuthStore = create<AuthState>()(
                     });
 
                     if (!response.ok) {
-                        set({ ...initialState, _hasHydrated: get()._hasHydrated });
+                        get().forceLogout();
                         return;
                     }
 
@@ -61,10 +59,9 @@ export const useAuthStore = create<AuthState>()(
                         user: userData,
                         coins: userData?.coins ?? 0,
                         isAuthenticated: true,
-                        _hasHydrated: get()._hasHydrated,
                     });
                 } catch {
-                    set({ ...initialState, _hasHydrated: get()._hasHydrated });
+                    get().forceLogout();
                 }
             },
 
@@ -90,7 +87,6 @@ export const useAuthStore = create<AuthState>()(
                         isAuthenticated: true,
                         isLoading: false,
                         error: null,
-                        _hasHydrated: get()._hasHydrated,
                     });
                     localStorage.setItem('token', data.token);
                 } catch (error) {
@@ -124,7 +120,6 @@ export const useAuthStore = create<AuthState>()(
                         isAuthenticated: true,
                         isLoading: false,
                         error: null,
-                        _hasHydrated: get()._hasHydrated,
                     });
                     localStorage.setItem('token', data.token);
                 } catch (error) {
@@ -158,7 +153,6 @@ export const useAuthStore = create<AuthState>()(
                         isAuthenticated: true,
                         isLoading: false,
                         error: null,
-                        _hasHydrated: get()._hasHydrated,
                     });
                     localStorage.setItem('token', result.token);
                 } catch (error) {
@@ -188,7 +182,7 @@ export const useAuthStore = create<AuthState>()(
                 } finally {
                     localStorage.removeItem('token');
                     localStorage.removeItem('auth-storage');
-                    set({ ...initialState, _hasHydrated: get()._hasHydrated });
+                    set({ ...initialState, _hasHydrated: true });
                 }
             },
 
@@ -347,16 +341,18 @@ export const useAuthStore = create<AuthState>()(
                 isAuthenticated: state.isAuthenticated,
             }),
             onRehydrateStorage: () => (state) => {
+                console.log('onRehydrateStorage called:', state);
                 if (state) {
-                    useAuthStore.setState({ _hasHydrated: true });
-                    if (state.token) {
-                        setTimeout(() => {
-                            const store = useAuthStore.getState();
-                            if (store.token) {
-                                store.checkAndSync();
-                            }
-                        }, 0);
-                    }
+                    // Cách 1: Dùng setTimeout để đảm bảo setState sau khi rehydrate
+                    setTimeout(() => {
+                        useAuthStore.setState({ _hasHydrated: true });
+                        console.log('_hasHydrated set to true');
+                    }, 0);
+                } else {
+                    // Nếu không có state, cũng set hydrated = true
+                    setTimeout(() => {
+                        useAuthStore.setState({ _hasHydrated: true });
+                    }, 0);
                 }
             },
         }

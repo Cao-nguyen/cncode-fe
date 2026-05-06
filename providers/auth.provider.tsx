@@ -1,47 +1,27 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { useAuthStore } from "@/store/auth.store";
+import { ReactNode } from 'react';
+import { useAuthStore } from '@/store/auth.store';
 
-export default function AuthProvider({ children }: { children: React.ReactNode }) {
-    const { checkAndSync, token, user, _hasHydrated, forceLogout } = useAuthStore();
-    const [ready, setReady] = useState(false);
+interface AuthProviderProps {
+    children: ReactNode;
+}
 
-    useEffect(() => {
-        // Kiểm tra nếu chưa hydrate xong thì đợi
-        if (!_hasHydrated) {
-            return;
-        }
+export default function AuthProvider({ children }: AuthProviderProps) {
+    const _hasHydrated = useAuthStore((state) => state._hasHydrated);
 
-        const init = async () => {
-            try {
-                // Nếu có token nhưng không có user, sync lại
-                if (token && !user) {
-                    await checkAndSync();
-                }
-
-                // Kiểm tra token có còn hợp lệ không (nếu có token nhưng checkAndSync thất bại)
-                if (token && !useAuthStore.getState().user) {
-                    // Token không hợp lệ -> force logout
-                    forceLogout();
-                }
-            } catch (error) {
-                console.error("AuthProvider init error:", error);
-                forceLogout();
-            } finally {
-                setReady(true);
-            }
-        };
-
-        init();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [_hasHydrated]); // Chạy lại khi hydrate xong
-
-    // Chưa hydrate xong hoặc chưa init xong -> không render
-    if (!_hasHydrated || !ready) {
-        // Có thể hiển thị loading spinner nếu muốn
-        return null;
+    // Hiển thị loading trong khi Zustand persist đang hydrate dữ liệu
+    if (!_hasHydrated) {
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <div className="text-center">
+                    <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                    <p className="mt-3 text-gray-600 font-medium">Đang tải ứng dụng...</p>
+                </div>
+            </div>
+        );
     }
 
+    // Đã hydrate xong, render children bình thường
     return <>{children}</>;
 }

@@ -10,57 +10,49 @@ const protectedRoutes = ['/profile', '/me', '/admin', '/teacher'];
 export const useAuthRedirect = () => {
     const router = useRouter();
     const pathname = usePathname();
-    const { isAuthenticated, user, isLoading, _hasHydrated } = useAuthStore();
+    const { isAuthenticated, user, _hasHydrated } = useAuthStore();
 
     useEffect(() => {
-        // Chờ persist hydrate xong mới redirect
+        // Chờ hydrate xong
         if (!_hasHydrated) return;
 
-        // Chờ loading từ actions (login/logout)
-        if (isLoading) return;
+        const isGuestRoute = guestOnlyRoutes.includes(pathname);
+        const isProtectedRoute = protectedRoutes.some(route => pathname?.startsWith(route));
+        const isOnboardingRoute = pathname === '/onboarding';
 
-        // isAuthenticated = true nhưng user vẫn null → chưa có dữ liệu, chờ
-        if (isAuthenticated && user === null) return;
+        console.log('useAuthRedirect:', { pathname, isAuthenticated, isGuestRoute, isProtectedRoute });
 
-        // Đã đăng nhập mà vào trang guest-only (login, register...) → về trang chủ
-        if (guestOnlyRoutes.includes(pathname) && isAuthenticated) {
-            router.replace('/');
-            return;
-        }
+        // ĐÃ ĐĂNG NHẬP
+        if (isAuthenticated) {
+            // Đang ở guest route (login, register...) -> về home
+            if (isGuestRoute) {
+                router.replace('/');
+                return;
+            }
 
-        // Chưa đăng nhập mà vào route protected → về login
-        const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route));
-        if (isProtectedRoute && !isAuthenticated) {
-            router.replace('/login');
-            return;
-        }
+            // Chưa onboarded và không ở onboarding -> về onboarding
+            if (user?.isOnboarded === false && !isOnboardingRoute) {
+                router.replace('/onboarding');
+                return;
+            }
 
-        // Đã đăng nhập + chưa onboarded + không ở /onboarding → bắt về /onboarding
-        if (isAuthenticated && user?.isOnboarded === false && pathname !== '/onboarding') {
-            router.replace('/onboarding');
-            return;
-        }
-
-        // Đã đăng nhập + đã onboarded + vào /onboarding → về trang chủ
-        if (pathname === '/onboarding' && isAuthenticated && user?.isOnboarded === true) {
-            router.replace('/');
-            return;
-        }
-
-        // Kiểm tra quyền admin
-        if (pathname.startsWith('/admin') && isAuthenticated) {
-            if (user?.role !== 'admin') {
+            // Đã onboarded mà đang ở onboarding -> về home
+            if (isOnboardingRoute && user?.isOnboarded === true) {
                 router.replace('/');
                 return;
             }
         }
-
-        // Kiểm tra quyền teacher
-        if (pathname.startsWith('/teacher') && isAuthenticated) {
-            if (user?.role !== 'teacher' && user?.role !== 'admin') {
-                router.replace('/');
+        // CHƯA ĐĂNG NHẬP
+        else {
+            // Đang ở protected route hoặc onboarding -> về login
+            if (isProtectedRoute || isOnboardingRoute) {
+                router.replace('/login');
                 return;
             }
+
+            // Guest routes (login, register...) -> CHO PHÉP TRUY CẬP
+            // Không làm gì cả
         }
-    }, [pathname, isAuthenticated, user, isLoading, _hasHydrated, router]);
+
+    }, [pathname, isAuthenticated, user, _hasHydrated, router]);
 };

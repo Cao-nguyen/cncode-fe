@@ -1,6 +1,5 @@
 import { ReactNode } from "react";
-import { Metadata } from "@/node_modules/next";
-import { AuthGuard } from "@/components/common/AuthGuard";
+import type { Metadata } from "next"; // Sửa đường dẫn đúng
 
 export const metadata: Metadata = {
     title: "Đăng nhập"
@@ -8,8 +7,9 @@ export const metadata: Metadata = {
 
 export default function LoginLayout({ children }: { children: ReactNode }) {
     return (
-        <AuthGuard>
+        <div>
             {children}
-        </AuthGuard>
-    )
+        </div>
+
+    );
 }
