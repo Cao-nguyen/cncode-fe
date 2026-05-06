@@ -1,65 +1,74 @@
-import React from 'react';
-import { AlertTriangle, X } from 'lucide-react';
+// components/custom/ConfirmationModal.tsx
+'use client';
 
-interface ConfirmationModalProps {
+import React from 'react';
+import { AlertTriangle, X, Loader2 } from 'lucide-react';
+
+interface ConfirmModalDeleteProps {
     isOpen: boolean;
     onClose: () => void;
     onConfirm: () => void;
     title?: string;
     message?: string;
     warning?: string;
-    confirmText?: string;
-    cancelText?: string;
+    isDeleting?: boolean;
 }
 
-export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
+export const ConfirmModalDelete: React.FC<ConfirmModalDeleteProps> = ({
     isOpen,
     onClose,
     onConfirm,
     title = 'Xác nhận hủy',
     message = 'Bạn có chắc chắn muốn hủy thao tác này không?',
     warning = 'Dữ liệu đã nhập sẽ không được lưu lại.',
-    confirmText = 'Xác nhận hủy',
-    cancelText = 'Không, quay lại',
+    isDeleting = false,
 }) => {
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50 animate-fadeIn">
-            <div className="bg-white rounded-xl shadow-xl max-w-md w-full animate-slideUp">
-                <div className="flex items-center justify-between p-6 border-b border-gray-100">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
+            <div
+                className="bg-[var(--cn-bg-card)] rounded-[var(--cn-radius-md)] w-full max-w-md shadow-[var(--cn-shadow-lg)] border border-[var(--cn-border)]"
+                onClick={(e) => e.stopPropagation()}
+            >
+                {/* Header */}
+                <div className="flex items-center justify-between p-5 border-b border-[var(--cn-border)]">
                     <div className="flex items-center gap-3">
-                        <div className="p-2 bg-red-100 rounded-full">
-                            <AlertTriangle className="w-6 h-6 text-red-600" />
+                        <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
+                            <AlertTriangle className="w-5 h-5 text-red-500" />
                         </div>
-                        <h2 className="text-xl font-semibold text-gray-900">{title}</h2>
+                        <h2 className="text-lg font-semibold text-[var(--cn-text-main)]">{title}</h2>
                     </div>
                     <button
                         onClick={onClose}
-                        className="text-gray-400 hover:text-gray-600 transition-colors"
+                        className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-[var(--cn-hover)] transition-colors"
                     >
-                        <X className="w-5 h-5" />
+                        <X className="w-4 h-4 text-[var(--cn-text-muted)]" />
                     </button>
                 </div>
 
-                <div className="p-6">
-                    <p className="text-gray-700 mb-2">{message}</p>
-                    <p className="text-red-600 text-sm">{warning}</p>
-                    <p className="text-xs text-gray-500 mt-3 italic">* Hành động này không thể hoàn tác.</p>
+                {/* Content */}
+                <div className="p-5 space-y-2">
+                    <p className="text-sm text-[var(--cn-text-sub)]">{message}</p>
+                    <p className="text-sm text-red-500">{warning}</p>
+                    <p className="text-xs text-[var(--cn-text-muted)] italic">* Hành động này không thể hoàn tác.</p>
                 </div>
 
-                <div className="flex gap-3 p-6 pt-0">
-                    <button
-                        onClick={onConfirm}
-                        className="flex-1 bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 transition-colors font-medium"
-                    >
-                        {confirmText}
-                    </button>
+                {/* Actions */}
+                <div className="flex gap-3 p-5 pt-0">
                     <button
                         onClick={onClose}
-                        className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg hover:bg-gray-300 transition-colors font-medium"
+                        className="flex-1 px-4 py-2.5 border border-[var(--cn-border)] text-[var(--cn-text-sub)] rounded-[var(--cn-radius-sm)] hover:bg-[var(--cn-hover)] transition-colors text-sm font-medium"
                     >
-                        {cancelText}
+                        Không, quay lại
+                    </button>
+                    <button
+                        onClick={onConfirm}
+                        disabled={isDeleting}
+                        className="flex-1 px-4 py-2.5 bg-red-500 text-white rounded-[var(--cn-radius-sm)] hover:bg-red-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 text-sm font-medium"
+                    >
+                        {isDeleting && <Loader2 className="w-4 h-4 animate-spin" />}
+                        {isDeleting ? 'Đang xóa...' : 'Xác nhận hủy'}
                     </button>
                 </div>
             </div>

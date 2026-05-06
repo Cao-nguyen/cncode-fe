@@ -58,10 +58,20 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
         setIsOpen(false);
     };
 
+    const labelClasses = 'block font-medium text-[var(--cn-text-sub)] mb-1 sm:mb-1.5 text-[11px] lg:text-[13px]';
+    const buttonClasses = `w-full px-3 sm:px-4 py-2 text-left bg-[var(--cn-bg-card)] border rounded-[var(--cn-radius-sm)] flex items-center justify-between transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-[12px] lg:text-[14px] ${error
+        ? 'border-[var(--cn-error)] focus:ring-[var(--cn-error)]/20'
+        : active
+            ? 'border-[var(--cn-primary)] ring-2 ring-[var(--cn-primary)]/20'
+            : isOpen
+                ? 'border-[var(--cn-primary)] ring-2 ring-[var(--cn-primary)]/20'
+                : 'border-[var(--cn-border)] hover:border-[var(--cn-primary)]'
+        }`;
+
     return (
         <div className="w-full" ref={dropdownRef}>
             {label && (
-                <label className="block text-xs sm:text-sm font-medium text-[var(--cn-text-sub)] mb-1.5 sm:mb-2">
+                <label className={labelClasses}>
                     {label}
                     {required && <span className="text-[var(--cn-error)] ml-1">*</span>}
                 </label>
@@ -71,19 +81,12 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
                     type="button"
                     onClick={() => !disabled && setIsOpen(!isOpen)}
                     disabled={disabled}
-                    className={`w-full px-4 py-2.5 text-left bg-[var(--cn-bg-card)] border rounded-[var(--cn-radius-sm)] flex items-center justify-between transition-all duration-200 text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed ${error
-                        ? 'border-[var(--cn-error)] focus:ring-[var(--cn-error)]/20'
-                        : active
-                            ? 'border-[var(--cn-primary)] ring-2 ring-[var(--cn-primary)]/20'
-                            : isOpen
-                                ? 'border-[var(--cn-primary)] ring-2 ring-[var(--cn-primary)]/20'
-                                : 'border-[var(--cn-border)] hover:border-[var(--cn-primary)]'
-                        }`}
+                    className={buttonClasses}
                 >
                     <span className={selected ? 'text-[var(--cn-text-main)]' : 'text-[var(--cn-text-muted)]'}>
                         {selected ? selected.label : placeholder}
                     </span>
-                    <ChevronDown className={`w-4 h-4 text-[var(--cn-text-muted)] transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+                    <ChevronDown className={`w-3.5 h-3.5 lg:w-4 lg:h-4 text-[var(--cn-text-muted)] transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
                 </button>
 
                 {isOpen && !disabled && (
@@ -93,23 +96,23 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
                                 key={option.value}
                                 type="button"
                                 onClick={() => handleSelect(option)}
-                                className="w-full px-3 sm:px-4 py-2.5 text-left hover:bg-[var(--cn-hover)] flex items-center justify-between group transition-colors"
+                                className="w-full px-3 sm:px-4 py-2 text-left hover:bg-[var(--cn-hover)] flex items-center justify-between group transition-colors"
                             >
                                 <div className="flex-1">
-                                    <div className="text-sm sm:text-base font-medium text-[var(--cn-text-main)]">{option.label}</div>
+                                    <div className="text-[12px] lg:text-[14px] font-medium text-[var(--cn-text-main)]">{option.label}</div>
                                     {option.description && (
-                                        <div className="text-xs text-[var(--cn-text-muted)]">{option.description}</div>
+                                        <div className="text-[11px] lg:text-[13px] text-[var(--cn-text-muted)]">{option.description}</div>
                                     )}
                                 </div>
                                 {selected?.value === option.value && (
-                                    <Check className="w-4 h-4 text-[var(--cn-primary)] flex-shrink-0 ml-2" />
+                                    <Check className="w-3.5 h-3.5 lg:w-4 lg:h-4 text-[var(--cn-primary)] flex-shrink-0 ml-2" />
                                 )}
                             </button>
                         ))}
                     </div>
                 )}
             </div>
-            {error && <p className="mt-1.5 text-xs text-[var(--cn-error)]">{error}</p>}
+            {error && <p className="mt-1 text-[11px] lg:text-[13px] text-[var(--cn-error)]">{error}</p>}
         </div>
     );
 };

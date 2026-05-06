@@ -35,10 +35,16 @@ export const CustomTextarea: React.FC<CustomTextareaProps> = ({
         onChange?.(newValue);
     };
 
+    const labelClasses = 'block font-medium text-[var(--cn-text-sub)] mb-1 sm:mb-1.5 text-[11px] lg:text-[13px]';
+    const textareaClasses = `w-full px-3 sm:px-4 py-2 bg-[var(--cn-bg-card)] border rounded-[var(--cn-radius-sm)] transition-all duration-200 outline-none focus:ring-2 resize-none disabled:opacity-50 disabled:cursor-not-allowed text-[12px] lg:text-[14px] ${error
+        ? 'border-[var(--cn-error)] focus:border-[var(--cn-error)] focus:ring-[var(--cn-error)]/20'
+        : 'border-[var(--cn-border)] focus:border-[var(--cn-primary)] focus:ring-[var(--cn-primary)]/20'
+        }`;
+
     return (
         <div className="w-full">
             {label && (
-                <label className="block text-xs sm:text-sm font-medium text-[var(--cn-text-sub)] mb-1.5">
+                <label className={labelClasses}>
                     {label}
                     {required && <span className="text-[var(--cn-error)] ml-1">*</span>}
                 </label>
@@ -50,14 +56,11 @@ export const CustomTextarea: React.FC<CustomTextareaProps> = ({
                 rows={rows}
                 maxLength={maxLength}
                 disabled={disabled}
-                className={`w-full px-4 py-2.5 bg-[var(--cn-bg-card)] border rounded-[var(--cn-radius-sm)] transition-all duration-200 outline-none focus:ring-2 resize-none text-sm sm:text-base text-[var(--cn-text-main)] placeholder:text-[var(--cn-text-muted)] disabled:opacity-50 disabled:cursor-not-allowed ${error
-                    ? 'border-[var(--cn-error)] focus:border-[var(--cn-error)] focus:ring-[var(--cn-error)]/20'
-                    : 'border-[var(--cn-border)] focus:border-[var(--cn-primary)] focus:ring-[var(--cn-primary)]/20'
-                    }`}
+                className={textareaClasses}
             />
-            {error && <p className="mt-1.5 text-xs text-[var(--cn-error)]">{error}</p>}
+            {error && <p className="mt-1 text-[11px] lg:text-[13px] text-[var(--cn-error)]">{error}</p>}
             {maxLength && (
-                <div className="text-right text-[10px] sm:text-xs text-[var(--cn-text-muted)] mt-1">
+                <div className="text-right text-[11px] lg:text-[13px] text-[var(--cn-text-muted)] mt-1">
                     {charCount}/{maxLength}
                 </div>
             )}

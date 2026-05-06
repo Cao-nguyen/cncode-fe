@@ -1,7 +1,6 @@
 // app/admin/users/page.tsx
 'use client';
 
-import { CustomTextarea } from '@/components/custom/CustomTextarea';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuthStore } from '@/store/auth.store';
 import { useSocket } from '@/providers/socket.provider';
@@ -30,12 +29,12 @@ import {
     UserCog,
     X,
     BarChart3,
-    ShoppingCart,
-    FileText,
-    PieChart,
+    Search,
+    Settings,
 } from 'lucide-react';
 import Image from 'next/image';
 import { format } from 'date-fns';
+import { vi } from 'date-fns/locale';
 import {
     BarChart,
     Bar,
@@ -47,106 +46,36 @@ import {
     ResponsiveContainer,
 } from 'recharts';
 import { CustomSelect } from '@/components/custom/CustomSelect';
-import { CustomInput } from '@/components/custom/CustomInput';
 import { DashboardCard } from '@/components/custom/DashboardCard';
 import { CustomInputSearch } from '@/components/custom/CustomInputSearch';
+import { CustomTextarea } from '@/components/custom/CustomTextarea';
+import { toast } from 'sonner';
 
-// ─── Constants ───────────────────────────────────────────────────────────────
+const PAGE_SIZE = 10;
 
 const ROLE_OPTIONS = [
-    { value: '', label: 'Tất cả vai trò' },
+    { value: '', label: 'Tất cả' },
     { value: 'user', label: 'Người dùng' },
     { value: 'teacher', label: 'Giáo viên' },
-    { value: 'admin', label: 'Admin' },
+    { value: 'admin', label: 'Admin' }
 ];
 
-const SORT_OPTIONS = [
-    { value: 'createdAt', label: 'Ngày tạo' },
-    { value: 'fullName', label: 'Tên' },
-    { value: 'coins', label: 'Số xu' },
-    { value: 'streak', label: 'Streak' },
-    { value: 'province', label: 'Tỉnh/Thành phố' },
-    { value: 'lastActiveAt', label: 'Hoạt động gần đây' },
+const STATUS_SELECT_OPTIONS = [
+    { value: 'warn', label: '⚠️ Cảnh cáo' },
+    { value: 'mute', label: '🔇 Cấm chat (7 ngày)' },
+    { value: 'ban', label: '🔴 Khóa tài khoản' }
 ];
 
-const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
-
-// Card configs: icon, màu nền icon, màu icon, màu chart
-// Bạn có thể thêm trendData thật từ API sau
-const CARD_CONFIGS = [
-    {
-        key: 'total',
-        title: 'Tổng người dùng',
-        iconBgColor: '#EFF6FF',
-        iconColor: '#3B82F6',
-        chartColor: '#3B82F6',
-        icon: <Users size={20} />,
-    },
-    {
-        key: 'teachers',
-        title: 'Giáo viên',
-        iconBgColor: '#F0FDF4',
-        iconColor: '#22C55E',
-        chartColor: '#22C55E',
-        icon: <UserCheck size={20} />,
-    },
-    {
-        key: 'admins',
-        title: 'Admin',
-        iconBgColor: '#FFF7ED',
-        iconColor: '#F97316',
-        chartColor: '#F97316',
-        icon: <Shield size={20} />,
-    },
-    {
-        key: 'pending',
-        title: 'Chờ duyệt',
-        iconBgColor: '#F5F3FF',
-        iconColor: '#8B5CF6',
-        chartColor: '#8B5CF6',
-        icon: <UserPlus size={20} />,
-    },
-    {
-        key: 'newThisWeek',
-        title: 'Mới (tuần)',
-        iconBgColor: '#FDF2F8',
-        iconColor: '#EC4899',
-        chartColor: '#EC4899',
-        icon: <UserPlus size={20} />,
-    },
-    {
-        key: 'activeToday',
-        title: 'Hoạt động hôm nay',
-        iconBgColor: '#F0FDFA',
-        iconColor: '#14B8A6',
-        chartColor: '#14B8A6',
-        icon: <Users size={20} />,
-    },
-];
-
-// ─── Custom Tooltip for Bar Chart ────────────────────────────────────────────
-
-const CustomBarTooltip = ({
-    active,
-    payload,
-    label,
-}: {
-    active?: boolean;
-    payload?: Array<{ value: number }>;
-    label?: string;
-}) => {
-    if (active && payload && payload.length) {
-        return (
-            <div className="bg-white dark:bg-gray-800 p-2.5 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700">
-                <p className="font-semibold text-xs mb-0.5 text-gray-700 dark:text-gray-200">{label}</p>
-                <p className="text-xs text-blue-500">{payload[0]?.value?.toLocaleString() || 0} người dùng</p>
-            </div>
-        );
+const getRoleBadge = (role: string) => {
+    switch (role) {
+        case 'admin':
+            return <span className="inline-flex px-2 py-0.5 bg-red-100 text-red-700 rounded-full text-xs font-medium whitespace-nowrap">Admin</span>;
+        case 'teacher':
+            return <span className="inline-flex px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-medium whitespace-nowrap">Giáo viên</span>;
+        default:
+            return <span className="inline-flex px-2 py-0.5 bg-[var(--cn-primary)] text-white rounded-full text-xs font-medium whitespace-nowrap">Người dùng</span>;
     }
-    return null;
 };
-
-// ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function AdminUsersPage() {
     const { token } = useAuthStore();
@@ -170,11 +99,7 @@ export default function AdminUsersPage() {
     const [isTablet, setIsTablet] = useState(false);
 
     const [filters, setFilters] = useState<IUserFilters>({
-        search: '',
-        role: '',
-        status: '',
-        sortBy: 'createdAt',
-        sortOrder: 'desc',
+        search: '', role: '', status: '', sortBy: 'createdAt', sortOrder: 'desc'
     });
 
     const [selectedUser, setSelectedUser] = useState<IUser | null>(null);
@@ -192,7 +117,7 @@ export default function AdminUsersPage() {
 
     const initialFetchDone = useRef(false);
 
-    // ── Responsive ─────────────────────────────────────────────────────────────
+    // Responsive
     useEffect(() => {
         const checkScreen = () => {
             const width = window.innerWidth;
@@ -204,28 +129,24 @@ export default function AdminUsersPage() {
         return () => window.removeEventListener('resize', checkScreen);
     }, []);
 
-    // ── Fetch Helpers ──────────────────────────────────────────────────────────
-    const fetchUsers = useCallback(
-        async (showLoading = true) => {
-            if (!token) return;
-            if (showLoading) setLoading(true);
-            try {
-                const result = await userApi.getAllUsers(token, filters, page, pageSize);
-                if (result.success) {
-                    setUsers(result.data);
-                    if (result.pagination) {
-                        setTotalPages(result.pagination.totalPages);
-                        setTotalUsers(result.pagination.total);
-                    }
+    const fetchUsers = useCallback(async (showLoading = true) => {
+        if (!token) return;
+        if (showLoading) setLoading(true);
+        try {
+            const result = await userApi.getAllUsers(token, filters, page, pageSize);
+            if (result.success) {
+                setUsers(result.data);
+                if (result.pagination) {
+                    setTotalPages(result.pagination.totalPages);
+                    setTotalUsers(result.pagination.total);
                 }
-            } catch (error) {
-                console.error('Failed to fetch users:', error);
-            } finally {
-                if (showLoading) setLoading(false);
             }
-        },
-        [token, page, pageSize, filters]
-    );
+        } catch (error) {
+            console.error('Failed to fetch users:', error);
+        } finally {
+            if (showLoading) setLoading(false);
+        }
+    }, [token, page, pageSize, filters]);
 
     const fetchPendingTeachers = useCallback(async () => {
         if (!token) return;
@@ -263,7 +184,6 @@ export default function AdminUsersPage() {
         }
     }, [token]);
 
-    // ── Init Fetch ─────────────────────────────────────────────────────────────
     useEffect(() => {
         if (token && !initialFetchDone.current) {
             initialFetchDone.current = true;
@@ -282,7 +202,7 @@ export default function AdminUsersPage() {
         if (initialFetchDone.current && page > 0) fetchUsers();
     }, [page]);
 
-    // ── Socket ─────────────────────────────────────────────────────────────────
+    // Socket
     useEffect(() => {
         if (!socket || !isConnected) return;
 
@@ -298,58 +218,31 @@ export default function AdminUsersPage() {
         };
 
         const handleCoinsUpdated = (data: { userId: string; coins: number }) => {
-            setUsers((prev) =>
-                prev.map((user) => (user._id === data.userId ? { ...user, coins: data.coins } : user))
-            );
-            setPendingTeachers((prev) =>
-                prev.map((user) => (user._id === data.userId ? { ...user, coins: data.coins } : user))
-            );
+            setUsers(prev => prev.map(user => user._id === data.userId ? { ...user, coins: data.coins } : user));
+            setPendingTeachers(prev => prev.map(user => user._id === data.userId ? { ...user, coins: data.coins } : user));
             fetchStats();
         };
 
-        const handleRoleChanged = (data: {
-            userId: string;
-            newRole: string;
-            oldRole: string;
-            userName: string;
-        }) => {
-            setUsers((prev) =>
-                prev.map((user) =>
-                    user._id === data.userId
-                        ? { ...user, role: data.newRole as 'user' | 'teacher' | 'admin' }
-                        : user
-                )
-            );
+        const handleRoleChanged = (data: { userId: string; newRole: string; oldRole: string; userName: string }) => {
+            setUsers(prev => prev.map(user => user._id === data.userId ? { ...user, role: data.newRole as 'user' | 'teacher' | 'admin' } : user));
             if (data.newRole === 'teacher') {
-                setPendingTeachers((prev) => prev.filter((user) => user._id !== data.userId));
+                setPendingTeachers(prev => prev.filter(user => user._id !== data.userId));
             }
             fetchStats();
             fetchPendingTeachers();
         };
 
         const handleUserDeleted = (data: { userId: string; userName: string }) => {
-            setUsers((prev) => prev.filter((user) => user._id !== data.userId));
-            setPendingTeachers((prev) => prev.filter((user) => user._id !== data.userId));
+            setUsers(prev => prev.filter(user => user._id !== data.userId));
+            setPendingTeachers(prev => prev.filter(user => user._id !== data.userId));
             fetchStats();
             fetchProvinceStats();
-            setTotalUsers((prev) => prev - 1);
+            setTotalUsers(prev => prev - 1);
         };
 
         const handleStreakUpdated = (data: { userId: string; streak: number; totalCoins: number }) => {
-            setUsers((prev) =>
-                prev.map((user) =>
-                    user._id === data.userId
-                        ? { ...user, streak: data.streak, coins: data.totalCoins }
-                        : user
-                )
-            );
-            setPendingTeachers((prev) =>
-                prev.map((user) =>
-                    user._id === data.userId
-                        ? { ...user, streak: data.streak, coins: data.totalCoins }
-                        : user
-                )
-            );
+            setUsers(prev => prev.map(user => user._id === data.userId ? { ...user, streak: data.streak, coins: data.totalCoins } : user));
+            setPendingTeachers(prev => prev.map(user => user._id === data.userId ? { ...user, streak: data.streak, coins: data.totalCoins } : user));
             fetchStats();
         };
 
@@ -370,17 +263,16 @@ export default function AdminUsersPage() {
         };
     }, [socket, isConnected, activeTab, page, fetchStats, fetchProvinceStats, fetchUsers, fetchPendingTeachers]);
 
-    // ── Actions ────────────────────────────────────────────────────────────────
     const handleApproveTeacher = async (userId: string, approved: boolean) => {
         if (!token) return;
         setActionLoading({ type: 'approve', userId });
         try {
             const result = await userApi.approveTeacherRequest(userId, approved, token);
             if (result.success) {
-                setPendingTeachers((prev) => prev.filter((u) => u._id !== userId));
+                setPendingTeachers(prev => prev.filter(u => u._id !== userId));
                 if (approved) {
-                    setUsers((prev) => {
-                        const idx = prev.findIndex((u) => u._id === userId);
+                    setUsers(prev => {
+                        const idx = prev.findIndex(u => u._id === userId);
                         if (idx !== -1) {
                             const updated = [...prev];
                             updated[idx] = { ...updated[idx], role: 'teacher', requestedRole: null };
@@ -405,15 +297,9 @@ export default function AdminUsersPage() {
         try {
             const result = await userApi.changeUserRole(selectedUser._id, selectedRole, token);
             if (result.success) {
-                setUsers((prev) =>
-                    prev.map((user) =>
-                        user._id === selectedUser._id
-                            ? { ...user, role: selectedRole as 'user' | 'teacher' | 'admin' }
-                            : user
-                    )
-                );
+                setUsers(prev => prev.map(user => user._id === selectedUser._id ? { ...user, role: selectedRole as 'user' | 'teacher' | 'admin' } : user));
                 if (selectedRole === 'teacher') {
-                    setPendingTeachers((prev) => prev.filter((user) => user._id !== selectedUser._id));
+                    setPendingTeachers(prev => prev.filter(user => user._id !== selectedUser._id));
                 }
                 setShowRoleModal(false);
                 setSelectedUser(null);
@@ -430,12 +316,7 @@ export default function AdminUsersPage() {
         if (!selectedUser || !violationReason || !token) return;
         setActionLoading({ type: 'violation', userId: selectedUser._id });
         try {
-            const result = await userApi.markViolation(
-                selectedUser._id,
-                violationReason,
-                violationAction,
-                token
-            );
+            const result = await userApi.markViolation(selectedUser._id, violationReason, violationAction, token);
             if (result.success) {
                 setShowViolationModal(false);
                 setViolationReason('');
@@ -452,20 +333,9 @@ export default function AdminUsersPage() {
         if (!selectedUser || coinAmount === 0 || !token) return;
         setActionLoading({ type: 'coins', userId: selectedUser._id });
         try {
-            const result = await userApi.adjustUserCoins(
-                selectedUser._id,
-                coinAmount,
-                coinReason,
-                token
-            );
+            const result = await userApi.adjustUserCoins(selectedUser._id, coinAmount, coinReason, token);
             if (result.success) {
-                setUsers((prev) =>
-                    prev.map((user) =>
-                        user._id === selectedUser._id
-                            ? { ...user, coins: user.coins + coinAmount }
-                            : user
-                    )
-                );
+                setUsers(prev => prev.map(user => user._id === selectedUser._id ? { ...user, coins: user.coins + coinAmount } : user));
                 setShowCoinModal(false);
                 setCoinAmount(0);
                 setCoinReason('');
@@ -478,12 +348,7 @@ export default function AdminUsersPage() {
     };
 
     const handleDeleteUser = async (user: IUser) => {
-        if (
-            !confirm(
-                `Bạn có chắc chắn muốn xóa người dùng "${user.fullName}"? Hành động này không thể hoàn tác.`
-            )
-        )
-            return;
+        if (!confirm(`Bạn có chắc chắn muốn xóa người dùng "${user.fullName}"?`)) return;
         if (!token) return;
         setActionLoading({ type: 'delete', userId: user._id });
         try {
@@ -492,30 +357,6 @@ export default function AdminUsersPage() {
             console.error('Delete user error:', error);
         } finally {
             setActionLoading(null);
-        }
-    };
-
-    // ── Helpers ────────────────────────────────────────────────────────────────
-    const getRoleBadge = (role: string) => {
-        switch (role) {
-            case 'admin':
-                return (
-                    <span className="inline-block px-1.5 sm:px-2 py-0.5 sm:py-1 bg-red-100 text-red-700 dark:bg-red-950/30 dark:text-red-400 rounded-lg text-[10px] sm:text-xs font-medium whitespace-nowrap">
-                        Admin
-                    </span>
-                );
-            case 'teacher':
-                return (
-                    <span className="inline-block px-1.5 sm:px-2 py-0.5 sm:py-1 bg-green-100 text-green-700 dark:bg-green-950/30 dark:text-green-400 rounded-lg text-[10px] sm:text-xs font-medium whitespace-nowrap">
-                        Giáo viên
-                    </span>
-                );
-            default:
-                return (
-                    <span className="inline-block px-1.5 sm:px-2 py-0.5 sm:py-1 bg-[var(--cn-primary)] text-white rounded-lg text-[10px] sm:text-xs font-medium whitespace-nowrap">
-                        Người dùng
-                    </span>
-                );
         }
     };
 
@@ -536,8 +377,7 @@ export default function AdminUsersPage() {
             } else {
                 pages.push(1);
                 pages.push('...');
-                for (let i = page - (isMobile ? 0 : 1); i <= page + (isMobile ? 0 : 1); i++)
-                    pages.push(i);
+                for (let i = page - (isMobile ? 0 : 1); i <= page + (isMobile ? 0 : 1); i++) pages.push(i);
                 pages.push('...');
                 pages.push(totalPages);
             }
@@ -545,88 +385,64 @@ export default function AdminUsersPage() {
         return pages;
     };
 
-    // Resolve stat value for each card
-    const getCardValue = (key: string): number => {
-        if (!stats && key !== 'pending') return 0;
-        switch (key) {
-            case 'total':
-                return stats?.total ?? 0;
-            case 'teachers':
-                return stats?.teachers ?? 0;
-            case 'admins':
-                return stats?.admins ?? 0;
-            case 'pending':
-                return pendingTeachers.length;
-            case 'newThisWeek':
-                return stats?.newThisWeek ?? 0;
-            case 'activeToday':
-                return stats?.activeToday ?? 0;
-            default:
-                return 0;
-        }
-    };
+    const getUserInitial = (user: IUser) => user.fullName?.charAt(0).toUpperCase() || '?';
+    const formatDate = (date: string) => format(new Date(date), 'dd/MM/yyyy', { locale: vi });
 
-    const topProvinces = provinceStats.slice(0, 10);
+    const cardConfigs = [
+        { key: 'total', title: 'Tổng người dùng', value: stats?.total || 0, iconBgColor: '#EFF6FF', iconColor: '#3B82F6', icon: <Users size={18} /> },
+        { key: 'teachers', title: 'Giáo viên', value: stats?.teachers || 0, iconBgColor: '#F0FDF4', iconColor: '#22C55E', icon: <UserCheck size={18} /> },
+        { key: 'admins', title: 'Admin', value: stats?.admins || 0, iconBgColor: '#FFF7ED', iconColor: '#F97316', icon: <Shield size={18} /> },
+        { key: 'pending', title: 'Chờ duyệt', value: pendingTeachers.length, iconBgColor: '#F5F3FF', iconColor: '#8B5CF6', icon: <UserPlus size={18} /> },
+        { key: 'newWeek', title: 'Mới (tuần)', value: stats?.newThisWeek || 0, iconBgColor: '#FDF2F8', iconColor: '#EC4899', icon: <UserPlus size={18} /> },
+        { key: 'activeToday', title: 'Hoạt động hôm nay', value: stats?.activeToday || 0, iconBgColor: '#F0FDFA', iconColor: '#14B8A6', icon: <Users size={18} /> },
+    ];
 
-    // ── Loading ────────────────────────────────────────────────────────────────
     if (loading && users.length === 0) {
-        return (
-            <div className="flex items-center justify-center min-h-[400px]">
-                <Loader2 className="w-8 h-8 animate-spin text-[var(--cn-primary)]" />
-            </div>
-        );
+        return <div className="flex items-center justify-center min-h-[400px]"><Loader2 className="w-8 h-8 animate-spin text-[var(--cn-primary)]" /></div>;
     }
 
-    // ── Render ─────────────────────────────────────────────────────────────────
     return (
-        <div className="space-y-4 sm:space-y-6 pb-8">
-            {/* ── Header ── */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+        <div className="space-y-6 pb-8 px-3 sm:px-4">
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
-                    <h1 className="text-xl sm:text-2xl font-bold text-[var(--cn-text-main)]">
-                        Quản lý người dùng
-                    </h1>
-                    <p className="text-xs sm:text-sm text-[var(--cn-text-muted)] mt-0.5">
-                        Quản lý tất cả người dùng · Dữ liệu realtime
-                    </p>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-[var(--cn-text-main)]">Quản lý người dùng</h1>
+                    <p className="text-sm text-[var(--cn-text-muted)] mt-1">Quản lý tất cả người dùng trên hệ thống</p>
+                </div>
+                <div className="bg-[var(--cn-primary)]/10 px-4 py-2 rounded-full">
+                    <span className="text-sm font-medium text-[var(--cn-primary)]">Tổng: {totalUsers} người</span>
                 </div>
             </div>
 
-            {/* ── Stats Cards ── */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
-                {CARD_CONFIGS.map((cfg) => (
+            {/* Stats Cards */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                {cardConfigs.map((card) => (
                     <DashboardCard
-                        key={cfg.key}
-                        title={cfg.title}
-                        value={getCardValue(cfg.key)}
-                        icon={cfg.icon}
-                        iconBgColor={cfg.iconBgColor}
-                        iconColor={cfg.iconColor}
-                        chartColor={cfg.chartColor}
-                    // trendData: truyền dữ liệu thực từ API nếu có
-                    // change: truyền % thay đổi nếu API trả về
+                        key={card.key}
+                        title={card.title}
+                        value={card.value}
+                        icon={card.icon}
+                        iconBgColor={card.iconBgColor}
+                        iconColor={card.iconColor}
+                        change={0}
+                        trend="neutral"
                     />
                 ))}
             </div>
 
-            {/* ── Province Chart ── */}
-            <div className="rounded-[var(--cn-radius-md)] p-4 sm:p-5 shadow-[var(--cn-shadow-sm)] border border-[var(--cn-border)] bg-[var(--cn-bg-card)]">
-                <div className="flex items-center gap-2 mb-3 sm:mb-4">
-                    <BarChart3
-                        size={isMobile ? 18 : 20}
-                        className="text-[var(--cn-primary)]"
-                    />
-                    <h2 className="text-base sm:text-lg font-semibold text-[var(--cn-text-main)]">
-                        Thống kê người dùng theo tỉnh thành
-                    </h2>
+            {/* Biểu đồ thống kê theo tỉnh thành */}
+            <div className="bg-[var(--cn-bg-card)] rounded-xl p-4 shadow-sm border border-[var(--cn-border)]">
+                <div className="flex items-center gap-2 mb-4">
+                    <BarChart3 size={20} className="text-[var(--cn-primary)]" />
+                    <h2 className="text-base font-semibold text-[var(--cn-text-main)]">Thống kê người dùng theo tỉnh thành</h2>
                 </div>
 
                 {loadingProvince ? (
-                    <div className="flex justify-center items-center h-48 sm:h-64">
-                        <Loader2 className="w-6 h-6 sm:w-8 sm:h-8 animate-spin text-[var(--cn-primary)]" />
+                    <div className="flex justify-center items-center h-48">
+                        <Loader2 className="w-8 h-8 animate-spin text-[var(--cn-primary)]" />
                     </div>
                 ) : provinceStats.length === 0 ? (
-                    <div className="text-center py-8 sm:py-12 text-[var(--cn-text-muted)] text-sm sm:text-base">
+                    <div className="text-center py-8 text-[var(--cn-text-muted)]">
                         Chưa có dữ liệu thống kê theo tỉnh thành
                     </div>
                 ) : (
@@ -634,88 +450,53 @@ export default function AdminUsersPage() {
                         <div className="overflow-x-auto">
                             <div className="min-w-[500px]">
                                 <ResponsiveContainer width="100%" height={isMobile ? 300 : 400}>
-                                    <BarChart
-                                        data={topProvinces}
-                                        margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
-                                    >
-                                        <CartesianGrid
-                                            strokeDasharray="3 3"
-                                            stroke="var(--cn-border)"
-                                        />
-                                        <XAxis
-                                            dataKey="_id"
-                                            angle={-45}
-                                            textAnchor="end"
-                                            height={70}
-                                            interval={0}
-                                            tick={{
-                                                fontSize: isMobile ? 10 : 12,
-                                                fill: 'var(--cn-text-muted)',
-                                            }}
-                                        />
-                                        <YAxis
-                                            tick={{
-                                                fontSize: isMobile ? 10 : 12,
-                                                fill: 'var(--cn-text-muted)',
-                                            }}
-                                        />
-                                        <Tooltip content={<CustomBarTooltip />} />
-                                        <Legend
-                                            wrapperStyle={{ color: 'var(--cn-text-muted)' }}
-                                        />
-                                        <Bar
-                                            dataKey="count"
-                                            fill="var(--cn-primary)"
-                                            name="Số lượng người dùng"
-                                            radius={[4, 4, 0, 0]}
-                                        />
+                                    <BarChart data={provinceStats.slice(0, 10)} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
+                                        <CartesianGrid strokeDasharray="3 3" stroke="var(--cn-border)" />
+                                        <XAxis dataKey="_id" angle={-45} textAnchor="end" height={70} interval={0} tick={{ fontSize: isMobile ? 10 : 12, fill: 'var(--cn-text-muted)' }} />
+                                        <YAxis tick={{ fontSize: isMobile ? 10 : 12, fill: 'var(--cn-text-muted)' }} />
+                                        <Tooltip content={({ active, payload, label }) => {
+                                            if (active && payload && payload.length) {
+                                                return (
+                                                    <div className="bg-[var(--cn-bg-card)] p-2 rounded-lg shadow-lg border border-[var(--cn-border)]">
+                                                        <p className="font-semibold text-xs mb-1">{label}</p>
+                                                        <p className="text-xs text-[var(--cn-primary)]">{payload[0]?.value?.toLocaleString()} người dùng</p>
+                                                    </div>
+                                                );
+                                            }
+                                            return null;
+                                        }} />
+                                        <Legend wrapperStyle={{ color: 'var(--cn-text-muted)' }} />
+                                        <Bar dataKey="count" fill="var(--cn-primary)" name="Số lượng người dùng" radius={[4, 4, 0, 0]} />
                                     </BarChart>
                                 </ResponsiveContainer>
                             </div>
                         </div>
 
-                        {/* Province table */}
-                        <div className="mt-4 sm:mt-6 overflow-x-auto">
-                            <table className="w-full text-xs sm:text-sm">
+                        {/* Bảng tỉnh thành */}
+                        <div className="mt-6 overflow-x-auto">
+                            <table className="w-full text-sm">
                                 <thead className="bg-[var(--cn-primary)]/5">
                                     <tr>
-                                        <th className="text-left p-2 sm:p-3 font-semibold text-[var(--cn-primary)]">#</th>
-                                        <th className="text-left p-2 sm:p-3 font-semibold text-[var(--cn-primary)]">Tỉnh/TP</th>
-                                        <th className="text-left p-2 sm:p-3 font-semibold text-[var(--cn-primary)]">Số lượng</th>
-                                        <th className="text-left p-2 sm:p-3 font-semibold text-[var(--cn-primary)]">Tỉ lệ</th>
+                                        <th className="text-left p-3 font-semibold text-[var(--cn-primary)]">#</th>
+                                        <th className="text-left p-3 font-semibold text-[var(--cn-primary)]">Tỉnh/TP</th>
+                                        <th className="text-left p-3 font-semibold text-[var(--cn-primary)]">Số lượng</th>
+                                        <th className="text-left p-3 font-semibold text-[var(--cn-primary)]">Tỉ lệ</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-[var(--cn-border)]">
                                     {provinceStats.map((province, idx) => {
-                                        const percentage =
-                                            totalUsers > 0
-                                                ? ((province.count / totalUsers) * 100).toFixed(1)
-                                                : '0';
+                                        const percentage = totalUsers > 0 ? ((province.count / totalUsers) * 100).toFixed(1) : '0';
                                         return (
-                                            <tr
-                                                key={province._id}
-                                                className="hover:bg-[var(--cn-hover)] transition"
-                                            >
-                                                <td className="p-2 sm:p-3 text-[var(--cn-text-sub)]">
-                                                    {idx + 1}
-                                                </td>
-                                                <td className="p-2 sm:p-3 font-medium text-[var(--cn-text-main)]">
-                                                    {province._id}
-                                                </td>
-                                                <td className="p-2 sm:p-3 text-[var(--cn-text-sub)]">
-                                                    {province.count.toLocaleString()} người
-                                                </td>
-                                                <td className="p-2 sm:p-3">
-                                                    <div className="flex items-center gap-1 sm:gap-2">
-                                                        <div className="flex-1 h-1.5 sm:h-2 bg-[var(--cn-border)] rounded-full overflow-hidden">
-                                                            <div
-                                                                className="h-full bg-[var(--cn-primary)] rounded-full"
-                                                                style={{ width: `${percentage}%` }}
-                                                            />
+                                            <tr key={province._id} className="hover:bg-[var(--cn-hover)] transition">
+                                                <td className="p-3 text-[var(--cn-text-sub)]">{idx + 1}</td>
+                                                <td className="p-3 font-medium text-[var(--cn-text-main)]">{province._id}</td>
+                                                <td className="p-3 text-[var(--cn-text-sub)]">{province.count.toLocaleString()} người</td>
+                                                <td className="p-3">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="flex-1 h-2 bg-[var(--cn-border)] rounded-full overflow-hidden">
+                                                            <div className="h-full bg-[var(--cn-primary)] rounded-full" style={{ width: `${percentage}%` }} />
                                                         </div>
-                                                        <span className="text-[10px] sm:text-xs text-[var(--cn-text-muted)] w-10 sm:w-12">
-                                                            {percentage}%
-                                                        </span>
+                                                        <span className="text-xs text-[var(--cn-text-muted)] w-12">{percentage}%</span>
                                                     </div>
                                                 </td>
                                             </tr>
@@ -728,728 +509,221 @@ export default function AdminUsersPage() {
                 )}
             </div>
 
-            {/* ── Tabs ── */}
-            <div className="flex gap-2 border-b border-[var(--cn-border)] overflow-x-auto">
-                <button
-                    onClick={() => setActiveTab('all')}
-                    className={`px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium whitespace-nowrap transition ${activeTab === 'all'
-                        ? 'border-b-2 border-[var(--cn-primary)] text-[var(--cn-primary)]'
-                        : 'text-[var(--cn-text-muted)] hover:text-[var(--cn-text-sub)]'
-                        }`}
-                >
-                    Tất cả người dùng{' '}
-                    <span className="ml-1 text-xs text-[var(--cn-text-muted)]">({totalUsers})</span>
+            {/* Tabs */}
+            <div className="flex gap-2 border-b border-[var(--cn-border)]">
+                <button onClick={() => setActiveTab('all')} className={`px-4 py-2 text-sm font-medium transition ${activeTab === 'all' ? 'border-b-2 border-[var(--cn-primary)] text-[var(--cn-primary)]' : 'text-[var(--cn-text-muted)]'}`}>
+                    Tất cả người dùng <span className="ml-1 text-xs">({totalUsers})</span>
                 </button>
-                <button
-                    onClick={() => setActiveTab('pending')}
-                    className={`px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium whitespace-nowrap transition flex items-center gap-1 ${activeTab === 'pending'
-                        ? 'border-b-2 border-[var(--cn-primary)] text-[var(--cn-primary)]'
-                        : 'text-[var(--cn-text-muted)] hover:text-[var(--cn-text-sub)]'
-                        }`}
-                >
+                <button onClick={() => setActiveTab('pending')} className={`px-4 py-2 text-sm font-medium transition flex items-center gap-1 ${activeTab === 'pending' ? 'border-b-2 border-[var(--cn-primary)] text-[var(--cn-primary)]' : 'text-[var(--cn-text-muted)]'}`}>
                     Giáo viên chờ duyệt
-                    {pendingTeachers.length > 0 && (
-                        <span className="px-1.5 py-0.5 bg-[var(--cn-primary)] text-white rounded-full text-[10px] animate-pulse">
-                            {pendingTeachers.length}
-                        </span>
-                    )}
+                    {pendingTeachers.length > 0 && <span className="px-1.5 py-0.5 bg-[var(--cn-primary)] text-white rounded-full text-xs animate-pulse">{pendingTeachers.length}</span>}
                 </button>
             </div>
 
-            {/* ── Filters ── */}
-            <div className="rounded-[var(--cn-radius-md)] p-4 sm:p-5 shadow-[var(--cn-shadow-sm)] border border-[var(--cn-border)] bg-[var(--cn-bg-card)]">
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-                    <CustomInputSearch
-                        value={filters.search}
-                        onChange={(value) => setFilters((prev) => ({ ...prev, search: value }))}
-                        onSearch={(value) => {
-                            setFilters((prev) => ({ ...prev, search: value }));
-                            setPage(1);
-                        }}
-                        placeholder="Tìm kiếm tên, email..."
-                        size="medium"
-                        variant="default"
-                    />
-                    <CustomSelect
-                        value={filters.role}
-                        onChange={(value) => setFilters((prev) => ({ ...prev, role: value }))}
-                        options={ROLE_OPTIONS}
-                        placeholder="Chọn vai trò"
-                    />
-                    <CustomSelect
-                        value={filters.sortBy}
-                        onChange={(value) => setFilters((prev) => ({ ...prev, sortBy: value }))}
-                        options={SORT_OPTIONS}
-                        placeholder="Sắp xếp theo"
-                    />
-                    <CustomSelect
-                        value={filters.sortOrder}
-                        onChange={(value) =>
-                            setFilters((prev) => ({
-                                ...prev,
-                                sortOrder: value as 'asc' | 'desc',
-                            }))
-                        }
-                        options={[
-                            { value: 'desc', label: 'Mới nhất' },
-                            { value: 'asc', label: 'Cũ nhất' },
-                        ]}
-                        placeholder="Thứ tự"
-                    />
+            {/* Filters */}
+            <div className="bg-[var(--cn-bg-card)] rounded-xl p-4 shadow-sm border border-[var(--cn-border)]">
+                <div className="flex flex-wrap gap-3 items-center">
+                    <div className="flex-1 min-w-[200px]">
+                        <CustomInputSearch
+                            placeholder="Tìm kiếm theo tên hoặc email..."
+                            value={filters.search}
+                            onChange={(value) => setFilters(prev => ({ ...prev, search: value }))}
+                            onSearch={(value) => { setFilters(prev => ({ ...prev, search: value })); setPage(1); }}
+                            size="medium"
+                            variant="default"
+                        />
+                    </div>
+                    <div className="w-48">
+                        <CustomSelect
+                            value={filters.role}
+                            onChange={(value) => setFilters(prev => ({ ...prev, role: value }))}
+                            options={ROLE_OPTIONS}
+                            placeholder="Chọn vai trò"
+                        />
+                    </div>
+                    <button onClick={() => fetchUsers()} className="px-5 py-2.5 bg-[var(--cn-primary)] text-white rounded-xl text-sm font-medium hover:bg-[var(--cn-primary-hover)] transition flex items-center gap-2">
+                        <Search size={16} /> Tìm kiếm
+                    </button>
                 </div>
             </div>
 
-            {/* ── Users Table ── */}
-            <div className="rounded-[var(--cn-radius-md)] shadow-[var(--cn-shadow-sm)] border border-[var(--cn-border)] overflow-hidden bg-[var(--cn-bg-card)]">
+            {/* Table */}
+            <div className="bg-[var(--cn-bg-card)] rounded-xl shadow-sm border border-[var(--cn-border)] overflow-hidden">
                 <div className="overflow-x-auto">
-                    <table className="w-full min-w-[900px] lg:min-w-full">
+                    <table className="w-full min-w-[900px]">
                         <thead className="bg-[var(--cn-primary)]/5 border-b border-[var(--cn-border)]">
                             <tr>
-                                <th className="text-left px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm font-semibold text-[var(--cn-primary)] whitespace-nowrap">
-                                    Người dùng
-                                </th>
-                                <th className="text-left px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm font-semibold text-[var(--cn-primary)] whitespace-nowrap">
-                                    Vai trò
-                                </th>
-                                <th className="text-left px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm font-semibold text-[var(--cn-primary)] whitespace-nowrap">
-                                    Tỉnh/TP
-                                </th>
-                                <th className="text-left px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm font-semibold text-[var(--cn-primary)] whitespace-nowrap">
-                                    Xu
-                                </th>
-                                <th className="text-left px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm font-semibold text-[var(--cn-primary)] whitespace-nowrap">
-                                    Streak
-                                </th>
-                                <th className="text-left px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm font-semibold text-[var(--cn-primary)] whitespace-nowrap">
-                                    Tham gia
-                                </th>
-                                <th className="text-center px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm font-semibold text-[var(--cn-primary)] whitespace-nowrap">
-                                    Thao tác
-                                </th>
+                                <th className="text-left px-5 py-4 text-xs font-semibold text-[var(--cn-text-muted)] uppercase">Người dùng</th>
+                                <th className="text-left px-5 py-4 text-xs font-semibold text-[var(--cn-text-muted)] uppercase">Vai trò</th>
+                                <th className="text-left px-5 py-4 text-xs font-semibold text-[var(--cn-text-muted)] uppercase">Tỉnh/TP</th>
+                                <th className="text-left px-5 py-4 text-xs font-semibold text-[var(--cn-text-muted)] uppercase">Xu</th>
+                                <th className="text-left px-5 py-4 text-xs font-semibold text-[var(--cn-text-muted)] uppercase">Streak</th>
+                                <th className="text-left px-5 py-4 text-xs font-semibold text-[var(--cn-text-muted)] uppercase">Tham gia</th>
+                                <th className="text-center px-5 py-4 text-xs font-semibold text-[var(--cn-text-muted)] uppercase">Thao tác</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-[var(--cn-border)]">
-                            {(activeTab === 'all' ? users : pendingTeachers).map((user) => (
-                                <tr key={user._id} className="hover:bg-[var(--cn-hover)] transition">
-                                    {/* Avatar + Name */}
-                                    <td className="px-3 sm:px-4 py-3 sm:py-4">
-                                        <div className="flex items-center gap-2 sm:gap-3">
-                                            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[var(--cn-primary)]/10 overflow-hidden flex-shrink-0">
+                            {loading ? (
+                                <tr><td colSpan={7} className="text-center py-16"><Loader2 className="w-8 h-8 animate-spin text-[var(--cn-primary)] mx-auto" /><p className="text-sm text-[var(--cn-text-muted)] mt-3">Đang tải dữ liệu...</p></td></tr>
+                            ) : (activeTab === 'all' ? users : pendingTeachers).length === 0 ? (
+                                <tr><td colSpan={7} className="text-center py-16"><Users size={48} className="text-[var(--cn-text-muted)] mx-auto" /><p className="text-gray-400 mt-2">Không có người dùng nào</p></td></tr>
+                            ) : (activeTab === 'all' ? users : pendingTeachers).map((user) => (
+                                <tr key={user._id} className="hover:bg-[var(--cn-hover)] transition cursor-pointer group" onClick={() => { setSelectedUser(user); setShowUserModal(true); }}>
+                                    <td className="px-5 py-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-9 h-9 rounded-full bg-[var(--cn-primary)]/10 flex items-center justify-center">
                                                 {user.avatar ? (
-                                                    <Image
-                                                        src={user.avatar}
-                                                        alt={user.fullName}
-                                                        width={40}
-                                                        height={40}
-                                                        className="w-full h-full object-cover"
-                                                    />
+                                                    <Image src={user.avatar} alt={user.fullName} width={36} height={36} className="w-full h-full rounded-full object-cover" />
                                                 ) : (
-                                                    <div className="w-full h-full flex items-center justify-center text-base sm:text-lg font-semibold text-[var(--cn-primary)]">
-                                                        {user.fullName.charAt(0).toUpperCase()}
-                                                    </div>
+                                                    <span className="text-sm font-semibold text-[var(--cn-primary)]">{getUserInitial(user)}</span>
                                                 )}
                                             </div>
-                                            <div className="min-w-0">
-                                                <p className="font-medium text-sm sm:text-base text-[var(--cn-text-main)] truncate max-w-[120px] sm:max-w-[180px] lg:max-w-[200px]">
-                                                    {user.fullName}
-                                                </p>
-                                                <p className="text-xs sm:text-sm text-[var(--cn-text-muted)] truncate max-w-[110px] sm:max-w-[160px] lg:max-w-[180px]">
-                                                    {user.email}
-                                                </p>
-                                                {user.username && (
-                                                    <p className="text-[10px] sm:text-xs text-[var(--cn-primary)]/60 truncate max-w-[110px] sm:max-w-[160px] lg:max-w-[180px]">
-                                                        @{user.username}
-                                                    </p>
-                                                )}
+                                            <div>
+                                                <p className="text-sm font-medium text-[var(--cn-text-main)]">{user.fullName}</p>
+                                                <p className="text-xs text-[var(--cn-text-muted)]">{user.email}</p>
                                             </div>
                                         </div>
                                     </td>
-
-                                    {/* Role */}
-                                    <td className="px-3 sm:px-4 py-3 sm:py-4">
-                                        <div className="flex flex-col gap-1.5">
-                                            <div className="inline-block w-fit">
+                                    <td className="px-5 py-4 whitespace-nowrap">
+                                        <div className="flex flex-col gap-1">
+                                            <div className="inline-flex w-fit">
                                                 {getRoleBadge(user.role)}
                                             </div>
-                                            {activeTab === 'pending' &&
-                                                user.requestedRole === 'teacher' && (
-                                                    <div className="flex flex-row items-center gap-1">
-                                                        <button
-                                                            onClick={() =>
-                                                                handleApproveTeacher(user._id, true)
-                                                            }
-                                                            disabled={
-                                                                actionLoading?.userId === user._id
-                                                            }
-                                                            className="inline-flex items-center justify-center gap-0.5 px-1.5 py-0.5 bg-green-100 text-green-700 rounded-md text-[10px] sm:text-xs hover:bg-green-200 disabled:opacity-50 transition whitespace-nowrap"
-                                                        >
-                                                            {actionLoading?.userId === user._id ? (
-                                                                <Loader2 className="w-2.5 h-2.5 animate-spin" />
-                                                            ) : (
-                                                                <CheckCircle size={10} />
-                                                            )}
-                                                            <span>Duyệt</span>
-                                                        </button>
-                                                        <button
-                                                            onClick={() =>
-                                                                handleApproveTeacher(user._id, false)
-                                                            }
-                                                            disabled={
-                                                                actionLoading?.userId === user._id
-                                                            }
-                                                            className="inline-flex items-center justify-center gap-0.5 px-1.5 py-0.5 bg-red-100 text-red-700 rounded-md text-[10px] sm:text-xs hover:bg-red-200 disabled:opacity-50 transition whitespace-nowrap"
-                                                        >
-                                                            <XCircle size={10} />
-                                                            <span>Từ chối</span>
-                                                        </button>
-                                                    </div>
-                                                )}
+                                            {activeTab === 'pending' && user.requestedRole === 'teacher' && (
+                                                <div className="flex gap-1">
+                                                    <button onClick={(e) => { e.stopPropagation(); handleApproveTeacher(user._id, true); }} className="px-2 py-0.5 bg-green-100 text-green-700 rounded text-xs hover:bg-green-200 whitespace-nowrap"><CheckCircle size={10} className="inline mr-0.5" /> Duyệt</button>
+                                                    <button onClick={(e) => { e.stopPropagation(); handleApproveTeacher(user._id, false); }} className="px-2 py-0.5 bg-red-100 text-red-700 rounded text-xs hover:bg-red-200 whitespace-nowrap"><XCircle size={10} className="inline mr-0.5" /> Từ chối</button>
+                                                </div>
+                                            )}
                                         </div>
                                     </td>
-
-                                    {/* Province */}
-                                    <td className="px-3 sm:px-4 py-3 sm:py-4">
+                                    <td className="px-5 py-4 whitespace-nowrap">
                                         <div className="flex items-center gap-1">
-                                            <MapPin
-                                                size={12}
-                                                className="text-[var(--cn-text-muted)] flex-shrink-0"
-                                            />
-                                            <span className="text-xs sm:text-sm text-[var(--cn-text-sub)] truncate max-w-[80px] sm:max-w-[110px] lg:max-w-[130px]">
-                                                {user.province || '---'}
-                                            </span>
+                                            <MapPin size={14} className="text-[var(--cn-text-muted)] flex-shrink-0" />
+                                            <span className="text-sm text-[var(--cn-text-sub)] truncate max-w-[120px]">{user.province || '---'}</span>
                                         </div>
                                     </td>
-
-                                    {/* Coins */}
-                                    <td className="px-3 sm:px-4 py-3 sm:py-4">
-                                        <div className="flex items-center gap-1 sm:gap-1.5">
-                                            <span className="font-semibold text-[var(--cn-primary)] text-sm sm:text-base whitespace-nowrap">
-                                                {user.coins.toLocaleString()}
-                                            </span>
-                                            <button
-                                                onClick={() => {
-                                                    setSelectedUser(user);
-                                                    setShowCoinModal(true);
-                                                }}
-                                                className="p-0.5 sm:p-1 text-[var(--cn-text-muted)] hover:text-[var(--cn-primary)] rounded transition flex-shrink-0"
-                                                title="Điều chỉnh xu"
-                                            >
-                                                <Coins size={12} />
-                                            </button>
+                                    <td className="px-5 py-4 whitespace-nowrap">
+                                        <div className="flex items-center gap-1.5">
+                                            <span className="font-semibold text-[var(--cn-primary)]">{user.coins.toLocaleString()}</span>
+                                            <button onClick={(e) => { e.stopPropagation(); setSelectedUser(user); setShowCoinModal(true); }} className="p-1 text-[var(--cn-text-muted)] hover:text-[var(--cn-primary)] rounded transition"><Coins size={14} /></button>
                                         </div>
                                     </td>
-
-                                    {/* Streak */}
-                                    <td className="px-3 sm:px-4 py-3 sm:py-4">
-                                        <span className="text-[var(--cn-primary)] text-sm sm:text-base font-medium whitespace-nowrap">
-                                            {user.streak}
-                                        </span>
-                                    </td>
-
-                                    {/* Join date */}
-                                    <td className="px-3 sm:px-4 py-3 sm:py-4">
-                                        <span className="text-xs sm:text-sm text-[var(--cn-text-muted)] whitespace-nowrap">
-                                            {format(new Date(user.createdAt), 'dd/MM/yyyy')}
-                                        </span>
-                                    </td>
-
-                                    {/* Actions */}
-                                    <td className="px-3 sm:px-4 py-3 sm:py-4">
-                                        <div className="flex items-center justify-center gap-0.5 sm:gap-1">
-                                            <button
-                                                onClick={() => {
-                                                    setSelectedUser(user);
-                                                    setShowUserModal(true);
-                                                }}
-                                                className="p-1 sm:p-1.5 text-[var(--cn-primary)] hover:bg-[var(--cn-primary)]/10 rounded-[var(--cn-radius-sm)] transition"
-                                                title="Chi tiết"
-                                            >
-                                                <Eye size={isTablet ? 12 : 14} />
-                                            </button>
-                                            <button
-                                                onClick={() => {
-                                                    setSelectedUser(user);
-                                                    setShowRoleModal(true);
-                                                    setSelectedRole(user.role);
-                                                }}
-                                                className="p-1 sm:p-1.5 text-purple-600 hover:bg-purple-100 rounded-[var(--cn-radius-sm)] transition"
-                                                title="Đổi vai trò"
-                                            >
-                                                <UserCog size={isTablet ? 12 : 14} />
-                                            </button>
-                                            <button
-                                                onClick={() => {
-                                                    setSelectedUser(user);
-                                                    setShowViolationModal(true);
-                                                }}
-                                                className="p-1 sm:p-1.5 text-amber-600 hover:bg-amber-100 rounded-[var(--cn-radius-sm)] transition"
-                                                title="Vi phạm"
-                                            >
-                                                <AlertTriangle size={isTablet ? 12 : 14} />
-                                            </button>
-                                            <button
-                                                onClick={() => handleDeleteUser(user)}
-                                                disabled={actionLoading?.userId === user._id}
-                                                className="p-1 sm:p-1.5 text-red-600 hover:bg-red-100 rounded-[var(--cn-radius-sm)] transition disabled:opacity-50"
-                                                title="Xóa"
-                                            >
-                                                {actionLoading?.userId === user._id ? (
-                                                    <Loader2 className="w-3 h-3 animate-spin" />
-                                                ) : (
-                                                    <Trash2 size={isTablet ? 12 : 14} />
-                                                )}
-                                            </button>
+                                    <td className="px-5 py-4"><span className="text-[var(--cn-primary)] font-medium">{user.streak}</span></td>
+                                    <td className="px-5 py-4"><span className="text-sm text-[var(--cn-text-muted)]">{formatDate(user.createdAt)}</span></td>
+                                    <td className="px-5 py-4">
+                                        <div className="flex items-center justify-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                                            <button onClick={() => { setSelectedUser(user); setShowUserModal(true); }} className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition"><Eye size={16} /></button>
+                                            <button onClick={() => { setSelectedUser(user); setShowRoleModal(true); setSelectedRole(user.role); }} className="p-2 text-purple-500 hover:bg-purple-50 rounded-lg transition"><Settings size={16} /></button>
+                                            <button onClick={() => { setSelectedUser(user); setShowViolationModal(true); }} className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition"><AlertTriangle size={16} /></button>
+                                            <button onClick={() => handleDeleteUser(user)} disabled={actionLoading?.userId === user._id} className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition disabled:opacity-50"><Trash2 size={16} /></button>
                                         </div>
                                     </td>
                                 </tr>
                             ))}
-
-                            {activeTab === 'all' && users.length === 0 && !loading && (
-                                <tr>
-                                    <td
-                                        colSpan={7}
-                                        className="text-center py-8 text-[var(--cn-text-muted)]"
-                                    >
-                                        Không có người dùng nào
-                                    </td>
-                                </tr>
-                            )}
-                            {activeTab === 'pending' &&
-                                pendingTeachers.length === 0 &&
-                                !loadingPending && (
-                                    <tr>
-                                        <td
-                                            colSpan={7}
-                                            className="text-center py-8 text-[var(--cn-text-muted)]"
-                                        >
-                                            Không có giáo viên nào chờ duyệt
-                                        </td>
-                                    </tr>
-                                )}
                         </tbody>
                     </table>
                 </div>
-
-                {/* ── Pagination ── */}
                 {activeTab === 'all' && totalPages > 1 && (
-                    <div className="border-t border-[var(--cn-border)] px-3 sm:px-6 py-3 sm:py-4">
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
-                            {/* Page size */}
-                            <div className="flex items-center gap-2">
-                                <span className="text-xs sm:text-sm text-[var(--cn-text-muted)]">
-                                    Hiển thị
-                                </span>
-                                <select
-                                    value={pageSize}
-                                    onChange={(e) => setPageSize(Number(e.target.value))}
-                                    className="px-1.5 sm:px-2 py-0.5 sm:py-1 text-xs sm:text-sm border border-[var(--cn-border)] rounded-[var(--cn-radius-sm)] bg-[var(--cn-bg-card)] text-[var(--cn-text-main)] focus:outline-none focus:border-[var(--cn-primary)]"
-                                >
-                                    {PAGE_SIZE_OPTIONS.map((size) => (
-                                        <option key={size} value={size}>
-                                            {size}
-                                        </option>
-                                    ))}
-                                </select>
-                                <span className="text-xs sm:text-sm text-[var(--cn-text-muted)]">
-                                    người dùng
-                                </span>
-                            </div>
-
-                            {/* Page buttons */}
-                            <div className="flex items-center gap-1 sm:gap-2">
-                                <button
-                                    onClick={() => setPage(1)}
-                                    disabled={page === 1}
-                                    className="p-1 sm:p-2 border border-[var(--cn-border)] rounded-[var(--cn-radius-sm)] disabled:opacity-50 hover:bg-[var(--cn-hover)] transition"
-                                >
-                                    <ChevronsLeft
-                                        size={isMobile ? 14 : 18}
-                                        className="text-[var(--cn-text-sub)]"
-                                    />
-                                </button>
-                                <button
-                                    onClick={() => setPage((p) => Math.max(1, p - 1))}
-                                    disabled={page === 1}
-                                    className="p-1 sm:p-2 border border-[var(--cn-border)] rounded-[var(--cn-radius-sm)] disabled:opacity-50 hover:bg-[var(--cn-hover)] transition"
-                                >
-                                    <ChevronLeft
-                                        size={isMobile ? 14 : 18}
-                                        className="text-[var(--cn-text-sub)]"
-                                    />
-                                </button>
-                                <div className="flex items-center gap-0.5 sm:gap-1">
-                                    {getPageNumbers().map((pageNum, idx) =>
-                                        pageNum === '...' ? (
-                                            <span
-                                                key={idx}
-                                                className="px-1 sm:px-2 py-0.5 sm:py-1 text-[var(--cn-text-muted)] text-xs sm:text-sm"
-                                            >
-                                                ...
-                                            </span>
-                                        ) : (
-                                            <button
-                                                key={pageNum}
-                                                onClick={() => setPage(pageNum as number)}
-                                                className={`min-w-[28px] sm:min-w-[36px] h-7 sm:h-9 px-1 sm:px-2 rounded-[var(--cn-radius-sm)] text-xs sm:text-sm font-medium transition ${page === pageNum
-                                                    ? 'bg-[var(--cn-primary)] text-white'
-                                                    : 'hover:bg-[var(--cn-hover)] text-[var(--cn-text-sub)] border border-[var(--cn-border)]'
-                                                    }`}
-                                            >
-                                                {pageNum}
-                                            </button>
-                                        )
-                                    )}
-                                </div>
-                                <button
-                                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                                    disabled={page === totalPages}
-                                    className="p-1 sm:p-2 border border-[var(--cn-border)] rounded-[var(--cn-radius-sm)] disabled:opacity-50 hover:bg-[var(--cn-hover)] transition"
-                                >
-                                    <ChevronRight
-                                        size={isMobile ? 14 : 18}
-                                        className="text-[var(--cn-text-sub)]"
-                                    />
-                                </button>
-                                <button
-                                    onClick={() => setPage(totalPages)}
-                                    disabled={page === totalPages}
-                                    className="p-1 sm:p-2 border border-[var(--cn-border)] rounded-[var(--cn-radius-sm)] disabled:opacity-50 hover:bg-[var(--cn-hover)] transition"
-                                >
-                                    <ChevronsRight
-                                        size={isMobile ? 14 : 18}
-                                        className="text-[var(--cn-text-sub)]"
-                                    />
-                                </button>
-                            </div>
-
-                            {/* Info */}
-                            <div className="text-xs sm:text-sm text-[var(--cn-text-muted)] text-center sm:text-right">
-                                Hiển thị {(page - 1) * pageSize + 1} -{' '}
-                                {Math.min(page * pageSize, totalUsers)} trên tổng{' '}
-                                {totalUsers.toLocaleString()} người dùng
-                            </div>
+                    <div className="border-t border-[var(--cn-border)] px-5 py-4 flex items-center justify-between">
+                        <div className="text-sm text-[var(--cn-text-muted)]">Hiển thị {(page - 1) * pageSize + 1} - {Math.min(page * pageSize, totalUsers)} trên {totalUsers}</div>
+                        <div className="flex items-center gap-2">
+                            <button onClick={() => setPage(1)} disabled={page === 1} className="p-2 border border-[var(--cn-border)] rounded-lg disabled:opacity-40 hover:bg-[var(--cn-hover)] transition"><ChevronsLeft size={16} /></button>
+                            <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="p-2 border border-[var(--cn-border)] rounded-lg disabled:opacity-40 hover:bg-[var(--cn-hover)] transition"><ChevronLeft size={16} /></button>
+                            <span className="px-3 text-sm font-medium text-[var(--cn-text-main)]">{page} / {totalPages}</span>
+                            <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} className="p-2 border border-[var(--cn-border)] rounded-lg disabled:opacity-40 hover:bg-[var(--cn-hover)] transition"><ChevronRight size={16} /></button>
+                            <button onClick={() => setPage(totalPages)} disabled={page === totalPages} className="p-2 border border-[var(--cn-border)] rounded-lg disabled:opacity-40 hover:bg-[var(--cn-hover)] transition"><ChevronsRight size={16} /></button>
                         </div>
                     </div>
                 )}
             </div>
 
-            {/* ─────────────────── MODALS ─────────────────── */}
-
-            {/* Modal: Chi tiết người dùng */}
+            {/* User Detail Modal */}
             {showUserModal && selectedUser && (
-                <div
-                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-                    onClick={() => setShowUserModal(false)}
-                >
-                    <div
-                        className="bg-[var(--cn-bg-card)] rounded-[var(--cn-radius-md)] w-full max-w-[90%] sm:max-w-2xl max-h-[90vh] overflow-y-auto border border-[var(--cn-border)] shadow-[var(--cn-shadow-lg)]"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <div className="sticky top-0 bg-[var(--cn-bg-card)] p-3 sm:p-5 border-b border-[var(--cn-border)] flex justify-between items-center">
-                            <h2 className="text-lg sm:text-xl font-semibold text-[var(--cn-primary)]">
-                                Chi tiết người dùng
-                            </h2>
-                            <button
-                                onClick={() => setShowUserModal(false)}
-                                className="p-1 sm:p-2 hover:bg-[var(--cn-hover)] rounded-lg transition"
-                            >
-                                <X size={isMobile ? 18 : 20} className="text-[var(--cn-text-muted)]" />
-                            </button>
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowUserModal(false)}>
+                    <div className="bg-[var(--cn-bg-card)] rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>
+                        <div className="sticky top-0 bg-[var(--cn-bg-card)] px-6 py-4 border-b border-[var(--cn-border)] flex justify-between items-center">
+                            <h3 className="text-xl font-semibold text-[var(--cn-text-main)]">Chi tiết người dùng</h3>
+                            <button onClick={() => setShowUserModal(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-[var(--cn-bg-section)] hover:bg-[var(--cn-hover)] transition"><X size={18} className="text-[var(--cn-text-muted)]" /></button>
                         </div>
-                        <div className="p-4 sm:p-5 space-y-3 sm:space-y-4">
-                            <div className="flex items-center gap-3 sm:gap-4">
-                                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-[var(--cn-primary)]/10 overflow-hidden">
-                                    {selectedUser.avatar ? (
-                                        <Image
-                                            src={selectedUser.avatar}
-                                            alt={selectedUser.fullName}
-                                            width={80}
-                                            height={80}
-                                            className="w-full h-full object-cover"
-                                        />
-                                    ) : (
-                                        <div className="w-full h-full flex items-center justify-center text-xl sm:text-2xl font-bold text-[var(--cn-primary)]">
-                                            {selectedUser.fullName.charAt(0).toUpperCase()}
-                                        </div>
-                                    )}
-                                </div>
-                                <div>
-                                    <h3 className="text-base sm:text-xl font-bold text-[var(--cn-text-main)]">
-                                        {selectedUser.fullName}
-                                    </h3>
-                                    <p className="text-xs sm:text-sm text-[var(--cn-text-muted)] break-words">
-                                        {selectedUser.email}
-                                    </p>
-                                    {selectedUser.username && (
-                                        <p className="text-xs text-[var(--cn-primary)]">
-                                            @{selectedUser.username}
-                                        </p>
-                                    )}
-                                </div>
+                        <div className="p-6 space-y-5">
+                            <div className="flex items-center gap-4 p-4 bg-[var(--cn-bg-section)] rounded-xl">
+                                <div className="w-14 h-14 rounded-full bg-[var(--cn-primary)]/20 flex items-center justify-center text-[var(--cn-primary)] text-xl font-bold">{getUserInitial(selectedUser)}</div>
+                                <div><p className="font-semibold text-[var(--cn-text-main)] text-lg">{selectedUser.fullName}</p><p className="text-sm text-[var(--cn-text-muted)]">{selectedUser.email}</p>{selectedUser.username && <p className="text-xs text-[var(--cn-primary)]">@{selectedUser.username}</p>}</div>
                             </div>
-
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-xs sm:text-sm">
-                                <div className="flex items-center gap-2">
-                                    <Shield size={isMobile ? 14 : 16} className="text-[var(--cn-text-muted)]" />
-                                    Vai trò: {getRoleBadge(selectedUser.role)}
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <Coins size={isMobile ? 14 : 16} className="text-[var(--cn-text-muted)]" />
-                                    Xu: {selectedUser.coins.toLocaleString()}
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <Calendar
-                                        size={isMobile ? 14 : 16}
-                                        className="text-[var(--cn-text-muted)]"
-                                    />
-                                    Streak: {selectedUser.streak} ngày
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <Mail size={isMobile ? 14 : 16} className="text-[var(--cn-text-muted)]" />
-                                    {selectedUser.email}
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <MapPin
-                                        size={isMobile ? 14 : 16}
-                                        className="text-[var(--cn-text-muted)]"
-                                    />
-                                    {selectedUser.province || 'Chưa cập nhật'}
-                                </div>
-                                {selectedUser.class && (
-                                    <div className="flex items-center gap-2">
-                                        <GraduationCap
-                                            size={isMobile ? 14 : 16}
-                                            className="text-[var(--cn-text-muted)]"
-                                        />
-                                        Lớp: {selectedUser.class}
-                                    </div>
-                                )}
-                                {selectedUser.school && (
-                                    <div className="flex items-center gap-2">
-                                        <School
-                                            size={isMobile ? 14 : 16}
-                                            className="text-[var(--cn-text-muted)]"
-                                        />
-                                        {selectedUser.school}
-                                    </div>
-                                )}
-                                {selectedUser.bio && (
-                                    <div className="sm:col-span-2 flex items-start gap-2">
-                                        <div className="text-[var(--cn-text-muted)] mt-0.5">📝</div>
-                                        <div className="text-[var(--cn-text-sub)]">{selectedUser.bio}</div>
-                                    </div>
-                                )}
-                                <div className="sm:col-span-2 flex items-center gap-2 text-[var(--cn-text-muted)]">
-                                    <Calendar size={isMobile ? 14 : 16} />
-                                    Ngày tạo:{' '}
-                                    {format(new Date(selectedUser.createdAt), 'dd/MM/yyyy HH:mm')}
-                                </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                                <div className="flex items-center gap-2"><Shield size={14} className="text-[var(--cn-text-muted)]" /> Vai trò: {getRoleBadge(selectedUser.role)}</div>
+                                <div className="flex items-center gap-2"><Coins size={14} className="text-[var(--cn-text-muted)]" /> Xu: {selectedUser.coins.toLocaleString()}</div>
+                                <div className="flex items-center gap-2"><Calendar size={14} className="text-[var(--cn-text-muted)]" /> Streak: {selectedUser.streak}</div>
+                                <div className="flex items-center gap-2"><Mail size={14} className="text-[var(--cn-text-muted)]" /> {selectedUser.email}</div>
+                                <div className="flex items-center gap-2"><MapPin size={14} className="text-[var(--cn-text-muted)]" /> {selectedUser.province || 'Chưa cập nhật'}</div>
+                                {selectedUser.class && <div className="flex items-center gap-2"><GraduationCap size={14} className="text-[var(--cn-text-muted)]" /> Lớp: {selectedUser.class}</div>}
+                                {selectedUser.school && <div className="flex items-center gap-2"><School size={14} className="text-[var(--cn-text-muted)]" /> {selectedUser.school}</div>}
+                                {selectedUser.bio && <div className="md:col-span-2 flex items-start gap-2"><span className="text-[var(--cn-text-muted)]">📝</span><span className="text-[var(--cn-text-sub)]">{selectedUser.bio}</span></div>}
+                                <div className="md:col-span-2 text-[var(--cn-text-muted)]">Ngày tạo: {formatDate(selectedUser.createdAt)}</div>
                             </div>
                         </div>
                     </div>
                 </div>
             )}
 
-            {/* Modal: Đổi vai trò */}
+            {/* Role Modal */}
             {showRoleModal && selectedUser && (
-                <div
-                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-                    onClick={() => setShowRoleModal(false)}
-                >
-                    <div
-                        className="bg-[var(--cn-bg-card)] rounded-[var(--cn-radius-md)] w-full max-w-[90%] sm:max-w-md border border-[var(--cn-border)] shadow-[var(--cn-shadow-lg)]"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <div className="p-3 sm:p-5 border-b border-[var(--cn-border)]">
-                            <h2 className="text-lg sm:text-xl font-semibold text-[var(--cn-primary)]">
-                                Đổi vai trò
-                            </h2>
-                            <p className="text-xs sm:text-sm text-[var(--cn-text-muted)] mt-1">
-                                Người dùng: {selectedUser.fullName}
-                            </p>
-                            <p className="text-xs text-[var(--cn-primary)] mt-1">
-                                Vai trò hiện tại: {getRoleBadge(selectedUser.role)}
-                            </p>
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowRoleModal(false)}>
+                    <div className="bg-[var(--cn-bg-card)] rounded-2xl w-full max-w-md shadow-2xl" onClick={e => e.stopPropagation()}>
+                        <div className="px-6 py-4 border-b border-[var(--cn-border)] flex justify-between items-center">
+                            <h3 className="text-xl font-semibold text-[var(--cn-text-main)]">Đổi vai trò</h3>
+                            <button onClick={() => setShowRoleModal(false)} className="p-1 hover:bg-[var(--cn-hover)] rounded-lg transition"><X size={20} className="text-[var(--cn-text-muted)]" /></button>
                         </div>
-                        <div className="p-4 sm:p-5 space-y-3 sm:space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium mb-2 text-[var(--cn-text-sub)]">
-                                    Vai trò mới
-                                </label>
-                                <CustomSelect
-                                    value={selectedRole}
-                                    onChange={(value) => setSelectedRole(value)}
-                                    options={[
-                                        { value: 'user', label: 'Người dùng' },
-                                        { value: 'teacher', label: 'Giáo viên' },
-                                        { value: 'admin', label: 'Admin' },
-                                    ]}
-                                    placeholder="Chọn vai trò"
-                                />
-                            </div>
-                            <div className="flex gap-3">
-                                <button
-                                    onClick={() => setShowRoleModal(false)}
-                                    className="flex-1 px-3 sm:px-4 py-1.5 sm:py-2 border border-[var(--cn-border)] text-[var(--cn-primary)] rounded-lg hover:bg-[var(--cn-hover)] text-sm transition"
-                                >
-                                    Hủy
-                                </button>
-                                <button
-                                    onClick={handleChangeRole}
-                                    disabled={actionLoading?.type === 'role'}
-                                    className="flex-1 px-3 sm:px-4 py-1.5 sm:py-2 bg-[var(--cn-primary)] text-white rounded-lg hover:bg-[var(--cn-primary-hover)] text-sm transition disabled:opacity-50"
-                                >
-                                    {actionLoading?.type === 'role' ? (
-                                        <Loader2 className="w-4 h-4 animate-spin inline" />
-                                    ) : (
-                                        'Xác nhận'
-                                    )}
-                                </button>
-                            </div>
+                        <div className="p-6 space-y-5">
+                            <div><label className="block text-sm font-medium mb-2 text-[var(--cn-text-sub)]">Vai trò mới</label><CustomSelect value={selectedRole} onChange={setSelectedRole} options={[{ value: 'user', label: 'Người dùng' }, { value: 'teacher', label: 'Giáo viên' }, { value: 'admin', label: 'Admin' }]} placeholder="Chọn vai trò" /></div>
+                            <div className="flex gap-3"><button onClick={() => setShowRoleModal(false)} className="flex-1 px-4 py-2.5 border border-[var(--cn-border)] rounded-xl text-[var(--cn-text-sub)] font-medium hover:bg-[var(--cn-hover)] transition">Hủy</button><button onClick={handleChangeRole} disabled={actionLoading?.type === 'role'} className="flex-1 px-4 py-2.5 bg-[var(--cn-primary)] text-white rounded-xl font-medium hover:bg-[var(--cn-primary-hover)] transition disabled:opacity-50 flex items-center justify-center gap-2">{actionLoading?.type === 'role' ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle size={16} />}{actionLoading?.type === 'role' ? 'Đang xử lý...' : 'Xác nhận'}</button></div>
                         </div>
                     </div>
                 </div>
             )}
 
-            {/* Modal: Vi phạm */}
-            {showViolationModal && selectedUser && (
-                <div
-                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-                    onClick={() => setShowViolationModal(false)}
-                >
-                    <div
-                        className="bg-[var(--cn-bg-card)] rounded-[var(--cn-radius-md)] w-full max-w-[90%] sm:max-w-md border border-[var(--cn-border)] shadow-[var(--cn-shadow-lg)]"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <div className="p-3 sm:p-5 border-b border-[var(--cn-border)]">
-                            <h2 className="text-lg sm:text-xl font-semibold text-[var(--cn-primary)]">
-                                Đánh dấu vi phạm
-                            </h2>
-                            <p className="text-xs sm:text-sm text-[var(--cn-text-muted)] mt-1">
-                                Người dùng: {selectedUser.fullName}
-                            </p>
+            {/* Coin Modal */}
+            {showCoinModal && selectedUser && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowCoinModal(false)}>
+                    <div className="bg-[var(--cn-bg-card)] rounded-2xl w-full max-w-md shadow-2xl" onClick={e => e.stopPropagation()}>
+                        <div className="px-6 py-4 border-b border-[var(--cn-border)] flex justify-between items-center"><h3 className="text-xl font-semibold text-[var(--cn-text-main)]">Điều chỉnh xu</h3><button onClick={() => setShowCoinModal(false)} className="p-1 hover:bg-[var(--cn-hover)] rounded-lg transition"><X size={20} className="text-[var(--cn-text-muted)]" /></button></div>
+                        <div className="p-6 space-y-5">
+                            <div><label className="block text-sm font-medium mb-2 text-[var(--cn-text-sub)]">Số xu (±)</label><input type="number" value={coinAmount} onChange={(e) => setCoinAmount(parseInt(e.target.value) || 0)} placeholder="Nhập số xu..." className="w-full px-4 py-2.5 border border-[var(--cn-border)] rounded-xl text-[var(--cn-text-main)] focus:border-[var(--cn-primary)] focus:outline-none" /><p className="text-xs text-[var(--cn-text-muted)] mt-1">Nhập số dương để cộng, số âm để trừ</p></div>
+                            <div><label className="block text-sm font-medium mb-2 text-[var(--cn-text-sub)]">Lý do</label><CustomTextarea value={coinReason} onChange={setCoinReason} placeholder="Nhập lý do..." rows={3} maxLength={500} /></div>
+                            <div className="flex gap-3"><button onClick={() => setShowCoinModal(false)} className="flex-1 px-4 py-2.5 border border-[var(--cn-border)] rounded-xl text-[var(--cn-text-sub)] font-medium hover:bg-[var(--cn-hover)] transition">Hủy</button><button onClick={handleAdjustCoins} disabled={actionLoading?.type === 'coins'} className="flex-1 px-4 py-2.5 bg-[var(--cn-primary)] text-white rounded-xl font-medium hover:bg-[var(--cn-primary-hover)] transition disabled:opacity-50 flex items-center justify-center gap-2">{actionLoading?.type === 'coins' ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle size={16} />}{actionLoading?.type === 'coins' ? 'Đang xử lý...' : 'Xác nhận'}</button></div>
                         </div>
-                        <div className="p-4 sm:p-5 space-y-3 sm:space-y-4">
+                    </div>
+                </div>
+            )}
+
+            {/* Violation Modal */}
+            {showViolationModal && selectedUser && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowViolationModal(false)}>
+                    <div className="bg-[var(--cn-bg-card)] rounded-2xl w-full max-w-md shadow-2xl" onClick={e => e.stopPropagation()}>
+                        <div className="px-6 py-4 border-b border-[var(--cn-border)] flex justify-between items-center">
+                            <h3 className="text-xl font-semibold text-[var(--cn-text-main)]">Xử lý vi phạm</h3>
+                            <button onClick={() => setShowViolationModal(false)} className="p-1 hover:bg-[var(--cn-hover)] rounded-lg transition"><X size={20} className="text-[var(--cn-text-muted)]" /></button>
+                        </div>
+                        <div className="p-6 space-y-5">
                             <div>
-                                <label className="block text-sm font-medium mb-2 text-[var(--cn-text-sub)]">
-                                    Hành động
-                                </label>
+                                <label className="block text-sm font-medium mb-2 text-[var(--cn-text-sub)]">Hành động</label>
                                 <CustomSelect
                                     value={violationAction}
-                                    onChange={(value) =>
-                                        setViolationAction(value as 'warn' | 'mute' | 'ban')
-                                    }
-                                    options={[
-                                        { value: 'warn', label: '⚠️ Cảnh cáo' },
-                                        { value: 'mute', label: '🔇 Cấm chat (7 ngày)' },
-                                        { value: 'ban', label: '🔴 Khóa tài khoản' },
-                                    ]}
+                                    onChange={(value: string) => setViolationAction(value as 'warn' | 'mute' | 'ban')}
+                                    options={STATUS_SELECT_OPTIONS}
                                     placeholder="Chọn hành động"
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium mb-2 text-[var(--cn-text-sub)]">
-                                    Lý do
-                                </label>
-                                <CustomTextarea
-                                    value={violationReason}
-                                    onChange={(value) => setViolationReason(value)}
-                                    placeholder="Nhập lý do xử lý vi phạm..."
-                                    rows={3}
-                                    maxLength={500}
-                                />
+                                <label className="block text-sm font-medium mb-2 text-[var(--cn-text-sub)]">Lý do</label>
+                                <CustomTextarea value={violationReason} onChange={setViolationReason} placeholder="Nhập lý do..." rows={3} maxLength={500} />
                             </div>
                             <div className="flex gap-3">
-                                <button
-                                    onClick={() => setShowViolationModal(false)}
-                                    className="flex-1 px-3 sm:px-4 py-1.5 sm:py-2 border border-[var(--cn-border)] text-[var(--cn-primary)] rounded-lg hover:bg-[var(--cn-hover)] text-sm transition"
-                                >
-                                    Hủy
-                                </button>
-                                <button
-                                    onClick={handleMarkViolation}
-                                    disabled={actionLoading?.type === 'violation'}
-                                    className="flex-1 px-3 sm:px-4 py-1.5 sm:py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm transition disabled:opacity-50"
-                                >
-                                    {actionLoading?.type === 'violation' ? (
-                                        <Loader2 className="w-4 h-4 animate-spin inline" />
-                                    ) : (
-                                        'Xác nhận'
-                                    )}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Modal: Điều chỉnh xu */}
-            {showCoinModal && selectedUser && (
-                <div
-                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-                    onClick={() => setShowCoinModal(false)}
-                >
-                    <div
-                        className="bg-[var(--cn-bg-card)] rounded-[var(--cn-radius-md)] w-full max-w-[90%] sm:max-w-md border border-[var(--cn-border)] shadow-[var(--cn-shadow-lg)]"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <div className="p-3 sm:p-5 border-b border-[var(--cn-border)]">
-                            <h2 className="text-lg sm:text-xl font-semibold text-[var(--cn-primary)]">
-                                Điều chỉnh số xu
-                            </h2>
-                            <p className="text-xs sm:text-sm text-[var(--cn-text-muted)] mt-1">
-                                Người dùng: {selectedUser.fullName}
-                            </p>
-                            <p className="text-xs text-[var(--cn-primary)] mt-1">
-                                Xu hiện tại:{' '}
-                                <span className="font-semibold">
-                                    {selectedUser.coins.toLocaleString()}
-                                </span>
-                            </p>
-                        </div>
-                        <div className="p-4 sm:p-5 space-y-3 sm:space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium mb-2 text-[var(--cn-text-sub)]">
-                                    Số xu (có thể âm)
-                                </label>
-                                <CustomInput
-                                    value={coinAmount.toString()}
-                                    onChange={(e) => setCoinAmount(parseInt(e.target.value) || 0)}
-                                    placeholder="Nhập số xu..."
-                                />
-                                <p className="text-[10px] sm:text-xs text-[var(--cn-text-muted)] mt-1">
-                                    Nhập số dương để cộng, số âm để trừ
-                                </p>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium mb-2 text-[var(--cn-text-sub)]">
-                                    Lý do
-                                </label>
-                                <CustomTextarea
-                                    value={coinReason}
-                                    onChange={(value) => setCoinReason(value)}
-                                    placeholder="Nhập lý do điều chỉnh..."
-                                    rows={3}
-                                    maxLength={500}
-                                />
-                            </div>
-                            <div className="flex gap-3">
-                                <button
-                                    onClick={() => setShowCoinModal(false)}
-                                    className="flex-1 px-3 sm:px-4 py-1.5 sm:py-2 border border-[var(--cn-border)] text-[var(--cn-primary)] rounded-lg hover:bg-[var(--cn-hover)] text-sm transition"
-                                >
-                                    Hủy
-                                </button>
-                                <button
-                                    onClick={handleAdjustCoins}
-                                    disabled={actionLoading?.type === 'coins'}
-                                    className="flex-1 px-3 sm:px-4 py-1.5 sm:py-2 bg-[var(--cn-primary)] text-white rounded-lg hover:bg-[var(--cn-primary-hover)] text-sm transition disabled:opacity-50"
-                                >
-                                    {actionLoading?.type === 'coins' ? (
-                                        <Loader2 className="w-4 h-4 animate-spin inline" />
-                                    ) : (
-                                        'Xác nhận'
-                                    )}
+                                <button onClick={() => setShowViolationModal(false)} className="flex-1 px-4 py-2.5 border border-[var(--cn-border)] rounded-xl text-[var(--cn-text-sub)] font-medium hover:bg-[var(--cn-hover)] transition">Hủy</button>
+                                <button onClick={handleMarkViolation} disabled={actionLoading?.type === 'violation'} className="flex-1 px-4 py-2.5 bg-red-500 text-white rounded-xl font-medium hover:bg-red-600 transition disabled:opacity-50 flex items-center justify-center gap-2">
+                                    {actionLoading?.type === 'violation' ? <Loader2 className="w-4 h-4 animate-spin" /> : <AlertTriangle size={16} />}
+                                    {actionLoading?.type === 'violation' ? 'Đang xử lý...' : 'Xác nhận'}
                                 </button>
                             </div>
                         </div>

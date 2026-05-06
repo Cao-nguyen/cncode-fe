@@ -50,7 +50,6 @@ export const CustomInputSearch: React.FC<CustomInputSearchProps> = ({
     variant = 'default',
 }) => {
     const [inputValue, setInputValue] = useState(value);
-    const [isFocused, setIsFocused] = useState(false);
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [showRecent, setShowRecent] = useState(false);
     const [debouncedValue, setDebouncedValue] = useState(value);
@@ -80,7 +79,6 @@ export const CustomInputSearch: React.FC<CustomInputSearchProps> = ({
             if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
                 setShowSuggestions(false);
                 setShowRecent(false);
-                setIsFocused(false);
             }
         };
         document.addEventListener('mousedown', handleClickOutside);
@@ -131,7 +129,6 @@ export const CustomInputSearch: React.FC<CustomInputSearchProps> = ({
     };
 
     const handleFocus = () => {
-        setIsFocused(true);
         if (inputValue.length === 0 && recentSearches.length > 0) {
             setShowRecent(true);
         } else if (inputValue.length > 0 && suggestions.length > 0) {
@@ -142,11 +139,11 @@ export const CustomInputSearch: React.FC<CustomInputSearchProps> = ({
     const getSizeClasses = () => {
         switch (size) {
             case 'small':
-                return 'px-3 py-1.5 text-sm';
+                return 'px-3 py-1.5 text-[11px] lg:text-[13px]';
             case 'large':
-                return 'px-5 py-3 text-lg';
-            default: // medium - đồng bộ py-2.5 với CustomSelect
-                return 'px-4 py-2.5 text-base';
+                return 'px-5 py-3 text-[13px] lg:text-[15px]';
+            default: // medium
+                return 'px-4 py-2 text-[12px] lg:text-[14px]';
         }
     };
 
@@ -173,9 +170,9 @@ export const CustomInputSearch: React.FC<CustomInputSearchProps> = ({
             <form onSubmit={handleSubmit} className="relative">
                 <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
                     {isLoading ? (
-                        <Loader2 className="w-4 h-4 text-[var(--cn-primary)] animate-spin" />
+                        <Loader2 className="w-3.5 h-3.5 lg:w-4 lg:h-4 text-[var(--cn-primary)] animate-spin" />
                     ) : (
-                        <Search className="w-4 h-4 text-[var(--cn-text-muted)]" />
+                        <Search className="w-3.5 h-3.5 lg:w-4 lg:h-4 text-[var(--cn-text-muted)]" />
                     )}
                 </div>
 
@@ -198,7 +195,7 @@ export const CustomInputSearch: React.FC<CustomInputSearchProps> = ({
                             className="p-1 text-[var(--cn-text-muted)] hover:text-[var(--cn-primary)] transition-colors rounded-full hover:bg-[var(--cn-hover)]"
                             title="Tìm kiếm bằng giọng nói"
                         >
-                            <Mic className="w-4 h-4" />
+                            <Mic className="w-3.5 h-3.5 lg:w-4 lg:h-4" />
                         </button>
                     )}
 
@@ -209,7 +206,7 @@ export const CustomInputSearch: React.FC<CustomInputSearchProps> = ({
                             className="p-1 text-[var(--cn-text-muted)] hover:text-[var(--cn-text-main)] transition-colors rounded-full hover:bg-[var(--cn-hover)]"
                             title="Xóa"
                         >
-                            <X className="w-4 h-4" />
+                            <X className="w-3.5 h-3.5 lg:w-4 lg:h-4" />
                         </button>
                     )}
                 </div>
@@ -220,7 +217,7 @@ export const CustomInputSearch: React.FC<CustomInputSearchProps> = ({
                     {showRecent && hasRecent && (
                         <div>
                             <div className="px-4 py-2 bg-[var(--cn-bg-section)] border-b border-[var(--cn-border)]">
-                                <span className="text-xs font-medium text-[var(--cn-text-muted)] uppercase">Tìm kiếm gần đây</span>
+                                <span className="text-[11px] lg:text-[13px] font-medium text-[var(--cn-text-muted)] uppercase">Tìm kiếm gần đây</span>
                             </div>
                             {recentSearches.slice(0, 5).map((recent, index) => (
                                 <button
@@ -229,7 +226,7 @@ export const CustomInputSearch: React.FC<CustomInputSearchProps> = ({
                                     className="w-full px-4 py-2 text-left hover:bg-[var(--cn-hover)] flex items-center gap-2 transition-colors"
                                 >
                                     <Search className="w-3 h-3 text-[var(--cn-text-muted)]" />
-                                    <span className="text-sm text-[var(--cn-text-main)]">{recent}</span>
+                                    <span className="text-[12px] lg:text-[14px] text-[var(--cn-text-main)]">{recent}</span>
                                 </button>
                             ))}
                         </div>
@@ -241,7 +238,7 @@ export const CustomInputSearch: React.FC<CustomInputSearchProps> = ({
                                 <div className="border-t border-[var(--cn-border)]"></div>
                             )}
                             <div className="px-4 py-2 bg-[var(--cn-bg-section)] border-b border-[var(--cn-border)]">
-                                <span className="text-xs font-medium text-[var(--cn-text-muted)] uppercase">Gợi ý</span>
+                                <span className="text-[11px] lg:text-[13px] font-medium text-[var(--cn-text-muted)] uppercase">Gợi ý</span>
                             </div>
                             {allSuggestions.map((suggestion) => (
                                 <button
@@ -252,12 +249,12 @@ export const CustomInputSearch: React.FC<CustomInputSearchProps> = ({
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-2">
                                             <Search className="w-3 h-3 text-[var(--cn-text-muted)] group-hover:text-[var(--cn-primary)]" />
-                                            <span className="text-sm text-[var(--cn-text-main)] group-hover:text-[var(--cn-primary)]">
+                                            <span className="text-[12px] lg:text-[14px] text-[var(--cn-text-main)] group-hover:text-[var(--cn-primary)]">
                                                 {suggestion.label}
                                             </span>
                                         </div>
                                         {suggestion.type && (
-                                            <span className="text-xs text-[var(--cn-text-muted)]">{suggestion.type}</span>
+                                            <span className="text-[11px] lg:text-[13px] text-[var(--cn-text-muted)]">{suggestion.type}</span>
                                         )}
                                     </div>
                                 </button>
@@ -269,7 +266,7 @@ export const CustomInputSearch: React.FC<CustomInputSearchProps> = ({
 
             {isLoading && inputValue && (
                 <div className="absolute right-12 top-1/2 transform -translate-y-1/2">
-                    <Loader2 className="w-4 h-4 text-[var(--cn-primary)] animate-spin" />
+                    <Loader2 className="w-3.5 h-3.5 lg:w-4 lg:h-4 text-[var(--cn-primary)] animate-spin" />
                 </div>
             )}
         </div>
