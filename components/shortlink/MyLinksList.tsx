@@ -95,11 +95,16 @@ function LinkCard({ link, onDelete }: { link: ShortLink; onDelete: (shortCode: s
     const isExpired = link.expiresAt ? new Date(link.expiresAt) < new Date() : false;
 
     return (
-        <div className="group p-4 rounded-[var(--cn-radius-md)] border border-[var(--cn-border)] hover:border-[var(--cn-primary)]/30 hover:shadow-[var(--cn-shadow-sm)] transition-all bg-[var(--cn-bg-card)]">
+        <div className="p-4 rounded-[var(--cn-radius-md)] border border-[var(--cn-border)] hover:border-[var(--cn-primary)]/30 hover:shadow-[var(--cn-shadow-sm)] transition-all bg-[var(--cn-bg-card)]">
             <div className="flex items-start justify-between gap-4">
                 <div className="flex-1 min-w-0 space-y-1.5">
                     <div className="flex items-center gap-2 flex-wrap">
-                        <a href={link.shortUrl} target="_blank" rel="noopener noreferrer" className="text-sm font-semibold text-[var(--cn-primary)] hover:underline truncate">
+                        <a
+                            href={link.shortUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm font-semibold text-[var(--cn-primary)] hover:underline truncate active:opacity-70"
+                        >
                             {link.shortUrl}
                         </a>
                         {link.isCustom && (
@@ -111,20 +116,34 @@ function LinkCard({ link, onDelete }: { link: ShortLink; onDelete: (shortCode: s
                     </div>
                     <p className="text-xs text-[var(--cn-text-muted)] truncate">{link.originalUrl}</p>
                     <div className="flex flex-wrap gap-3 text-xs text-[var(--cn-text-muted)]">
-                        <span className="flex items-center gap-1"><Mouse size={12} variant="Outline" />{link.clicks.toLocaleString('vi-VN')} lượt click</span>
+                        <span className="flex items-center gap-1">
+                            <Mouse size={12} variant="Outline" />
+                            {link.clicks.toLocaleString('vi-VN')} lượt click
+                        </span>
                         {link.expiresAt && (
                             <span className={`flex items-center gap-1 ${isExpired ? 'text-red-400' : ''}`}>
-                                <Calendar size={12} variant="Outline" />Hết hạn: {new Date(link.expiresAt).toLocaleDateString('vi-VN')}
+                                <Calendar size={12} variant="Outline" />
+                                Hết hạn: {new Date(link.expiresAt).toLocaleDateString('vi-VN')}
                             </span>
                         )}
                     </div>
                 </div>
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                <div className="flex items-center gap-1 shrink-0">
                     <CopyButton text={link.shortUrl} />
-                    <a href={link.shortUrl} target="_blank" rel="noopener noreferrer" className="p-2 rounded-[var(--cn-radius-sm)] hover:bg-[var(--cn-hover)] transition-colors" title="Mở link gốc">
+                    <a
+                        href={link.shortUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-2 rounded-[var(--cn-radius-sm)] hover:bg-[var(--cn-hover)] active:bg-[var(--cn-hover)] active:scale-95 transition-all duration-150"
+                        title="Mở link gốc"
+                    >
                         <ExportSquare size={16} variant="Outline" className="text-[var(--cn-text-muted)]" />
                     </a>
-                    <button onClick={() => onDelete(link.shortCode)} className="p-2 rounded-[var(--cn-radius-sm)] hover:bg-red-50 transition-colors" title="Xóa link">
+                    <button
+                        onClick={() => onDelete(link.shortCode)}
+                        className="p-2 rounded-[var(--cn-radius-sm)] hover:bg-red-50 active:bg-red-100 active:scale-95 transition-all duration-150"
+                        title="Xóa link"
+                    >
                         <Trash size={16} variant="Outline" className="text-red-500" />
                     </button>
                 </div>
@@ -139,7 +158,7 @@ function Pagination({ current, total, onChange }: { current: number; total: numb
             <button
                 onClick={() => onChange(current - 1)}
                 disabled={current === 1}
-                className="px-3 py-1.5 rounded-[var(--cn-radius-sm)] border border-[var(--cn-border)] text-sm text-[var(--cn-text-sub)] disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[var(--cn-hover)] transition-colors"
+                className="px-3 py-1.5 rounded-[var(--cn-radius-sm)] border border-[var(--cn-border)] text-sm text-[var(--cn-text-sub)] disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[var(--cn-hover)] active:bg-[var(--cn-hover)] active:scale-95 transition-all duration-150"
             >
                 Trước
             </button>
@@ -147,7 +166,7 @@ function Pagination({ current, total, onChange }: { current: number; total: numb
             <button
                 onClick={() => onChange(current + 1)}
                 disabled={current === total}
-                className="px-3 py-1.5 rounded-[var(--cn-radius-sm)] border border-[var(--cn-border)] text-sm text-[var(--cn-text-sub)] disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[var(--cn-hover)] transition-colors"
+                className="px-3 py-1.5 rounded-[var(--cn-radius-sm)] border border-[var(--cn-border)] text-sm text-[var(--cn-text-sub)] disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[var(--cn-hover)] active:bg-[var(--cn-hover)] active:scale-95 transition-all duration-150"
             >
                 Sau
             </button>

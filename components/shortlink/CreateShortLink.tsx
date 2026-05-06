@@ -11,6 +11,8 @@ import { Loader2 } from 'lucide-react';
 import { shortlinkApi } from '@/lib/api/shortlink.api';
 import { useShortLinkStore } from '@/store/shortlink.store';
 import { CopyButton } from '@/components/common/CopyButton';
+import { CustomButton } from '@/components/custom/CustomButton';
+import { CustomInput } from '@/components/custom/CustomInput';
 import type { ShortLink } from '@/types/shortlink.type';
 
 type AliasState = 'idle' | 'checking' | 'available' | 'taken';
@@ -144,28 +146,13 @@ export function CreateShortLink() {
                     <label className="uppercase text-xs font-semibold tracking-wide text-[var(--cn-text-sub)]">
                         Đường dẫn gốc
                     </label>
-                    <div className="relative">
-                        <Link21
-                            size={15}
-                            variant="Outline"
-                            className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--cn-text-muted)] pointer-events-none"
-                        />
-                        <input
-                            {...register('originalUrl')}
-                            type="text"
-                            inputMode="url"
-                            autoCapitalize="none"
-                            autoCorrect="off"
-                            placeholder="https://example.com/duong-dan-rat-dai"
-                            className="w-full pl-9 pr-4 py-3 rounded-[var(--cn-radius-md)] border border-[var(--cn-border)] bg-[var(--cn-bg-card)] focus:border-[var(--cn-primary)] focus:ring-2 focus:ring-[var(--cn-primary)]/20 outline-none transition-all text-sm text-[var(--cn-text-main)] placeholder:text-[var(--cn-text-muted)]"
-                        />
-                    </div>
-                    {errors.originalUrl && (
-                        <p className="flex items-center gap-1 text-xs text-red-500">
-                            <Warning2 size={12} variant="Outline" />
-                            {errors.originalUrl.message}
-                        </p>
-                    )}
+                    <CustomInput
+                        {...register('originalUrl')}
+                        type="text"
+                        placeholder="https://example.com/duong-dan-rat-dai"
+                        error={errors.originalUrl?.message}
+                        icon={<Link21 size={15} variant="Outline" />}
+                    />
                 </div>
 
                 {/* Toggle tùy chỉnh */}
@@ -195,48 +182,37 @@ export function CreateShortLink() {
                         <label className="uppercase text-xs font-semibold tracking-wide text-[var(--cn-text-sub)]">
                             Alias tùy chỉnh
                         </label>
-                        <div
-                            className={`flex rounded-[var(--cn-radius-md)] border overflow-hidden transition-colors ${aliasState === 'taken'
-                                ? 'border-red-400'
-                                : aliasState === 'available'
-                                    ? 'border-green-400'
-                                    : 'border-[var(--cn-border)] focus-within:border-[var(--cn-primary)]'
-                                }`}
-                        >
-                            <span className="flex items-center px-2.5 text-xs text-[var(--cn-text-muted)] bg-[var(--cn-bg-section)] border-r border-inherit whitespace-nowrap shrink-0">
+                        <div className="flex">
+                            <div className="flex items-center px-4 py-2.5 rounded-l-[var(--cn-radius-sm)] border border-r-0 border-[var(--cn-border)] bg-[var(--cn-bg-section)] text-sm text-[var(--cn-text-muted)] whitespace-nowrap">
                                 cncode.io.vn/s/
-                            </span>
-                            <div className="relative flex-1">
-                                <input
-                                    type="text"
-                                    autoCapitalize="none"
-                                    autoCorrect="off"
-                                    value={customAlias}
-                                    onChange={(e) => setValue('customAlias', e.target.value)}
-                                    placeholder="alias-cua-ban"
-                                    className="w-full px-3 py-3 pr-8 outline-none bg-[var(--cn-bg-card)] text-sm text-[var(--cn-text-main)] placeholder:text-[var(--cn-text-muted)]"
-                                />
-                                {aliasState === 'checking' && (
-                                    <Loader2
-                                        size={14}
-                                        className="animate-spin absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--cn-text-muted)]"
-                                    />
-                                )}
-                                {aliasState === 'available' && (
-                                    <TickCircle
-                                        size={15}
-                                        variant="Bold"
-                                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-green-500"
-                                    />
-                                )}
-                                {aliasState === 'taken' && (
-                                    <Warning2
-                                        size={15}
-                                        variant="Bold"
-                                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-red-500"
-                                    />
-                                )}
                             </div>
+                            <input
+                                type="text"
+                                value={customAlias}
+                                onChange={(e) => setValue('customAlias', e.target.value)}
+                                placeholder="alias-cua-ban"
+                                className={`
+                    w-full px-4 py-2.5 bg-[var(--cn-bg-card)] text-sm text-[var(--cn-text-main)] placeholder:text-[var(--cn-text-muted)] outline-none
+                    rounded-r-[var(--cn-radius-sm)] border border-l-0 border-[var(--cn-border)]
+                    focus:border-[var(--cn-primary)] focus:ring-2 focus:ring-[var(--cn-primary)]/20
+                    transition-all duration-200
+                    ${aliasState === 'taken' ? 'border-red-400 focus:border-red-400' : ''}
+                    ${aliasState === 'available' ? 'border-green-400 focus:border-green-400' : ''}
+                `}
+                            />
+                        </div>
+                        <div className="relative h-5">
+                            {aliasState === 'checking' && (
+                                <div className="flex items-center gap-1 text-xs text-[var(--cn-text-muted)] absolute right-3 top-1/2 -translate-y-1/2">
+                                    <Loader2 size={14} className="animate-spin" />
+                                </div>
+                            )}
+                            {aliasState === 'available' && (
+                                <TickCircle size={16} variant="Bold" className="absolute right-3 top-1/2 -translate-y-1/2 text-green-500" />
+                            )}
+                            {aliasState === 'taken' && (
+                                <Warning2 size={16} variant="Bold" className="absolute right-3 top-1/2 -translate-y-1/2 text-red-500" />
+                            )}
                         </div>
                         {aliasState === 'taken' && (
                             <p className="flex items-center gap-1 text-xs text-red-500">
@@ -264,40 +240,27 @@ export function CreateShortLink() {
                         Hết hạn sau{' '}
                         <span className="font-normal text-[var(--cn-text-muted)] normal-case">(ngày, để trống = vĩnh viễn)</span>
                     </label>
-                    <input
-                        type="number"
-                        inputMode="numeric"
+                    <CustomInput
                         min={1}
                         {...register('expiresInDays')}
                         placeholder="Ví dụ: 30"
-                        className="w-full px-4 py-3 rounded-[var(--cn-radius-md)] border border-[var(--cn-border)] bg-[var(--cn-bg-card)] focus:border-[var(--cn-primary)] focus:ring-2 focus:ring-[var(--cn-primary)]/20 outline-none transition-all text-sm text-[var(--cn-text-main)] placeholder:text-[var(--cn-text-muted)]"
+                        error={errors.expiresInDays?.message}
                     />
-                    {errors.expiresInDays && (
-                        <p className="flex items-center gap-1 text-xs text-red-500">
-                            <Warning2 size={12} variant="Outline" />
-                            {errors.expiresInDays.message}
-                        </p>
-                    )}
                 </div>
 
-                {/* Submit */}
-                <button
+                {/* Submit button */}
+                <CustomButton
                     type="submit"
+                    variant="primary"
+                    size="medium"
+                    fullWidth
+                    loading={isCreating || (useCustom && aliasState === 'checking')}
                     disabled={isCreating || (useCustom && aliasState === 'checking')}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-[var(--cn-radius-md)] bg-[var(--cn-primary)] text-white font-semibold transition-all hover:bg-[var(--cn-primary-hover)] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                    className="mt-2"
                 >
-                    {isCreating ? (
-                        <>
-                            <Loader2 size={16} className="animate-spin" />
-                            Đang tạo...
-                        </>
-                    ) : (
-                        <>
-                            <Link21 size={16} variant="Bold" />
-                            Tạo link rút gọn
-                        </>
-                    )}
-                </button>
+                    <Link21 size={16} variant="Bold" />
+                    Tạo link rút gọn
+                </CustomButton>
             </form>
 
             {/* Result */}
