@@ -7,7 +7,7 @@ export interface User {
     fullName: string;
     avatar?: string;
     role: UserRole;
-    requestedRole?: 'teacher' | null; // FIX: thêm field này để socket.provider có thể reset về null
+    requestedRole?: 'teacher' | null;
     isActive: boolean;
     emailVerified: boolean;
     isOnboarded?: boolean;
@@ -79,6 +79,7 @@ export interface AuthState {
     isAuthenticated: boolean;
     isLoading: boolean;
     error: string | null;
+    _hasHydrated: boolean;
 
     setAuth: (user: User | null, token: string | null) => void;
     login: (credentials: LoginCredentials) => Promise<void>;

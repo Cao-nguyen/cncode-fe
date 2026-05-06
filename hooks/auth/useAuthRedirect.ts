@@ -4,22 +4,22 @@ import { useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuthStore } from '@/store/auth.store';
 
-// Các route chỉ dành cho người CHƯA đăng nhập
 const guestOnlyRoutes = ['/login', '/register', '/forgot-password', '/reset-password'];
-
-// Các route yêu cầu đăng nhập
 const protectedRoutes = ['/profile', '/me', '/admin', '/teacher'];
 
 export const useAuthRedirect = () => {
     const router = useRouter();
     const pathname = usePathname();
-    const { isAuthenticated, user, isLoading } = useAuthStore();
+    const { isAuthenticated, user, isLoading, _hasHydrated } = useAuthStore();
 
     useEffect(() => {
-        // Chờ AuthProvider + zustand persist hydrate xong
+        // Chờ persist hydrate xong mới redirect
+        if (!_hasHydrated) return;
+
+        // Chờ loading từ actions (login/logout)
         if (isLoading) return;
 
-        // isAuthenticated = true nhưng user vẫn null → persist chưa hydrate xong, chờ
+        // isAuthenticated = true nhưng user vẫn null → chưa có dữ liệu, chờ
         if (isAuthenticated && user === null) return;
 
         // Đã đăng nhập mà vào trang guest-only (login, register...) → về trang chủ
@@ -62,5 +62,5 @@ export const useAuthRedirect = () => {
                 return;
             }
         }
-    }, [pathname, isAuthenticated, user, isLoading, router]);
+    }, [pathname, isAuthenticated, user, isLoading, _hasHydrated, router]);
 };

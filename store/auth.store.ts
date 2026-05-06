@@ -1,8 +1,3 @@
-// store/auth.store.ts
-// FIX issue 5: khi admin xóa user → user bị push về trạng thái chưa login
-// Cách: dùng socket event 'user_deleted' + interceptor API 401 để auto logout
-// Không cần Redis, không query DB thêm
-
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import {
@@ -22,6 +17,7 @@ const initialState = {
     isAuthenticated: false,
     isLoading: false,
     error: null,
+    _hasHydrated: false,
 };
 
 export const useAuthStore = create<AuthState>()(
@@ -40,35 +36,35 @@ export const useAuthStore = create<AuthState>()(
                 });
             },
 
-            /**
-             * FIX issue 5: gọi khi nhận socket event 'user_deleted' hoặc API trả 401.
-             * Không cần Redis hay query DB - chỉ cần clear store là user bị đẩy về login.
-             */
             forceLogout: (): void => {
-                set({ ...initialState });
+                localStorage.removeItem('token');
+                set({ ...initialState, _hasHydrated: get()._hasHydrated });
             },
 
             checkAndSync: async (): Promise<void> => {
                 const token = get().token;
                 if (!token) return;
+
                 try {
                     const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/me`, {
                         headers: { Authorization: `Bearer ${token}` },
                     });
-                    // FIX issue 5: nếu 401 hoặc 404 (user bị xóa) → logout ngay
+
                     if (!response.ok) {
-                        set({ ...initialState });
+                        set({ ...initialState, _hasHydrated: get()._hasHydrated });
                         return;
                     }
+
                     const data = await response.json();
                     const userData = data.user ?? data.data;
                     set({
                         user: userData,
                         coins: userData?.coins ?? 0,
                         isAuthenticated: true,
+                        _hasHydrated: get()._hasHydrated,
                     });
                 } catch {
-                    set({ ...initialState });
+                    set({ ...initialState, _hasHydrated: get()._hasHydrated });
                 }
             },
 
@@ -80,10 +76,12 @@ export const useAuthStore = create<AuthState>()(
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(credentials),
                     });
+
                     if (!response.ok) {
                         const error = await response.json();
                         throw new Error(error.message || 'Đăng nhập thất bại');
                     }
+
                     const data = await response.json();
                     set({
                         user: data.user,
@@ -92,7 +90,9 @@ export const useAuthStore = create<AuthState>()(
                         isAuthenticated: true,
                         isLoading: false,
                         error: null,
+                        _hasHydrated: get()._hasHydrated,
                     });
+                    localStorage.setItem('token', data.token);
                 } catch (error) {
                     set({
                         isLoading: false,
@@ -110,10 +110,12 @@ export const useAuthStore = create<AuthState>()(
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ credential }),
                     });
+
                     if (!response.ok) {
                         const error = await response.json();
                         throw new Error(error.message || 'Đăng nhập với Google thất bại');
                     }
+
                     const data = await response.json();
                     set({
                         user: data.user,
@@ -122,7 +124,9 @@ export const useAuthStore = create<AuthState>()(
                         isAuthenticated: true,
                         isLoading: false,
                         error: null,
+                        _hasHydrated: get()._hasHydrated,
                     });
+                    localStorage.setItem('token', data.token);
                 } catch (error) {
                     set({
                         isLoading: false,
@@ -140,10 +144,12 @@ export const useAuthStore = create<AuthState>()(
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(data),
                     });
+
                     if (!response.ok) {
                         const error = await response.json();
                         throw new Error(error.message || 'Đăng ký thất bại');
                     }
+
                     const result = await response.json();
                     set({
                         user: result.user,
@@ -152,7 +158,9 @@ export const useAuthStore = create<AuthState>()(
                         isAuthenticated: true,
                         isLoading: false,
                         error: null,
+                        _hasHydrated: get()._hasHydrated,
                     });
+                    localStorage.setItem('token', result.token);
                 } catch (error) {
                     set({
                         isLoading: false,
@@ -166,17 +174,21 @@ export const useAuthStore = create<AuthState>()(
                 set({ isLoading: true });
                 try {
                     const token = get().token;
-                    await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/logout`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            Authorization: `Bearer ${token}`,
-                        },
-                    });
+                    if (token) {
+                        await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/logout`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                Authorization: `Bearer ${token}`,
+                            },
+                        });
+                    }
                 } catch {
                     // ignore
                 } finally {
-                    set({ ...initialState });
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('auth-storage');
+                    set({ ...initialState, _hasHydrated: get()._hasHydrated });
                 }
             },
 
@@ -192,10 +204,12 @@ export const useAuthStore = create<AuthState>()(
                         },
                         body: JSON.stringify(userData),
                     });
+
                     if (!response.ok) {
                         const error = await response.json();
                         throw new Error(error.message || 'Cập nhật thất bại');
                     }
+
                     const data = await response.json();
                     set({
                         user: data.user,
@@ -224,10 +238,12 @@ export const useAuthStore = create<AuthState>()(
                         },
                         body: JSON.stringify(data),
                     });
+
                     if (!response.ok) {
                         const error = await response.json();
                         throw new Error(error.message || 'Đổi mật khẩu thất bại');
                     }
+
                     set({ isLoading: false, error: null });
                 } catch (error) {
                     set({
@@ -246,10 +262,12 @@ export const useAuthStore = create<AuthState>()(
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(data),
                     });
+
                     if (!response.ok) {
                         const error = await response.json();
                         throw new Error(error.message || 'Gửi yêu cầu thất bại');
                     }
+
                     set({ isLoading: false, error: null });
                 } catch (error) {
                     set({
@@ -268,10 +286,12 @@ export const useAuthStore = create<AuthState>()(
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(data),
                     });
+
                     if (!response.ok) {
                         const error = await response.json();
                         throw new Error(error.message || 'Đặt lại mật khẩu thất bại');
                     }
+
                     set({ isLoading: false, error: null });
                 } catch (error) {
                     set({
@@ -326,6 +346,19 @@ export const useAuthStore = create<AuthState>()(
                 coins: state.coins,
                 isAuthenticated: state.isAuthenticated,
             }),
+            onRehydrateStorage: () => (state) => {
+                if (state) {
+                    useAuthStore.setState({ _hasHydrated: true });
+                    if (state.token) {
+                        setTimeout(() => {
+                            const store = useAuthStore.getState();
+                            if (store.token) {
+                                store.checkAndSync();
+                            }
+                        }, 0);
+                    }
+                }
+            },
         }
     )
 );
