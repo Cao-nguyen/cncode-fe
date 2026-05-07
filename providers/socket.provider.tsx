@@ -1,4 +1,4 @@
-// providers/socket.provider.tsx (thêm phần online users vào context)
+// providers/socket.provider.tsx
 'use client';
 
 import {
@@ -46,8 +46,15 @@ const SocketContext = createContext<SocketContextType>({
 
 export const useSocket = () => useContext(SocketContext);
 
-const BASE_URL =
-    process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:5000';
+// SỬA: Lấy URL đúng, không bị double https
+const getBaseUrl = () => {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+    if (!apiUrl) return 'http://localhost:5000';
+    // Loại bỏ /api nếu có ở cuối
+    return apiUrl.replace(/\/api$/, '');
+};
+
+const BASE_URL = getBaseUrl();
 
 const getSessionId = () => {
     if (typeof window === 'undefined') return null;
@@ -67,6 +74,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     const [socketId, setSocketId] = useState<string | undefined>(undefined);
     const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([]);
     const registeredRef = useRef(false);
+    const reconnectAttempts = useRef(0);
 
     const joinPostRoom = useCallback(
         (postSlug: string) => {
@@ -88,16 +96,20 @@ export function SocketProvider({ children }: { children: ReactNode }) {
 
     // Khởi tạo socket
     useEffect(() => {
+        // Nếu đã có kết nối thì không tạo mới
         if (socketRef.current?.connected) return;
 
+        console.log('🔌 Connecting to socket at:', BASE_URL);
+
         const instance = io(BASE_URL, {
-            transports: ['polling', 'websocket'],
+            transports: ['websocket', 'polling'], // websocket trước, polling sau
             autoConnect: true,
             reconnection: true,
-            reconnectionAttempts: 10,
+            reconnectionAttempts: 5,
             reconnectionDelay: 1000,
             reconnectionDelayMax: 5000,
             timeout: 20000,
+            withCredentials: true,
         });
 
         socketRef.current = instance;
@@ -108,18 +120,26 @@ export function SocketProvider({ children }: { children: ReactNode }) {
             setSocketId(instance.id);
             setSocketState(instance);
             registeredRef.current = false;
+            reconnectAttempts.current = 0;
         });
 
-        instance.on('disconnect', () => {
-            console.log('🔌 Socket disconnected');
+        instance.on('disconnect', (reason) => {
+            console.log('🔌 Socket disconnected:', reason);
             setIsConnected(false);
             setSocketId(undefined);
             registeredRef.current = false;
         });
 
         instance.on('connect_error', (error) => {
-            console.error('Socket connect error:', error);
+            console.error('Socket connect error:', error.message);
             setIsConnected(false);
+            reconnectAttempts.current++;
+
+            // Thử reconnect với polling nếu websocket fail
+            if (reconnectAttempts.current > 3 && instance.io.opts.transports?.[0] === 'websocket') {
+                instance.io.opts.transports = ['polling', 'websocket'];
+                instance.connect();
+            }
         });
 
         return () => {
@@ -134,7 +154,8 @@ export function SocketProvider({ children }: { children: ReactNode }) {
 
     // Register
     useEffect(() => {
-        if (!socketState || !isConnected || registeredRef.current) return;
+        if (!socketState || !isConnected) return;
+        if (registeredRef.current) return;
 
         const sessionId = getSessionId();
 
@@ -201,7 +222,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
         };
     }, [socketState, isConnected]);
 
-    // Các event listeners khác...
+    // force_logout
     useEffect(() => {
         if (!socketState || !isConnected) return;
 
@@ -221,6 +242,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
         return () => { socketState.off('force_logout', handler); };
     }, [socketState, isConnected]);
 
+    // role_changed
     useEffect(() => {
         if (!socketState || !isConnected) return;
 
@@ -235,6 +257,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
         return () => { socketState.off('role_changed', handler); };
     }, [socketState, isConnected, setUser]);
 
+    // role_request_resolved
     useEffect(() => {
         if (!socketState || !isConnected) return;
 
@@ -253,6 +276,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
         return () => { socketState.off('role_request_resolved', handler); };
     }, [socketState, isConnected, setUser]);
 
+    // coins_updated
     useEffect(() => {
         if (!socketState || !isConnected) return;
 
@@ -266,6 +290,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
         return () => { socketState.off('coins_updated', handler); };
     }, [socketState, isConnected, updateCoins]);
 
+    // streak_updated
     useEffect(() => {
         if (!socketState || !isConnected) return;
 
@@ -280,6 +305,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
         return () => { socketState.off('streak_updated', handler); };
     }, [socketState, isConnected, updateStreak, updateCoins]);
 
+    // profile_updated
     useEffect(() => {
         if (!socketState || !isConnected) return;
 
@@ -291,6 +317,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
         return () => { socketState.off('profile_updated', handler); };
     }, [socketState, isConnected, setUser]);
 
+    // avatar_updated
     useEffect(() => {
         if (!socketState || !isConnected) return;
 
