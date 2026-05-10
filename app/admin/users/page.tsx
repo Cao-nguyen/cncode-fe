@@ -541,9 +541,6 @@ export default function AdminUsersPage() {
                             placeholder="Chọn vai trò"
                         />
                     </div>
-                    <button onClick={() => fetchUsers()} className="px-5 py-2.5 bg-[var(--cn-primary)] text-white rounded-xl text-sm font-medium hover:bg-[var(--cn-primary-hover)] transition flex items-center gap-2">
-                        <Search size={16} /> Tìm kiếm
-                    </button>
                 </div>
             </div>
 

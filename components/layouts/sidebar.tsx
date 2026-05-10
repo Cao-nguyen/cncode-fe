@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Document } from "iconsax-react";
+import { ArchiveBox, Document, Link1, Link2, Message, ShoppingBag, Star, StarSlash } from "iconsax-react";
 import { usePathname, useRouter } from "next/navigation";
 import {
     LayoutDashboard,
@@ -71,19 +71,6 @@ const menuItems = [
                 link: "/admin/violate",
                 icon: <ShieldX size={18} />,
             },
-            {
-                title: "Quản lí giao dịch",
-                link: "/admin/chitietgiaodich",
-                icon: (
-                    <img
-                        src="/icons/coins.svg"
-                        alt="xu"
-                        width={18}
-                        height={18}
-                        className="h-[18px] w-[18px]"
-                    />
-                ),
-            },
         ],
     },
     {
@@ -94,6 +81,38 @@ const menuItems = [
                 title: "Bài viết",
                 link: "/admin/blog",
                 icon: <Document size={18} variant="Outline" />,
+            },
+        ],
+    },
+    {
+        category: "Cộng đồng",
+        categoryId: "community",
+        listLink: [
+            {
+                title: "Tiếp thị liên kết",
+                link: "/admin/affiliate",
+                icon: <ShoppingBag size={18} variant="Outline" />,
+            },
+            {
+                title: "Đánh giá",
+                link: "/admin/danhgia",
+                icon: <Star size={18} variant="Outline" />,
+            },
+            {
+                title: "Góp ý",
+                link: "/admin/gopy",
+                icon: <ArchiveBox size={18} variant="Outline" />,
+            },
+        ],
+    },
+    {
+        category: "Tiện ích",
+        categoryId: "useful",
+        listLink: [
+            {
+                title: "Rút gọn liên kết",
+                link: "/admin/rutgonlink",
+                icon: <Link2 size={18} variant="Outline" />,
             },
         ],
     },

@@ -233,28 +233,7 @@ export default function AdminRatingsPage() {
                     </div>
                 </div>
 
-                {/* Search */}
-                <div className="rounded-xl p-4 sm:p-5 shadow-sm border border-main/20 bg-white dark:bg-gray-900">
-                    <div className="flex gap-2">
-                        <div className="relative flex-1">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} data-filled={true} />
-                            <input
-                                type="text"
-                                value={searchInput}
-                                onChange={(e) => setSearchInput(e.target.value)}
-                                onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                                placeholder="Tìm kiếm theo nội dung..."
-                                className="w-full pl-9 pr-3 py-2 text-sm border border-main/30 rounded-lg bg-white dark:bg-gray-900 focus:outline-none focus:border-main"
-                            />
-                        </div>
-                        <button
-                            onClick={handleSearch}
-                            className="px-4 py-2 bg-main text-white rounded-lg hover:bg-main/80 transition-colors text-sm whitespace-nowrap"
-                        >
-                            Tìm kiếm
-                        </button>
-                    </div>
-                </div>
+
 
                 {/* Danh sách đánh giá */}
                 {loading && ratings.length === 0 ? (

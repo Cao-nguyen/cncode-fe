@@ -204,26 +204,6 @@ export default function AdminAffiliatePage() {
                 ))}
             </div>
 
-
-            {/* Filters */}
-            <div className="bg-[var(--cn-bg-card)] rounded-xl p-4 shadow-sm border border-[var(--cn-border)]">
-                <div className="flex flex-wrap gap-3 items-center">
-                    <div className="flex-1 min-w-[200px]">
-                        <CustomInputSearch
-                            placeholder="Tìm kiếm theo tên hoặc email..."
-                            value={searchInput}
-                            onChange={setSearchInput}
-                            onSearch={(value) => { setSearchInput(value); setSearch(value); setPage(1); }}
-                            size="medium"
-                            variant="default"
-                        />
-                    </div>
-                    <button onClick={() => fetchStats()} className="px-5 py-2.5 bg-[var(--cn-primary)] text-white rounded-xl text-sm font-medium hover:bg-[var(--cn-primary-hover)] transition flex items-center gap-2">
-                        <Search size={16} /> Tìm kiếm
-                    </button>
-                </div>
-            </div>
-
             {/* Table */}
             <div className="bg-[var(--cn-bg-card)] rounded-xl shadow-sm border border-[var(--cn-border)] overflow-hidden">
                 <div className="overflow-x-auto">

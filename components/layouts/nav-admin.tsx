@@ -21,6 +21,10 @@ const PAGE_TITLES: Record<string, string> = {
     "/admin/dieukhoansudung": "Điều khoản sử dụng",
     "/admin/blog": "Bài viết",
     "/admin/chitietgiaodich": "Giao dịch",
+    "/admin/gopy": "Quản lí góp ý",
+    "/admin/affiliate": "Tiếp thị liên kết",
+    "/admin/rutgonlink": "Rút gọn liên kết",
+    "/admin/danhgia": "Đánh giá",
 };
 
 interface NavAdminProps {
