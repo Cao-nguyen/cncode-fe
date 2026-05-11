@@ -93,7 +93,7 @@ function buildSections(
             items: [
                 { icon: <ArchiveBook variant="Bold" style={iconSize} />, title: "CNbooks", subtitle: "Thư viện sách số", href: "/cnbooks" },
                 { icon: <BookOpen variant="Bold" style={iconSize} />, title: "Khoá học của tôi", subtitle: "Tiếp tục học tập", href: "/me/khoahoc" },
-                { icon: <FileText variant="Bold" style={iconSize} />, title: "Bài viết của tôi", subtitle: "Quản lý nội dung", href: "/me/baiviet" },
+                { icon: <FileText variant="Bold" style={iconSize} />, title: "Bài viết của tôi", subtitle: "Quản lý nội dung", href: "/me/blog" },
                 { icon: <Home variant="Bold" style={iconSize} />, title: "Khu vườn học tập", subtitle: "Không gian của bạn", href: "/khuvuonhoctap" },
                 { icon: <NhaHang variant="Bold" style={iconSize} />, title: "Nhà hàng công nghệ", subtitle: "Khám phá công nghệ", href: "/nhahangcongnghe" },
             ],
@@ -467,7 +467,7 @@ export default function Header() {
         { title: "Khoá học", link: "/khoahoc" },
         { title: "Luyện tập", link: "/luyentap" },
         { title: "Sự kiện", link: "/sukien" },
-        { title: "Bài viết", link: "/baiviet" },
+        { title: "Bài viết", link: "/blog" },
         { title: "Cửa hàng", link: "/cuahangso" },
     ];
 
@@ -477,7 +477,7 @@ export default function Header() {
         { title: "Khoá học", link: "/khoahoc", icon: Khoahoc },
         { title: "Luyện tập", link: "/luyentap", icon: Luyentap },
         { title: "Sự kiện", link: "/sukien", icon: Sukien },
-        { title: "Bài viết", link: "/baiviet", icon: Baiviet },
+        { title: "Bài viết", link: "/blog", icon: Baiviet },
         { title: "Cửa hàng", link: "/cuahangso", icon: Cuahangso },
     ];
 

@@ -2,7 +2,7 @@
 'use client';
 
 import { User, UserCheck, TrendingUp, Eye, Shield, X } from "lucide-react";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { statisticApi } from "@/lib/api/statistic.api";
 import { useSocket } from "@/providers/socket.provider";
 import { useAuthStore } from "@/store/auth.store";
@@ -28,10 +28,10 @@ export default function Analytics({ today: propToday, guest: propGuest, online: 
     const [showPopup, setShowPopup] = useState(false);
     const registeredRef = useRef(false);
     const intervalRef = useRef<NodeJS.Timeout | null>(null);
+    const reconnectAttemptsRef = useRef(0);
 
     const isAdmin = user?.role === 'admin';
 
-    // Lấy hoặc tạo sessionId cho guest
     const getSessionId = () => {
         let sessionId = localStorage.getItem('guestSessionId');
         if (!sessionId) {
@@ -41,21 +41,33 @@ export default function Analytics({ today: propToday, guest: propGuest, online: 
         return sessionId;
     };
 
-    // Register với socket
-    useEffect(() => {
-        if (!socket || !isConnected) return;
+    // Register với socket - có retry
+    const registerWithSocket = useCallback(() => {
+        if (!socket || !isConnected) {
+            // Nếu chưa kết nối, thử lại sau 2 giây
+            setTimeout(() => registerWithSocket(), 2000);
+            return;
+        }
         if (registeredRef.current) return;
 
         const sessionId = getSessionId();
-
         if (token && user?._id) {
             socket.emit('register', { userId: user._id, sessionId });
+            console.log('📡 Analytics registered user:', user._id);
         } else {
             socket.emit('register', { sessionId });
+            console.log('📡 Analytics registered guest:', sessionId);
         }
-
         registeredRef.current = true;
+        reconnectAttemptsRef.current = 0;
     }, [socket, isConnected, token, user?._id]);
+
+    // Đăng ký khi kết nối thay đổi
+    useEffect(() => {
+        if (socket && isConnected && !registeredRef.current) {
+            registerWithSocket();
+        }
+    }, [socket, isConnected, registerWithSocket]);
 
     // Lắng nghe realtime online stats từ socket
     useEffect(() => {
@@ -70,11 +82,12 @@ export default function Analytics({ today: propToday, guest: propGuest, online: 
 
         socket.on('online_stats', handleOnlineStats);
 
+        // Ping/pong để giữ connection
         const pingInterval = setInterval(() => {
             if (socket && socket.connected) {
                 socket.emit('ping');
             }
-        }, 10000);
+        }, 15000);
 
         return () => {
             socket.off('online_stats', handleOnlineStats);
@@ -85,6 +98,7 @@ export default function Analytics({ today: propToday, guest: propGuest, online: 
     // Khởi tạo data lần đầu và interval
     useEffect(() => {
         let isMounted = true;
+        let retryCount = 0;
 
         const loadInitialData = async () => {
             try {
@@ -101,10 +115,14 @@ export default function Analytics({ today: propToday, guest: propGuest, online: 
                         setOnlineStats(onlineRes.data);
                     }
                     setLoading(false);
+                    retryCount = 0;
                 }
             } catch (error) {
                 console.error('Failed to load initial data:', error);
-                if (isMounted) {
+                if (isMounted && retryCount < 3) {
+                    retryCount++;
+                    setTimeout(loadInitialData, 2000 * retryCount);
+                } else if (isMounted) {
                     setLoading(false);
                 }
             }
@@ -186,14 +204,13 @@ export default function Analytics({ today: propToday, guest: propGuest, online: 
                 })}
             </div>
 
-            {/* Popup hiển thị danh sách user online - chỉ admin mới thấy */}
+            {/* Popup hiển thị danh sách user online */}
             {isAdmin && showPopup && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowPopup(false)}>
                     <div
                         className="bg-white dark:bg-[#171717] rounded-xl w-full max-w-md max-h-[80vh] overflow-hidden shadow-xl border border-gray-200 dark:border-gray-800"
                         onClick={(e) => e.stopPropagation()}
                     >
-                        {/* Header */}
                         <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-800">
                             <div className="flex items-center gap-2">
                                 <Shield size={18} className="text-purple-500" />
@@ -209,7 +226,6 @@ export default function Analytics({ today: propToday, guest: propGuest, online: 
                             </button>
                         </div>
 
-                        {/* Danh sách user online */}
                         <div className="overflow-y-auto max-h-[60vh] p-2">
                             {onlineUsers.length === 0 ? (
                                 <div className="text-center py-8 text-gray-500 dark:text-gray-400">
@@ -241,7 +257,7 @@ export default function Analytics({ today: propToday, guest: propGuest, online: 
                                                 )}
                                                 <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5">
                                                     <span className="absolute inset-0 rounded-full bg-white dark:bg-gray-800" />
-                                                    <span className="absolute inset-0.5 rounded-full bg-green-500" />
+                                                    <span className="absolute inset-0.5 rounded-full bg-green-500 animate-pulse" />
                                                 </span>
                                             </div>
                                             <div>
@@ -258,7 +274,6 @@ export default function Analytics({ today: propToday, guest: propGuest, online: 
                             )}
                         </div>
 
-                        {/* Footer */}
                         <div className="p-3 border-t border-gray-200 dark:border-gray-800 text-center">
                             <p className="text-xs text-gray-500 dark:text-gray-400">
                                 Chỉ hiển thị với quản trị viên

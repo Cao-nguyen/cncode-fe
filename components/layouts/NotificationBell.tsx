@@ -184,7 +184,7 @@ function NotificationItem({ notification, onMarkAsRead, onClose }: NotificationI
     const isSystem = isSystemType(notification.type);
     const isRead = notification.read;
     const linkHref = notification.postSlug || notification.postId
-        ? `/baiviet/${notification.postSlug || notification.postId}`
+        ? `/blog/${notification.postSlug || notification.postId}`
         : null;
 
     const content = (

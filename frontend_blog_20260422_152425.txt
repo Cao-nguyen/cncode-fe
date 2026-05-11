@@ -286,7 +286,7 @@ export interface IBlogDetailProps {
 ========== PAGES ==========
 
 ========================================
-FILE: app/(user)/(main)/baiviet/page.tsx
+FILE: app/(user)/(main)/blog/page.tsx
 ========================================
 'use client';
 
@@ -396,7 +396,7 @@ export default function BlogPage(): React.ReactElement {
                             className="w-full md:w-80 pl-10 rounded-full border-slate-200 dark:border-slate-700 focus:border-black dark:focus:border-white"
                         />
                     </div>
-                    <Link href="/me/baiviet/create">
+                    <Link href="/me/blog/create">
                         <Button className="rounded-full bg-black text-white dark:bg-white dark:text-black hover:opacity-90">
                             <Plus size={18} className="mr-1" />
                             Tạo blog
@@ -426,7 +426,7 @@ export default function BlogPage(): React.ReactElement {
                             createdAt={post.createdAt}
                             author={post.author.fullName}
                             avatar={post.author.avatar || '/avatar.png'}
-                            link={`/baiviet/${post.slug}`}
+                            link={`/blog/${post.slug}`}
                         />
                     ))
                 ) : (
@@ -464,12 +464,12 @@ export default function BlogPage(): React.ReactElement {
 }
 
 ========================================
-FILE: app/(user)/(main)/baiviet/[slug]/page.tsx
+FILE: app/(user)/(main)/blog/[slug]/page.tsx
 ========================================
 File not found
 
 ========================================
-FILE: app/(user)/(main)/me/baiviet/page.tsx
+FILE: app/(user)/(main)/me/blog/page.tsx
 ========================================
 'use client';
 
@@ -563,7 +563,7 @@ export default function MyPostsPage() {
                         <p className="text-gray-600 dark:text-gray-400 mt-1">Quản lý các bài viết bạn đã đăng</p>
                     </div>
                     <Link
-                        href="/me/baiviet/create"
+                        href="/me/blog/create"
                         className="flex items-center justify-center gap-2 px-4 py-2.5 bg-black dark:bg-white text-white dark:text-black rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors font-medium"
                     >
                         <Plus size={18} />
@@ -577,7 +577,7 @@ export default function MyPostsPage() {
                         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Chưa có bài viết</h3>
                         <p className="text-gray-600 dark:text-gray-400 mb-4">Bạn chưa viết bài nào</p>
                         <Link
-                            href="/me/baiviet/create"
+                            href="/me/blog/create"
                             className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                         >
                             <Plus size={18} />
@@ -647,7 +647,7 @@ export default function MyPostsPage() {
                                                     Xem
                                                 </Link>
                                                 <Link
-                                                    href={`/me/baiviet/edit/${post._id}`}
+                                                    href={`/me/blog/edit/${post._id}`}
                                                     className="flex items-center gap-1 px-3 py-1.5 text-sm bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
                                                 >
                                                     <Edit size={14} />
@@ -692,7 +692,7 @@ export default function MyPostsPage() {
 }
 
 ========================================
-FILE: app/(user)/(main)/me/baiviet/create/page.tsx
+FILE: app/(user)/(main)/me/blog/create/page.tsx
 ========================================
 'use client';
 
@@ -810,7 +810,7 @@ export default function CreatePostPage() {
 
             if (result.success) {
                 toast.success(status === 'draft' ? 'Đã lưu bài nháp' : 'Đăng bài thành công!');
-                router.push('/me/baiviet');
+                router.push('/me/blog');
             } else {
                 toast.error(result.message || 'Đăng bài thất bại');
             }
@@ -835,7 +835,7 @@ export default function CreatePostPage() {
             <div className="container mx-auto px-5 lg:px-10 max-w-5xl">
                 <div className="flex items-center justify-between mb-6 gap-3 flex-wrap">
                     <Link
-                        href="/me/baiviet"
+                        href="/me/blog"
                         className="inline-flex items-center gap-2 text-gray-600 hover:text-blue-600"
                     >
                         <ArrowLeft size={20} />
@@ -855,7 +855,7 @@ export default function CreatePostPage() {
                         </button>
                         <button
                             type="button"
-                            onClick={() => router.push('/me/baiviet')}
+                            onClick={() => router.push('/me/blog')}
                             className="px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg text-center hover:bg-gray-50 dark:hover:bg-gray-800"
                         >
                             Hủy
@@ -946,7 +946,7 @@ export default function CreatePostPage() {
 }
 
 ========================================
-FILE: app/(user)/(main)/me/baiviet/edit/[id]/page.tsx
+FILE: app/(user)/(main)/me/blog/edit/[id]/page.tsx
 ========================================
 File not found
 
@@ -981,7 +981,7 @@ export default function BlogCard({
     createdAt,
     author,
     avatar,
-    link = '/baiviet',
+    link = '/blog',
 }: IBlogCardProps): React.ReactElement {
     const plainDescription = stripMarkdown(description);
 
@@ -1995,7 +1995,7 @@ export default function BlogBreadcrumb({ title = "Bài viết" }: BlogBreadcrumb
 
                 <BreadcrumbItem className="shrink-0">
                     <BreadcrumbLink asChild>
-                        <Link href="/baiviet" className="hover:text-foreground transition">
+                        <Link href="/blog" className="hover:text-foreground transition">
                             Bài viết
                         </Link>
                     </BreadcrumbLink>
