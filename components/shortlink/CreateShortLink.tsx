@@ -1,10 +1,7 @@
 // components/shortlink/CreateShortLink.tsx
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { toast } from 'sonner';
 import { Link21, Heart, Warning2, TickCircle, TickSquare, AddSquare as Square } from 'iconsax-react';
 import { Loader2 } from 'lucide-react';
@@ -28,49 +25,56 @@ function normalizeUrl(url: string): string | null {
     }
 }
 
-const schema = z.object({
-    originalUrl: z
-        .string()
-        .min(1, 'Vui lòng nhập URL')
-        .refine((v) => !!normalizeUrl(v), { message: 'URL không hợp lệ' }),
-    useCustom: z.boolean().default(false),
-    customAlias: z.string().optional(),
-    expiresInDays: z.preprocess(
-        (v) => (v === '' || v === undefined ? undefined : Number(v)),
-        z.number().int().min(1, 'Tối thiểu 1 ngày').optional()
-    ),
-});
-
-type FormData = z.infer<typeof schema>;
-
 export function CreateShortLink() {
     const [aliasState, setAliasState] = useState<AliasState>('idle');
     const [checkedAlias, setCheckedAlias] = useState('');
     const [createdLink, setCreatedLink] = useState<ShortLink | null>(null);
-    const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const [originalUrl, setOriginalUrl] = useState('');
+    const [originalUrlError, setOriginalUrlError] = useState('');
+    const [useCustom, setUseCustom] = useState(false);
+    const [customAlias, setCustomAlias] = useState('');
+    const [expiresInDays, setExpiresInDays] = useState<number | undefined>(undefined);
+    const [isCheckingAlias, setIsCheckingAlias] = useState(false);
 
+    const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const { createLink, isCreating } = useShortLinkStore();
 
-    const {
-        register,
-        handleSubmit,
-        watch,
-        setValue,
-        reset,
-        formState: { errors },
-    } = useForm<FormData>({
-        resolver: zodResolver(schema),
-        defaultValues: { originalUrl: '', useCustom: false, customAlias: '', expiresInDays: undefined },
-    });
+    // Check alias availability - dùng useCallback để tránh re-run không cần thiết
+    const checkAliasAvailability = useCallback(async (alias: string) => {
+        if (!alias || alias.length < 3) {
+            setAliasState('idle');
+            setCheckedAlias('');
+            setIsCheckingAlias(false);
+            return;
+        }
 
-    const useCustom = watch('useCustom');
-    const customAlias = watch('customAlias') ?? '';
+        setIsCheckingAlias(true);
+        setAliasState('checking');
 
+        try {
+            const available = await shortlinkApi.checkAlias(alias);
+            setAliasState(available ? 'available' : 'taken');
+            setCheckedAlias(alias);
+        } catch {
+            setAliasState('idle');
+            toast.error('Không thể kiểm tra alias');
+        } finally {
+            setIsCheckingAlias(false);
+        }
+    }, []);
+
+    // Debounce customAlias changes
     useEffect(() => {
         if (!useCustom) return;
 
         const alias = customAlias.trim();
 
+        // Clear previous timeout
+        if (debounceRef.current) {
+            clearTimeout(debounceRef.current);
+        }
+
+        // Reset state if alias is empty or too short
         if (alias.length === 0) {
             setAliasState('idle');
             setCheckedAlias('');
@@ -82,54 +86,85 @@ export function CreateShortLink() {
             return;
         }
 
+        // Set checking state immediately
         setAliasState('checking');
 
-        if (debounceRef.current) clearTimeout(debounceRef.current);
-
-        debounceRef.current = setTimeout(async () => {
-            try {
-                const available = await shortlinkApi.checkAlias(alias);
-                setAliasState(available ? 'available' : 'taken');
-                setCheckedAlias(alias);
-            } catch {
-                setAliasState('idle');
-                toast.error('Không thể kiểm tra alias');
-            }
+        // Debounce API call
+        debounceRef.current = setTimeout(() => {
+            checkAliasAvailability(alias);
         }, 600);
 
         return () => {
-            if (debounceRef.current) clearTimeout(debounceRef.current);
+            if (debounceRef.current) {
+                clearTimeout(debounceRef.current);
+            }
         };
-    }, [customAlias, useCustom]);
+    }, [customAlias, useCustom, checkAliasAvailability]);
 
-    const onSubmit = async (data: FormData) => {
-        const alias = data.customAlias?.trim();
+    const validateOriginalUrl = (url: string) => {
+        if (!url.trim()) {
+            setOriginalUrlError('Vui lòng nhập URL');
+            return false;
+        }
+        const normalized = normalizeUrl(url);
+        if (!normalized) {
+            setOriginalUrlError('URL không hợp lệ');
+            return false;
+        }
+        setOriginalUrlError('');
+        return true;
+    };
 
-        if (data.useCustom && alias) {
-            if (aliasState === 'checking') {
+    const handleOriginalUrlChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        const value = e.target.value;
+        setOriginalUrl(value);
+        validateOriginalUrl(value);
+    };
+
+    const handleExpiryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+        setExpiresInDays(value ? Number(value) : undefined);
+    };
+
+    const handleSubmit = async () => {
+        // Validate URL
+        if (!originalUrl.trim()) {
+            setOriginalUrlError('Vui lòng nhập URL');
+            toast.error('Vui lòng nhập URL');
+            return;
+        }
+
+        const normalizedUrl = normalizeUrl(originalUrl);
+        if (!normalizedUrl) {
+            setOriginalUrlError('URL không hợp lệ');
+            toast.error('URL không hợp lệ');
+            return;
+        }
+
+        // Validate custom alias
+        if (useCustom && customAlias.trim()) {
+            if (isCheckingAlias || aliasState === 'checking') {
                 toast.warning('Đang kiểm tra alias, vui lòng chờ...');
                 return;
             }
-            if (alias !== checkedAlias || aliasState !== 'available') {
+            if (customAlias !== checkedAlias || aliasState !== 'available') {
                 toast.error('Alias này không khả dụng');
                 return;
             }
         }
 
-        const normalizedUrl = normalizeUrl(data.originalUrl);
-        if (!normalizedUrl) {
-            toast.error('URL không hợp lệ');
-            return;
-        }
-
         try {
             const link = await createLink({
                 originalUrl: normalizedUrl,
-                customAlias: data.useCustom && alias ? alias : undefined,
-                expiresInDays: data.expiresInDays,
+                customAlias: useCustom && customAlias.trim() ? customAlias.trim() : undefined,
+                expiresInDays: expiresInDays,
             });
             setCreatedLink(link);
-            reset();
+            // Reset form
+            setOriginalUrl('');
+            setCustomAlias('');
+            setExpiresInDays(undefined);
+            setUseCustom(false);
             setAliasState('idle');
             setCheckedAlias('');
             toast.success('Tạo link rút gọn thành công!');
@@ -138,19 +173,22 @@ export function CreateShortLink() {
         }
     };
 
+    const isSubmitting = isCreating || isCheckingAlias;
+
     return (
         <div className="space-y-5">
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <div className="space-y-4">
                 {/* URL gốc */}
                 <div className="flex flex-col gap-1.5">
                     <label className="uppercase text-xs font-semibold tracking-wide text-[var(--cn-text-sub)]">
                         Đường dẫn gốc
                     </label>
                     <CustomInput
-                        {...register('originalUrl')}
+                        value={originalUrl}
+                        onChange={handleOriginalUrlChange}
                         type="text"
                         placeholder="https://example.com/duong-dan-rat-dai"
-                        error={errors.originalUrl?.message}
+                        error={originalUrlError}
                         icon={<Link21 size={15} variant="Outline" />}
                     />
                 </div>
@@ -159,9 +197,9 @@ export function CreateShortLink() {
                 <button
                     type="button"
                     onClick={() => {
-                        setValue('useCustom', !useCustom);
+                        setUseCustom(!useCustom);
                         if (useCustom) {
-                            setValue('customAlias', '');
+                            setCustomAlias('');
                             setAliasState('idle');
                             setCheckedAlias('');
                         }
@@ -182,37 +220,37 @@ export function CreateShortLink() {
                         <label className="uppercase text-xs font-semibold tracking-wide text-[var(--cn-text-sub)]">
                             Alias tùy chỉnh
                         </label>
-                        <div className="flex">
-                            <div className="flex items-center px-4 py-2.5 rounded-l-[var(--cn-radius-sm)] border border-r-0 border-[var(--cn-border)] bg-[var(--cn-bg-section)] text-sm text-[var(--cn-text-muted)] whitespace-nowrap">
-                                cncode.io.vn/s/
-                            </div>
-                            <input
-                                type="text"
-                                value={customAlias}
-                                onChange={(e) => setValue('customAlias', e.target.value)}
-                                placeholder="alias-cua-ban"
-                                className={`
-                    w-full px-4 py-2.5 bg-[var(--cn-bg-card)] text-sm text-[var(--cn-text-main)] placeholder:text-[var(--cn-text-muted)] outline-none
-                    rounded-r-[var(--cn-radius-sm)] border border-l-0 border-[var(--cn-border)]
-                    focus:border-[var(--cn-primary)] focus:ring-2 focus:ring-[var(--cn-primary)]/20
-                    transition-all duration-200
-                    ${aliasState === 'taken' ? 'border-red-400 focus:border-red-400' : ''}
-                    ${aliasState === 'available' ? 'border-green-400 focus:border-green-400' : ''}
-                `}
-                            />
-                        </div>
-                        <div className="relative h-5">
-                            {aliasState === 'checking' && (
-                                <div className="flex items-center gap-1 text-xs text-[var(--cn-text-muted)] absolute right-3 top-1/2 -translate-y-1/2">
-                                    <Loader2 size={14} className="animate-spin" />
+                        <div className="relative">
+                            <div className="flex">
+                                <div className="flex items-center px-4 py-2.5 rounded-l-[var(--cn-radius-sm)] border border-r-0 border-[var(--cn-border)] bg-[var(--cn-bg-section)] text-sm text-[var(--cn-text-muted)] whitespace-nowrap">
+                                    cncode.io.vn/s/
                                 </div>
-                            )}
-                            {aliasState === 'available' && (
-                                <TickCircle size={16} variant="Bold" className="absolute right-3 top-1/2 -translate-y-1/2 text-green-500" />
-                            )}
-                            {aliasState === 'taken' && (
-                                <Warning2 size={16} variant="Bold" className="absolute right-3 top-1/2 -translate-y-1/2 text-red-500" />
-                            )}
+                                <input
+                                    type="text"
+                                    value={customAlias}
+                                    onChange={(e) => setCustomAlias(e.target.value)}
+                                    placeholder="alias-cua-ban"
+                                    className={`
+                                        w-full px-4 py-2.5 bg-[var(--cn-bg-card)] text-sm text-[var(--cn-text-main)] placeholder:text-[var(--cn-text-muted)] outline-none
+                                        rounded-r-[var(--cn-radius-sm)] border border-l-0 border-[var(--cn-border)]
+                                        focus:border-[var(--cn-primary)] focus:ring-2 focus:ring-[var(--cn-primary)]/20
+                                        transition-all duration-200
+                                        ${aliasState === 'taken' ? 'border-red-400 focus:border-red-400' : ''}
+                                        ${aliasState === 'available' ? 'border-green-400 focus:border-green-400' : ''}
+                                    `}
+                                />
+                            </div>
+                            <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                                {aliasState === 'checking' && (
+                                    <Loader2 size={16} className="animate-spin text-[var(--cn-text-muted)]" />
+                                )}
+                                {aliasState === 'available' && (
+                                    <TickCircle size={16} variant="Bold" className="text-green-500" />
+                                )}
+                                {aliasState === 'taken' && (
+                                    <Warning2 size={16} variant="Bold" className="text-red-500" />
+                                )}
+                            </div>
                         </div>
                         {aliasState === 'taken' && (
                             <p className="flex items-center gap-1 text-xs text-red-500">
@@ -240,28 +278,30 @@ export function CreateShortLink() {
                         Hết hạn sau{' '}
                         <span className="font-normal text-[var(--cn-text-muted)] normal-case">(ngày, để trống = vĩnh viễn)</span>
                     </label>
-                    <CustomInput
+                    <input
+                        type="number"
                         min={1}
-                        {...register('expiresInDays')}
+                        value={expiresInDays || ''}
+                        onChange={handleExpiryChange}
                         placeholder="Ví dụ: 30"
-                        error={errors.expiresInDays?.message}
+                        className="w-full px-4 py-2 border border-[var(--cn-border)] rounded-[var(--cn-radius-sm)] bg-[var(--cn-bg-card)] text-[var(--cn-text-main)] placeholder:text-[var(--cn-text-muted)] focus:outline-none focus:border-[var(--cn-primary)] focus:ring-2 focus:ring-[var(--cn-primary)]/20 transition-all"
                     />
                 </div>
 
                 {/* Submit button */}
                 <CustomButton
-                    type="submit"
+                    onClick={handleSubmit}
                     variant="primary"
                     size="medium"
                     fullWidth
-                    loading={isCreating || (useCustom && aliasState === 'checking')}
-                    disabled={isCreating || (useCustom && aliasState === 'checking')}
+                    loading={isSubmitting}
+                    disabled={isSubmitting}
                     className="mt-2"
                 >
                     <Link21 size={16} variant="Bold" />
                     Tạo link rút gọn
                 </CustomButton>
-            </form>
+            </div>
 
             {/* Result */}
             {createdLink && (
