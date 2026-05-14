@@ -7,12 +7,12 @@ import { Eye, EyeOff, Search, CheckCircle, Loader2 } from 'lucide-react';
 interface CustomInputProps {
     label?: string;
     placeholder?: string;
-    value?: string;
+    value?: string | number;
     onChange?: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
     error?: string;
     success?: boolean;
     icon?: React.ReactNode;
-    type?: 'text' | 'email' | 'password' | 'tel' | 'search' | 'date';
+    type?: 'text' | 'email' | 'password' | 'tel' | 'search' | 'date' | 'number';
     prefix?: string;
     suffix?: React.ReactNode;
     textarea?: boolean;
@@ -44,10 +44,10 @@ export const CustomInput: React.FC<CustomInputProps> = ({
     isLoading = false,
 }) => {
     const [showPassword, setShowPassword] = useState(false);
-    const [charCount, setCharCount] = useState(value?.length || 0);
+    const [charCount, setCharCount] = useState(String(value || '').length);
 
     const inputType = type === 'password' && showPassword ? 'text' : type;
-    const isFilled = filled || (value && value.length > 0);
+    const isFilled = filled || (value && String(value).length > 0);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         if (onChange) {
