@@ -1,14 +1,17 @@
 // components/custom/CustomInput.tsx
-'use client'
+'use client';
 
-import React, { useState } from 'react';
+import React, { forwardRef } from 'react';
 import { Eye, EyeOff, Search, CheckCircle, Loader2 } from 'lucide-react';
+import { useState } from 'react';
 
 interface CustomInputProps {
     label?: string;
     placeholder?: string;
     value?: string | number;
     onChange?: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
+    onBlur?: (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
+    name?: string;
     error?: string;
     success?: boolean;
     icon?: React.ReactNode;
@@ -22,13 +25,17 @@ interface CustomInputProps {
     required?: boolean;
     disabled?: boolean;
     isLoading?: boolean;
+    min?: number;
+    max?: number;
 }
 
-export const CustomInput: React.FC<CustomInputProps> = ({
+export const CustomInput = forwardRef<HTMLInputElement, CustomInputProps>(({
     label,
     placeholder,
     value,
     onChange,
+    onBlur,
+    name,
     error,
     success,
     icon,
@@ -42,7 +49,9 @@ export const CustomInput: React.FC<CustomInputProps> = ({
     required = false,
     disabled = false,
     isLoading = false,
-}) => {
+    min,
+    max,
+}, ref) => {
     const [showPassword, setShowPassword] = useState(false);
     const [charCount, setCharCount] = useState(String(value || '').length);
 
@@ -58,7 +67,6 @@ export const CustomInput: React.FC<CustomInputProps> = ({
         }
     };
 
-    // Font size: mobile/tablet = 12px, laptop = 14px
     const baseClasses = `w-full px-3 sm:px-4 py-2 bg-[var(--cn-bg-card)] border rounded-[var(--cn-radius-sm)] transition-all duration-200 outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed text-[12px] lg:text-[14px] ${error
         ? 'border-[var(--cn-error)] focus:border-[var(--cn-error)] focus:ring-[var(--cn-error)]/20'
         : success
@@ -93,9 +101,11 @@ export const CustomInput: React.FC<CustomInputProps> = ({
                 )}
                 {textarea ? (
                     <textarea
+                        name={name}
                         placeholder={placeholder}
                         value={value}
                         onChange={handleChange}
+                        onBlur={onBlur}
                         rows={rows}
                         maxLength={maxLength}
                         disabled={disabled}
@@ -103,11 +113,16 @@ export const CustomInput: React.FC<CustomInputProps> = ({
                     />
                 ) : (
                     <input
+                        ref={ref}
+                        name={name}
                         type={inputType}
                         placeholder={placeholder}
                         value={value}
                         onChange={handleChange}
+                        onBlur={onBlur}
                         disabled={disabled}
+                        min={min}
+                        max={max}
                         className={baseClasses}
                     />
                 )}
@@ -137,4 +152,6 @@ export const CustomInput: React.FC<CustomInputProps> = ({
             )}
         </div>
     );
-};
+});
+
+CustomInput.displayName = 'CustomInput';
