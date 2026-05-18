@@ -47,8 +47,22 @@ const SocketContext = createContext<SocketContextType>({
 
 export const useSocket = () => useContext(SocketContext);
 
-// Lấy base URL từ env
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.cncode.io.vn';
+// Lấy base URL - tự động phân biệt localhost và production
+const getBaseUrl = (): string => {
+    // Nếu đang chạy trên localhost
+    if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
+        return 'http://localhost:5000';
+    }
+
+    // Production: dùng env hoặc domain mặc định
+    if (process.env.NEXT_PUBLIC_API_URL) {
+        return process.env.NEXT_PUBLIC_API_URL;
+    }
+
+    return 'https://api.cncode.io.vn';
+};
+
+const BASE_URL = getBaseUrl();
 
 // Debug log
 if (typeof window !== 'undefined') {
@@ -126,7 +140,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
             if (socketRef.current?.connected) {
                 socketRef.current.emit('heartbeat', { timestamp: Date.now() });
             }
-        }, 20000); // 20 giây
+        }, 20000);
     }, []);
 
     // Start activity tracking
@@ -148,7 +162,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
             if (socketRef.current?.connected) {
                 socketRef.current.emit('user_activity', { timestamp: Date.now() });
             }
-        }, 60000); // 1 phút
+        }, 60000);
 
         return () => {
             window.removeEventListener('click', handleUserActivity);
@@ -321,6 +335,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
         if (!socketState || !isConnected) return;
 
         const handleOnlineUsers = (users: OnlineUser[]) => {
+            console.log('📡 Received online_users:', users);
             setOnlineUsers(users);
         };
 
