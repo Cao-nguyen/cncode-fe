@@ -1,7 +1,6 @@
-// components/common/Analytics.tsx
 'use client';
 
-import { User, UserCheck, TrendingUp, Eye, Shield, X } from "lucide-react";
+import { User, UserCheck, TrendingUp, Eye, Shield, X, Smartphone, Monitor, Laptop } from "lucide-react";
 import { useEffect, useState, useRef, useCallback } from "react";
 import { statisticApi } from "@/lib/api/statistic.api";
 import { useSocket } from "@/providers/socket.provider";
@@ -12,7 +11,29 @@ interface OnlineUser {
     userId: string;
     fullName: string;
     avatar?: string;
+    role?: string;
+    device?: string;
 }
+
+// 1. Khai báo hàm check thiết bị ở đây
+const getDeviceInfo = () => {
+    if (typeof window === 'undefined') return 'Unknown';
+    const ua = navigator.userAgent;
+    if (/android/i.test(ua)) return 'Android';
+    if (/iPad|iPhone|iPod/.test(ua)) return 'iOS';
+    if (/windows/i.test(ua)) return 'Windows';
+    if (/mac/i.test(ua)) return 'macOS';
+    if (/linux/i.test(ua)) return 'Linux';
+    return 'Web/Other';
+};
+
+const getDeviceIcon = (deviceStr?: string) => {
+    if (!deviceStr) return <Monitor size={14} className="text-gray-400" />;
+    const d = deviceStr.toLowerCase();
+    if (d.includes('android') || d.includes('ios')) return <Smartphone size={14} className="text-green-500" />;
+    if (d.includes('mac') || d.includes('windows')) return <Laptop size={14} className="text-blue-500" />;
+    return <Monitor size={14} className="text-gray-400" />;
+};
 
 export default function Analytics({ today: propToday, guest: propGuest, online: propOnline, total: propTotal }: {
     today?: number;
@@ -41,35 +62,40 @@ export default function Analytics({ today: propToday, guest: propGuest, online: 
         return sessionId;
     };
 
-    // Register với socket - có retry
+    // 2. Sửa lại hàm này: Bổ sung thêm device và role khi gửi emit('register')
     const registerWithSocket = useCallback(() => {
         if (!socket || !isConnected) {
-            // Nếu chưa kết nối, thử lại sau 2 giây
             setTimeout(() => registerWithSocket(), 2000);
             return;
         }
         if (registeredRef.current) return;
 
         const sessionId = getSessionId();
+        const device = getDeviceInfo(); // Lấy thông tin thiết bị
+
         if (token && user?._id) {
-            socket.emit('register', { userId: user._id, sessionId });
+            // Đã bổ sung role và device ở đây
+            socket.emit('register', { userId: user._id, sessionId, role: user.role, device });
             console.log('📡 Analytics registered user:', user._id);
         } else {
-            socket.emit('register', { sessionId });
+            // Đã bổ sung device ở đây
+            socket.emit('register', { sessionId, device });
             console.log('📡 Analytics registered guest:', sessionId);
         }
         registeredRef.current = true;
         reconnectAttemptsRef.current = 0;
-    }, [socket, isConnected, token, user?._id]);
+    }, [socket, isConnected, token, user?._id, user?.role]);
 
-    // Đăng ký khi kết nối thay đổi
+    // ==============================================
+    // GIỮ NGUYÊN TOÀN BỘ PHẦN CODE CÒN LẠI BÊN DƯỚI
+    // ==============================================
+
     useEffect(() => {
         if (socket && isConnected && !registeredRef.current) {
             registerWithSocket();
         }
     }, [socket, isConnected, registerWithSocket]);
 
-    // Lắng nghe realtime online stats từ socket
     useEffect(() => {
         if (!socket || !isConnected) return;
 
@@ -82,7 +108,6 @@ export default function Analytics({ today: propToday, guest: propGuest, online: 
 
         socket.on('online_stats', handleOnlineStats);
 
-        // Ping/pong để giữ connection
         const pingInterval = setInterval(() => {
             if (socket && socket.connected) {
                 socket.emit('ping');
@@ -95,13 +120,14 @@ export default function Analytics({ today: propToday, guest: propGuest, online: 
         };
     }, [socket, isConnected]);
 
-    // Khởi tạo data lần đầu và interval
     useEffect(() => {
         let isMounted = true;
         let retryCount = 0;
 
         const loadInitialData = async () => {
             try {
+                await new Promise(resolve => setTimeout(resolve, 500));
+
                 const [statsRes, onlineRes] = await Promise.all([
                     statisticApi.getPublicStats(),
                     statisticApi.getOnlineStats()
@@ -204,7 +230,6 @@ export default function Analytics({ today: propToday, guest: propGuest, online: 
                 })}
             </div>
 
-            {/* Popup hiển thị danh sách user online */}
             {isAdmin && showPopup && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowPopup(false)}>
                     <div
@@ -237,36 +262,57 @@ export default function Analytics({ today: propToday, guest: propGuest, online: 
                                     {onlineUsers.map((onlineUser) => (
                                         <div
                                             key={onlineUser.userId}
-                                            className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition"
+                                            className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition"
                                         >
-                                            <div className="relative">
-                                                {onlineUser.avatar ? (
-                                                    <Image
-                                                        src={onlineUser.avatar}
-                                                        alt={onlineUser.fullName}
-                                                        width={36}
-                                                        height={36}
-                                                        className="w-9 h-9 rounded-full object-cover"
-                                                    />
-                                                ) : (
-                                                    <div className="w-9 h-9 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-                                                        <span className="text-sm font-semibold text-purple-600 dark:text-purple-400">
-                                                            {getUserInitial(onlineUser.fullName)}
-                                                        </span>
+                                            <div className="flex items-center gap-3">
+                                                <div className="relative">
+                                                    {onlineUser.avatar ? (
+                                                        <Image
+                                                            src={onlineUser.avatar}
+                                                            alt={onlineUser.fullName}
+                                                            width={36}
+                                                            height={36}
+                                                            className="w-9 h-9 rounded-full object-cover"
+                                                        />
+                                                    ) : (
+                                                        <div className="w-9 h-9 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                                                            <span className="text-sm font-semibold text-purple-600 dark:text-purple-400">
+                                                                {getUserInitial(onlineUser.fullName)}
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                    <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5">
+                                                        <span className="absolute inset-0 rounded-full bg-white dark:bg-[#171717]" />
+                                                        <span className="absolute inset-0.5 rounded-full bg-green-500 animate-pulse" />
+                                                    </span>
+                                                </div>
+                                                <div>
+                                                    <div className="flex items-center gap-2">
+                                                        <p className="text-sm font-medium text-gray-900 dark:text-white">
+                                                            {onlineUser.fullName}
+                                                        </p>
+                                                        {onlineUser.role && (
+                                                            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${onlineUser.role === 'admin'
+                                                                ? 'bg-red-100 text-red-600 dark:bg-red-900/30'
+                                                                : 'bg-blue-100 text-blue-600 dark:bg-blue-900/30'
+                                                                }`}>
+                                                                {onlineUser.role.toUpperCase()}
+                                                            </span>
+                                                        )}
                                                     </div>
-                                                )}
-                                                <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5">
-                                                    <span className="absolute inset-0 rounded-full bg-white dark:bg-gray-800" />
-                                                    <span className="absolute inset-0.5 rounded-full bg-green-500 animate-pulse" />
-                                                </span>
+                                                    <p className="text-[11px] text-gray-500 dark:text-gray-400">
+                                                        ID: {onlineUser.userId.slice(-8)}
+                                                    </p>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                                    {onlineUser.fullName}
-                                                </p>
-                                                <p className="text-xs text-gray-500 dark:text-gray-400">
-                                                    ID: {onlineUser.userId.slice(-8)}
-                                                </p>
+
+                                            <div className="flex flex-col items-end gap-1">
+                                                <div className="flex items-center gap-1.5 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-md">
+                                                    {getDeviceIcon(onlineUser.device)}
+                                                    <span className="text-[10px] font-medium text-gray-600 dark:text-gray-300">
+                                                        {onlineUser.device || 'Unknown'}
+                                                    </span>
+                                                </div>
                                             </div>
                                         </div>
                                     ))}

@@ -1,4 +1,3 @@
-// providers/socket.provider.tsx
 'use client';
 
 import {
@@ -24,6 +23,8 @@ interface OnlineUser {
     userId: string;
     fullName: string;
     avatar?: string;
+    role?: string;
+    device?: string;
 }
 
 interface SocketContextType {
@@ -64,6 +65,18 @@ const getSessionId = () => {
     return sessionId;
 };
 
+// Hàm lấy thông tin thiết bị
+const getDeviceInfo = () => {
+    if (typeof window === 'undefined') return 'Unknown';
+    const ua = navigator.userAgent;
+    if (/android/i.test(ua)) return 'Android';
+    if (/iPad|iPhone|iPod/.test(ua)) return 'iOS';
+    if (/windows/i.test(ua)) return 'Windows';
+    if (/mac/i.test(ua)) return 'macOS';
+    if (/linux/i.test(ua)) return 'Linux';
+    return 'Web/Other';
+};
+
 export function SocketProvider({ children }: { children: ReactNode }) {
     const { user, token, updateCoins, updateStreak, setUser } = useAuthStore();
     const socketRef = useRef<Socket | null>(null);
@@ -75,7 +88,6 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     const reconnectAttempts = useRef(0);
     const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
     const activityIntervalRef = useRef<NodeJS.Timeout | null>(null);
-    // ✅ FIX: Khởi tạo với null, sau đó trong useEffect mới set giá trị
     const lastPongRef = useRef<number | null>(null);
     const forceReconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -97,23 +109,19 @@ export function SocketProvider({ children }: { children: ReactNode }) {
         [socketState]
     );
 
-    // Hàm gửi heartbeat để giữ connection
     const startHeartbeat = useCallback(() => {
         if (heartbeatIntervalRef.current) clearInterval(heartbeatIntervalRef.current);
 
         heartbeatIntervalRef.current = setInterval(() => {
             if (socketRef.current?.connected) {
                 socketRef.current.emit('heartbeat', { timestamp: Date.now() });
-                console.log('💓 Heartbeat sent');
             }
-        }, 25000); // Gửi mỗi 25 giây
+        }, 25000);
     }, []);
 
-    // Hàm gửi activity signal để server biết user vẫn active
     const startActivityTracking = useCallback(() => {
         if (activityIntervalRef.current) clearInterval(activityIntervalRef.current);
 
-        // Track user activity (click, scroll, keypress)
         const handleUserActivity = () => {
             if (socketRef.current?.connected) {
                 socketRef.current.emit('user_activity', { timestamp: Date.now() });
@@ -125,12 +133,11 @@ export function SocketProvider({ children }: { children: ReactNode }) {
         window.addEventListener('keypress', handleUserActivity);
         window.addEventListener('mousemove', handleUserActivity);
 
-        // Định kỳ gửi activity signal nếu không có hoạt động
         activityIntervalRef.current = setInterval(() => {
             if (socketRef.current?.connected) {
                 socketRef.current.emit('user_activity', { timestamp: Date.now() });
             }
-        }, 60000); // 1 phút gửi 1 lần
+        }, 60000);
 
         return () => {
             window.removeEventListener('click', handleUserActivity);
@@ -141,7 +148,6 @@ export function SocketProvider({ children }: { children: ReactNode }) {
         };
     }, []);
 
-    // Hàm reconnect thông minh
     const reconnect = useCallback(() => {
         if (forceReconnectTimeoutRef.current) clearTimeout(forceReconnectTimeoutRef.current);
 
@@ -150,7 +156,6 @@ export function SocketProvider({ children }: { children: ReactNode }) {
             socketRef.current.disconnect();
             socketRef.current.connect();
         } else {
-            // Tạo socket mới nếu chưa có
             const instance = io(BASE_URL, {
                 transports: ['websocket', 'polling'],
                 autoConnect: true,
@@ -165,16 +170,12 @@ export function SocketProvider({ children }: { children: ReactNode }) {
         }
     }, []);
 
-    // Khởi tạo socket
     useEffect(() => {
-        // ✅ FIX: Set lastPongRef trong useEffect, không phải lúc render
         if (lastPongRef.current === null) {
             lastPongRef.current = Date.now();
         }
 
         if (socketRef.current?.connected) return;
-
-        console.log('🔌 Connecting to socket at:', BASE_URL);
 
         const instance = io(BASE_URL, {
             transports: ['websocket', 'polling'],
@@ -190,7 +191,6 @@ export function SocketProvider({ children }: { children: ReactNode }) {
         socketRef.current = instance;
 
         instance.on('connect', () => {
-            console.log('🔌 Socket connected:', instance.id);
             setIsConnected(true);
             setSocketId(instance.id);
             setSocketState(instance);
@@ -198,27 +198,26 @@ export function SocketProvider({ children }: { children: ReactNode }) {
             reconnectAttempts.current = 0;
             lastPongRef.current = Date.now();
 
-            // Start heartbeat và activity tracking
             startHeartbeat();
             startActivityTracking();
 
-            // Register lại nếu cần
+            // FIX: Truyền thêm thiết bị và role khi kết nối lại
             const sessionId = getSessionId();
+            const device = getDeviceInfo();
+
             if (token && user?._id) {
-                instance.emit('register', { userId: user._id, sessionId });
+                instance.emit('register', { userId: user._id, sessionId, role: user.role, device });
             } else if (sessionId) {
-                instance.emit('register', { sessionId });
+                instance.emit('register', { sessionId, device });
             }
             registeredRef.current = true;
         });
 
         instance.on('disconnect', (reason) => {
-            console.log('🔌 Socket disconnected:', reason);
             setIsConnected(false);
             setSocketId(undefined);
             registeredRef.current = false;
 
-            // Nếu disconnect do server hoặc network error, thử reconnect
             if (reason === 'io server disconnect' || reason === 'transport close' || reason === 'transport error') {
                 forceReconnectTimeoutRef.current = setTimeout(() => {
                     reconnect();
@@ -227,11 +226,9 @@ export function SocketProvider({ children }: { children: ReactNode }) {
         });
 
         instance.on('connect_error', (error) => {
-            console.error('Socket connect error:', error.message);
             setIsConnected(false);
             reconnectAttempts.current++;
 
-            // Thử reconnect với polling nếu websocket fail
             if (reconnectAttempts.current > 3 && instance.io.opts.transports?.[0] === 'websocket') {
                 instance.io.opts.transports = ['polling', 'websocket'];
                 instance.connect();
@@ -244,7 +241,6 @@ export function SocketProvider({ children }: { children: ReactNode }) {
 
         instance.on('pong', () => {
             lastPongRef.current = Date.now();
-            console.log('🏓 Pong received');
         });
 
         return () => {
@@ -258,9 +254,8 @@ export function SocketProvider({ children }: { children: ReactNode }) {
             setSocketId(undefined);
             registeredRef.current = false;
         };
-    }, [user?._id, token, startHeartbeat, startActivityTracking, reconnect]);
+    }, [user?._id, token, startHeartbeat, startActivityTracking, reconnect, user?.role]);
 
-    // Check connection health periodically
     useEffect(() => {
         if (!socketState?.connected) return;
 
@@ -268,9 +263,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
             const now = Date.now();
             const timeSinceLastPong = lastPongRef.current ? now - lastPongRef.current : 0;
 
-            // Nếu quá 90 giây không nhận được pong, coi như connection chết
             if (timeSinceLastPong > 90000 && socketState.connected) {
-                console.log('⚠️ Connection seems dead, forcing reconnect...');
                 reconnect();
             }
         }, 30000);
@@ -278,25 +271,23 @@ export function SocketProvider({ children }: { children: ReactNode }) {
         return () => clearInterval(healthCheck);
     }, [socketState, reconnect]);
 
-    // Register
     useEffect(() => {
         if (!socketState || !isConnected) return;
         if (registeredRef.current) return;
 
+        // FIX: Truyền thiết bị và Role vào socket khi user đăng nhập / đổi trạng thái token
         const sessionId = getSessionId();
+        const device = getDeviceInfo();
 
         if (token && user?._id) {
-            socketState.emit('register', { userId: user._id, sessionId });
-            console.log('📡 Registered user:', user._id);
+            socketState.emit('register', { userId: user._id, sessionId, role: user.role, device });
         } else if (sessionId) {
-            socketState.emit('register', { sessionId });
-            console.log('📡 Registered guest:', sessionId);
+            socketState.emit('register', { sessionId, device });
         }
 
         registeredRef.current = true;
-    }, [socketState, isConnected, token, user?._id]);
+    }, [socketState, isConnected, token, user?._id, user?.role]);
 
-    // Lắng nghe online_users từ server
     useEffect(() => {
         if (!socketState || !isConnected) return;
 
@@ -311,7 +302,6 @@ export function SocketProvider({ children }: { children: ReactNode }) {
         };
     }, [socketState, isConnected]);
 
-    // Lắng nghe user_online và user_offline events
     useEffect(() => {
         if (!socketState || !isConnected) return;
 
@@ -335,7 +325,6 @@ export function SocketProvider({ children }: { children: ReactNode }) {
         };
     }, [socketState, isConnected]);
 
-    // force_logout
     useEffect(() => {
         if (!socketState || !isConnected) return;
 
@@ -355,7 +344,6 @@ export function SocketProvider({ children }: { children: ReactNode }) {
         return () => { socketState.off('force_logout', handler); };
     }, [socketState, isConnected]);
 
-    // role_changed
     useEffect(() => {
         if (!socketState || !isConnected) return;
 
@@ -370,7 +358,6 @@ export function SocketProvider({ children }: { children: ReactNode }) {
         return () => { socketState.off('role_changed', handler); };
     }, [socketState, isConnected, setUser]);
 
-    // role_request_resolved
     useEffect(() => {
         if (!socketState || !isConnected) return;
 
@@ -389,7 +376,6 @@ export function SocketProvider({ children }: { children: ReactNode }) {
         return () => { socketState.off('role_request_resolved', handler); };
     }, [socketState, isConnected, setUser]);
 
-    // coins_updated
     useEffect(() => {
         if (!socketState || !isConnected) return;
 
@@ -403,7 +389,6 @@ export function SocketProvider({ children }: { children: ReactNode }) {
         return () => { socketState.off('coins_updated', handler); };
     }, [socketState, isConnected, updateCoins]);
 
-    // streak_updated
     useEffect(() => {
         if (!socketState || !isConnected) return;
 
@@ -418,7 +403,6 @@ export function SocketProvider({ children }: { children: ReactNode }) {
         return () => { socketState.off('streak_updated', handler); };
     }, [socketState, isConnected, updateStreak, updateCoins]);
 
-    // profile_updated
     useEffect(() => {
         if (!socketState || !isConnected) return;
 
@@ -430,7 +414,6 @@ export function SocketProvider({ children }: { children: ReactNode }) {
         return () => { socketState.off('profile_updated', handler); };
     }, [socketState, isConnected, setUser]);
 
-    // avatar_updated
     useEffect(() => {
         if (!socketState || !isConnected) return;
 
@@ -443,20 +426,15 @@ export function SocketProvider({ children }: { children: ReactNode }) {
         return () => { socketState.off('avatar_updated', handler); };
     }, [socketState, isConnected, setUser]);
 
-    // Visibility change: khi tab ẩn, vẫn giữ connection
     useEffect(() => {
         const handleVisibilityChange = () => {
             if (document.visibilityState === 'visible' && socketRef.current && !socketRef.current.connected) {
-                console.log('📱 Tab visible, reconnecting...');
                 reconnect();
             }
         };
 
         document.addEventListener('visibilitychange', handleVisibilityChange);
-
-        return () => {
-            document.removeEventListener('visibilitychange', handleVisibilityChange);
-        };
+        return () => { document.removeEventListener('visibilitychange', handleVisibilityChange); };
     }, [reconnect]);
 
     const value = useMemo<SocketContextType>(
