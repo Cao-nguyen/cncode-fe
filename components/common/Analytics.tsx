@@ -1,74 +1,184 @@
+// components/common/Analytics.tsx
 'use client';
 
-import { User, UserCheck, TrendingUp, Eye, Shield, X, Smartphone, Monitor, Laptop } from "lucide-react";
-import { useEffect, useState, useRef } from "react";
+import { User, UserCheck, TrendingUp, Eye, Shield, X } from "lucide-react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { statisticApi } from "@/lib/api/statistic.api";
 import { useSocket } from "@/providers/socket.provider";
 import { useAuthStore } from "@/store/auth.store";
 import Image from "next/image";
 
-const getDeviceIcon = (deviceStr?: string) => {
-    if (!deviceStr) return <Monitor size={14} className="text-gray-400" />;
-    const d = deviceStr.toLowerCase();
-    if (d.includes('android') || d.includes('ios')) return <Smartphone size={14} className="text-green-500" />;
-    if (d.includes('mac') || d.includes('windows')) return <Laptop size={14} className="text-blue-500" />;
-    return <Monitor size={14} className="text-gray-400" />;
-};
+interface OnlineUser {
+    userId: string;
+    fullName: string;
+    avatar?: string;
+}
 
-export default function Analytics({ today: propToday, total: propTotal }: {
+export default function Analytics({ today: propToday, guest: propGuest, online: propOnline, total: propTotal }: {
     today?: number;
+    guest?: number;
+    online?: number;
     total?: number;
 }) {
-    const { onlineUsers, onlineStats, isConnected } = useSocket();
-    const { user } = useAuthStore();
+    const { socket, isConnected, onlineUsers } = useSocket();
+    const { user, token } = useAuthStore();
     const [stats, setStats] = useState({ totalVisits: 0, todayVisits: 0 });
+    const [onlineStats, setOnlineStats] = useState({ users: 0, guests: 0 });
     const [loading, setLoading] = useState(true);
     const [showPopup, setShowPopup] = useState(false);
+    const registeredRef = useRef(false);
     const intervalRef = useRef<NodeJS.Timeout | null>(null);
+    const reconnectAttemptsRef = useRef(0);
 
     const isAdmin = user?.role === 'admin';
 
+    const getSessionId = () => {
+        let sessionId = localStorage.getItem('guestSessionId');
+        if (!sessionId) {
+            sessionId = crypto.randomUUID?.() || Math.random().toString(36).substring(2) + Date.now().toString(36);
+            localStorage.setItem('guestSessionId', sessionId);
+        }
+        return sessionId;
+    };
+
+    // Register với socket - có retry
+    const registerWithSocket = useCallback(() => {
+        if (!socket || !isConnected) {
+            // Nếu chưa kết nối, thử lại sau 2 giây
+            setTimeout(() => registerWithSocket(), 2000);
+            return;
+        }
+        if (registeredRef.current) return;
+
+        const sessionId = getSessionId();
+        if (token && user?._id) {
+            socket.emit('register', { userId: user._id, sessionId });
+            console.log('📡 Analytics registered user:', user._id);
+        } else {
+            socket.emit('register', { sessionId });
+            console.log('📡 Analytics registered guest:', sessionId);
+        }
+        registeredRef.current = true;
+        reconnectAttemptsRef.current = 0;
+    }, [socket, isConnected, token, user?._id]);
+
+    // Đăng ký khi kết nối thay đổi
+    useEffect(() => {
+        if (socket && isConnected && !registeredRef.current) {
+            registerWithSocket();
+        }
+    }, [socket, isConnected, registerWithSocket]);
+
+    // Lắng nghe realtime online stats từ socket
+    useEffect(() => {
+        if (!socket || !isConnected) return;
+
+        const handleOnlineStats = (data: { users: number; guests: number; total: number }) => {
+            setOnlineStats({
+                users: data.users || 0,
+                guests: data.guests || 0
+            });
+        };
+
+        socket.on('online_stats', handleOnlineStats);
+
+        // Ping/pong để giữ connection
+        const pingInterval = setInterval(() => {
+            if (socket && socket.connected) {
+                socket.emit('ping');
+            }
+        }, 15000);
+
+        return () => {
+            socket.off('online_stats', handleOnlineStats);
+            clearInterval(pingInterval);
+        };
+    }, [socket, isConnected]);
+
+    // Khởi tạo data lần đầu và interval
     useEffect(() => {
         let isMounted = true;
+        let retryCount = 0;
+
         const loadInitialData = async () => {
+            try {
+                const [statsRes, onlineRes] = await Promise.all([
+                    statisticApi.getPublicStats(),
+                    statisticApi.getOnlineStats()
+                ]);
+
+                if (isMounted) {
+                    if (statsRes.success) {
+                        setStats(statsRes.data);
+                    }
+                    if (onlineRes && onlineRes.success) {
+                        setOnlineStats(onlineRes.data);
+                    }
+                    setLoading(false);
+                    retryCount = 0;
+                }
+            } catch (error) {
+                console.error('Failed to load initial data:', error);
+                if (isMounted && retryCount < 3) {
+                    retryCount++;
+                    setTimeout(loadInitialData, 2000 * retryCount);
+                } else if (isMounted) {
+                    setLoading(false);
+                }
+            }
+        };
+
+        loadInitialData();
+
+        intervalRef.current = setInterval(async () => {
             try {
                 const statsRes = await statisticApi.getPublicStats();
                 if (isMounted && statsRes.success) {
                     setStats(statsRes.data);
                 }
-                setLoading(false);
             } catch (error) {
-                console.error('Failed to load initial data:', error);
-                setLoading(false);
+                console.error('Failed to refresh stats:', error);
             }
-        };
-
-        loadInitialData();
-        intervalRef.current = setInterval(async () => {
-            try {
-                const statsRes = await statisticApi.getPublicStats();
-                if (isMounted && statsRes.success) setStats(statsRes.data);
-            } catch (error) { }
         }, 30000);
 
         return () => {
             isMounted = false;
-            if (intervalRef.current) clearInterval(intervalRef.current);
+            if (intervalRef.current) {
+                clearInterval(intervalRef.current);
+            }
         };
     }, []);
 
     const format = (n: number) => new Intl.NumberFormat('vi-VN').format(n);
 
+    const today = propToday !== undefined ? propToday : stats.todayVisits;
+    const total = propTotal !== undefined ? propTotal : stats.totalVisits;
+    const guest = propGuest !== undefined ? propGuest : onlineStats.guests;
+    const online = propOnline !== undefined ? propOnline : onlineStats.users;
+
     const items = [
-        { label: 'Tổng lượt truy cập', value: propTotal || stats.totalVisits, icon: TrendingUp, color: 'text-blue-500', bg: 'bg-blue-50' },
-        { label: 'Hôm nay', value: propToday || stats.todayVisits, icon: Eye, color: 'text-green-500', bg: 'bg-green-50' },
-        { label: 'Khách online', value: onlineStats.guests, icon: User, color: 'text-orange-500', bg: 'bg-orange-50' },
-        { label: 'User online', value: onlineStats.users, icon: UserCheck, color: 'text-purple-500', bg: 'bg-purple-50' }
+        { label: 'Tổng lượt truy cập', value: total, icon: TrendingUp, color: 'text-blue-500', bg: 'bg-blue-50' },
+        { label: 'Hôm nay', value: today, icon: Eye, color: 'text-green-500', bg: 'bg-green-50' },
+        { label: 'Khách online', value: guest, icon: User, color: 'text-orange-500', bg: 'bg-orange-50' },
+        { label: 'User online', value: online, icon: UserCheck, color: 'text-purple-500', bg: 'bg-purple-50' }
     ];
 
-    if (loading) return <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 animate-pulse">
-        {[1, 2, 3, 4].map(i => <div key={i} className="h-20 bg-gray-100 rounded-xl"></div>)}
-    </div>;
+    const getUserInitial = (name: string) => {
+        return name?.charAt(0)?.toUpperCase() || 'U';
+    };
+
+    if (loading) {
+        return (
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+                {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="p-3 sm:p-4 rounded-xl bg-white dark:bg-[#171717] border border-[#e6e6e6] dark:border-[#222] animate-pulse">
+                        <div className="h-3 bg-gray-200 rounded w-16 sm:w-20 mb-2"></div>
+                        <div className="h-5 bg-gray-200 rounded w-12 sm:w-16"></div>
+                    </div>
+                ))}
+            </div>
+        );
+    }
 
     return (
         <>
@@ -79,55 +189,95 @@ export default function Analytics({ today: propToday, total: propTotal }: {
                     return (
                         <div
                             key={item.label}
-                            className={`group p-3 sm:p-4 rounded-xl bg-white dark:bg-[#171717] border border-[#e6e6e6] dark:border-[#222] flex items-center justify-between transition-all ${isOnlineCard && isAdmin ? 'cursor-pointer hover:shadow-md' : ''}`}
+                            className={`group p-3 sm:p-4 rounded-xl bg-white dark:bg-[#171717] border border-[#e6e6e6] dark:border-[#222] flex items-center justify-between hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 ${isOnlineCard && isAdmin ? 'cursor-pointer' : ''}`}
                             onClick={() => isOnlineCard && isAdmin && setShowPopup(true)}
                         >
                             <div>
-                                <p className="text-[11px] sm:text-xs text-gray-500">{item.label}</p>
-                                <h4 className="text-sm sm:text-base font-bold">{format(item.value)}</h4>
+                                <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400">{item.label}</p>
+                                <h4 className="text-sm sm:text-base md:text-lg font-bold text-gray-900 dark:text-white">{format(item.value)}</h4>
                             </div>
-                            <div className={`p-2 rounded-lg ${item.bg}`}>
-                                <Icon size={14} className={item.color} />
+                            <div className={`p-1.5 sm:p-2 rounded-lg ${item.bg} group-hover:scale-105 transition-transform duration-200`}>
+                                <Icon size={14} className={`sm:w-4 sm:h-4 ${item.color}`} />
                             </div>
                         </div>
                     );
                 })}
             </div>
 
+            {/* Popup hiển thị danh sách user online */}
             {isAdmin && showPopup && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowPopup(false)}>
-                    <div className="bg-white dark:bg-[#171717] rounded-xl w-full max-w-md max-h-[80vh] overflow-hidden flex flex-col shadow-xl" onClick={e => e.stopPropagation()}>
-                        <div className="flex items-center justify-between p-4 border-b dark:border-gray-800">
-                            <h3 className="font-semibold flex items-center gap-2">
+                    <div
+                        className="bg-white dark:bg-[#171717] rounded-xl w-full max-w-md max-h-[80vh] overflow-hidden shadow-xl border border-gray-200 dark:border-gray-800"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-800">
+                            <div className="flex items-center gap-2">
                                 <Shield size={18} className="text-purple-500" />
-                                Người dùng online ({onlineUsers.length})
-                            </h3>
-                            <button onClick={() => setShowPopup(false)} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded">
-                                <X size={18} />
+                                <h3 className="font-semibold text-gray-900 dark:text-white">
+                                    Người dùng online ({onlineUsers.length})
+                                </h3>
+                            </div>
+                            <button
+                                onClick={() => setShowPopup(false)}
+                                className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+                            >
+                                <X size={18} className="text-gray-500" />
                             </button>
                         </div>
-                        <div className="overflow-y-auto p-2 flex-1">
+
+                        <div className="overflow-y-auto max-h-[60vh] p-2">
                             {onlineUsers.length === 0 ? (
-                                <div className="text-center py-10 text-gray-500">Không có dữ liệu</div>
+                                <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                                    <UserCheck size={40} className="mx-auto mb-2 opacity-50" />
+                                    <p className="text-sm">Không có người dùng nào đang online</p>
+                                </div>
                             ) : (
                                 <div className="space-y-2">
-                                    {onlineUsers.map((u) => (
-                                        <div key={u.userId} className="flex items-center justify-between p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg">
-                                            <div className="flex items-center gap-3">
-                                                {u.avatar ? <Image src={u.avatar} alt="" width={36} height={36} className="rounded-full" /> : <div className="w-9 h-9 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 font-bold">{u.fullName[0]}</div>}
-                                                <div>
-                                                    <p className="text-sm font-medium">{u.fullName}</p>
-                                                    <p className="text-[10px] text-gray-400">ID: ...{u.userId.slice(-6)}</p>
-                                                </div>
+                                    {onlineUsers.map((onlineUser) => (
+                                        <div
+                                            key={onlineUser.userId}
+                                            className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition"
+                                        >
+                                            <div className="relative">
+                                                {onlineUser.avatar ? (
+                                                    <Image
+                                                        src={onlineUser.avatar}
+                                                        alt={onlineUser.fullName}
+                                                        width={36}
+                                                        height={36}
+                                                        className="w-9 h-9 rounded-full object-cover"
+                                                    />
+                                                ) : (
+                                                    <div className="w-9 h-9 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                                                        <span className="text-sm font-semibold text-purple-600 dark:text-purple-400">
+                                                            {getUserInitial(onlineUser.fullName)}
+                                                        </span>
+                                                    </div>
+                                                )}
+                                                <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5">
+                                                    <span className="absolute inset-0 rounded-full bg-white dark:bg-gray-800" />
+                                                    <span className="absolute inset-0.5 rounded-full bg-green-500 animate-pulse" />
+                                                </span>
                                             </div>
-                                            <div className="flex items-center gap-1.5 bg-gray-100 dark:bg-gray-900 px-2 py-1 rounded">
-                                                {getDeviceIcon(u.device)}
-                                                <span className="text-[10px]">{u.device}</span>
+                                            <div>
+                                                <p className="text-sm font-medium text-gray-900 dark:text-white">
+                                                    {onlineUser.fullName}
+                                                </p>
+                                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                                    ID: {onlineUser.userId.slice(-8)}
+                                                </p>
                                             </div>
                                         </div>
                                     ))}
                                 </div>
                             )}
+                        </div>
+
+                        <div className="p-3 border-t border-gray-200 dark:border-gray-800 text-center">
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                                Chỉ hiển thị với quản trị viên
+                            </p>
                         </div>
                     </div>
                 </div>
