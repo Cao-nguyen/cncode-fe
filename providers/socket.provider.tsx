@@ -1,35 +1,55 @@
 // providers/socket.provider.tsx
 'use client';
 
-import {
-    createContext,
-    useContext,
-    useEffect,
-    useRef,
-    useState,
-    useMemo,
-    useCallback,
-    type ReactNode,
-} from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import { io, type Socket } from 'socket.io-client';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/store/auth.store';
-import type {
-    CoinsUpdatedPayload,
-    StreakUpdatedPayload,
-    RoleChangedPayload,
-} from '@/types/notification.type';
 
-interface OnlineUser {
+// ========== ĐỊNH NGHĨA VÀ EXPORT CÁC INTERFACES ==========
+
+export type UserRole = "admin" | "teacher" | "user";
+
+export interface OnlineUser {
     userId: string;
     fullName: string;
-    avatar?: string;
+    avatar: string | null;
+    role: string;
+    device: string;
+}
+
+// THÊM EXPORT CHO CÁI NÀY ĐỂ FIX LỖI BẠN VỪA GẶP
+export interface OnlineStatsPayload {
+    users: number;
+    guests: number;
+}
+
+export interface CoinsUpdatedPayload {
+    coins: number;
+}
+
+export interface StreakUpdatedPayload {
+    streak: number;
+    totalCoins: number;
+}
+
+export interface RoleChangedPayload {
+    newRole: string;
+}
+
+export interface UserProfilePayload {
+    user: {
+        _id: string;
+        fullName?: string;
+        avatar?: string | null;
+        role?: string;
+        [key: string]: unknown;
+    };
 }
 
 interface SocketContextType {
     socket: Socket | null;
     isConnected: boolean;
-    socketId: string | undefined;
     onlineUsers: OnlineUser[];
     joinPostRoom: (postSlug: string) => void;
     leavePostRoom: (postSlug: string) => void;
@@ -38,7 +58,6 @@ interface SocketContextType {
 const SocketContext = createContext<SocketContextType>({
     socket: null,
     isConnected: false,
-    socketId: undefined,
     onlineUsers: [],
     joinPostRoom: () => { },
     leavePostRoom: () => { },
@@ -46,430 +65,147 @@ const SocketContext = createContext<SocketContextType>({
 
 export const useSocket = () => useContext(SocketContext);
 
-const getBaseUrl = () => {
+const getBaseUrl = (): string => {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-    if (!apiUrl) return 'http://localhost:5000';
-    return apiUrl.replace(/\/api$/, '');
+    return apiUrl ? apiUrl.replace(/\/api$/, '') : 'https://api.cncode.io.vn';
 };
 
 const BASE_URL = getBaseUrl();
 
-const getSessionId = () => {
-    if (typeof window === 'undefined') return null;
-    let sessionId = localStorage.getItem('guestSessionId');
-    if (!sessionId) {
-        sessionId = crypto.randomUUID?.() || Math.random().toString(36).substring(2) + Date.now().toString(36);
-        localStorage.setItem('guestSessionId', sessionId);
-    }
-    return sessionId;
-};
-
-export function SocketProvider({ children }: { children: ReactNode }) {
-    const { user, token, updateCoins, updateStreak, setUser } = useAuthStore();
-    const socketRef = useRef<Socket | null>(null);
+export function SocketProvider({ children }: { children: React.ReactNode }) {
+    const { user, updateCoins, updateStreak, setUser } = useAuthStore();
     const [socketState, setSocketState] = useState<Socket | null>(null);
-    const [isConnected, setIsConnected] = useState(false);
-    const [socketId, setSocketId] = useState<string | undefined>(undefined);
+    const [isConnected, setIsConnected] = useState<boolean>(false);
     const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([]);
-    const registeredRef = useRef(false);
-    const reconnectAttempts = useRef(0);
-    const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
-    const activityIntervalRef = useRef<NodeJS.Timeout | null>(null);
-    // ✅ FIX: Khởi tạo với null, sau đó trong useEffect mới set giá trị
-    const lastPongRef = useRef<number | null>(null);
-    const forceReconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-    const joinPostRoom = useCallback(
-        (postSlug: string) => {
-            if (socketState?.connected) {
-                socketState.emit('join_post_room', { postSlug });
-            }
-        },
-        [socketState]
-    );
+    const socketRef = useRef<Socket | null>(null);
+    const hasRegisteredRef = useRef<string>("");
 
-    const leavePostRoom = useCallback(
-        (postSlug: string) => {
-            if (socketState?.connected) {
-                socketState.emit('leave_post_room', { postSlug });
-            }
-        },
-        [socketState]
-    );
+    const register = useCallback((targetSocket: Socket): void => {
+        if (!targetSocket.connected) return;
 
-    // Hàm gửi heartbeat để giữ connection
-    const startHeartbeat = useCallback(() => {
-        if (heartbeatIntervalRef.current) clearInterval(heartbeatIntervalRef.current);
+        const sid: string = localStorage.getItem('guestSessionId') || Math.random().toString(36).substring(2);
+        localStorage.setItem('guestSessionId', sid);
 
-        heartbeatIntervalRef.current = setInterval(() => {
-            if (socketRef.current?.connected) {
-                socketRef.current.emit('heartbeat', { timestamp: Date.now() });
-                console.log('💓 Heartbeat sent');
-            }
-        }, 25000); // Gửi mỗi 25 giây
-    }, []);
+        targetSocket.emit('register', {
+            userId: user?._id,
+            sessionId: sid,
+            role: user?.role?.toUpperCase() || 'GUEST',
+            device: /android|iphone|ipad/i.test(navigator.userAgent) ? 'Mobile' : 'Desktop'
+        });
 
-    // Hàm gửi activity signal để server biết user vẫn active
-    const startActivityTracking = useCallback(() => {
-        if (activityIntervalRef.current) clearInterval(activityIntervalRef.current);
+        hasRegisteredRef.current = targetSocket.id || "";
+    }, [user?._id, user?.role]);
 
-        // Track user activity (click, scroll, keypress)
-        const handleUserActivity = () => {
-            if (socketRef.current?.connected) {
-                socketRef.current.emit('user_activity', { timestamp: Date.now() });
-            }
-        };
+    useEffect((): (() => void) => {
+        if (socketRef.current) return () => { };
 
-        window.addEventListener('click', handleUserActivity);
-        window.addEventListener('scroll', handleUserActivity);
-        window.addEventListener('keypress', handleUserActivity);
-        window.addEventListener('mousemove', handleUserActivity);
-
-        // Định kỳ gửi activity signal nếu không có hoạt động
-        activityIntervalRef.current = setInterval(() => {
-            if (socketRef.current?.connected) {
-                socketRef.current.emit('user_activity', { timestamp: Date.now() });
-            }
-        }, 60000); // 1 phút gửi 1 lần
-
-        return () => {
-            window.removeEventListener('click', handleUserActivity);
-            window.removeEventListener('scroll', handleUserActivity);
-            window.removeEventListener('keypress', handleUserActivity);
-            window.removeEventListener('mousemove', handleUserActivity);
-            if (activityIntervalRef.current) clearInterval(activityIntervalRef.current);
-        };
-    }, []);
-
-    // Hàm reconnect thông minh
-    const reconnect = useCallback(() => {
-        if (forceReconnectTimeoutRef.current) clearTimeout(forceReconnectTimeoutRef.current);
-
-        if (socketRef.current) {
-            console.log('🔄 Attempting to reconnect...');
-            socketRef.current.disconnect();
-            socketRef.current.connect();
-        } else {
-            // Tạo socket mới nếu chưa có
-            const instance = io(BASE_URL, {
-                transports: ['websocket', 'polling'],
-                autoConnect: true,
-                reconnection: true,
-                reconnectionAttempts: 10,
-                reconnectionDelay: 1000,
-                reconnectionDelayMax: 10000,
-                timeout: 30000,
-                withCredentials: true,
-            });
-            socketRef.current = instance;
-        }
-    }, []);
-
-    // Khởi tạo socket
-    useEffect(() => {
-        // ✅ FIX: Set lastPongRef trong useEffect, không phải lúc render
-        if (lastPongRef.current === null) {
-            lastPongRef.current = Date.now();
-        }
-
-        if (socketRef.current?.connected) return;
-
-        console.log('🔌 Connecting to socket at:', BASE_URL);
-
-        const instance = io(BASE_URL, {
-            transports: ['websocket', 'polling'],
-            autoConnect: true,
-            reconnection: true,
+        const instance: Socket = io(BASE_URL, {
+            transports: ['websocket'],
             reconnectionAttempts: 10,
-            reconnectionDelay: 1000,
-            reconnectionDelayMax: 10000,
-            timeout: 30000,
             withCredentials: true,
+            timeout: 20000,
         });
 
         socketRef.current = instance;
 
-        instance.on('connect', () => {
-            console.log('🔌 Socket connected:', instance.id);
+        instance.on('connect', (): void => {
             setIsConnected(true);
-            setSocketId(instance.id);
             setSocketState(instance);
-            registeredRef.current = false;
-            reconnectAttempts.current = 0;
-            lastPongRef.current = Date.now();
-
-            // Start heartbeat và activity tracking
-            startHeartbeat();
-            startActivityTracking();
-
-            // Register lại nếu cần
-            const sessionId = getSessionId();
-            if (token && user?._id) {
-                instance.emit('register', { userId: user._id, sessionId });
-            } else if (sessionId) {
-                instance.emit('register', { sessionId });
-            }
-            registeredRef.current = true;
+            register(instance);
         });
 
-        instance.on('disconnect', (reason) => {
-            console.log('🔌 Socket disconnected:', reason);
+        instance.on('disconnect', (): void => {
             setIsConnected(false);
-            setSocketId(undefined);
-            registeredRef.current = false;
-
-            // Nếu disconnect do server hoặc network error, thử reconnect
-            if (reason === 'io server disconnect' || reason === 'transport close' || reason === 'transport error') {
-                forceReconnectTimeoutRef.current = setTimeout(() => {
-                    reconnect();
-                }, 3000);
-            }
-        });
-
-        instance.on('connect_error', (error) => {
-            console.error('Socket connect error:', error.message);
-            setIsConnected(false);
-            reconnectAttempts.current++;
-
-            // Thử reconnect với polling nếu websocket fail
-            if (reconnectAttempts.current > 3 && instance.io.opts.transports?.[0] === 'websocket') {
-                instance.io.opts.transports = ['polling', 'websocket'];
-                instance.connect();
-            } else if (reconnectAttempts.current < 10) {
-                setTimeout(() => {
-                    instance.connect();
-                }, Math.min(1000 * Math.pow(1.5, reconnectAttempts.current), 15000));
-            }
-        });
-
-        instance.on('pong', () => {
-            lastPongRef.current = Date.now();
-            console.log('🏓 Pong received');
-        });
-
-        return () => {
-            if (heartbeatIntervalRef.current) clearInterval(heartbeatIntervalRef.current);
-            if (activityIntervalRef.current) clearInterval(activityIntervalRef.current);
-            if (forceReconnectTimeoutRef.current) clearTimeout(forceReconnectTimeoutRef.current);
-            instance.disconnect();
-            socketRef.current = null;
             setSocketState(null);
-            setIsConnected(false);
-            setSocketId(undefined);
-            registeredRef.current = false;
-        };
-    }, [user?._id, token, startHeartbeat, startActivityTracking, reconnect]);
+            hasRegisteredRef.current = "";
+        });
 
-    // Check connection health periodically
-    useEffect(() => {
-        if (!socketState?.connected) return;
-
-        const healthCheck = setInterval(() => {
-            const now = Date.now();
-            const timeSinceLastPong = lastPongRef.current ? now - lastPongRef.current : 0;
-
-            // Nếu quá 90 giây không nhận được pong, coi như connection chết
-            if (timeSinceLastPong > 90000 && socketState.connected) {
-                console.log('⚠️ Connection seems dead, forcing reconnect...');
-                reconnect();
-            }
-        }, 30000);
-
-        return () => clearInterval(healthCheck);
-    }, [socketState, reconnect]);
-
-    // Register
-    useEffect(() => {
-        if (!socketState || !isConnected) return;
-        if (registeredRef.current) return;
-
-        const sessionId = getSessionId();
-
-        if (token && user?._id) {
-            socketState.emit('register', { userId: user._id, sessionId });
-            console.log('📡 Registered user:', user._id);
-        } else if (sessionId) {
-            socketState.emit('register', { sessionId });
-            console.log('📡 Registered guest:', sessionId);
-        }
-
-        registeredRef.current = true;
-    }, [socketState, isConnected, token, user?._id]);
-
-    // Lắng nghe online_users từ server
-    useEffect(() => {
-        if (!socketState || !isConnected) return;
-
-        const handleOnlineUsers = (users: OnlineUser[]) => {
+        instance.on('online_users_list', (users: OnlineUser[]): void => {
             setOnlineUsers(users);
-        };
+        });
 
-        socketState.on('online_users', handleOnlineUsers);
-
-        return () => {
-            socketState.off('online_users', handleOnlineUsers);
-        };
-    }, [socketState, isConnected]);
-
-    // Lắng nghe user_online và user_offline events
-    useEffect(() => {
-        if (!socketState || !isConnected) return;
-
-        const handleUserOnline = (userData: OnlineUser) => {
-            setOnlineUsers(prev => {
-                if (prev.some(u => u.userId === userData.userId)) return prev;
-                return [...prev, userData];
-            });
-        };
-
-        const handleUserOffline = (data: { userId: string }) => {
-            setOnlineUsers(prev => prev.filter(u => u.userId !== data.userId));
-        };
-
-        socketState.on('user_online', handleUserOnline);
-        socketState.on('user_offline', handleUserOffline);
-
-        return () => {
-            socketState.off('user_online', handleUserOnline);
-            socketState.off('user_offline', handleUserOffline);
-        };
-    }, [socketState, isConnected]);
-
-    // force_logout
-    useEffect(() => {
-        if (!socketState || !isConnected) return;
-
-        const handler = (data: { code?: string; message: string }) => {
-            const isBanned = data.code === 'USER_BANNED';
-            toast.error(isBanned ? '🔴 Tài khoản bị khóa' : '⛔ Tài khoản bị xóa', {
-                description: data.message || 'Vui lòng liên hệ quản trị viên',
-                duration: 6000,
-            });
+        instance.on('force_logout', (data: { message: string }): void => {
+            toast.error('🔴 Hệ thống', { description: data.message });
             useAuthStore.getState().logout();
-            localStorage.removeItem('token');
-            localStorage.removeItem('auth-storage');
             window.location.href = '/';
-        };
+        });
 
-        socketState.on('force_logout', handler);
-        return () => { socketState.off('force_logout', handler); };
-    }, [socketState, isConnected]);
-
-    // role_changed
-    useEffect(() => {
-        if (!socketState || !isConnected) return;
-
-        const handler = (data: RoleChangedPayload) => {
-            const currentUser = useAuthStore.getState().user;
-            if (currentUser && data.newRole !== currentUser.role) {
-                setUser({ ...currentUser, role: data.newRole, requestedRole: null });
-            }
-        };
-
-        socketState.on('role_changed', handler);
-        return () => { socketState.off('role_changed', handler); };
-    }, [socketState, isConnected, setUser]);
-
-    // role_request_resolved
-    useEffect(() => {
-        if (!socketState || !isConnected) return;
-
-        const handler = (data: { approved: boolean; newRole: string }) => {
-            const currentUser = useAuthStore.getState().user;
-            if (currentUser) {
-                setUser({
-                    ...currentUser,
-                    role: data.newRole as typeof currentUser.role,
-                    requestedRole: null,
-                });
-            }
-        };
-
-        socketState.on('role_request_resolved', handler);
-        return () => { socketState.off('role_request_resolved', handler); };
-    }, [socketState, isConnected, setUser]);
-
-    // coins_updated
-    useEffect(() => {
-        if (!socketState || !isConnected) return;
-
-        const handler = (data: CoinsUpdatedPayload) => {
+        instance.on('coins_updated', (data: CoinsUpdatedPayload): void => {
             const currentCoins = useAuthStore.getState().coins;
             const diff = data.coins - currentCoins;
             if (diff !== 0) updateCoins(diff);
-        };
+        });
 
-        socketState.on('coins_updated', handler);
-        return () => { socketState.off('coins_updated', handler); };
-    }, [socketState, isConnected, updateCoins]);
-
-    // streak_updated
-    useEffect(() => {
-        if (!socketState || !isConnected) return;
-
-        const handler = (data: StreakUpdatedPayload) => {
+        instance.on('streak_updated', (data: StreakUpdatedPayload): void => {
             updateStreak(data.streak);
             const currentCoins = useAuthStore.getState().coins;
             const diff = data.totalCoins - currentCoins;
             if (diff !== 0) updateCoins(diff);
-        };
+        });
 
-        socketState.on('streak_updated', handler);
-        return () => { socketState.off('streak_updated', handler); };
-    }, [socketState, isConnected, updateStreak, updateCoins]);
-
-    // profile_updated
-    useEffect(() => {
-        if (!socketState || !isConnected) return;
-
-        const handler = (data: { user: typeof user }) => {
-            if (data.user) setUser(data.user);
-        };
-
-        socketState.on('profile_updated', handler);
-        return () => { socketState.off('profile_updated', handler); };
-    }, [socketState, isConnected, setUser]);
-
-    // avatar_updated
-    useEffect(() => {
-        if (!socketState || !isConnected) return;
-
-        const handler = (data: { avatar: string }) => {
+        instance.on('role_changed', (data: RoleChangedPayload): void => {
             const currentUser = useAuthStore.getState().user;
-            if (currentUser) setUser({ ...currentUser, avatar: data.avatar });
-        };
-
-        socketState.on('avatar_updated', handler);
-        return () => { socketState.off('avatar_updated', handler); };
-    }, [socketState, isConnected, setUser]);
-
-    // Visibility change: khi tab ẩn, vẫn giữ connection
-    useEffect(() => {
-        const handleVisibilityChange = () => {
-            if (document.visibilityState === 'visible' && socketRef.current && !socketRef.current.connected) {
-                console.log('📱 Tab visible, reconnecting...');
-                reconnect();
+            if (currentUser) {
+                setUser({
+                    ...currentUser,
+                    role: data.newRole.toLowerCase() as UserRole
+                });
             }
-        };
+        });
 
-        document.addEventListener('visibilitychange', handleVisibilityChange);
+        instance.on('profile_updated', (data: UserProfilePayload): void => {
+            const currentUser = useAuthStore.getState().user;
+            if (currentUser && data.user) {
+                const safeAvatar = data.user.avatar === null ? undefined : (data.user.avatar || currentUser.avatar);
+                setUser({
+                    ...currentUser,
+                    ...data.user,
+                    avatar: safeAvatar,
+                    role: (data.user.role?.toLowerCase() || currentUser.role) as UserRole
+                });
+            }
+        });
+
+        instance.on('avatar_updated', (data: { avatar: string }): void => {
+            const currentUser = useAuthStore.getState().user;
+            if (currentUser) {
+                setUser({ ...currentUser, avatar: data.avatar });
+            }
+        });
+
+        const heartbeat = setInterval((): void => {
+            if (instance.connected) instance.emit('heartbeat');
+        }, 25000);
 
         return () => {
-            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            clearInterval(heartbeat);
+            instance.disconnect();
+            socketRef.current = null;
         };
-    }, [reconnect]);
+    }, [register, setUser, updateCoins, updateStreak]);
 
-    const value = useMemo<SocketContextType>(
-        () => ({
-            socket: socketState,
-            isConnected,
-            socketId,
-            onlineUsers,
-            joinPostRoom,
-            leavePostRoom
-        }),
-        [socketState, isConnected, socketId, onlineUsers, joinPostRoom, leavePostRoom]
-    );
+    useEffect((): void => {
+        if (socketRef.current?.connected) {
+            register(socketRef.current);
+        }
+    }, [user?._id, register]);
+
+    const joinPostRoom = useCallback((postSlug: string): void => {
+        socketRef.current?.emit('join_post_room', { postSlug });
+    }, []);
+
+    const leavePostRoom = useCallback((postSlug: string): void => {
+        socketRef.current?.emit('leave_post_room', { postSlug });
+    }, []);
+
+    const value = useMemo((): SocketContextType => ({
+        socket: socketState,
+        isConnected,
+        onlineUsers,
+        joinPostRoom,
+        leavePostRoom
+    }), [socketState, isConnected, onlineUsers, joinPostRoom, leavePostRoom]);
 
     return <SocketContext.Provider value={value}>{children}</SocketContext.Provider>;
 }
