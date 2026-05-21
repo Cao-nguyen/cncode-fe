@@ -2,13 +2,12 @@
 'use client';
 
 import React, { useEffect, useState, useCallback } from "react";
-import { User as UserIcon, UserCheck, TrendingUp, Eye, Shield, X, Monitor, Smartphone, Laptop } from "lucide-react";
+import { User as UserIcon, UserCheck, TrendingUp, Eye, Shield, X, Monitor, Smartphone, Laptop, Activity, CircleDot } from "lucide-react";
 import { statisticApi } from "@/lib/api/statistic.api";
 import { useSocket } from "@/providers/socket.provider";
 import { useAuthStore } from "@/store/auth.store";
 import Image from "next/image";
 
-// ========== INTERFACES ==========
 interface OnlineUser {
     userId: string;
     fullName: string;
@@ -27,19 +26,6 @@ interface VisitStatsData {
     todayVisits: number;
 }
 
-interface SocketRegisterPayload {
-    userId: string | undefined;
-    sessionId: string;
-    role: string;
-    device: string;
-}
-
-interface AnalyticsItem {
-    label: string;
-    value: number;
-    icon: typeof TrendingUp;
-}
-
 export default function Analytics() {
     const { socket, isConnected } = useSocket();
     const { user } = useAuthStore();
@@ -54,7 +40,7 @@ export default function Analytics() {
 
     const getDeviceName = (): string => {
         if (typeof window === 'undefined') return "Unknown";
-        const ua: string = navigator.userAgent;
+        const ua = navigator.userAgent;
         if (/android/i.test(ua)) return "Android";
         if (/iPad|iPhone|iPod/.test(ua)) return "iOS";
         if (/windows/i.test(ua)) return "Windows";
@@ -62,30 +48,21 @@ export default function Analytics() {
         return "Linux/Web";
     };
 
-    const getDeviceIcon = (device: string): React.ReactNode => {
-        const d = device.toLowerCase();
-        if (d.includes('android') || d.includes('ios')) return <Smartphone size={14} />;
-        if (d.includes('windows') || d.includes('mac')) return <Monitor size={14} />;
-        return <Laptop size={14} />;
-    };
-
-    const register = useCallback((): void => {
+    const register = useCallback(() => {
         if (!socket || !isConnected) return;
 
-        let sid: string | null = localStorage.getItem('guestSessionId');
+        let sid = localStorage.getItem('guestSessionId');
         if (!sid) {
             sid = Math.random().toString(36).substring(2) + Date.now().toString(36);
             localStorage.setItem('guestSessionId', sid);
         }
 
-        const payload: SocketRegisterPayload = {
+        socket.emit('register', {
             userId: user?._id,
             sessionId: sid,
             role: user?.role?.toUpperCase() || 'GUEST',
             device: getDeviceName()
-        };
-
-        socket.emit('register', payload);
+        });
     }, [socket, isConnected, user?._id, user?.role]);
 
     useEffect(() => {
@@ -95,8 +72,7 @@ export default function Analytics() {
     useEffect(() => {
         if (!socket || !isConnected) return;
 
-        // Heartbeat giữ kết nối (30s) - Sử dụng ReturnType để tránh lỗi môi trường Node/Browser
-        const heartbeatInterval: ReturnType<typeof setInterval> = setInterval(() => {
+        const heartbeatInterval = setInterval(() => {
             socket.emit('heartbeat');
         }, 30000);
 
@@ -105,14 +81,10 @@ export default function Analytics() {
         });
 
         socket.on('online_users_list', (data: OnlineUser[]) => {
-            if (isAdmin) {
-                setOnlineUsersList(data);
-            }
+            if (isAdmin) setOnlineUsersList(data);
         });
 
-        socket.on('connect', () => {
-            register();
-        });
+        socket.on('connect', register);
 
         return () => {
             clearInterval(heartbeatInterval);
@@ -123,126 +95,190 @@ export default function Analytics() {
     }, [socket, isConnected, isAdmin, register]);
 
     useEffect(() => {
-        let isMounted = true;
-
         const initData = async () => {
             try {
                 const [sRes, oRes] = await Promise.all([
                     statisticApi.getPublicStats(),
                     statisticApi.getOnlineStats()
                 ]);
-                if (isMounted) {
-                    if (sRes.success) setStats(sRes.data);
-                    if (oRes.success) setOnlineStats(oRes.data);
-                }
+                if (sRes.success) setStats(sRes.data);
+                if (oRes.success) setOnlineStats(oRes.data);
             } catch (err) {
-                console.error("Analytics Error:", err);
+                console.error(err);
             } finally {
-                if (isMounted) setLoading(false);
+                setLoading(false);
             }
         };
-
         initData();
-        return () => { isMounted = false; };
     }, []);
+
+    const getDeviceIcon = (device: string): React.ReactNode => {
+        const d = device.toLowerCase();
+        if (d.includes('android') || d.includes('ios')) return <Smartphone size={12} />;
+        if (d.includes('windows') || d.includes('mac')) return <Monitor size={12} />;
+        return <Laptop size={12} />;
+    };
 
     const formatNumber = (n: number): string => new Intl.NumberFormat('vi-VN').format(n);
 
-    const analyticsItems: AnalyticsItem[] = [
-        { label: 'Tổng truy cập', value: stats.totalVisits, icon: TrendingUp },
-        { label: 'Hôm nay', value: stats.todayVisits, icon: Eye },
-        { label: 'Khách online', value: onlineStats.guests, icon: UserIcon },
-        { label: 'User online', value: onlineStats.users, icon: UserCheck }
-    ];
-
     if (loading) return (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 animate-pulse">
-            {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="h-20 bg-white border border-[var(--cn-border)] rounded-[var(--cn-radius-md)]" />
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            {[1, 2, 3, 4].map(i => (
+                <div key={i} className="h-24 bg-[var(--cn-bg-card)] border border-[var(--cn-border)] rounded-[var(--cn-radius-md)] animate-pulse" />
             ))}
         </div>
     );
 
     return (
         <React.Fragment>
+            {/* Stats Cards */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                {analyticsItems.map((item) => {
-                    const Icon = item.icon;
-                    const isUserOnlineCard = item.label === 'User online';
+                {[
+                    { label: 'Tổng truy cập', value: stats.totalVisits, icon: TrendingUp },
+                    { label: 'Hôm nay', value: stats.todayVisits, icon: Eye },
+                    { label: 'Khách online', value: onlineStats.guests, icon: UserIcon },
+                    { label: 'User online', value: onlineStats.users, icon: UserCheck }
+                ].map((item) => {
+                    const isUserCard = item.label === 'User online';
                     return (
                         <div
                             key={item.label}
-                            onClick={() => { if (isUserOnlineCard && isAdmin) setShowPopup(true); }}
-                            className={`p-4 bg-[var(--cn-bg-card)] border border-[var(--cn-border)] rounded-[var(--cn-radius-md)] flex items-center justify-between transition-all duration-200 shadow-[var(--cn-shadow-sm)]
-                                ${isUserOnlineCard && isAdmin ? 'cursor-pointer hover:border-[var(--cn-primary)] active:scale-95' : ''}`}
+                            onClick={() => { if (isUserCard && isAdmin) setShowPopup(true); }}
+                            className={`p-4 bg-[var(--cn-bg-card)] border border-[var(--cn-border)] rounded-[var(--cn-radius-md)] transition-all duration-200 shadow-[var(--cn-shadow-sm)]
+                                ${isUserCard && isAdmin ? 'cursor-pointer hover:shadow-[var(--cn-shadow-md)] hover:border-[var(--cn-primary)]' : ''}`}
                         >
-                            <div className="min-w-0">
-                                <p className="text-[11px] font-medium text-[var(--cn-text-sub)] uppercase tracking-tight">{item.label}</p>
-                                <h4 className="text-lg font-bold text-[var(--cn-text-main)] mt-0.5">{formatNumber(item.value)}</h4>
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-xs font-medium text-[var(--cn-text-muted)] uppercase tracking-wide">
+                                        {item.label}
+                                    </p>
+                                    <p className="text-2xl font-bold text-[var(--cn-text-main)] mt-1">
+                                        {formatNumber(item.value)}
+                                    </p>
+                                </div>
+                                <div className="p-2.5 bg-[var(--cn-primary-light)] rounded-[var(--cn-radius-sm)]">
+                                    <item.icon size={18} className="text-[var(--cn-primary)]" />
+                                </div>
                             </div>
-                            <div className="p-2.5 bg-[var(--cn-primary-light)] rounded-[var(--cn-radius-sm)] flex items-center justify-center">
-                                <Icon size={20} className="text-[var(--cn-primary)]" />
-                            </div>
+                            {isUserCard && isAdmin && (
+                                <div className="mt-3 flex items-center gap-1.5 text-[10px] text-[var(--cn-primary)]">
+                                    <Activity size={10} />
+                                    <span className="font-medium">Click để xem danh sách</span>
+                                </div>
+                            )}
                         </div>
                     );
                 })}
             </div>
 
+            {/* Online Users Popup */}
             {isAdmin && showPopup && (
                 <div
-                    className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4"
+                    className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
                     onClick={() => setShowPopup(false)}
                 >
                     <div
-                        className="bg-white rounded-[var(--cn-radius-lg)] w-full max-w-lg max-h-[80vh] overflow-hidden flex flex-col shadow-[var(--cn-shadow-lg)] border border-[var(--cn-border)]"
-                        onClick={(e) => e.stopPropagation()}
+                        className="bg-[var(--cn-bg-card)] rounded-lg w-full max-w-md max-h-[85vh] overflow-hidden flex flex-col shadow-[var(--cn-shadow-lg)] animate-in zoom-in-95 duration-200"
+                        onClick={e => e.stopPropagation()}
                     >
-                        <div className="p-4 border-b border-[var(--cn-border)] flex justify-between items-center bg-[var(--cn-bg-main)]">
-                            <div className="flex items-center gap-2">
-                                <div className="w-8 h-8 bg-[var(--cn-primary-light)] rounded-full flex items-center justify-center">
-                                    <Shield size={18} className="text-[var(--cn-primary)]" />
+                        {/* Header */}
+                        <div className="p-4 border-b border-[var(--cn-border)] bg-gradient-to-r from-[var(--cn-primary-light)]/30 to-transparent">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-9 h-9 bg-[var(--cn-primary-light)] rounded-full flex items-center justify-center">
+                                        <Shield size={16} className="text-[var(--cn-primary)]" />
+                                    </div>
+                                    <div>
+                                        <h3 className="font-semibold text-[var(--cn-text-main)] text-sm">
+                                            Người dùng trực tuyến
+                                        </h3>
+                                        <p className="text-[11px] text-[var(--cn-text-muted)]">
+                                            {onlineUsersList.length} người đang hoạt động
+                                        </p>
+                                    </div>
                                 </div>
-                                <h3 className="font-bold text-[var(--cn-text-main)] text-sm uppercase">Danh sách trực tuyến ({onlineUsersList.length})</h3>
+                                <button
+                                    onClick={() => setShowPopup(false)}
+                                    className="p-1.5 hover:bg-[var(--cn-hover)] rounded-full transition-colors text-[var(--cn-text-muted)] hover:text-[var(--cn-text-main)]"
+                                >
+                                    <X size={18} />
+                                </button>
                             </div>
-                            <button onClick={() => setShowPopup(false)} className="p-2 hover:bg-[var(--cn-hover)] rounded-full transition-colors text-[var(--cn-text-sub)]"><X size={20} /></button>
                         </div>
 
-                        <div className="flex-1 overflow-y-auto p-4 space-y-2">
+                        {/* User List */}
+                        <div className="flex-1 overflow-y-auto p-2 space-y-1">
                             {onlineUsersList.length === 0 ? (
-                                <div className="text-center py-12 text-[var(--cn-text-muted)] font-medium">Hiện không có thành viên nào online.</div>
-                            ) : (
-                                onlineUsersList.map((u, index) => (
-                                    <div key={`${u.userId}-${index}`} className="flex items-center gap-4 p-3 border border-transparent hover:border-[var(--cn-border)] hover:bg-[var(--cn-bg-main)] rounded-[var(--cn-radius-md)] transition-all">
-                                        <div className="relative flex-shrink-0">
-                                            <div className="w-12 h-12 rounded-full overflow-hidden border border-[var(--cn-border)] bg-[var(--cn-bg-section)] shadow-sm">
-                                                {u.avatar ? (
-                                                    <Image src={u.avatar} alt={u.fullName} width={48} height={48} className="object-cover w-full h-full" />
-                                                ) : (
-                                                    <div className="w-full h-full flex items-center justify-center bg-[var(--cn-primary)] text-white font-bold text-lg uppercase">{u.fullName.charAt(0)}</div>
-                                                )}
-                                            </div>
-                                            <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-[var(--cn-success)] border-2 border-white rounded-full shadow-sm" />
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex items-center gap-2">
-                                                <p className="text-[15px] font-bold text-[var(--cn-text-main)] truncate">{u.fullName}</p>
-                                                <span className={`px-2 py-0.5 rounded-[4px] text-[9px] font-black text-white ${u.role === 'ADMIN' ? 'bg-[#EF4444]' :
-                                                    u.role === 'TEACHER' ? 'bg-[#3BA4E8]' :
-                                                        'bg-[#64748B]'
-                                                    }`}>
-                                                    {u.role}
-                                                </span>
-                                            </div>
-                                            <div className="flex items-center gap-1.5 mt-1 text-[var(--cn-text-sub)] text-[12px] font-medium leading-none">
-                                                {getDeviceIcon(u.device)}
-                                                <span className="mt-0.5">{u.device}</span>
-                                            </div>
-                                        </div>
+                                <div className="text-center py-16">
+                                    <div className="w-14 h-14 bg-[var(--cn-bg-section)] rounded-full flex items-center justify-center mx-auto mb-3">
+                                        <UserIcon size={24} className="text-[var(--cn-text-muted)]" />
                                     </div>
-                                ))
+                                    <p className="text-sm text-[var(--cn-text-muted)]">Không có người dùng trực tuyến</p>
+                                </div>
+                            ) : (
+                                onlineUsersList.map((u, index) => {
+                                    const roleUpper = u.role?.toUpperCase() || 'USER';
+                                    const roleConfig = {
+                                        ADMIN: { bg: '#FEF2F2', text: '#EF4444', label: 'ADMIN' },
+                                        TEACHER: { bg: '#E6F4FB', text: '#3BA4E8', label: 'TEACHER' },
+                                        USER: { bg: '#F1F5F9', text: '#64748B', label: 'USER' }
+                                    };
+                                    const config = roleConfig[roleUpper as keyof typeof roleConfig] || roleConfig.USER;
+
+                                    return (
+                                        <div
+                                            key={`${u.userId}-${index}`}
+                                            className="flex items-center gap-3 p-3 rounded-[var(--cn-radius-md)] hover:bg-[var(--cn-hover)] transition-all duration-200 cursor-default"
+                                        >
+                                            {/* Avatar */}
+                                            <div className="relative flex-shrink-0">
+                                                <div className="w-10 h-10 rounded-full overflow-hidden bg-gradient-to-br from-[var(--cn-primary)]/20 to-[var(--cn-primary)]/5 flex items-center justify-center">
+                                                    {u.avatar ? (
+                                                        <Image src={u.avatar} alt={u.fullName} width={40} height={40} className="object-cover w-full h-full" />
+                                                    ) : (
+                                                        <span className="text-base font-bold text-[var(--cn-primary)]">
+                                                            {u.fullName?.charAt(0)?.toUpperCase() || 'U'}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                {/* Online dot */}
+                                                <span
+                                                    className="border-white border-2 absolute bottom-0 right-0 w-3 h-3 rounded-full shadow-sm"
+                                                    style={{ backgroundColor: 'var(--cn-success)' }}
+                                                />
+                                            </div>
+
+                                            {/* Info */}
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-center gap-2 flex-wrap">
+                                                    <p className="text-sm font-semibold text-[var(--cn-text-main)] truncate">
+                                                        {u.fullName || 'Người dùng'}
+                                                    </p>
+                                                    <span
+                                                        className="px-1.5 py-0.5 rounded-[4px] text-[9px] font-bold uppercase tracking-wide"
+                                                        style={{ backgroundColor: config.bg, color: config.text }}
+                                                    >
+                                                        {config.label}
+                                                    </span>
+                                                </div>
+                                                <div className="flex items-center gap-1.5 mt-1 text-[var(--cn-text-muted)]">
+                                                    {getDeviceIcon(u.device)}
+                                                    <span className="text-[11px]">{u.device}</span>
+
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })
                             )}
                         </div>
-                        <div className="p-3 bg-[var(--cn-bg-section)] border-t border-[var(--cn-border)] text-center text-[10px] text-[var(--cn-text-muted)] font-bold uppercase tracking-widest">CNCODE ANALYTICS SYSTEM</div>
+
+                        {/* Footer */}
+                        <div className="p-3 bg-[var(--cn-bg-section)] border-t border-[var(--cn-border)] text-center">
+                            <p className="text-[9px] text-[var(--cn-text-muted)] font-bold uppercase tracking-widest">
+                                CNCODE ANALYTICS · DỮ LIỆU THỜI GIAN THỰC
+                            </p>
+                        </div>
                     </div>
                 </div>
             )}
