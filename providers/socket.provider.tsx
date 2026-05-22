@@ -3,36 +3,45 @@
 
 'use client';
 
-import {
-    createContext,
-    useContext,
-    useEffect,
-    useRef,
-    useState,
-    useMemo,
-    useCallback,
-    type ReactNode,
-} from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import { io, type Socket } from 'socket.io-client';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/store/auth.store';
-import type {
-    CoinsUpdatedPayload,
-    StreakUpdatedPayload,
-    RoleChangedPayload,
-} from '@/types/notification.type';
 
-interface OnlineUser {
+// ========== INTERFACES ==========
+export type UserRole = "admin" | "teacher" | "user";
+
+export interface OnlineUser {
     userId: string;
     fullName: string;
-    avatar?: string;
+    avatar: string | null | undefined;
+    role: string;
+    device: string;
+}
+
+export interface OnlineStatsPayload {
+    users: number;
+    guests: number;
+}
+
+export interface CoinsUpdatedPayload { coins: number; }
+export interface StreakUpdatedPayload { streak: number; totalCoins: number; }
+export interface RoleChangedPayload { newRole: string; }
+export interface UserProfilePayload {
+    user: {
+        _id: string;
+        fullName?: string;
+        avatar?: string | null;
+        role?: string;
+        [key: string]: unknown;
+    };
 }
 
 interface SocketContextType {
     socket: Socket | null;
     isConnected: boolean;
-    socketId: string | undefined;
     onlineUsers: OnlineUser[];
+    onlineStats: OnlineStatsPayload;
     joinPostRoom: (postSlug: string) => void;
     leavePostRoom: (postSlug: string) => void;
 }
@@ -40,19 +49,17 @@ interface SocketContextType {
 const SocketContext = createContext<SocketContextType>({
     socket: null,
     isConnected: false,
-    socketId: undefined,
     onlineUsers: [],
+    onlineStats: { users: 0, guests: 0 },
     joinPostRoom: () => { },
     leavePostRoom: () => { },
 });
 
 export const useSocket = () => useContext(SocketContext);
 
-const getBaseUrl = () => {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-    if (!apiUrl) return 'http://localhost:5000';
-    return apiUrl.replace(/\/api$/, '');
-};
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL
+    ? process.env.NEXT_PUBLIC_API_URL.replace(/\/api$/, '')
+    : 'https://api.cncode.io.vn';
 
 const BASE_URL = getBaseUrl();
 
@@ -73,8 +80,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
 
     const socketRef = useRef<Socket | null>(null);
     const [socketState, setSocketState] = useState<Socket | null>(null);
-    const [isConnected, setIsConnected] = useState(false);
-    const [socketId, setSocketId] = useState<string | undefined>(undefined);
+    const [isConnected, setIsConnected] = useState<boolean>(false);
     const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([]);
 
     const registeredRef = useRef(false);
@@ -162,15 +168,15 @@ export function SocketProvider({ children }: { children: ReactNode }) {
             // ✅ Tăng timeout — Cloudflare free có thể delay connection lần đầu
             timeout: 60000,
             withCredentials: true,
+            timeout: 20000,
         });
 
         socketRef.current = instance;
 
         // ── connect ──
         instance.on('connect', () => {
-            console.log('🔌 Socket connected:', instance.id);
+            console.log('🔌 [Socket] Connected:', instance.id);
             setIsConnected(true);
-            setSocketId(instance.id);
             setSocketState(instance);
             registeredRef.current = false;
             reconnectAttempts.current = 0;
@@ -202,7 +208,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
 
         // ── disconnect ──
         instance.on('disconnect', (reason) => {
-            console.log('🔌 Socket disconnected:', reason);
+            console.log('🔌 [Socket] Disconnected:', reason);
             setIsConnected(false);
             setSocketId(undefined);
             registeredRef.current = false;
@@ -344,14 +350,13 @@ export function SocketProvider({ children }: { children: ReactNode }) {
                 duration: 6000,
             });
             useAuthStore.getState().logout();
-            localStorage.removeItem('token');
-            localStorage.removeItem('auth-storage');
             window.location.href = '/';
-        };
+        });
 
-        socketState.on('force_logout', handler);
-        return () => { socketState.off('force_logout', handler); };
-    }, [socketState, isConnected]);
+    instance.on('coins_updated', (data: CoinsUpdatedPayload) => {
+        const current = useAuthStore.getState().coins;
+        updateCoins(data.coins - current);
+    });
 
     // ─── role_changed ─────────────────────────────────────────────────────────
 
@@ -408,13 +413,13 @@ export function SocketProvider({ children }: { children: ReactNode }) {
         const handler = (data: StreakUpdatedPayload) => {
             updateStreak(data.streak);
             const currentCoins = useAuthStore.getState().coins;
-            const diff = data.totalCoins - currentCoins;
-            if (diff !== 0) updateCoins(diff);
-        };
+            updateCoins(data.totalCoins - currentCoins);
+        });
 
-        socketState.on('streak_updated', handler);
-        return () => { socketState.off('streak_updated', handler); };
-    }, [socketState, isConnected, updateStreak, updateCoins]);
+    instance.on('role_changed', (data: RoleChangedPayload) => {
+        const current = useAuthStore.getState().user;
+        if (current) setUser({ ...current, role: data.newRole.toLowerCase() as UserRole });
+    });
 
     // ─── profile_updated ──────────────────────────────────────────────────────
 
@@ -456,25 +461,25 @@ export function SocketProvider({ children }: { children: ReactNode }) {
                     socketRef.current.emit('request_online_users');
                 }
             }
-        };
+        });
 
-        document.addEventListener('visibilitychange', handleVisibilityChange);
-        return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-    }, [reconnect]);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+}, [reconnect]);
 
-    // ─── Context value ────────────────────────────────────────────────────────
+// ─── Context value ────────────────────────────────────────────────────────
 
-    const value = useMemo<SocketContextType>(
-        () => ({
-            socket: socketState,
-            isConnected,
-            socketId,
-            onlineUsers,
-            joinPostRoom,
-            leavePostRoom,
-        }),
-        [socketState, isConnected, socketId, onlineUsers, joinPostRoom, leavePostRoom]
-    );
+const value = useMemo<SocketContextType>(
+    () => ({
+        socket: socketState,
+        isConnected,
+        socketId,
+        onlineUsers,
+        joinPostRoom,
+        leavePostRoom,
+    }),
+    [socketState, isConnected, socketId, onlineUsers, joinPostRoom, leavePostRoom]
+);
 
-    return <SocketContext.Provider value={value}>{children}</SocketContext.Provider>;
+return <SocketContext.Provider value={value}>{children}</SocketContext.Provider>;
 }
