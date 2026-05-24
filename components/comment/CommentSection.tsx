@@ -1,4 +1,4 @@
-// components/comment/CommentSection.tsx - sửa phần fetch replies sâu hơn
+// components/comment/CommentSection.tsx
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -32,7 +32,6 @@ export default function CommentSection({ targetType, targetId }: CommentSectionP
             const result = await commentApi.getComments(targetType, targetId, pageNum, 20);
 
             if (result.success) {
-                // Fetch replies cho mỗi comment nếu cần
                 const commentsWithReplies = await Promise.all(
                     (result.data || []).map(async (comment: CommentType) => {
                         if (comment.replyCount > 0) {
@@ -63,27 +62,6 @@ export default function CommentSection({ targetType, targetId }: CommentSectionP
         }
     }, [targetType, targetId]);
 
-    // Fetch replies cho một comment cụ thể (khi load more replies)
-    const fetchRepliesForComment = useCallback(async (commentId: string, pageNum: number = 1) => {
-        try {
-            const result = await commentApi.getReplies(commentId, pageNum, 10);
-            if (result.success) {
-                setComments(prev => prev.map(comment => {
-                    if (comment._id === commentId) {
-                        const existingReplies = comment.replies || [];
-                        const newReplies = pageNum === 1
-                            ? result.data
-                            : [...existingReplies, ...result.data];
-                        return { ...comment, replies: newReplies };
-                    }
-                    return comment;
-                }));
-            }
-        } catch (error) {
-            console.error('Fetch replies error:', error);
-        }
-    }, []);
-
     useEffect(() => {
         fetchComments(1);
     }, [fetchComments]);
@@ -96,7 +74,6 @@ export default function CommentSection({ targetType, targetId }: CommentSectionP
             if (!newComment.parentId) {
                 setComments(prev => [newComment, ...prev]);
             } else {
-                // Nếu là reply, thêm vào comment cha
                 setComments(prev => prev.map(comment => {
                     if (comment._id === newComment.parentId) {
                         const updatedReplies = [newComment, ...(comment.replies || [])];
@@ -203,8 +180,7 @@ export default function CommentSection({ targetType, targetId }: CommentSectionP
 
             if (result.success) {
                 toast.success('Phản hồi thành công');
-                // Refresh replies của comment cha
-                await fetchRepliesForComment(parentId, 1);
+                fetchComments(1);
             }
         } catch (error) {
             toast.error('Phản hồi thất bại');
@@ -241,14 +217,14 @@ export default function CommentSection({ targetType, targetId }: CommentSectionP
         }
     };
 
-    const handleReport = async (commentId: string, reason: string) => {
+    const handleReport = async (commentId: string, reason: string, description?: string) => {
         if (!token) {
             toast.error('Vui lòng đăng nhập');
             return;
         }
 
         try {
-            const result = await commentApi.reportComment(token, commentId, reason);
+            const result = await commentApi.reportComment(token, commentId, reason, description);
             if (result.success) {
                 toast.success('Đã gửi báo cáo, cảm ơn bạn');
             }
@@ -271,7 +247,6 @@ export default function CommentSection({ targetType, targetId }: CommentSectionP
                 Bình luận ({comments.length})
             </h3>
 
-            {/* Comment Input */}
             {user ? (
                 <div className="flex gap-3 mb-6">
                     <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
@@ -304,7 +279,6 @@ export default function CommentSection({ targetType, targetId }: CommentSectionP
                 </div>
             )}
 
-            {/* Comments List */}
             {loading && comments.length === 0 ? (
                 <div className="flex justify-center py-8">
                     <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
@@ -330,7 +304,6 @@ export default function CommentSection({ targetType, targetId }: CommentSectionP
                 </div>
             )}
 
-            {/* Load More */}
             {hasMore && (
                 <div className="text-center mt-4">
                     <button

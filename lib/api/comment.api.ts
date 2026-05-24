@@ -154,5 +154,37 @@ export const commentApi = {
             console.error('Report comment error:', error);
             return { success: false, message: 'Không thể gửi báo cáo' };
         }
-    }
+    },
+
+    getReactionUsers: async (token: string, commentId: string, reactionType?: string, page = 1, limit = 50) => {
+        try {
+            // Nếu không có reactionType hoặc reactionType là 'all', không gửi type
+            let url = `${API_URL}/api/comments/${commentId}/reactions?page=${page}&limit=${limit}`;
+            if (reactionType && reactionType !== 'all') {
+                url += `&type=${reactionType}`;
+            }
+
+            const response = await fetch(url, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            const data = await response.json();
+
+            if (!data.success) {
+                throw new Error(data.message || 'Không thể tải danh sách');
+            }
+
+            return {
+                success: true,
+                data: data.data,
+                total: data.total,
+                page: data.page,
+                totalPages: data.totalPages
+            };
+        } catch (error) {
+            console.error('Get reaction users error:', error);
+            return { success: false, message: 'Không thể tải danh sách người dùng', data: [], total: 0, page: 1, totalPages: 0 };
+        }
+    },
 };
