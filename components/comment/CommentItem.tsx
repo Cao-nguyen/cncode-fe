@@ -460,6 +460,52 @@ export default function CommentItem({
                                         className="text-gray-400"
                                     />
                                 </button>
+
+                                {/* DROPDOWN MENU */}
+                                {showMoreMenu && (
+                                    <div
+                                        ref={moreMenuRef}
+                                        className="absolute right-0 top-6 z-10 bg-white rounded-lg shadow-lg border border-gray-200 py-1 min-w-[140px]"
+                                    >
+                                        {!isOwner && (
+                                            <button
+                                                onClick={() => {
+                                                    setShowMoreMenu(false);
+                                                    setShowReportModal(true);
+                                                }}
+                                                className="w-full px-3 py-2 text-left text-sm text-red-500 hover:bg-gray-50 flex items-center gap-2"
+                                            >
+                                                <Flag size={14} />
+                                                Báo cáo
+                                            </button>
+                                        )}
+
+                                        {isOwner && !isEditing && (
+                                            <>
+                                                <button
+                                                    onClick={() => {
+                                                        setIsEditing(true);
+                                                        setShowMoreMenu(false);
+                                                    }}
+                                                    className="w-full px-3 py-2 text-left text-sm text-gray-600 hover:bg-gray-50 flex items-center gap-2"
+                                                >
+                                                    <Edit2 size={14} />
+                                                    Chỉnh sửa
+                                                </button>
+                                                <button
+                                                    onClick={() => {
+                                                        onDelete(comment._id);
+                                                        setShowMoreMenu(false);
+                                                    }}
+                                                    className="w-full px-3 py-2 text-left text-sm text-red-500 hover:bg-gray-50 flex items-center gap-2"
+                                                >
+                                                    <Trash2 size={14} />
+                                                    Xóa
+                                                </button>
+                                            </>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         </div>
 
@@ -484,6 +530,9 @@ export default function CommentItem({
                                             text-white
                                             rounded-lg
                                             text-sm
+                                            font-medium
+                                            hover:bg-blue-600
+                                            transition
                                         "
                                     >
                                         {isSubmitting
@@ -501,6 +550,9 @@ export default function CommentItem({
                                             border-gray-200
                                             rounded-lg
                                             text-sm
+                                            text-gray-600
+                                            hover:bg-gray-50
+                                            transition
                                         "
                                     >
                                         Hủy
@@ -519,67 +571,137 @@ export default function CommentItem({
                         )}
                     </div>
 
+                    {/* ACTIONS */}
                     {!comment.isDeleted && (
-                        <div
-                            className="
-                                flex
-                                flex-wrap
-                                items-center
-                                gap-2
-                                mt-1.5
-                                ml-1
-                            "
-                        >
-                            <button
-                                onClick={() =>
-                                    setShowReactionPicker(
-                                        !showReactionPicker
-                                    )
-                                }
+                        <div className="relative">
+                            {/* REACTION PICKER */}
+                            {showReactionPicker && (
+                                <div
+                                    ref={reactionPickerRef}
+                                    className="absolute bottom-8 left-0 z-10 bg-white rounded-full shadow-lg border border-gray-200 flex p-1 gap-0.5"
+                                >
+                                    {REACTION_TYPES.map((rt) => (
+                                        <button
+                                            key={rt.type}
+                                            onClick={() =>
+                                                handleLike(rt.type)
+                                            }
+                                            className="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center transition-transform hover:scale-110"
+                                        >
+                                            <img
+                                                src={rt.icon}
+                                                alt={rt.label}
+                                                className="w-5 h-5"
+                                            />
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+
+                            <div
                                 className="
                                     flex
+                                    flex-wrap
                                     items-center
-                                    gap-1
-                                    px-2 py-1
-                                    rounded-lg
-                                    text-xs
-                                    hover:bg-gray-100
+                                    gap-2
+                                    mt-1.5
+                                    ml-1
                                 "
                             >
-                                <Heart
-                                    size={14}
-                                    className="text-gray-500"
-                                />
+                                <button
+                                    onClick={() =>
+                                        setShowReactionPicker(
+                                            !showReactionPicker
+                                        )
+                                    }
+                                    className="
+                                        flex
+                                        items-center
+                                        gap-1
+                                        px-2 py-1
+                                        rounded-lg
+                                        text-xs
+                                        hover:bg-gray-100
+                                        transition
+                                    "
+                                >
+                                    {currentReaction ? (
+                                        <>
+                                            <img
+                                                src={currentReaction.icon}
+                                                alt={currentReaction.label}
+                                                className="w-4 h-4"
+                                            />
+                                            <span className="text-blue-600">
+                                                {currentReaction.label}
+                                            </span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Heart
+                                                size={14}
+                                                className="text-gray-500"
+                                            />
+                                            <span className="text-gray-500">
+                                                Thích
+                                            </span>
+                                        </>
+                                    )}
+                                    {reactionCount > 0 && (
+                                        <span className="text-gray-500 ml-0.5">
+                                            {reactionCount}
+                                        </span>
+                                    )}
+                                </button>
 
-                                <span className="text-gray-500">
-                                    Thích
-                                </span>
-                            </button>
+                                <button
+                                    onClick={() =>
+                                        setShowReplyInput(
+                                            !showReplyInput
+                                        )
+                                    }
+                                    className="
+                                        flex
+                                        items-center
+                                        gap-1
+                                        px-2 py-1
+                                        rounded-lg
+                                        text-xs
+                                        text-gray-500
+                                        hover:bg-gray-100
+                                        transition
+                                    "
+                                >
+                                    <MessageCircle size={12} />
+                                    <span>Phản hồi</span>
+                                    {comment.replyCount > 0 && (
+                                        <span>({comment.replyCount})</span>
+                                    )}
+                                </button>
+                            </div>
 
-                            <button
-                                onClick={() =>
-                                    setShowReplyInput(
-                                        !showReplyInput
-                                    )
-                                }
-                                className="
-                                    flex
-                                    items-center
-                                    gap-1
-                                    px-2 py-1
-                                    rounded-lg
-                                    text-xs
-                                    text-gray-500
-                                    hover:bg-gray-100
-                                "
-                            >
-                                <MessageCircle size={12} />
-
-                                <span>Phản hồi</span>
-                            </button>
+                            {/* REACTION COUNT SUMMARY */}
+                            {reactionCount > 0 && (
+                                <div className="mt-1 ml-1 flex items-center gap-0.5">
+                                    {activeReactions
+                                        .slice(0, 3)
+                                        .map((reaction, idx) => (
+                                            <img
+                                                key={`${reaction.type}-${idx}`}
+                                                src={reaction.icon}
+                                                alt={reaction.label}
+                                                className="w-3.5 h-3.5"
+                                            />
+                                        ))}
+                                    <span className="text-xs text-gray-500 ml-0.5">
+                                        {reactionCount}
+                                    </span>
+                                </div>
+                            )}
                         </div>
                     )}
 
+                    {/* REPLY INPUT */}
                     {showReplyInput && (
                         <div className="mt-3 flex gap-2">
                             <CustomTextarea
@@ -601,6 +723,9 @@ export default function CommentItem({
                                         bg-blue-500
                                         text-white
                                         rounded-lg
+                                        hover:bg-blue-600
+                                        transition
+                                        disabled:opacity-50
                                     "
                                 >
                                     {isSubmitting ? (
@@ -621,6 +746,8 @@ export default function CommentItem({
                                         border
                                         border-gray-200
                                         rounded-lg
+                                        hover:bg-gray-50
+                                        transition
                                     "
                                 >
                                     <X
@@ -663,10 +790,147 @@ export default function CommentItem({
                                     />
                                 )
                             )}
+
+                            {hiddenRepliesCount > 0 &&
+                                !showAllReplies && (
+                                    <button
+                                        onClick={() =>
+                                            setShowAllReplies(true)
+                                        }
+                                        className="text-xs text-blue-500 hover:text-blue-600"
+                                    >
+                                        Xem thêm {hiddenRepliesCount} phản hồi
+                                    </button>
+                                )}
+
+                            {replies.length > 3 &&
+                                showAllReplies && (
+                                    <button
+                                        onClick={() =>
+                                            setShowAllReplies(false)
+                                        }
+                                        className="text-xs text-blue-500 hover:text-blue-600"
+                                    >
+                                        Thu gọn
+                                    </button>
+                                )}
                         </div>
                     )}
                 </div>
             </div>
+
+            {/* REPORT MODAL */}
+            {showReportModal && (
+                <div
+                    className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4"
+                    onClick={() => setShowReportModal(false)}
+                >
+                    <div
+                        className="bg-white rounded-xl w-full max-w-md max-h-[90vh] overflow-y-auto shadow-xl relative"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="sticky top-0 bg-white px-5 py-4 border-b border-gray-100 flex justify-between items-center z-10">
+                            <div className="flex items-center gap-2">
+                                <AlertTriangle size={20} className="text-red-500" />
+                                <h3 className="text-lg font-semibold text-gray-800">
+                                    Báo cáo bình luận
+                                </h3>
+                            </div>
+                            <button
+                                onClick={() =>
+                                    setShowReportModal(false)
+                                }
+                                className="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 hover:bg-gray-200 transition"
+                            >
+                                <X size={16} className="text-gray-500" />
+                            </button>
+                        </div>
+
+                        <div className="p-5 space-y-4">
+                            <p className="text-sm text-gray-600">
+                                Bình luận từ{' '}
+                                <span className="font-semibold">
+                                    {getUserName()}
+                                </span>
+                            </p>
+                            <div className="p-3 bg-gray-50 rounded-lg italic text-sm text-gray-500">
+                                {`"${comment.content.length > 100
+                                    ? comment.content.substring(0, 100) + '...'
+                                    : comment.content
+                                    }"`}
+                            </div>
+
+                            <div className="space-y-3">
+                                <label className="block text-sm font-medium text-gray-700">
+                                    Lý do báo cáo{' '}
+                                    <span className="text-red-500">*</span>
+                                </label>
+                                <div className="space-y-2">
+                                    {REPORT_REASONS.map(
+                                        (reason) => (
+                                            <label
+                                                key={reason.value}
+                                                className="flex items-start gap-3 p-3 rounded-lg border border-gray-200 cursor-pointer hover:bg-gray-50 transition"
+                                            >
+                                                <input
+                                                    type="radio"
+                                                    name="reportReason"
+                                                    value={reason.value}
+                                                    checked={
+                                                        selectedReason ===
+                                                        reason.value
+                                                    }
+                                                    onChange={(e) =>
+                                                        setSelectedReason(
+                                                            e.target.value
+                                                        )
+                                                    }
+                                                    className="mt-0.5 w-4 h-4 text-red-500 focus:ring-red-500"
+                                                />
+                                                <span className="text-sm text-gray-700 flex-1">
+                                                    {reason.label}
+                                                </span>
+                                            </label>
+                                        )
+                                    )}
+                                </div>
+                            </div>
+
+                            {selectedReason === 'other' && (
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                                        Nhập lý do cụ thể
+                                    </label>
+                                    <CustomTextarea
+                                        value={customReason}
+                                        onChange={setCustomReason}
+                                        rows={3}
+                                        placeholder="Vui lòng mô tả chi tiết lý do báo cáo..."
+                                    />
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="flex gap-3 p-5 pt-0">
+                            <button
+                                onClick={() =>
+                                    setShowReportModal(false)
+                                }
+                                className="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg text-gray-600 font-medium hover:bg-gray-50 transition"
+                            >
+                                Hủy
+                            </button>
+                            <button
+                                onClick={handleReportSubmit}
+                                className="flex-1 px-4 py-2.5 bg-red-500 text-white rounded-lg font-medium hover:bg-red-600 transition flex items-center justify-center gap-2"
+                            >
+                                <Flag size={16} />
+                                Gửi báo cáo
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </>
     );
 }
