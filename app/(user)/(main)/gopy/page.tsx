@@ -1,4 +1,4 @@
-// app/(user)/(public)/gopy/page.tsx
+// app/(user)/(public)/gopy/page.tsx - sửa phần handleLike
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -6,44 +6,49 @@ import { useAuthStore } from '@/store/auth.store';
 import { useSocket } from '@/providers/socket.provider';
 import { feedbackApi, IFeedback } from '@/lib/api/feedback.api';
 import FeedbackCard from '@/components/feedback/FeedbackCard';
-import { Loader2, Filter, X, Send, Plus, Bug, Sparkles, Zap, Lightbulb } from 'lucide-react';
+import { Loader2, Plus, X, Send, MessageSquare } from 'lucide-react';
 import { toast } from 'sonner';
 import { CustomSelect } from '@/components/custom/CustomSelect';
 import { CustomInput } from '@/components/custom/CustomInput';
 import { CustomTextarea } from '@/components/custom/CustomTextarea';
 
+type FeedbackCategory = 'bug' | 'ui_ux' | 'feature_request' | 'performance' | 'security' | 'other';
+
 const CATEGORIES = [
     { value: 'all', label: 'Tất cả' },
     { value: 'bug', label: 'Lỗi/Bug' },
-    { value: 'feature', label: 'Tính năng mới' },
-    { value: 'improvement', label: 'Cải tiến' },
+    { value: 'ui_ux', label: 'UI/UX' },
+    { value: 'feature_request', label: 'Tính năng mới' },
+    { value: 'performance', label: 'Hiệu năng' },
+    { value: 'security', label: 'Bảo mật' },
     { value: 'other', label: 'Khác' }
 ];
 
 const STATUS_FILTERS = [
     { value: 'all', label: 'Tất cả' },
     { value: 'approved', label: 'Đã duyệt' },
-    { value: 'in_progress', label: 'Đang cải tiến' },
+    { value: 'improving', label: 'Đang cải tiến' },
     { value: 'completed', label: 'Hoàn thành' }
 ];
 
-const CREATE_CATEGORIES = [
-    { value: 'bug', label: '🐛 Lỗi/Bug' },
-    { value: 'feature', label: '✨ Tính năng mới' },
-    { value: 'improvement', label: '⚡ Cải tiến' },
-    { value: 'other', label: '💡 Khác' }
+const CREATE_CATEGORIES: { value: FeedbackCategory; label: string }[] = [
+    { value: 'bug', label: 'Lỗi/Bug' },
+    { value: 'ui_ux', label: 'UI/UX' },
+    { value: 'feature_request', label: 'Tính năng mới' },
+    { value: 'performance', label: 'Hiệu năng' },
+    { value: 'security', label: 'Bảo mật' },
+    { value: 'other', label: 'Khác' }
 ];
 
-const getStatusLabel = (status: string): string => {
-    const labels: Record<string, string> = {
-        pending: 'Chờ xử lý',
-        viewed: 'Đã xem',
-        approved: 'Đã duyệt',
-        in_progress: 'Đang cải tiến',
-        completed: 'Hoàn thành',
-        rejected: 'Từ chối'
-    };
-    return labels[status] || status;
+const STATUS_LABELS: Record<string, string> = {
+    pending: 'Chờ xử lý', viewed: 'Đã xem', approved: 'Đã duyệt',
+    improving: 'Đang cải tiến', completed: 'Hoàn thành', rejected: 'Từ chối'
+};
+
+const STATUS_COLORS: Record<string, string> = {
+    pending: 'bg-yellow-50 text-yellow-600', viewed: 'bg-blue-50 text-blue-600',
+    approved: 'bg-green-50 text-green-600', improving: 'bg-purple-50 text-purple-600',
+    completed: 'bg-emerald-50 text-emerald-600', rejected: 'bg-red-50 text-red-600'
 };
 
 export default function FeedbackPage() {
@@ -60,10 +65,16 @@ export default function FeedbackPage() {
     const [selectedCategory, setSelectedCategory] = useState('all');
     const [selectedStatus, setSelectedStatus] = useState('all');
     const [showCreateModal, setShowCreateModal] = useState(false);
-    const [formData, setFormData] = useState({
+    const [formData, setFormData] = useState<{
+        title: string;
+        content: string;
+        category: FeedbackCategory;
+        priority: string;
+    }>({
         title: '',
         content: '',
-        category: 'other'
+        category: 'other',
+        priority: 'medium'
     });
     const [submitting, setSubmitting] = useState(false);
 
@@ -88,6 +99,15 @@ export default function FeedbackPage() {
         }
     }, [page, selectedStatus, selectedCategory]);
 
+    // Xử lý like thành công - cập nhật state mà không fetch lại toàn bộ
+    const handleLikeSuccess = useCallback((feedbackId: string, newReactCount: number) => {
+        setFeedbacks(prev => prev.map(f =>
+            f._id === feedbackId
+                ? { ...f, reactCount: newReactCount }
+                : f
+        ));
+    }, []);
+
     const handleEditFeedback = async (feedbackId: string, title: string, content: string, category: string) => {
         if (!token) {
             toast.error('Vui lòng đăng nhập');
@@ -103,53 +123,10 @@ export default function FeedbackPage() {
         }
     };
 
-    useEffect(() => {
-        if (!socket || !isConnected) return;
-
-        const handleFeedbackCreated = (newFeedback: IFeedback) => {
-            setFeedbacks(prev => [newFeedback, ...prev]);
-            fetchFeedbacks();
-        };
-
-        const handleFeedbackUpdated = (updatedFeedback: IFeedback) => {
-            setFeedbacks(prev => prev.map(f => f._id === updatedFeedback._id ? updatedFeedback : f));
-            fetchFeedbacks();
-        };
-
-        const handleFeedbackDeleted = (feedbackId: string) => {
-            setFeedbacks(prev => prev.filter(f => f._id !== feedbackId));
-            fetchFeedbacks();
-        };
-
-        socket.on('feedback_created', handleFeedbackCreated);
-        socket.on('feedback_updated', handleFeedbackUpdated);
-        socket.on('feedback_deleted', handleFeedbackDeleted);
-
-        return () => {
-            socket.off('feedback_created', handleFeedbackCreated);
-            socket.off('feedback_updated', handleFeedbackUpdated);
-            socket.off('feedback_deleted', handleFeedbackDeleted);
-        };
-    }, [socket, isConnected, fetchFeedbacks]);
-
-    useEffect(() => {
-        fetchFeedbacks();
-    }, [fetchFeedbacks]);
-
-    const handleLike = async (feedbackId: string) => {
-        if (!token) {
-            toast.error('Vui lòng đăng nhập để ủng hộ');
-            return;
-        }
-
-        await feedbackApi.likeFeedback(token, feedbackId);
-    };
-
     const handleDeleteFeedback = async (feedbackId: string) => {
-        if (!token) {
-            toast.error('Vui lòng đăng nhập');
-            return;
-        }
+        if (!token) return;
+        // ❌ Xóa dòng này
+        // if (!confirm('Bạn có chắc chắn muốn xóa góp ý này không?')) return;
 
         const result = await feedbackApi.deleteFeedback(token, feedbackId);
         if (result.success) {
@@ -159,6 +136,52 @@ export default function FeedbackPage() {
             toast.error(result.message || 'Xóa thất bại');
         }
     };
+
+    // Socket realtime
+    useEffect(() => {
+        if (!socket || !isConnected) return;
+
+        const handleFeedbackCreated = (newFeedback: IFeedback) => {
+            if (page === 1) {
+                setFeedbacks(prev => [newFeedback, ...prev]);
+            }
+            toast.info('Có góp ý mới!', { duration: 3000 });
+        };
+
+        const handleFeedbackUpdated = (updatedFeedback: IFeedback) => {
+            setFeedbacks(prev => prev.map(f => f._id === updatedFeedback._id ? updatedFeedback : f));
+        };
+
+        const handleFeedbackDeleted = (feedbackId: string) => {
+            setFeedbacks(prev => prev.filter(f => f._id !== feedbackId));
+        };
+
+        const handleFeedbackReacted = (data: { feedbackId: string; reactCount: number; userId: string }) => {
+            if (data.userId !== user?._id) {
+                setFeedbacks(prev => prev.map(f =>
+                    f._id === data.feedbackId
+                        ? { ...f, reactCount: data.reactCount }
+                        : f
+                ));
+            }
+        };
+
+        socket.on('feedback_created', handleFeedbackCreated);
+        socket.on('feedback_updated', handleFeedbackUpdated);
+        socket.on('feedback_deleted', handleFeedbackDeleted);
+        socket.on('feedback_reacted', handleFeedbackReacted);
+
+        return () => {
+            socket.off('feedback_created', handleFeedbackCreated);
+            socket.off('feedback_updated', handleFeedbackUpdated);
+            socket.off('feedback_deleted', handleFeedbackDeleted);
+            socket.off('feedback_reacted', handleFeedbackReacted);
+        };
+    }, [socket, isConnected, page, user?._id]);
+
+    useEffect(() => {
+        fetchFeedbacks();
+    }, [fetchFeedbacks]);
 
     const handleCreateFeedback = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -182,7 +205,7 @@ export default function FeedbackPage() {
             if (result.success) {
                 toast.success(result.message);
                 setShowCreateModal(false);
-                setFormData({ title: '', content: '', category: 'other' });
+                setFormData({ title: '', content: '', category: 'other', priority: 'medium' });
                 fetchFeedbacks();
             } else {
                 toast.error(result.message || 'Gửi góp ý thất bại');
@@ -200,62 +223,58 @@ export default function FeedbackPage() {
         }
     };
 
+    const statusOrder = ['pending', 'viewed', 'approved', 'improving', 'completed', 'rejected'];
+
     return (
         <div className="max-w-6xl mx-auto px-4 py-6 sm:py-8">
             {/* Header */}
-            <div className="text-center mb-6 sm:mb-8">
-                <h1 className="text-2xl sm:text-3xl font-bold text-[var(--cn-text-main)]">
-                    Góp ý & Phản hồi
-                </h1>
-                <p className="text-xs sm:text-sm text-[var(--cn-text-muted)] mt-2">
+            <div className="text-center mb-8">
+                <h1 className="text-3xl font-bold text-gray-800">Góp ý & Phản hồi</h1>
+                <p className="text-sm text-gray-500 mt-2">
                     Đóng góp ý kiến của bạn để CNcode ngày càng hoàn thiện hơn
                 </p>
             </div>
 
             {/* Stats Cards */}
             {Object.keys(stats.byStatus || {}).length > 0 && (
-                <div className={`grid gap-3 mb-6 ${Object.keys(stats.byStatus).length === 6
-                    ? 'grid-cols-3 sm:grid-cols-6'
-                    : 'grid-cols-2 sm:grid-cols-5'
-                    }`}>
-                    {Object.entries(stats.byStatus).map(([status, count]) => (
-                        <div key={status} className="bg-[var(--cn-bg-card)] rounded-[var(--cn-radius-md)] p-2 sm:p-3 text-center border border-[var(--cn-border)] shadow-[var(--cn-shadow-sm)]">
-                            <div className="text-lg sm:text-xl font-bold text-[var(--cn-primary)]">{count as number}</div>
-                            <div className="text-[9px] sm:text-xs text-[var(--cn-text-muted)]">
-                                {getStatusLabel(status)}
-                            </div>
+                <div className="grid grid-cols-3 sm:grid-cols-6 gap-3 mb-6">
+                    {statusOrder.map((status) => (
+                        <div
+                            key={status}
+                            className={`rounded-xl p-3 text-center border ${STATUS_COLORS[status] || 'bg-gray-50 text-gray-600'}`}
+                        >
+                            <div className="text-xl font-bold text-gray-800">{stats.byStatus[status] || 0}</div>
+                            <div className="text-xs text-gray-500">{STATUS_LABELS[status]}</div>
                         </div>
                     ))}
                 </div>
             )}
 
-            {/* Filters */}
+            {/* Filters and Create Button */}
             <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center justify-between gap-3 mb-6">
                 <div className="flex flex-wrap gap-2">
-                    {/* Category Filters */}
-                    <div className="flex flex-wrap gap-1 bg-[var(--cn-bg-section)] rounded-[var(--cn-radius-md)] p-1">
+                    <div className="flex flex-wrap gap-1 bg-gray-100 rounded-lg p-1">
                         {CATEGORIES.map(cat => (
                             <button
                                 key={cat.value}
                                 onClick={() => setSelectedCategory(cat.value)}
-                                className={`px-2.5 sm:px-3 py-1 sm:py-1.5 text-[11px] sm:text-sm rounded-[var(--cn-radius-sm)] transition ${selectedCategory === cat.value
-                                    ? 'bg-[var(--cn-primary)] text-white'
-                                    : 'text-[var(--cn-text-sub)] hover:bg-[var(--cn-hover)]'
+                                className={`px-3 py-1.5 text-sm rounded-md transition ${selectedCategory === cat.value
+                                    ? 'bg-white text-blue-600 shadow-sm'
+                                    : 'text-gray-600 hover:bg-gray-200'
                                     }`}
                             >
                                 {cat.label}
                             </button>
                         ))}
                     </div>
-                    {/* Status Filters */}
-                    <div className="flex flex-wrap gap-1 bg-[var(--cn-bg-section)] rounded-[var(--cn-radius-md)] p-1">
+                    <div className="flex flex-wrap gap-1 bg-gray-100 rounded-lg p-1">
                         {STATUS_FILTERS.map(status => (
                             <button
                                 key={status.value}
                                 onClick={() => setSelectedStatus(status.value)}
-                                className={`px-2.5 sm:px-3 py-1 sm:py-1.5 text-[11px] sm:text-sm rounded-[var(--cn-radius-sm)] transition ${selectedStatus === status.value
-                                    ? 'bg-[var(--cn-primary)] text-white'
-                                    : 'text-[var(--cn-text-sub)] hover:bg-[var(--cn-hover)]'
+                                className={`px-3 py-1.5 text-sm rounded-md transition ${selectedStatus === status.value
+                                    ? 'bg-white text-blue-600 shadow-sm'
+                                    : 'text-gray-600 hover:bg-gray-200'
                                     }`}
                             >
                                 {status.label}
@@ -265,22 +284,23 @@ export default function FeedbackPage() {
                 </div>
                 <button
                     onClick={() => setShowCreateModal(true)}
-                    className="flex items-center justify-center gap-2 px-4 py-2 bg-[var(--cn-primary)] text-white rounded-[var(--cn-radius-md)] hover:bg-[var(--cn-primary-hover)] transition text-sm"
+                    className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition text-sm font-medium"
                 >
                     <Plus size={16} />
-                    <span>Gửi góp ý</span>
+                    Gửi góp ý
                 </button>
             </div>
 
             {/* Feedbacks List */}
             {loading && page === 1 ? (
                 <div className="flex justify-center py-12">
-                    <Loader2 className="w-6 h-6 sm:w-8 sm:h-8 animate-spin text-[var(--cn-primary)]" />
+                    <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
                 </div>
             ) : feedbacks.length === 0 ? (
-                <div className="text-center py-12 bg-[var(--cn-bg-card)] rounded-[var(--cn-radius-md)] border border-[var(--cn-border)]">
-                    <p className="text-sm text-[var(--cn-text-sub)]">Chưa có góp ý nào</p>
-                    <p className="text-xs text-[var(--cn-text-muted)] mt-1">Hãy là người đầu tiên đóng góp ý kiến!</p>
+                <div className="text-center py-16 bg-white rounded-xl border border-gray-200">
+                    <MessageSquare size={48} className="text-gray-300 mx-auto mb-3" />
+                    <p className="text-gray-500">Chưa có góp ý nào</p>
+                    <p className="text-sm text-gray-400 mt-1">Hãy là người đầu tiên đóng góp ý kiến!</p>
                 </div>
             ) : (
                 <div className="space-y-4">
@@ -288,7 +308,7 @@ export default function FeedbackPage() {
                         <FeedbackCard
                             key={feedback._id}
                             feedback={feedback}
-                            onLike={handleLike}
+                            onLikeSuccess={handleLikeSuccess}
                             onDelete={handleDeleteFeedback}
                             onEdit={handleEditFeedback}
                         />
@@ -302,7 +322,7 @@ export default function FeedbackPage() {
                     <button
                         onClick={loadMore}
                         disabled={loading}
-                        className="px-5 sm:px-6 py-2 border border-[var(--cn-primary)] text-[var(--cn-primary)] rounded-[var(--cn-radius-md)] hover:bg-[var(--cn-primary)]/5 transition disabled:opacity-50 text-sm"
+                        className="px-6 py-2 border border-blue-500 text-blue-500 rounded-lg hover:bg-blue-50 transition disabled:opacity-50 text-sm font-medium"
                     >
                         {loading && <Loader2 className="w-4 h-4 animate-spin inline mr-2" />}
                         {loading ? 'Đang tải...' : 'Xem thêm'}
@@ -313,28 +333,28 @@ export default function FeedbackPage() {
             {/* Create Modal */}
             {showCreateModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowCreateModal(false)}>
-                    <div className="bg-[var(--cn-bg-card)] rounded-[var(--cn-radius-md)] w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-[var(--cn-shadow-lg)]" onClick={e => e.stopPropagation()}>
-                        <div className="sticky top-0 bg-[var(--cn-bg-card)] p-4 sm:p-5 border-b border-[var(--cn-border)] flex justify-between items-center">
-                            <h3 className="text-lg sm:text-xl font-semibold text-[var(--cn-text-main)]">Gửi góp ý</h3>
+                    <div className="bg-white rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>
+                        <div className="sticky top-0 bg-white px-5 py-4 border-b border-gray-100 flex justify-between items-center">
+                            <h3 className="text-lg font-semibold text-gray-800">Gửi góp ý</h3>
                             <button
                                 onClick={() => setShowCreateModal(false)}
-                                className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-full bg-[var(--cn-bg-section)] hover:bg-[var(--cn-hover)] transition text-[var(--cn-text-muted)]"
+                                className="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 hover:bg-gray-200 transition"
                             >
-                                <X size={16} className="sm:w-[18px] sm:h-[18px]" />
+                                <X size={16} className="text-gray-500" />
                             </button>
                         </div>
-                        <form onSubmit={handleCreateFeedback} className="p-4 sm:p-5 space-y-4 sm:space-y-5">
+                        <form onSubmit={handleCreateFeedback} className="p-5 space-y-4">
                             <div>
-                                <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 text-[var(--cn-text-sub)]">Danh mục</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1.5">Danh mục</label>
                                 <CustomSelect
                                     value={formData.category}
-                                    onChange={(value) => setFormData(prev => ({ ...prev, category: value }))}
+                                    onChange={(value) => setFormData(prev => ({ ...prev, category: value as FeedbackCategory }))}
                                     options={CREATE_CATEGORIES}
                                     placeholder="Chọn danh mục"
                                 />
                             </div>
                             <div>
-                                <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 text-[var(--cn-text-sub)]">Tiêu đề</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1.5">Tiêu đề</label>
                                 <CustomInput
                                     value={formData.title}
                                     onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
@@ -343,7 +363,7 @@ export default function FeedbackPage() {
                                 />
                             </div>
                             <div>
-                                <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 text-[var(--cn-text-sub)]">Nội dung</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1.5">Nội dung</label>
                                 <CustomTextarea
                                     value={formData.content}
                                     onChange={(value) => setFormData(prev => ({ ...prev, content: value }))}
@@ -356,14 +376,14 @@ export default function FeedbackPage() {
                                 <button
                                     type="button"
                                     onClick={() => setShowCreateModal(false)}
-                                    className="flex-1 px-4 py-2.5 sm:py-3 border border-[var(--cn-border)] rounded-[var(--cn-radius-md)] text-[var(--cn-text-sub)] font-medium hover:bg-[var(--cn-hover)] transition text-sm"
+                                    className="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg text-gray-600 font-medium hover:bg-gray-50 transition text-sm"
                                 >
                                     Hủy
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={submitting}
-                                    className="flex-1 px-4 py-2.5 sm:py-3 bg-[var(--cn-primary)] text-white rounded-[var(--cn-radius-md)] font-medium hover:bg-[var(--cn-primary-hover)] transition disabled:opacity-50 flex items-center justify-center gap-2 text-sm"
+                                    className="flex-1 px-4 py-2.5 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition disabled:opacity-50 flex items-center justify-center gap-2 text-sm"
                                 >
                                     {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send size={16} />}
                                     {submitting ? 'Đang gửi...' : 'Gửi góp ý'}

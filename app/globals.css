@@ -117,12 +117,22 @@ body {
 }
 
 /* ========== SVG STYLES ========== */
-svg:not(.lucide) {
+svg.lucide:not([data-filled]) {
+  fill: none !important;
+}
+
+svg.lucide[data-filled="true"] {
   fill: currentColor !important;
 }
 
-svg.lucide:not([data-filled]) {
+svg.lucide[data-filled="false"] {
   fill: none !important;
+}
+
+/* Đảm bảo heart icon có transition mượt */
+svg.lucide[data-filled="true"],
+svg.lucide[data-filled="false"] {
+  transition: fill 0.2s ease, color 0.2s ease;
 }
 
 /* ========== TINYMCE EDITOR STYLES ========== */

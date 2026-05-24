@@ -1,3 +1,4 @@
+// types/shortlink.type.ts
 export interface ShortLink {
     shortCode: string;
     shortUrl: string;
@@ -11,8 +12,10 @@ export interface ShortLink {
 export interface ShortLinkWithUser extends ShortLink {
     user: {
         id: string;
-        name: string;
+        fullName: string;
         email: string;
+        username: string;
+        avatarUrl?: string;
     } | null;
 }
 
@@ -27,32 +30,19 @@ export interface UpdateShortLinkPayload {
     expiresInDays?: number;
 }
 
-export interface ShortLinkResponse {
-    success: boolean;
-    data: ShortLink;
-}
-
-export interface ShortLinkListResponse {
-    success: boolean;
-    data: {
-        links: ShortLink[];
-        total: number;
-        page: number;
-        totalPages: number;
-    };
-}
-
-export interface ShortLinkAdminListResponse {
-    success: boolean;
-    data: {
-        links: ShortLinkWithUser[];
-        total: number;
-        page: number;
-        totalPages: number;
-    };
-}
-
-export interface CheckAliasResponse {
-    alias: string;
-    available: boolean;
+export interface ShortLinkStats {
+    totalLinks: number;
+    totalClicks: number;
+    activeLinks: number;
+    expiredLinks: number;
+    customLinks: number;
+    recentClicks: Array<{
+        date: string;
+        clicks: number;
+    }>;
+    topLinks: Array<{
+        shortCode: string;
+        originalUrl: string;
+        clicks: number;
+    }>;
 }

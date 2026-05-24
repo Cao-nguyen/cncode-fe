@@ -3,10 +3,13 @@
 
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { Link21, Mouse, Calendar, Trash, ExportSquare } from 'iconsax-react';
+import {
+    Link2, MousePointerClick, Calendar, Trash2, ExternalLink,
+    Copy, ChevronLeft, ChevronRight, MoreHorizontal, Clock,
+    Crown, XCircle, Star, ArrowUpRight, Globe
+} from 'lucide-react';
 import { useShortLinkStore } from '@/store/shortlink.store';
-import { CopyButton } from '@/components/common/CopyButton';
-import { DeleteConfirmModal } from '@/components/common/DeleteConfirmModal';
+import { ConfirmModalDelete } from '@/components/custom/ConfirmationModal';
 import type { ShortLink } from '@/types/shortlink.type';
 
 export function MyLinksList() {
@@ -26,9 +29,8 @@ export function MyLinksList() {
 
     const handleConfirmDelete = async () => {
         if (!pendingDeleteCode) return;
-
+        setIsDeleting(true);
         try {
-            setIsDeleting(true);
             await deleteLink(pendingDeleteCode);
             toast.success('Đã xóa link');
             setDeleteModalOpen(false);
@@ -40,16 +42,62 @@ export function MyLinksList() {
         }
     };
 
-    const handleCloseDeleteModal = () => {
-        setDeleteModalOpen(false);
-        setPendingDeleteCode(null);
+    const copyToClipboard = async (text: string) => {
+        await navigator.clipboard.writeText(text);
+        toast.success('Đã sao chép link');
+    };
+
+    const formatDate = (date: string | null) => {
+        if (!date) return null;
+        const d = new Date(date);
+        return d.toLocaleDateString('vi-VN');
+    };
+
+    const getExpiryStatus = (expiresAt: string | null) => {
+        if (!expiresAt) return { label: 'Vĩnh viễn', color: 'text-emerald-600', bg: 'bg-emerald-50', icon: Crown };
+        const isExpired = new Date(expiresAt) < new Date();
+        if (isExpired) return { label: 'Đã hết hạn', color: 'text-red-600', bg: 'bg-red-50', icon: XCircle };
+        const daysLeft = Math.ceil((new Date(expiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+        if (daysLeft <= 7) return { label: `Còn ${daysLeft} ngày`, color: 'text-amber-600', bg: 'bg-amber-50', icon: Clock };
+        return { label: formatDate(expiresAt) || '', color: 'text-slate-600', bg: 'bg-slate-100', icon: Calendar };
+    };
+
+    const getPageNumbers = () => {
+        const pages: (number | string)[] = [];
+        const maxVisible = 5;
+
+        if (totalPages <= maxVisible) {
+            for (let i = 1; i <= totalPages; i++) pages.push(i);
+        } else {
+            if (currentPage <= 3) {
+                for (let i = 1; i <= 4; i++) pages.push(i);
+                pages.push('...');
+                pages.push(totalPages);
+            } else if (currentPage >= totalPages - 2) {
+                pages.push(1);
+                pages.push('...');
+                for (let i = totalPages - 3; i <= totalPages; i++) pages.push(i);
+            } else {
+                pages.push(1);
+                pages.push('...');
+                for (let i = currentPage - 1; i <= currentPage + 1; i++) pages.push(i);
+                pages.push('...');
+                pages.push(totalPages);
+            }
+        }
+        return pages;
+    };
+
+    const truncateUrl = (url: string, maxLength: number = 80) => {
+        if (url.length <= maxLength) return url;
+        return url.substring(0, maxLength) + '...';
     };
 
     if (isLoading) {
         return (
-            <div className="space-y-3">
+            <div className="space-y-4">
                 {[1, 2, 3].map((i) => (
-                    <div key={i} className="h-20 rounded-[var(--cn-radius-md)] bg-[var(--cn-bg-section)] animate-pulse" />
+                    <div key={i} className="h-40 rounded-xl bg-gradient-to-r from-gray-100 via-gray-50 to-gray-100 animate-pulse" />
                 ))}
             </div>
         );
@@ -57,119 +105,169 @@ export function MyLinksList() {
 
     if (links.length === 0) {
         return (
-            <div className="flex flex-col items-center justify-center py-12 gap-3 border-2 border-dashed border-[var(--cn-border)] rounded-[var(--cn-radius-md)]">
-                <Link21 size={32} variant="Outline" className="text-[var(--cn-text-muted)]" />
+            <div className="flex flex-col items-center justify-center py-16 gap-4 bg-white rounded-xl border-2 border-dashed border-gray-200">
+                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-100 to-blue-50 flex items-center justify-center">
+                    <Link2 size={32} className="text-blue-400" />
+                </div>
                 <div className="text-center">
-                    <p className="text-sm font-medium text-[var(--cn-text-sub)]">Chưa có link nào</p>
-                    <p className="text-xs text-[var(--cn-text-muted)] mt-1">Hãy tạo link rút gọn đầu tiên của bạn!</p>
+                    <p className="text-base font-medium text-gray-700">Chưa có link nào</p>
+                    <p className="text-sm text-gray-400 mt-1">Hãy tạo link rút gọn đầu tiên của bạn!</p>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="space-y-4">
-            <div className="space-y-3">
-                {links.map((link: ShortLink) => (
-                    <LinkCard key={link.shortCode} link={link} onDelete={handleDeleteClick} />
-                ))}
+        <div className="space-y-5">
+            {/* Card Grid */}
+            <div className="grid grid-cols-1 gap-4">
+                {links.map((link: ShortLink) => {
+                    const expiry = getExpiryStatus(link.expiresAt);
+                    const ExpiryIcon = expiry.icon;
+
+                    return (
+                        <div
+                            key={link.shortCode}
+                            className="bg-white rounded-xl border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all duration-300 overflow-hidden"
+                        >
+                            <div className="p-5">
+                                {/* Header - Short Link */}
+                                <div className="flex items-start justify-between gap-3 mb-3">
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2 flex-wrap mb-1">
+                                            <span className="text-xs font-semibold text-gray-400 uppercase">SHORT LINK</span>
+                                            <a
+                                                href={link.shortUrl}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="text-sm font-semibold text-blue-600 hover:underline flex items-center gap-1"
+                                            >
+                                                {link.shortUrl}
+                                                <ArrowUpRight size={12} />
+                                            </a>
+                                            {link.isCustom && (
+                                                <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-medium flex items-center gap-1">
+                                                    <Star size={10} /> Custom
+                                                </span>
+                                            )}
+                                        </div>
+                                        <p className="text-xs text-gray-400">Mã: {link.shortCode}</p>
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                        <button
+                                            onClick={() => copyToClipboard(link.shortUrl)}
+                                            className="p-2 rounded-lg bg-gray-50 hover:bg-blue-50 transition-all duration-200"
+                                            title="Sao chép"
+                                        >
+                                            <Copy size={15} className="text-gray-500 hover:text-blue-500" />
+                                        </button>
+                                        <button
+                                            onClick={() => handleDeleteClick(link.shortCode)}
+                                            className="p-2 rounded-lg bg-gray-50 hover:bg-red-50 transition-all duration-200"
+                                            title="Xóa"
+                                        >
+                                            <Trash2 size={15} className="text-gray-500 hover:text-red-500" />
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Original URL */}
+                                <div className="mb-3 p-2 rounded-lg bg-gray-50">
+                                    <div className="flex items-center gap-1.5 mb-1">
+                                        <Globe size={11} className="text-gray-400" />
+                                        <span className="text-[10px] font-medium text-gray-400 uppercase">URL GỐC</span>
+                                    </div>
+                                    <a
+                                        href={link.originalUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-xs text-gray-600 hover:text-blue-600 break-all flex items-center gap-1"
+                                    >
+                                        {truncateUrl(link.originalUrl, 80)}
+                                        <ExternalLink size={10} className="flex-shrink-0" />
+                                    </a>
+                                </div>
+
+                                {/* Stats Row */}
+                                <div className="flex flex-wrap items-center gap-4">
+                                    <div className="flex items-center gap-1.5">
+                                        <MousePointerClick size={13} className="text-blue-500" />
+                                        <span className="text-sm font-medium text-gray-700">
+                                            {link.clicks.toLocaleString('vi-VN')} clicks
+                                        </span>
+                                    </div>
+                                    <div className={`flex items-center gap-1.5 ${expiry.color}`}>
+                                        <ExpiryIcon size={13} />
+                                        <span className="text-sm font-medium">{expiry.label}</span>
+                                    </div>
+                                    <div className="flex items-center gap-1.5 text-gray-500">
+                                        <Calendar size={13} />
+                                        <span className="text-xs">{formatDate(link.createdAt) || 'N/A'}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    );
+                })}
             </div>
 
+            {/* Pagination */}
             {totalPages > 1 && (
-                <Pagination current={currentPage} total={totalPages} onChange={fetchMyLinks} />
-            )}
-
-            <DeleteConfirmModal
-                isOpen={deleteModalOpen}
-                onClose={handleCloseDeleteModal}
-                onConfirm={handleConfirmDelete}
-                isDeleting={isDeleting}
-                title="Xác nhận xóa link"
-                message="Bạn có chắc chắn muốn xóa link rút gọn này không?"
-            />
-        </div>
-    );
-}
-
-function LinkCard({ link, onDelete }: { link: ShortLink; onDelete: (shortCode: string) => void }) {
-    const isExpired = link.expiresAt ? new Date(link.expiresAt) < new Date() : false;
-
-    return (
-        <div className="p-4 rounded-[var(--cn-radius-md)] border border-[var(--cn-border)] hover:border-[var(--cn-primary)]/30 hover:shadow-[var(--cn-shadow-sm)] transition-all bg-[var(--cn-bg-card)]">
-            <div className="flex items-start justify-between gap-4">
-                <div className="flex-1 min-w-0 space-y-1.5">
-                    <div className="flex items-center gap-2 flex-wrap">
-                        <a
-                            href={link.shortUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-sm font-semibold text-[var(--cn-primary)] hover:underline truncate active:opacity-70"
-                        >
-                            {link.shortUrl}
-                        </a>
-                        {link.isCustom && (
-                            <span className="text-xs px-2 py-0.5 rounded-full bg-[var(--cn-primary)]/10 text-[var(--cn-primary)] font-medium">Tùy chỉnh</span>
-                        )}
-                        {isExpired && (
-                            <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-500 font-medium">Hết hạn</span>
-                        )}
-                    </div>
-                    <p className="text-xs text-[var(--cn-text-muted)] truncate">{link.originalUrl}</p>
-                    <div className="flex flex-wrap gap-3 text-xs text-[var(--cn-text-muted)]">
-                        <span className="flex items-center gap-1">
-                            <Mouse size={12} variant="Outline" />
-                            {link.clicks.toLocaleString('vi-VN')} lượt click
-                        </span>
-                        {link.expiresAt && (
-                            <span className={`flex items-center gap-1 ${isExpired ? 'text-red-400' : ''}`}>
-                                <Calendar size={12} variant="Outline" />
-                                Hết hạn: {new Date(link.expiresAt).toLocaleDateString('vi-VN')}
-                            </span>
-                        )}
-                    </div>
-                </div>
-                <div className="flex items-center gap-1 shrink-0">
-                    <CopyButton text={link.shortUrl} />
-                    <a
-                        href={link.shortUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="p-2 rounded-[var(--cn-radius-sm)] hover:bg-[var(--cn-hover)] active:bg-[var(--cn-hover)] active:scale-95 transition-all duration-150"
-                        title="Mở link gốc"
-                    >
-                        <ExportSquare size={16} variant="Outline" className="text-[var(--cn-text-muted)]" />
-                    </a>
+                <div className="flex items-center justify-center gap-2 pt-4">
                     <button
-                        onClick={() => onDelete(link.shortCode)}
-                        className="p-2 rounded-[var(--cn-radius-sm)] hover:bg-red-50 active:bg-red-100 active:scale-95 transition-all duration-150"
-                        title="Xóa link"
+                        onClick={() => fetchMyLinks(currentPage - 1)}
+                        disabled={currentPage === 1}
+                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-gray-200 text-sm text-gray-600 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 transition-all"
                     >
-                        <Trash size={16} variant="Outline" className="text-red-500" />
+                        <ChevronLeft size={14} />
+                        <span>Trước</span>
+                    </button>
+
+                    <div className="flex gap-1">
+                        {getPageNumbers().map((pageNum, idx) => (
+                            pageNum === '...' ? (
+                                <span key={`dots-${idx}`} className="px-2 py-1.5 text-sm text-gray-400">
+                                    <MoreHorizontal size={14} />
+                                </span>
+                            ) : (
+                                <button
+                                    key={pageNum}
+                                    onClick={() => fetchMyLinks(pageNum as number)}
+                                    className={`min-w-[34px] px-2 py-1.5 rounded-lg text-sm font-medium transition-all ${currentPage === pageNum
+                                        ? 'bg-blue-500 text-white shadow-sm'
+                                        : 'border border-gray-200 text-gray-600 hover:bg-gray-50'
+                                        }`}
+                                >
+                                    {pageNum}
+                                </button>
+                            )
+                        ))}
+                    </div>
+
+                    <button
+                        onClick={() => fetchMyLinks(currentPage + 1)}
+                        disabled={currentPage === totalPages}
+                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-gray-200 text-sm text-gray-600 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 transition-all"
+                    >
+                        <span>Sau</span>
+                        <ChevronRight size={14} />
                     </button>
                 </div>
-            </div>
-        </div>
-    );
-}
+            )}
 
-function Pagination({ current, total, onChange }: { current: number; total: number; onChange: (page: number) => void }) {
-    return (
-        <div className="flex items-center justify-center gap-2 pt-2">
-            <button
-                onClick={() => onChange(current - 1)}
-                disabled={current === 1}
-                className="px-3 py-1.5 rounded-[var(--cn-radius-sm)] border border-[var(--cn-border)] text-sm text-[var(--cn-text-sub)] disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[var(--cn-hover)] active:bg-[var(--cn-hover)] active:scale-95 transition-all duration-150"
-            >
-                Trước
-            </button>
-            <span className="px-3 py-1.5 text-sm font-medium text-[var(--cn-text-main)]">{current} / {total}</span>
-            <button
-                onClick={() => onChange(current + 1)}
-                disabled={current === total}
-                className="px-3 py-1.5 rounded-[var(--cn-radius-sm)] border border-[var(--cn-border)] text-sm text-[var(--cn-text-sub)] disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[var(--cn-hover)] active:bg-[var(--cn-hover)] active:scale-95 transition-all duration-150"
-            >
-                Sau
-            </button>
+            {/* Delete Modal */}
+            <ConfirmModalDelete
+                isOpen={deleteModalOpen}
+                onClose={() => {
+                    setDeleteModalOpen(false);
+                    setPendingDeleteCode(null);
+                }}
+                onConfirm={handleConfirmDelete}
+                isDeleting={isDeleting}
+                title="Xóa link rút gọn"
+                message="Bạn có chắc chắn muốn xóa link này không?"
+                warning="Link đã xóa sẽ không thể khôi phục."
+            />
         </div>
     );
 }

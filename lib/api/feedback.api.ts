@@ -12,39 +12,39 @@ export interface IFeedback {
     } | null;
     title: string;
     content: string;
-    category: 'bug' | 'feature' | 'improvement' | 'other';
-    status: 'pending' | 'viewed' | 'approved' | 'in_progress' | 'completed' | 'rejected';
-    adminNote: string;
-    isPublic: boolean;
-    likes: number;
-    likedBy: string[];
-    viewedAt?: string;
-    approvedAt?: string;
-    inProgressAt?: string;
-    completedAt?: string;
-    rejectedAt?: string;
+    category: 'bug' | 'ui_ux' | 'feature_request' | 'performance' | 'security' | 'other';
+    status: 'pending' | 'viewed' | 'approved' | 'improving' | 'completed' | 'rejected';
+    priority: 'low' | 'medium' | 'high';
+    adminResponse: string;
+    reactCount: number;
+    likedBy: string[];  // ✅ Thêm field này
+    viewCount: number;
+    commentCount: number;
+    isPinned: boolean;
+    isLocked: boolean;
+    reviewedBy?: {
+        _id: string;
+        fullName: string;
+    };
+    reviewedAt?: string;
     createdAt: string;
     updatedAt: string;
 }
 
-export interface IFeedbackResponse {
-    success: boolean;
-    data?: IFeedback | IFeedback[];
-    message?: string;
-    stats?: {
-        byStatus: Record<string, number>;
-        byCategory: Record<string, number>;
-    };
-    pagination?: {
-        page: number;
-        limit: number;
-        total: number;
-        totalPages: number;
-    };
-}
+const getToken = () => {
+    if (typeof window === 'undefined') return null;
+    try {
+        const raw = localStorage.getItem('auth-storage');
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        return parsed?.state?.token ?? null;
+    } catch {
+        return null;
+    }
+};
 
 export const feedbackApi = {
-    getFeedbacks: async (page = 1, limit = 10, status?: string, category?: string): Promise<IFeedbackResponse> => {
+    getFeedbacks: async (page = 1, limit = 10, status?: string, category?: string) => {
         try {
             let url = `${API_URL}/api/feedback?page=${page}&limit=${limit}`;
             if (status && status !== 'all') url += `&status=${status}`;
@@ -58,7 +58,7 @@ export const feedbackApi = {
         }
     },
 
-    createFeedback: async (token: string, data: { title: string; content: string; category: string; isPublic?: boolean }): Promise<IFeedbackResponse> => {
+    createFeedback: async (token: string, data: { title: string; content: string; category: string; priority?: string }) => {
         try {
             const response = await fetch(`${API_URL}/api/feedback`, {
                 method: 'POST',
@@ -75,58 +75,45 @@ export const feedbackApi = {
         }
     },
 
-    getAllFeedbacksForAdmin: async (token: string, page = 1, limit = 20, status?: string, category?: string, search?: string): Promise<IFeedbackResponse> => {
+    reactFeedback: async (token: string, feedbackId: string) => {
         try {
-            let url = `${API_URL}/api/feedback/admin/all?page=${page}&limit=${limit}`;
-            if (status && status !== 'all') url += `&status=${status}`;
-            if (category && category !== 'all') url += `&category=${category}`;
-            if (search) url += `&search=${encodeURIComponent(search)}`;
-
-            const response = await fetch(url, {
+            const response = await fetch(`${API_URL}/api/feedback/${feedbackId}/react`, {
+                method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${token}`
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
                 }
             });
-            return await response.json();
+            const data = await response.json();
+            return {
+                success: data.success,
+                message: data.message,
+                data: data.data // { reactCount: number, liked: boolean }
+            };
         } catch (error) {
-            console.error('Get all feedbacks error:', error);
-            return { success: false, message: 'Không thể lấy danh sách góp ý' };
+            console.error('React feedback error:', error);
+            return { success: false, message: 'Không thể ủng hộ' };
         }
     },
 
-    updateFeedbackStatus: async (token: string, feedbackId: string, status: string, adminNote?: string): Promise<IFeedbackResponse> => {
+    updateFeedback: async (token: string, feedbackId: string, data: { title: string; content: string; category: string }) => {
         try {
-            const response = await fetch(`${API_URL}/api/feedback/admin/${feedbackId}/status`, {
+            const response = await fetch(`${API_URL}/api/feedback/${feedbackId}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify({ status, adminNote })
+                body: JSON.stringify(data)
             });
             return await response.json();
         } catch (error) {
-            console.error('Update feedback status error:', error);
-            return { success: false, message: 'Không thể cập nhật trạng thái' };
+            console.error('Update feedback error:', error);
+            return { success: false, message: 'Không thể cập nhật góp ý' };
         }
     },
 
-    likeFeedback: async (token: string, feedbackId: string): Promise<{ success: boolean; data?: { likes: number; liked: boolean }; message?: string }> => {
-        try {
-            const response = await fetch(`${API_URL}/api/feedback/${feedbackId}/like`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-            return await response.json();
-        } catch (error) {
-            console.error('Like feedback error:', error);
-            return { success: false, message: 'Không thể like góp ý' };
-        }
-    },
-
-    deleteFeedback: async (token: string, feedbackId: string): Promise<{ success: boolean; message?: string }> => {
+    deleteFeedback: async (token: string, feedbackId: string) => {
         try {
             const response = await fetch(`${API_URL}/api/feedback/${feedbackId}`, {
                 method: 'DELETE',
@@ -141,34 +128,54 @@ export const feedbackApi = {
         }
     },
 
-    getMyFeedbacks: async (token: string, page = 1, limit = 10): Promise<IFeedbackResponse> => {
+    getAllFeedbacksForAdmin: async (token: string, page = 1, limit = 20, status?: string, category?: string, search?: string) => {
         try {
-            const response = await fetch(`${API_URL}/api/feedback/my?page=${page}&limit=${limit}`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
+            let url = `${API_URL}/api/feedback/admin/all?page=${page}&limit=${limit}`;
+            if (status && status !== 'all') url += `&status=${status}`;
+            if (category && category !== 'all') url += `&category=${category}`;
+            if (search) url += `&search=${encodeURIComponent(search)}`;
+
+            const response = await fetch(url, {
+                headers: { 'Authorization': `Bearer ${token}` }
             });
             return await response.json();
         } catch (error) {
-            console.error('Get my feedbacks error:', error);
-            return { success: false, message: 'Không thể lấy góp ý của bạn' };
+            console.error('Get all feedbacks error:', error);
+            return { success: false, message: 'Không thể lấy danh sách góp ý' };
         }
     },
 
-    updateFeedback: async (token: string, feedbackId: string, data: { title: string; content: string; category: string }): Promise<IFeedbackResponse> => {
+    updateFeedbackStatus: async (token: string, feedbackId: string, status: string, adminResponse?: string) => {
         try {
-            const response = await fetch(`${API_URL}/api/feedback/${feedbackId}`, {
+            const response = await fetch(`${API_URL}/api/feedback/admin/${feedbackId}/status`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify(data)
+                body: JSON.stringify({ status, adminResponse })
             });
             return await response.json();
         } catch (error) {
-            console.error('Update feedback error:', error);
-            return { success: false, message: 'Không thể cập nhật góp ý' };
+            console.error('Update feedback status error:', error);
+            return { success: false, message: 'Không thể cập nhật trạng thái' };
+        }
+    },
+
+    updateFeedbackPriority: async (token: string, feedbackId: string, priority: string): Promise<{ success: boolean; message?: string; data?: IFeedback }> => {
+        try {
+            const response = await fetch(`${API_URL}/api/feedback/admin/${feedbackId}/priority`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ priority })
+            });
+            return await response.json();
+        } catch (error) {
+            console.error('Update feedback priority error:', error);
+            return { success: false, message: 'Không thể cập nhật độ ưu tiên' };
         }
     },
 };

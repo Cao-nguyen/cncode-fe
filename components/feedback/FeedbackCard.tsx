@@ -2,81 +2,93 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useAuthStore } from '@/store/auth.store';
-import { useSocket } from '@/providers/socket.provider';
+import { Heart, Trash2, Edit2, Loader2 } from 'lucide-react';
 import { IFeedback } from '@/lib/api/feedback.api';
-import StatusBadge from '@/components/common/StatusBadge';
-import { Heart, MessageCircle, Trash2, Calendar, Pencil, X, Send, Loader2 } from 'lucide-react';
-import Image from 'next/image';
-import { format } from 'date-fns';
+import { useAuthStore } from '@/store/auth.store';
+import { formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { toast } from 'sonner';
-import { CustomSelect } from '@/components/custom/CustomSelect';
 import { CustomInput } from '@/components/custom/CustomInput';
+import { CustomTextarea } from '@/components/custom/CustomTextarea';
+import { CustomSelect } from '@/components/custom/CustomSelect';
+import { toast } from 'sonner';
+import { feedbackApi } from '@/lib/api/feedback.api';
+import Image from 'next/image';
+import { DeleteConfirmModal } from '@/components/custom/DeleteConfirmModal'; // ✅ Import đúng
+
+type FeedbackCategory = 'bug' | 'ui_ux' | 'feature_request' | 'performance' | 'security' | 'other';
 
 interface FeedbackCardProps {
     feedback: IFeedback;
-    onLike?: (id: string) => void;
+    onLikeSuccess?: (feedbackId: string, newReactCount: number, likedBy: string[]) => void;
     onDelete?: (id: string) => void;
-    onEdit?: (id: string, title: string, content: string, category: string) => Promise<void>;
-    showAdminNote?: boolean;
-    isAdmin?: boolean;
+    onEdit?: (id: string, title: string, content: string, category: string) => void;
+    showActions?: boolean;
 }
 
-const categoryLabels: Record<string, { label: string; color: string }> = {
-    bug: { label: 'Lỗi/Bug', color: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400' },
-    feature: { label: 'Tính năng mới', color: 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400' },
-    improvement: { label: 'Cải tiến', color: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400' },
-    other: { label: 'Khác', color: 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-400' }
+const CATEGORY_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
+    bug: { label: 'Lỗi/Bug', color: 'text-red-600', bg: 'bg-red-50' },
+    ui_ux: { label: 'UI/UX', color: 'text-purple-600', bg: 'bg-purple-50' },
+    feature_request: { label: 'Tính năng mới', color: 'text-green-600', bg: 'bg-green-50' },
+    performance: { label: 'Hiệu năng', color: 'text-yellow-600', bg: 'bg-yellow-50' },
+    security: { label: 'Bảo mật', color: 'text-orange-600', bg: 'bg-orange-50' },
+    other: { label: 'Khác', color: 'text-gray-600', bg: 'bg-gray-50' }
 };
 
-const CATEGORIES = [
-    { value: 'bug', label: '🐛 Lỗi/Bug' },
-    { value: 'feature', label: '✨ Tính năng mới' },
-    { value: 'improvement', label: '⚡ Cải tiến' },
-    { value: 'other', label: '💡 Khác' }
+const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
+    pending: { label: 'Chờ xử lý', color: 'text-yellow-600', bg: 'bg-yellow-50' },
+    viewed: { label: 'Đã xem', color: 'text-blue-600', bg: 'bg-blue-50' },
+    approved: { label: 'Đã duyệt', color: 'text-green-600', bg: 'bg-green-50' },
+    improving: { label: 'Đang cải tiến', color: 'text-purple-600', bg: 'bg-purple-50' },
+    completed: { label: 'Hoàn thành', color: 'text-emerald-600', bg: 'bg-emerald-50' },
+    rejected: { label: 'Từ chối', color: 'text-red-600', bg: 'bg-red-50' }
+};
+
+const EDIT_CATEGORIES: { value: FeedbackCategory; label: string }[] = [
+    { value: 'bug', label: 'Lỗi/Bug' },
+    { value: 'ui_ux', label: 'UI/UX' },
+    { value: 'feature_request', label: 'Tính năng mới' },
+    { value: 'performance', label: 'Hiệu năng' },
+    { value: 'security', label: 'Bảo mật' },
+    { value: 'other', label: 'Khác' }
 ];
 
-type CategoryType = 'bug' | 'feature' | 'improvement' | 'other';
-
-export default function FeedbackCard({ feedback, onLike, onDelete, onEdit, showAdminNote = false, isAdmin = false }: FeedbackCardProps) {
-    const { token, user } = useAuthStore();
-    const { socket, isConnected } = useSocket();
-    const [isLiking, setIsLiking] = useState(false);
-    const [isDeleting, setIsDeleting] = useState(false);
-    const [likes, setLikes] = useState(feedback.likes);
-    const [liked, setLiked] = useState(feedback.likedBy?.includes(user?._id || '') || false);
+export default function FeedbackCard({
+    feedback,
+    onLikeSuccess,
+    onDelete,
+    onEdit,
+    showActions = true
+}: FeedbackCardProps) {
+    const { user, token } = useAuthStore();
     const [isEditing, setIsEditing] = useState(false);
-    const [editForm, setEditForm] = useState({
+    const [isLiking, setIsLiking] = useState(false);
+    const [localReactCount, setLocalReactCount] = useState(feedback.reactCount || 0);
+    const [hasLiked, setHasLiked] = useState(() => {
+        if (!user?._id || !feedback.likedBy) return false;
+        return feedback.likedBy.includes(user._id);
+    });
+    const [editForm, setEditForm] = useState<{
+        title: string;
+        content: string;
+        category: FeedbackCategory;
+    }>({
         title: feedback.title,
         content: feedback.content,
-        category: feedback.category as CategoryType
+        category: feedback.category as FeedbackCategory
     });
-    const [submitting, setSubmitting] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
 
-    const category = categoryLabels[feedback.category] || categoryLabels.other;
-    const isOwnFeedback = user?._id === feedback.userId?._id;
-    const canDelete = isAdmin || isOwnFeedback;
-    const canEdit = isOwnFeedback && feedback.status !== 'completed' && feedback.status !== 'rejected';
-
-    // Real-time like listener
     useEffect(() => {
-        if (!socket || !isConnected) return;
+        setLocalReactCount(feedback.reactCount || 0);
+        if (user?._id && feedback.likedBy) {
+            setHasLiked(feedback.likedBy.includes(user._id));
+        }
+    }, [feedback.reactCount, feedback.likedBy, user?._id]);
 
-        const handleLikeUpdate = (data: { feedbackId: string; likes: number; likedBy: string[]; userId: string; liked: boolean }) => {
-            if (data.feedbackId === feedback._id) {
-                setLikes(data.likes);
-                const isCurrentlyLiked = data.likedBy.includes(user?._id || '');
-                setLiked(isCurrentlyLiked);
-            }
-        };
-
-        socket.on('feedback_liked', handleLikeUpdate);
-
-        return () => {
-            socket.off('feedback_liked', handleLikeUpdate);
-        };
-    }, [socket, isConnected, feedback._id, user?._id]);
+    const isOwner = user?._id === feedback.userId?._id;
+    const categoryConfig = CATEGORY_CONFIG[feedback.category] || CATEGORY_CONFIG.other;
+    const statusConfig = STATUS_CONFIG[feedback.status] || STATUS_CONFIG.pending;
 
     const handleLike = async () => {
         if (!token) {
@@ -84,22 +96,37 @@ export default function FeedbackCard({ feedback, onLike, onDelete, onEdit, showA
             return;
         }
         if (isLiking) return;
+        if (hasLiked) {
+            toast.info('Bạn đã ủng hộ góp ý này rồi');
+            return;
+        }
 
         setIsLiking(true);
-        if (onLike) {
-            await onLike(feedback._id);
+        setHasLiked(true);
+        setLocalReactCount(prev => prev + 1);
+
+        try {
+            const result = await feedbackApi.reactFeedback(token, feedback._id);
+            if (result.success && result.data) {
+                setLocalReactCount(result.data.reactCount);
+                onLikeSuccess?.(feedback._id, result.data.reactCount, result.data.likedBy);
+            } else {
+                setHasLiked(false);
+                setLocalReactCount(prev => prev - 1);
+                toast.error(result.message || 'Có lỗi xảy ra');
+            }
+        } catch (error) {
+            setHasLiked(false);
+            setLocalReactCount(prev => prev - 1);
+            toast.error('Không thể ủng hộ lúc này');
+        } finally {
+            setIsLiking(false);
         }
-        setIsLiking(false);
     };
 
-    const handleDelete = async () => {
-        if (!confirm('Bạn có chắc chắn muốn xóa góp ý này?')) return;
-
-        setIsDeleting(true);
-        if (onDelete) {
-            await onDelete(feedback._id);
-        }
-        setIsDeleting(false);
+    const handleConfirmDelete = () => {
+        onDelete?.(feedback._id);
+        setShowDeleteModal(false);
     };
 
     const handleEdit = async () => {
@@ -111,97 +138,66 @@ export default function FeedbackCard({ feedback, onLike, onDelete, onEdit, showA
             toast.warning('Vui lòng nhập nội dung');
             return;
         }
-
-        setSubmitting(true);
-        if (onEdit) {
-            await onEdit(feedback._id, editForm.title, editForm.content, editForm.category);
-        }
+        setIsSubmitting(true);
+        await onEdit?.(feedback._id, editForm.title, editForm.content, editForm.category);
+        setIsSubmitting(false);
         setIsEditing(false);
-        setSubmitting(false);
     };
 
-    const getTimeAgo = (date: string) => {
-        const now = new Date();
-        const created = new Date(date);
-        const diffMs = now.getTime() - created.getTime();
-        const diffMins = Math.floor(diffMs / (1000 * 60));
-        const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-        if (diffMins < 1) return 'Vừa xong';
-        if (diffMins < 60) return `${diffMins} phút trước`;
-        if (diffHours < 24) return `${diffHours} giờ trước`;
-        if (diffDays === 1) return '1 ngày trước';
-        if (diffDays < 7) return `${diffDays} ngày trước`;
-        return format(created, 'dd/MM/yyyy', { locale: vi });
+    const getUserInitial = () => {
+        const name = feedback.userId?.fullName || 'Người dùng';
+        return name !== 'Người dùng' ? name.charAt(0).toUpperCase() : '?';
     };
 
-    const userName = feedback.userId?.fullName || 'Người dùng';
-    const userAvatar = feedback.userId?.avatar;
-    const userInitial = userName !== 'Người dùng' ? userName.charAt(0).toUpperCase() : '?';
+    const getUserName = () => feedback.userId?.fullName || 'Người dùng';
+    const getUserAvatar = () => feedback.userId?.avatar;
 
-    // Edit mode
+    const formatTime = (date: string) => {
+        return formatDistanceToNow(new Date(date), { addSuffix: true, locale: vi });
+    };
+
     if (isEditing) {
         return (
-            <div className="bg-[var(--cn-bg-card)] rounded-[var(--cn-radius-md)] p-4 sm:p-5 border border-[var(--cn-primary)]/30 shadow-[var(--cn-shadow-sm)]">
-                <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-base sm:text-lg font-semibold text-[var(--cn-text-main)]">Chỉnh sửa góp ý</h3>
-                    <button
-                        onClick={() => setIsEditing(false)}
-                        className="p-1 hover:bg-[var(--cn-hover)] rounded-[var(--cn-radius-sm)] transition text-[var(--cn-text-muted)]"
-                    >
-                        <X size={20} />
-                    </button>
-                </div>
-                <div className="space-y-4">
+            <div className="bg-white rounded-xl border border-blue-200 shadow-md overflow-hidden">
+                <div className="p-5 space-y-4">
                     <div>
-                        <label className="block text-xs sm:text-sm font-medium mb-2 text-[var(--cn-text-sub)]">Danh mục</label>
-                        <CustomSelect
-                            value={editForm.category}
-                            onChange={(value) => setEditForm(prev => ({ ...prev, category: value as CategoryType }))}
-                            options={CATEGORIES.map(cat => ({ value: cat.value, label: cat.label }))}
-                            placeholder="Chọn danh mục"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-xs sm:text-sm font-medium mb-2 text-[var(--cn-text-sub)]">Tiêu đề</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1.5">Tiêu đề</label>
                         <CustomInput
                             value={editForm.title}
                             onChange={(e) => setEditForm(prev => ({ ...prev, title: e.target.value }))}
-                            placeholder="Nhập tiêu đề góp ý..."
+                            placeholder="Tiêu đề góp ý"
                         />
-                        <p className="text-right text-[10px] sm:text-xs text-[var(--cn-text-muted)] mt-1">
-                            {editForm.title.length}/200
-                        </p>
                     </div>
                     <div>
-                        <label className="block text-xs sm:text-sm font-medium mb-2 text-[var(--cn-text-sub)]">Nội dung</label>
-                        <textarea
-                            value={editForm.content}
-                            onChange={(e) => setEditForm(prev => ({ ...prev, content: e.target.value }))}
-                            placeholder="Mô tả chi tiết ý kiến của bạn..."
-                            rows={4}
-                            maxLength={2000}
-                            className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-[var(--cn-bg-card)] border border-[var(--cn-border)] rounded-[var(--cn-radius-sm)] focus:outline-none focus:ring-2 focus:ring-[var(--cn-primary)]/20 focus:border-[var(--cn-primary)] text-sm text-[var(--cn-text-main)] placeholder:text-[var(--cn-text-muted)] resize-none"
+                        <label className="block text-sm font-medium text-gray-700 mb-1.5">Danh mục</label>
+                        <CustomSelect
+                            value={editForm.category}
+                            onChange={(value) => setEditForm(prev => ({ ...prev, category: value as FeedbackCategory }))}
+                            options={EDIT_CATEGORIES}
                         />
-                        <p className="text-right text-[10px] sm:text-xs text-[var(--cn-text-muted)] mt-1">
-                            {editForm.content.length}/2000
-                        </p>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1.5">Nội dung</label>
+                        <CustomTextarea
+                            value={editForm.content}
+                            onChange={(value) => setEditForm(prev => ({ ...prev, content: value }))}
+                            placeholder="Nội dung chi tiết..."
+                            rows={5}
+                        />
                     </div>
                     <div className="flex gap-3 pt-2">
                         <button
                             onClick={() => setIsEditing(false)}
-                            className="flex-1 px-4 py-2 border border-[var(--cn-border)] rounded-[var(--cn-radius-sm)] hover:bg-[var(--cn-hover)] transition text-[var(--cn-text-sub)] text-sm"
+                            className="flex-1 px-4 py-2 border border-gray-200 rounded-lg text-gray-600 font-medium hover:bg-gray-50 transition"
                         >
                             Hủy
                         </button>
                         <button
                             onClick={handleEdit}
-                            disabled={submitting}
-                            className="flex-1 px-4 py-2 bg-[var(--cn-primary)] text-white rounded-[var(--cn-radius-sm)] hover:bg-[var(--cn-primary-hover)] transition disabled:opacity-50 flex items-center justify-center gap-2 text-sm"
+                            disabled={isSubmitting}
+                            className="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition disabled:opacity-50 flex items-center justify-center gap-2"
                         >
-                            {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send size={16} />}
-                            {submitting ? 'Đang lưu...' : 'Lưu thay đổi'}
+                            {isSubmitting ? 'Đang lưu...' : 'Lưu thay đổi'}
                         </button>
                     </div>
                 </div>
@@ -210,95 +206,107 @@ export default function FeedbackCard({ feedback, onLike, onDelete, onEdit, showA
     }
 
     return (
-        <div className="bg-[var(--cn-bg-card)] rounded-[var(--cn-radius-md)] p-4 sm:p-5 border border-[var(--cn-border)] shadow-[var(--cn-shadow-sm)] hover:shadow-[var(--cn-shadow-md)] transition-all">
-            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-3">
-                <div className="flex items-center gap-3 flex-1 min-w-0">
-                    <div className="flex-shrink-0">
-                        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[var(--cn-primary)]/10 overflow-hidden">
-                            {userAvatar ? (
-                                <Image
-                                    src={userAvatar}
-                                    alt={userName}
-                                    width={40}
-                                    height={40}
-                                    className="w-full h-full object-cover"
-                                />
-                            ) : (
-                                <div className="w-full h-full flex items-center justify-center text-[var(--cn-primary)] font-semibold text-xs sm:text-sm">
-                                    {userInitial}
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-sm sm:text-base text-[var(--cn-text-main)] truncate">
-                            {userName}
-                        </p>
-                        <div className="flex flex-wrap items-center gap-2 mt-0.5">
-                            <span className={`text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 rounded-full ${category.color}`}>
-                                {category.label}
-                            </span>
-                            <div className="flex items-center gap-1 text-[10px] sm:text-xs text-[var(--cn-text-muted)]">
-                                <Calendar size={10} className="sm:w-3 sm:h-3" />
-                                <span>{getTimeAgo(feedback.createdAt)}</span>
+        <>
+            <div className="bg-white rounded-xl border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all duration-300 overflow-hidden">
+                <div className="p-5">
+                    <div className="flex items-start justify-between gap-3 mb-3">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center overflow-hidden flex-shrink-0">
+                                {getUserAvatar() ? (
+                                    <Image
+                                        src={getUserAvatar()!}
+                                        alt={getUserName()}
+                                        width={40}
+                                        height={40}
+                                        className="w-full h-full object-cover"
+                                    />
+                                ) : (
+                                    <span className="text-white font-bold text-sm">
+                                        {getUserInitial()}
+                                    </span>
+                                )}
+                            </div>
+                            <div>
+                                <p className="font-semibold text-gray-800">{getUserName()}</p>
+                                <p className="text-xs text-gray-400">{formatTime(feedback.createdAt)}</p>
                             </div>
                         </div>
+                        <div className="flex items-center gap-2">
+                            <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${categoryConfig.bg} ${categoryConfig.color}`}>
+                                {categoryConfig.label}
+                            </span>
+                            <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${statusConfig.bg} ${statusConfig.color}`}>
+                                {statusConfig.label}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div className="mb-4">
+                        <h3 className="text-lg font-semibold text-gray-800 mb-2">{feedback.title}</h3>
+                        <p className="text-gray-600 leading-relaxed whitespace-pre-wrap">{feedback.content}</p>
+                    </div>
+
+                    {feedback.adminResponse && (
+                        <div className="mb-4 p-3 rounded-lg bg-blue-50 border-l-4 border-blue-500">
+                            <p className="text-xs font-medium text-blue-600 uppercase mb-1">Phản hồi từ admin</p>
+                            <p className="text-sm text-gray-700">{feedback.adminResponse}</p>
+                        </div>
+                    )}
+
+                    <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                        <button
+                            onClick={handleLike}
+                            disabled={isLiking || hasLiked}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all duration-200 disabled:opacity-50 ${hasLiked
+                                ? 'text-red-500 bg-red-50'
+                                : 'text-gray-500 hover:text-red-500 hover:bg-red-50'
+                                }`}
+                        >
+                            {isLiking ? (
+                                <Loader2 size={16} className="animate-spin" />
+                            ) : (
+                                <div>
+                                    {hasLiked ? (
+                                        <Heart size={16} fill="#ef4444" stroke="#ef4444" data-filled="true" />
+                                    ) : (
+                                        <Heart size={16} fill="none" stroke="currentColor" data-filled="false" />
+                                    )}
+                                </div>
+                            )}
+                            <span className="text-sm font-medium">{localReactCount}</span>
+                        </button>
+
+                        {showActions && isOwner && (
+                            <div className="flex items-center gap-1">
+                                <button
+                                    onClick={() => setIsEditing(true)}
+                                    className="p-1.5 rounded-lg text-gray-400 hover:text-blue-500 hover:bg-blue-50 transition"
+                                    title="Chỉnh sửa"
+                                >
+                                    <Edit2 size={14} />
+                                </button>
+                                <button
+                                    onClick={() => setShowDeleteModal(true)}
+                                    className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition"
+                                    title="Xóa"
+                                >
+                                    <Trash2 size={14} />
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </div>
-                <div className="flex items-center gap-2 ml-auto sm:ml-0">
-                    <StatusBadge status={feedback.status} size="sm" />
-                    {canEdit && (
-                        <button
-                            onClick={() => setIsEditing(true)}
-                            className="p-1.5 text-[var(--cn-primary)] hover:bg-[var(--cn-primary)]/10 rounded-[var(--cn-radius-sm)] transition-colors"
-                            title="Chỉnh sửa góp ý"
-                        >
-                            <Pencil size={14} className="sm:w-4 sm:h-4" />
-                        </button>
-                    )}
-                    {canDelete && (
-                        <button
-                            onClick={handleDelete}
-                            disabled={isDeleting}
-                            className="p-1.5 text-red-500 hover:bg-red-50 rounded-[var(--cn-radius-sm)] transition-colors disabled:opacity-50"
-                            title="Xóa góp ý"
-                        >
-                            {isDeleting ? <Loader2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-spin" /> : <Trash2 size={14} className="sm:w-4 sm:h-4" />}
-                        </button>
-                    )}
-                </div>
             </div>
 
-            <h3 className="text-base sm:text-lg font-semibold text-[var(--cn-text-main)] mb-2 line-clamp-2">
-                {feedback.title}
-            </h3>
-
-            <p className="text-xs sm:text-sm text-[var(--cn-text-sub)] leading-relaxed mb-4 line-clamp-3">
-                {feedback.content}
-            </p>
-
-            {showAdminNote && feedback.adminNote && (
-                <div className="bg-[var(--cn-bg-section)] rounded-[var(--cn-radius-sm)] p-2.5 sm:p-3 mb-4 border-l-4 border-[var(--cn-primary)]">
-                    <p className="text-[10px] sm:text-xs text-[var(--cn-text-muted)] uppercase mb-1">Phản hồi từ admin</p>
-                    <p className="text-xs sm:text-sm text-[var(--cn-text-sub)]">{feedback.adminNote}</p>
-                </div>
-            )}
-
-            <div className="flex items-center gap-4 pt-3 border-t border-[var(--cn-border)]">
-                <button
-                    onClick={handleLike}
-                    disabled={!token || isLiking}
-                    className={`flex items-center gap-1 text-xs sm:text-sm transition-colors ${liked ? 'text-red-500' : 'text-[var(--cn-text-muted)] hover:text-red-500'
-                        }`}
-                >
-                    <Heart data-filled={true} size={14} className={`sm:w-4 sm:h-4 ${liked ? 'fill-red-500' : ''}`} />
-                    <span>{likes}</span>
-                </button>
-                <div className="flex items-center gap-1 text-xs sm:text-sm text-[var(--cn-text-muted)]">
-                    <MessageCircle size={12} className="sm:w-3.5 sm:h-3.5" />
-                    <span>{likes} ủng hộ</span>
-                </div>
-            </div>
-        </div>
+            {/* Delete Confirm Modal */}
+            <DeleteConfirmModal
+                isOpen={showDeleteModal}
+                onClose={() => setShowDeleteModal(false)}
+                onConfirm={handleConfirmDelete}
+                title="Xóa góp ý"
+                message="Bạn có chắc chắn muốn xóa góp ý này không?"
+                warning="Hành động này không thể hoàn tác."
+            />
+        </>
     );
 }

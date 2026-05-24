@@ -253,6 +253,13 @@ function MobileUserSheet({ user, onLogout, onClose, open }: MobileSheetProps) {
     const sections = buildSections(user, iconSize);
     const badgeClass = ROLE_BADGE[user.role] ?? "bg-gray-100 text-gray-500";
 
+    // Thêm state và ref cho swipe
+    const [startY, setStartY] = useState(0);
+    const [currentY, setCurrentY] = useState(0);
+    const sheetRef = useRef<HTMLDivElement>(null);
+    const [isDragging, setIsDragging] = useState(false);
+
+    // Xử lý body scroll khi mở sheet
     useEffect(() => {
         if (open) {
             const scrollY = window.scrollY;
@@ -277,6 +284,72 @@ function MobileUserSheet({ user, onLogout, onClose, open }: MobileSheetProps) {
         };
     }, [open]);
 
+    // Xử lý swipe để đóng sheet
+    useEffect(() => {
+        if (!open) return;
+
+        const handleTouchStart = (e: TouchEvent) => {
+            const target = e.target as HTMLElement;
+            // Chỉ bắt đầu kéo nếu không phải đang kéo scroll trong nội dung
+            if (sheetRef.current?.contains(target) && sheetRef.current.scrollTop === 0) {
+                setStartY(e.touches[0].clientY);
+                setIsDragging(true);
+            }
+        };
+
+        const handleTouchMove = (e: TouchEvent) => {
+            if (!isDragging) return;
+            const deltaY = e.touches[0].clientY - startY;
+            if (deltaY > 0 && sheetRef.current) {
+                e.preventDefault();
+                setCurrentY(deltaY);
+                sheetRef.current.style.transform = `translateY(${deltaY}px)`;
+                sheetRef.current.style.transition = 'none';
+            }
+        };
+
+        const handleTouchEnd = (e: TouchEvent) => {
+            if (!isDragging) return;
+            setIsDragging(false);
+
+            const deltaY = currentY;
+            if (sheetRef.current) {
+                sheetRef.current.style.transition = 'transform 0.3s ease-out';
+                if (deltaY > 100) {
+                    // Kéo xuống quá 100px thì đóng sheet
+                    sheetRef.current.style.transform = 'translateY(100%)';
+                    setTimeout(() => {
+                        onClose();
+                        if (sheetRef.current) {
+                            sheetRef.current.style.transform = '';
+                            sheetRef.current.style.transition = '';
+                        }
+                    }, 300);
+                } else {
+                    // Kéo ít thì trả về vị trí cũ
+                    sheetRef.current.style.transform = 'translateY(0)';
+                    setTimeout(() => {
+                        if (sheetRef.current) {
+                            sheetRef.current.style.transition = '';
+                        }
+                    }, 300);
+                }
+                setCurrentY(0);
+            }
+        };
+
+        const sheetElement = sheetRef.current;
+        sheetElement?.addEventListener('touchstart', handleTouchStart);
+        sheetElement?.addEventListener('touchmove', handleTouchMove, { passive: false });
+        sheetElement?.addEventListener('touchend', handleTouchEnd);
+
+        return () => {
+            sheetElement?.removeEventListener('touchstart', handleTouchStart);
+            sheetElement?.removeEventListener('touchmove', handleTouchMove);
+            sheetElement?.removeEventListener('touchend', handleTouchEnd);
+        };
+    }, [open, isDragging, startY, currentY, onClose]);
+
     if (!open) return null;
 
     return (
@@ -287,15 +360,64 @@ function MobileUserSheet({ user, onLogout, onClose, open }: MobileSheetProps) {
                 onClick={onClose}
             />
             <div
+                ref={sheetRef}
                 className="fixed bottom-0 left-0 right-0 z-[70] bg-[var(--cn-bg-card)] rounded-t-3xl flex flex-col transition-transform duration-300 will-change-transform"
                 style={{
                     transform: open ? "translateY(0)" : "translateY(100%)",
                     maxHeight: "85dvh",
                 }}
             >
-                <div className="flex justify-center pt-3 pb-1 flex-shrink-0">
+                {/* Thanh kéo - drag indicator */}
+                <div
+                    className="flex justify-center pt-3 pb-1 flex-shrink-0 cursor-grab active:cursor-grabbing"
+                    onTouchStart={(e) => {
+                        const target = e.target as HTMLElement;
+                        if (sheetRef.current?.scrollTop === 0) {
+                            const touch = e.touches[0];
+                            setStartY(touch.clientY);
+                            setIsDragging(true);
+                        }
+                    }}
+                    onTouchMove={(e) => {
+                        if (!isDragging) return;
+                        const deltaY = e.touches[0].clientY - startY;
+                        if (deltaY > 0 && sheetRef.current) {
+                            e.preventDefault();
+                            setCurrentY(deltaY);
+                            sheetRef.current.style.transform = `translateY(${deltaY}px)`;
+                            sheetRef.current.style.transition = 'none';
+                        }
+                    }}
+                    onTouchEnd={(e) => {
+                        if (!isDragging) return;
+                        setIsDragging(false);
+                        const deltaY = currentY;
+                        if (sheetRef.current) {
+                            sheetRef.current.style.transition = 'transform 0.3s ease-out';
+                            if (deltaY > 100) {
+                                sheetRef.current.style.transform = 'translateY(100%)';
+                                setTimeout(() => {
+                                    onClose();
+                                    if (sheetRef.current) {
+                                        sheetRef.current.style.transform = '';
+                                        sheetRef.current.style.transition = '';
+                                    }
+                                }, 300);
+                            } else {
+                                sheetRef.current.style.transform = 'translateY(0)';
+                                setTimeout(() => {
+                                    if (sheetRef.current) {
+                                        sheetRef.current.style.transition = '';
+                                    }
+                                }, 300);
+                            }
+                            setCurrentY(0);
+                        }
+                    }}
+                >
                     <div className="w-10 h-1 bg-[var(--cn-border)] rounded-full" />
                 </div>
+
                 <div className="px-4 pt-2 pb-4 flex items-center gap-3 flex-shrink-0">
                     <div className="relative flex-shrink-0">
                         <Avatar className="w-12 h-12 border-2 border-[var(--cn-border)]">
@@ -317,7 +439,9 @@ function MobileUserSheet({ user, onLogout, onClose, open }: MobileSheetProps) {
                         <CloseCircle variant="Bold" className="w-5 h-5" />
                     </button>
                 </div>
+
                 <div className="w-full h-px bg-[var(--cn-border)] flex-shrink-0" />
+
                 <div className="flex-1 overflow-y-auto no-scrollbar pb-6">
                     {sections.map((section) => (
                         <div key={section.label} className="px-4 pt-4">

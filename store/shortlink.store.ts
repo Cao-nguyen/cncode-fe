@@ -1,7 +1,7 @@
 // store/shortlink.store.ts
 import { create } from 'zustand';
 import { shortlinkApi } from '@/lib/api/shortlink.api';
-import type { ShortLink, CreateShortLinkPayload, UpdateShortLinkPayload } from '@/types/shortlink.type';
+import type { ShortLink, CreateShortLinkPayload, UpdateShortLinkPayload, ShortLinkStats } from '@/types/shortlink.type';
 
 interface ShortLinkState {
     links: ShortLink[];
@@ -10,11 +10,14 @@ interface ShortLinkState {
     currentPage: number;
     totalPages: number;
     total: number;
+    stats: ShortLinkStats | null;
+    isStatsLoading: boolean;
 
     fetchMyLinks: (page?: number) => Promise<void>;
     createLink: (payload: CreateShortLinkPayload) => Promise<ShortLink>;
     updateLink: (shortCode: string, payload: UpdateShortLinkPayload) => Promise<void>;
     deleteLink: (shortCode: string) => Promise<void>;
+    fetchStats: () => Promise<void>;
     clearLinks: () => void;
 }
 
@@ -25,16 +28,18 @@ export const useShortLinkStore = create<ShortLinkState>((set, get) => ({
     currentPage: 1,
     totalPages: 1,
     total: 0,
+    stats: null,
+    isStatsLoading: false,
 
     fetchMyLinks: async (page = 1) => {
         set({ isLoading: true });
         try {
             const data = await shortlinkApi.getMyLinks(page);
             set({
-                links: data.links || [],
-                currentPage: data.page || page,
-                totalPages: data.totalPages || 1,
-                total: data.total || 0,
+                links: data.links,
+                currentPage: data.page,
+                totalPages: data.totalPages,
+                total: data.total,
             });
         } catch (error) {
             console.error('Fetch my links error:', error);
@@ -77,5 +82,17 @@ export const useShortLinkStore = create<ShortLinkState>((set, get) => ({
         }
     },
 
-    clearLinks: () => set({ links: [], currentPage: 1, totalPages: 1, total: 0 }),
+    fetchStats: async () => {
+        set({ isStatsLoading: true });
+        try {
+            const stats = await shortlinkApi.getStats();
+            set({ stats });
+        } catch (error) {
+            console.error('Fetch stats error:', error);
+        } finally {
+            set({ isStatsLoading: false });
+        }
+    },
+
+    clearLinks: () => set({ links: [], currentPage: 1, totalPages: 1, total: 0, stats: null }),
 }));
