@@ -56,54 +56,52 @@ function buildSections(
     user: { fullname: string; role: string },
     iconSize: { width: number; height: number }
 ): SheetSection[] {
-    const iconProps = { size: iconSize.width, variant: "Bold" as const };
-
     return [
         {
             label: "Tài khoản",
             items: [
-                { icon: <User {...iconProps} />, title: "Trang cá nhân", subtitle: "Xem hồ sơ của bạn", href: `/profile/${user.fullname}` },
-                ...(user.role === "admin" ? [{ icon: <Settings {...iconProps} />, title: "Trang quản trị", subtitle: "Quản lý hệ thống", href: "/admin/dashboard" }] : []),
-                ...(user.role === "teacher" ? [{ icon: <Settings {...iconProps} />, title: "Trang quản lý", subtitle: "Quản lý lớp học", href: "/teacher/dashboard" }] : []),
-                { icon: <Clock {...iconProps} />, title: "Lịch sử giao dịch", subtitle: "Xem các giao dịch của bạn", href: "/me/transactions" },
-                { icon: <Coin1 {...iconProps} />, title: "Ưu đãi của tôi", subtitle: "Voucher & ưu đãi", href: "/me/voucher" },
+                { icon: <User variant="Bold" style={iconSize} />, title: "Trang cá nhân", subtitle: "Xem hồ sơ của bạn", href: `/profile/${user.fullname}` },
+                ...(user.role === "admin" ? [{ icon: <Settings variant="Bold" style={iconSize} />, title: "Trang quản trị", subtitle: "Quản lý hệ thống", href: "/admin/dashboard" }] : []),
+                ...(user.role === "teacher" ? [{ icon: <Settings variant="Bold" style={iconSize} />, title: "Trang quản lý", subtitle: "Quản lý lớp học", href: "/teacher/dashboard" }] : []),
+                { icon: <Clock variant="Bold" style={iconSize} />, title: "Lịch sử giao dịch", subtitle: "Xem các giao dịch của bạn", href: "/me/transactions" },
+                { icon: <Coin1 variant="Bold" style={iconSize} />, title: "Ưu đãi của tôi", subtitle: "Voucher & ưu đãi", href: "/me/voucher" },
             ],
         },
         {
             label: "Cộng đồng",
             items: [
-                { icon: <Heart {...iconProps} />, title: "Hành trình yêu thương", subtitle: "Câu chuyện của bạn", href: "/hanhtrinhyethuong" },
-                { icon: <NhaHang {...iconProps} />, title: "Tiếp thị liên kết", subtitle: "Nhận xu từ giới thiệu", href: "/affiliate" },
-                { icon: <ArchiveBox {...iconProps} />, title: "Góp ý", subtitle: "Chia sẻ ý kiến của bạn", href: "/gopy" },
-                { icon: <BoxSearch {...iconProps} />, title: "Hỏi đáp (FAQ)", subtitle: "Câu hỏi thường gặp", href: "/faq" },
-                { icon: <MessageProgramming {...iconProps} />, title: "Hỗ trợ dự án", subtitle: "Cùng nhau thực hiện ý tưởng", href: "/hotroduan" },
-                { icon: <Global {...iconProps} />, title: "Truyền thông chéo", subtitle: "Kết nối & chia sẻ", href: "/truyenthongcheo" },
+                { icon: <Heart variant="Bold" style={iconSize} />, title: "Hành trình yêu thương", subtitle: "Câu chuyện của bạn", href: "/hanhtrinhyethuong" },
+                { icon: <NhaHang variant="Bold" style={iconSize} />, title: "Tiếp thị liên kết", subtitle: "Nhận xu từ giới thiệu", href: "/affiliate" },
+                { icon: <ArchiveBox variant="Bold" style={iconSize} />, title: "Góp ý", subtitle: "Chia sẻ ý kiến của bạn", href: "/gopy" },
+                { icon: <BoxSearch variant="Bold" style={iconSize} />, title: "Hỏi đáp (FAQ)", subtitle: "Câu hỏi thường gặp", href: "/faq" },
+                { icon: <MessageProgramming variant="Bold" style={iconSize} />, title: "Hỗ trợ dự án", subtitle: "Cùng nhau thực hiện ý tưởng", href: "/hotroduan" },
+                { icon: <Global variant="Bold" style={iconSize} />, title: "Truyền thông chéo", subtitle: "Kết nối & chia sẻ", href: "/truyenthongcheo" },
             ],
         },
         {
             label: "Tiện ích",
             items: [
-                { icon: <Link1 {...iconProps} />, title: "Rút gọn liên kết", subtitle: "Sở hữu link ngắn", href: "/rutgonlink" },
-                { icon: <Message {...iconProps} />, title: "Gia sư AI", subtitle: "Học cùng trí tuệ nhân tạo", href: "/giasu-ai" },
-                { icon: <DeviceMessage {...iconProps} />, title: "Chat với Admin", subtitle: "Liên hệ hỗ trợ", href: "/chat-admin" },
-                { icon: <Briefcase {...iconProps} />, title: "CNjobs", subtitle: "Cơ hội việc làm", href: "/cnjobs" },
-                { icon: <GlobalSearch {...iconProps} />, title: "CNsocial", subtitle: "Mạng xã hội cộng đồng", href: "/cnsocial" },
+                { icon: <Link1 variant="Bold" style={iconSize} />, title: "Rút gọn liên kết", subtitle: "Sở hữu link ngắn", href: "/rutgonlink" },
+                { icon: <Message variant="Bold" style={iconSize} />, title: "Gia sư AI", subtitle: "Học cùng trí tuệ nhân tạo", href: "/giasu-ai" },
+                { icon: <DeviceMessage variant="Bold" style={iconSize} />, title: "Chat với Admin", subtitle: "Liên hệ hỗ trợ", href: "/chat-admin" },
+                { icon: <Briefcase variant="Bold" style={iconSize} />, title: "CNjobs", subtitle: "Cơ hội việc làm", href: "/cnjobs" },
+                { icon: <GlobalSearch variant="Bold" style={iconSize} />, title: "CNsocial", subtitle: "Mạng xã hội cộng đồng", href: "/cnsocial" },
             ],
         },
         {
             label: "Học tập",
             items: [
-                { icon: <ArchiveBook {...iconProps} />, title: "CNbooks", subtitle: "Thư viện sách số", href: "/cnbooks" },
-                { icon: <BookOpen {...iconProps} />, title: "Khoá học của tôi", subtitle: "Tiếp tục học tập", href: "/me/khoahoc" },
-                { icon: <FileText {...iconProps} />, title: "Bài viết của tôi", subtitle: "Quản lý nội dung", href: "/me/blog" },
-                { icon: <Home {...iconProps} />, title: "Khu vườn học tập", subtitle: "Không gian của bạn", href: "/khuvuonhoctap" },
-                { icon: <NhaHang {...iconProps} />, title: "Nhà hàng công nghệ", subtitle: "Khám phá công nghệ", href: "/nhahangcongnghe" },
+                { icon: <ArchiveBook variant="Bold" style={iconSize} />, title: "CNbooks", subtitle: "Thư viện sách số", href: "/cnbooks" },
+                { icon: <BookOpen variant="Bold" style={iconSize} />, title: "Khoá học của tôi", subtitle: "Tiếp tục học tập", href: "/me/khoahoc" },
+                { icon: <FileText variant="Bold" style={iconSize} />, title: "Bài viết của tôi", subtitle: "Quản lý nội dung", href: "/me/blog" },
+                { icon: <Home variant="Bold" style={iconSize} />, title: "Khu vườn học tập", subtitle: "Không gian của bạn", href: "/khuvuonhoctap" },
+                { icon: <NhaHang variant="Bold" style={iconSize} />, title: "Nhà hàng công nghệ", subtitle: "Khám phá công nghệ", href: "/nhahangcongnghe" },
             ],
         },
         {
             label: "Cài đặt",
             items: [
-                { icon: <Settings {...iconProps} />, title: "Cài đặt", subtitle: "Tuỳ chỉnh tài khoản", href: "/me/settings" },
+                { icon: <Settings variant="Bold" style={iconSize} />, title: "Cài đặt", subtitle: "Tuỳ chỉnh tài khoản", href: "/me/settings" },
             ],
         },
     ];

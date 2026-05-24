@@ -117,22 +117,37 @@ body {
 }
 
 /* ========== SVG STYLES ========== */
-svg.lucide:not([data-filled]) {
+svg:not(.lucide) {
+  fill: currentColor !important;
+  stroke: none !important;
+}
+
+/* Đối với iconsax variant Outline */
+svg[stroke="currentColor"] {
   fill: none !important;
+  stroke: currentColor !important;
+}
+
+/* Đối với iconsax variant Bold */
+svg[fill="currentColor"] {
+  fill: currentColor !important;
+  stroke: none !important;
+}
+
+/* Reset lại cho lucide icons */
+svg.lucide {
+  fill: none !important;
+  stroke: currentColor !important;
 }
 
 svg.lucide[data-filled="true"] {
   fill: currentColor !important;
+  stroke: currentColor !important;
 }
 
 svg.lucide[data-filled="false"] {
   fill: none !important;
-}
-
-/* Đảm bảo heart icon có transition mượt */
-svg.lucide[data-filled="true"],
-svg.lucide[data-filled="false"] {
-  transition: fill 0.2s ease, color 0.2s ease;
+  stroke: currentColor !important;
 }
 
 /* ========== TINYMCE EDITOR STYLES ========== */
