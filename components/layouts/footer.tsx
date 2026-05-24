@@ -66,7 +66,7 @@ export default function Footer() {
                     priority
                 />
                 <h1 className="hidden md:block font-bold md:ml-5 text-[clamp(12px,2.2vw,20px)] whitespace-nowrap text-white">
-                    CNcode - Nền tảng học công nghệ và sáng tạo đổi mới
+                    CNcode - Nền tảng học công nghệ và đổi mới sáng tạo
                 </h1>
             </div>
 
