@@ -45,11 +45,6 @@ const menuItems = [
                 link: "/admin/dashboard",
                 icon: <LayoutDashboard size={18} />,
             },
-            {
-                title: "Hoạt động gần đây",
-                link: "/admin/activity",
-                icon: <History size={18} />,
-            },
         ],
     },
     {
@@ -61,27 +56,12 @@ const menuItems = [
                 link: "/admin/users",
                 icon: <UserCircle size={18} />,
             },
-            {
-                title: "Phân quyền",
-                link: "/admin/roles",
-                icon: <Key size={18} />,
-            },
-            {
-                title: "Vi phạm",
-                link: "/admin/violate",
-                icon: <ShieldX size={18} />,
-            },
         ],
     },
     {
         category: "Quản lí nội dung",
         categoryId: "content",
         listLink: [
-            {
-                title: "Bài viết",
-                link: "/admin/blog",
-                icon: <Document size={18} variant="Outline" />,
-            },
         ],
     },
     {
@@ -117,37 +97,12 @@ const menuItems = [
         ],
     },
     {
-        category: "Chính sách",
-        categoryId: "chinhsach",
+        category: "Cài đặt",
+        categoryId: "settings",
         listLink: [
             {
-                title: "Giới thiệu",
-                link: "/admin/gioithieu",
-                icon: <Settings size={18} />,
-            },
-            {
-                title: "Chính sách bảo hành",
-                link: "/admin/chinhsachbaohanh",
-                icon: <Settings size={18} />,
-            },
-            {
-                title: "Hướng dẫn thanh toán",
-                link: "/admin/huongdanthanhtoan",
-                icon: <Settings size={18} />,
-            },
-            {
-                title: "Quy trình sử dụng",
-                link: "/admin/quytrinhsudung",
-                icon: <Settings size={18} />,
-            },
-            {
-                title: "An toàn bảo mật",
-                link: "/admin/antoanbaomat",
-                icon: <Settings size={18} />,
-            },
-            {
-                title: "Điều khoản sử dụng",
-                link: "/admin/dieukhoansudung",
+                title: "Cài đặt chung",
+                link: "/admin/allsettings",
                 icon: <Settings size={18} />,
             },
         ],

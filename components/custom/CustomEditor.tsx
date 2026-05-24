@@ -7,7 +7,10 @@ import React, {
     useEffect,
     useCallback,
     useTransition,
+    forwardRef,
+    useImperativeHandle
 } from "react";
+import { uploadApi } from '@/lib/upload';
 import {
     Undo2,
     Redo2,
@@ -34,8 +37,10 @@ import {
     Superscript,
     Subscript,
     Trash2,
+    Loader2
 } from "lucide-react";
 import { createRoot } from "react-dom/client";
+import { toast } from "sonner";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -60,6 +65,17 @@ interface EditorStatus {
     words: number;
     chars: number;
     saved: boolean;
+}
+
+interface CustomEditorProps {
+    initialValue?: string;
+    onImageUpload?: (base64Image: string) => Promise<string>;
+    uploading?: boolean;
+}
+
+export interface CustomEditorRef {
+    getContent: () => string;
+    setContent: (content: string) => void;
 }
 
 declare global {
@@ -297,15 +313,18 @@ const CodeModal: React.FC<{ onClose: () => void; onInsert: (code: string, lang: 
 interface UploadImageModalProps {
     onClose: () => void;
     onConfirm: (src: string, alt: string) => void;
+    onImageUpload?: (base64Image: string) => Promise<string>;
+    uploading?: boolean;
 }
 
-const UploadImageModal: React.FC<UploadImageModalProps> = ({ onClose, onConfirm }) => {
+const UploadImageModal: React.FC<UploadImageModalProps> = ({ onClose, onConfirm, onImageUpload, uploading = false }) => {
     const [tab, setTab] = useState<"url" | "upload">("upload");
     const [url, setUrl] = useState("");
     const [alt, setAlt] = useState("");
     const [blobUrl, setBlobUrl] = useState<string | null>(null);
     const [fileName, setFileName] = useState("");
     const [dragging, setDragging] = useState(false);
+    const [isUploading, setIsUploading] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const handleFile = (file: File) => {
@@ -323,15 +342,45 @@ const UploadImageModal: React.FC<UploadImageModalProps> = ({ onClose, onConfirm 
         if (file) handleFile(file);
     };
 
-    const handleConfirm = () => {
+    const handleConfirm = async () => {
         if (tab === "url") {
             if (!url) return;
             onConfirm(url, alt);
-        } else {
-            if (!blobUrl) return;
-            onConfirm(blobUrl, alt);
+            onClose();
+            return;
         }
-        onClose();
+
+        if (!blobUrl) return;
+
+        setIsUploading(true);
+
+        try {
+            const response = await fetch(blobUrl);
+            const blob = await response.blob();
+
+            const base64 = await new Promise<string>((resolve) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result as string);
+                reader.readAsDataURL(blob);
+            });
+
+            const result = await uploadApi.uploadImage(base64, 'editor');
+
+            if (!result?.success || !result.url) {
+                toast.error(result?.message || "Upload thất bại");
+                return;
+            }
+
+            onConfirm(result.url, alt);
+            toast.success("Upload ảnh thành công");
+            onClose();
+
+        } catch (error) {
+            console.error(error);
+            toast.error("Có lỗi xảy ra khi upload");
+        } finally {
+            setIsUploading(false);
+        }
     };
 
     return (
@@ -403,9 +452,10 @@ const UploadImageModal: React.FC<UploadImageModalProps> = ({ onClose, onConfirm 
                 )}
 
                 <div className="modal-actions" style={{ marginTop: 12 }}>
-                    <button onClick={onClose} className="btn-cancel">Hủy</button>
-                    <button onClick={handleConfirm} className="btn-ok" disabled={tab === "upload" ? !blobUrl : !url}>
-                        <Check size={14} /> Chèn ảnh
+                    <button onClick={onClose} className="btn-cancel" disabled={isUploading}>Hủy</button>
+                    <button onClick={handleConfirm} className="btn-ok" disabled={(tab === "upload" ? !blobUrl : !url) || isUploading}>
+                        {isUploading ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
+                        {isUploading ? "Đang upload..." : "Chèn ảnh"}
                     </button>
                 </div>
             </div>
@@ -415,16 +465,80 @@ const UploadImageModal: React.FC<UploadImageModalProps> = ({ onClose, onConfirm 
 
 // ─── Image Widget ─────────────────────────────────────────────────────────────
 
-const ImageWidget: React.FC<{ src: string; alt: string; onDelete: () => void }> = ({ src, alt, onDelete }) => {
-    const [width, setWidth] = useState(280);
-    const [rotation, setRotation] = useState(0);
-    const [align, setAlign] = useState<ImgAlign>("left");
+// components/custom/CustomEditor.tsx - Sửa ImageWidget
+
+const ImageWidget: React.FC<{
+    src: string;
+    alt: string;
+    onDelete: () => void;
+    onUpdate?: (id: string, data: { width?: number; rotation?: number; align?: string; x?: number; y?: number }) => void;
+    widgetId?: string;
+}> = ({ src, alt, onDelete, onUpdate, widgetId }) => {
+    // Lấy giá trị từ attribute nếu có
+    const getInitialWidth = () => {
+        if (widgetId) {
+            const el = document.querySelector(`[data-img-id="${widgetId}"]`);
+            const savedWidth = el?.getAttribute('data-img-width');
+            return savedWidth ? parseInt(savedWidth) : 280;
+        }
+        return 280;
+    };
+
+    const getInitialRotation = () => {
+        if (widgetId) {
+            const el = document.querySelector(`[data-img-id="${widgetId}"]`);
+            const savedRotation = el?.getAttribute('data-img-rotation');
+            return savedRotation ? parseInt(savedRotation) : 0;
+        }
+        return 0;
+    };
+
+    const getInitialAlign = () => {
+        if (widgetId) {
+            const el = document.querySelector(`[data-img-id="${widgetId}"]`);
+            const savedAlign = el?.getAttribute('data-img-align');
+            return (savedAlign as ImgAlign) || "left";
+        }
+        return "left";
+    };
+
+    const getInitialPos = () => {
+        if (widgetId) {
+            const el = document.querySelector(`[data-img-id="${widgetId}"]`);
+            const savedX = el?.getAttribute('data-img-x');
+            const savedY = el?.getAttribute('data-img-y');
+            return {
+                x: savedX ? parseInt(savedX) : 0,
+                y: savedY ? parseInt(savedY) : 0
+            };
+        }
+        return { x: 0, y: 0 };
+    };
+
+    const [width, setWidth] = useState(getInitialWidth());
+    const [rotation, setRotation] = useState(getInitialRotation());
+    const [align, setAlign] = useState<ImgAlign>(getInitialAlign());
     const [selected, setSelected] = useState(false);
-    const [pos, setPos] = useState({ x: 0, y: 0 });
+    const [pos, setPos] = useState(getInitialPos());
     const [dragging, setDragging] = useState(false);
     const wrapRef = useRef<HTMLSpanElement>(null);
     const dragStart = useRef({ mx: 0, my: 0, px: 0, py: 0 });
     const resizeStartRef = useRef({ mx: 0, w: 0 });
+
+    // Lưu thay đổi vào attribute
+    const saveChanges = useCallback((updates: { width?: number; rotation?: number; align?: ImgAlign; x?: number; y?: number }) => {
+        if (widgetId) {
+            const el = document.querySelector(`[data-img-id="${widgetId}"]`);
+            if (el) {
+                if (updates.width !== undefined) el.setAttribute('data-img-width', updates.width.toString());
+                if (updates.rotation !== undefined) el.setAttribute('data-img-rotation', updates.rotation.toString());
+                if (updates.align !== undefined) el.setAttribute('data-img-align', updates.align);
+                if (updates.x !== undefined) el.setAttribute('data-img-x', updates.x.toString());
+                if (updates.y !== undefined) el.setAttribute('data-img-y', updates.y.toString());
+            }
+        }
+        onUpdate?.(widgetId || '', updates);
+    }, [widgetId, onUpdate]);
 
     useEffect(() => {
         const onOut = (e: MouseEvent) => {
@@ -439,10 +553,14 @@ const ImageWidget: React.FC<{ src: string; alt: string; onDelete: () => void }> 
         e.preventDefault();
         setDragging(true);
         dragStart.current = { mx: e.clientX, my: e.clientY, px: pos.x, py: pos.y };
-        const onMove = (me: MouseEvent) => setPos({
-            x: dragStart.current.px + me.clientX - dragStart.current.mx,
-            y: dragStart.current.py + me.clientY - dragStart.current.my,
-        });
+        const onMove = (me: MouseEvent) => {
+            const newPos = {
+                x: dragStart.current.px + me.clientX - dragStart.current.mx,
+                y: dragStart.current.py + me.clientY - dragStart.current.my,
+            };
+            setPos(newPos);
+            saveChanges({ x: newPos.x, y: newPos.y });
+        };
         const onUp = () => { setDragging(false); document.removeEventListener("mousemove", onMove); document.removeEventListener("mouseup", onUp); };
         document.addEventListener("mousemove", onMove);
         document.addEventListener("mouseup", onUp);
@@ -451,10 +569,33 @@ const ImageWidget: React.FC<{ src: string; alt: string; onDelete: () => void }> 
     const onResizeStart = (e: React.MouseEvent) => {
         e.preventDefault(); e.stopPropagation();
         resizeStartRef.current = { mx: e.clientX, w: width };
-        const onMove = (me: MouseEvent) => setWidth(Math.max(60, resizeStartRef.current.w + me.clientX - resizeStartRef.current.mx));
+        const onMove = (me: MouseEvent) => {
+            const newWidth = Math.max(60, resizeStartRef.current.w + me.clientX - resizeStartRef.current.mx);
+            setWidth(newWidth);
+            saveChanges({ width: newWidth });
+        };
         const onUp = () => { document.removeEventListener("mousemove", onMove); document.removeEventListener("mouseup", onUp); };
         document.addEventListener("mousemove", onMove);
         document.addEventListener("mouseup", onUp);
+    };
+
+    const handleSetAlign = (newAlign: ImgAlign) => {
+        setAlign(newAlign);
+        saveChanges({ align: newAlign });
+    };
+
+    const handleRotate = (delta: number) => {
+        const newRotation = rotation + delta;
+        setRotation(newRotation);
+        saveChanges({ rotation: newRotation });
+    };
+
+    const handleReset = () => {
+        setWidth(280);
+        setRotation(0);
+        setAlign("left");
+        setPos({ x: 0, y: 0 });
+        saveChanges({ width: 280, rotation: 0, align: "left", x: 0, y: 0 });
     };
 
     const alignStyle: React.CSSProperties = align === "center"
@@ -486,33 +627,33 @@ const ImageWidget: React.FC<{ src: string; alt: string; onDelete: () => void }> 
                 <>
                     <span className="img-toolbar">
                         <button data-handle="1"
-                            onMouseDown={e => { e.preventDefault(); e.stopPropagation(); setAlign("left"); }}
+                            onMouseDown={e => { e.preventDefault(); e.stopPropagation(); handleSetAlign("left"); }}
                             className={`img-tb-btn${align === "left" ? " img-tb-btn-active" : ""}`} title="Căn trái">
                             <AlignLeft size={11} />
                         </button>
                         <button data-handle="1"
-                            onMouseDown={e => { e.preventDefault(); e.stopPropagation(); setAlign("center"); }}
+                            onMouseDown={e => { e.preventDefault(); e.stopPropagation(); handleSetAlign("center"); }}
                             className={`img-tb-btn${align === "center" ? " img-tb-btn-active" : ""}`} title="Căn giữa">
                             <AlignCenter size={11} />
                         </button>
                         <button data-handle="1"
-                            onMouseDown={e => { e.preventDefault(); e.stopPropagation(); setAlign("right"); }}
+                            onMouseDown={e => { e.preventDefault(); e.stopPropagation(); handleSetAlign("right"); }}
                             className={`img-tb-btn${align === "right" ? " img-tb-btn-active" : ""}`} title="Căn phải">
                             <AlignRight size={11} />
                         </button>
                         <span className="img-tb-divider" />
                         <button data-handle="1"
-                            onMouseDown={e => { e.preventDefault(); e.stopPropagation(); setRotation(r => r - 90); }}
+                            onMouseDown={e => { e.preventDefault(); e.stopPropagation(); handleRotate(-90); }}
                             className="img-tb-btn" title="Xoay trái">
                             <RotateCcw size={11} />
                         </button>
                         <button data-handle="1"
-                            onMouseDown={e => { e.preventDefault(); e.stopPropagation(); setRotation(r => r + 90); }}
+                            onMouseDown={e => { e.preventDefault(); e.stopPropagation(); handleRotate(90); }}
                             className="img-tb-btn" title="Xoay phải">
                             <RotateCw size={11} />
                         </button>
                         <button data-handle="1"
-                            onMouseDown={e => { e.preventDefault(); e.stopPropagation(); setRotation(0); setWidth(280); setPos({ x: 0, y: 0 }); }}
+                            onMouseDown={e => { e.preventDefault(); e.stopPropagation(); handleReset(); }}
                             className="img-tb-btn" title="Đặt lại">
                             <Maximize2 size={11} />
                         </button>
@@ -538,7 +679,7 @@ const TableWidget: React.FC<{ initialRows: number; initialCols: number }> = ({ i
             Array.from({ length: initialCols }, (_, c) => r === 0 ? `Header ${c + 1}` : "")
         )
     );
-    const [colWidths, setColWidths] = useState<number[]>(() => Array(initialCols).fill(110) as number[]);
+    const [colWidths, setColWidths] = useState<number[]>(() => Array(initialCols).fill(110));
     const [selected, setSelected] = useState(false);
     const wrapRef = useRef<HTMLDivElement>(null);
     const resizingCol = useRef<number | null>(null);
@@ -553,7 +694,7 @@ const TableWidget: React.FC<{ initialRows: number; initialCols: number }> = ({ i
         return () => document.removeEventListener("mousedown", onOut);
     }, []);
 
-    const addRow = () => setData(d => [...d, Array(d[0].length).fill("") as string[]]);
+    const addRow = () => setData(d => [...d, Array(d[0].length).fill("")]);
     const addCol = () => {
         setData(d => d.map((row, i) => [...row, i === 0 ? `Header ${row.length + 1}` : ""]));
         setColWidths(w => [...w, 110]);
@@ -640,7 +781,7 @@ const mountedRoots = new Map<string, ReturnType<typeof createRoot>>();
 
 // ─── Main Editor ──────────────────────────────────────────────────────────────
 
-const CustomEditor: React.FC = () => {
+const CustomEditor = forwardRef<CustomEditorRef, CustomEditorProps>(({ initialValue = '', onImageUpload, uploading = false }, ref) => {
     const editorRef = useRef<HTMLDivElement>(null);
     const savedRangeRef = useRef<Range | null>(null);
     const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -662,28 +803,23 @@ const CustomEditor: React.FC = () => {
     const [imageWidgets, setImageWidgets] = useState<Map<string, { src: string; alt: string }>>(new Map());
     const [tableWidgets, setTableWidgets] = useState<Map<string, { rows: number; cols: number }>>(new Map());
 
-    useEffect(() => {
-        if (editorRef.current) {
-            editorRef.current.innerHTML = "<p><br></p>";
-            updateStatus();
-        }
-        return () => {
-            mountedRoots.forEach(root => {
-                try { root.unmount(); } catch { /* ignore */ }
-            });
-            mountedRoots.clear();
-        };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+    // ✅ 1. Khai báo updateStatus TRƯỚC
+    const updateStatus = useCallback(() => {
+        const text = editorRef.current?.innerText ?? "";
+        const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+        const chars = text.replace(/\n/g, "").length;
+        startTransition(() => setStatus(s => ({ ...s, words, chars })));
     }, []);
 
-    const exec = useCallback((cmd: string, val?: string) => {
-        editorRef.current?.focus();
-        document.execCommand(cmd, false, val);
-        updateActiveStates();
-        scheduleAutosave();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    // ✅ 2. Khai báo scheduleAutosave SAU updateStatus
+    const scheduleAutosave = useCallback(() => {
+        setStatus(s => ({ ...s, saved: false }));
+        if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+        saveTimerRef.current = setTimeout(() => setStatus(s => ({ ...s, saved: true })), 1200);
+        updateStatus();
+    }, [updateStatus]);
 
+    // ✅ 3. Khai báo updateActiveStates
     const updateActiveStates = useCallback(() => {
         startTransition(() => {
             setActive({
@@ -701,19 +837,135 @@ const CustomEditor: React.FC = () => {
         });
     }, []);
 
-    const updateStatus = useCallback(() => {
-        const text = editorRef.current?.innerText ?? "";
-        const words = text.trim() ? text.trim().split(/\s+/).length : 0;
-        const chars = text.replace(/\n/g, "").length;
-        startTransition(() => setStatus(s => ({ ...s, words, chars })));
+    // ✅ 4. Khai báo exec SAU updateActiveStates và scheduleAutosave
+    const exec = useCallback((cmd: string, val?: string) => {
+        editorRef.current?.focus();
+        document.execCommand(cmd, false, val);
+        updateActiveStates();
+        scheduleAutosave();
+    }, [updateActiveStates, scheduleAutosave]);
+
+    // ✅ 5. Khai báo deleteImage TRƯỚC khi dùng
+    const deleteImage = useCallback((id: string) => {
+        setImageWidgets(m => {
+            const next = new Map(m);
+            next.delete(id);
+            return next;
+        });
+        const el = editorRef.current?.querySelector(`[data-img-id="${id}"]`);
+        if (el) {
+            const root = mountedRoots.get(id);
+            if (root) { try { root.unmount(); } catch { } mountedRoots.delete(id); }
+            el.parentNode?.removeChild(el);
+        }
+        scheduleAutosave();
+    }, [scheduleAutosave]);
+
+    // ✅ 6. Khai báo mountImageWidgets (dùng deleteImage)
+    const mountImageWidgets = useCallback(() => {
+        const editor = editorRef.current;
+        if (!editor) return;
+        const placeholders = editor.querySelectorAll('[data-img-id]');
+        placeholders.forEach((el) => {
+            const id = el.getAttribute('data-img-id');
+            if (!id) return;
+            if (mountedRoots.has(id)) return;
+            const src = el.getAttribute('data-img-src');
+            const alt = el.getAttribute('data-img-alt') || '';
+            if (src) {
+                const root = createRoot(el);
+                mountedRoots.set(id, root);
+                root.render(<ImageWidget
+                    src={src}
+                    alt={alt}
+                    widgetId={id}
+                    onDelete={() => deleteImage(id)}
+                />);
+            }
+        });
+    }, [deleteImage]);
+
+    // ✅ 7. Khai báo mountTableWidgets
+    const mountTableWidgets = useCallback(() => {
+        const editor = editorRef.current;
+        if (!editor) return;
+        const placeholders = editor.querySelectorAll('[data-table-id]');
+        placeholders.forEach((el) => {
+            const id = el.getAttribute('data-table-id');
+            if (!id) return;
+            if (mountedRoots.has(id)) return;
+            const rows = parseInt(el.getAttribute('data-table-rows') || '3');
+            const cols = parseInt(el.getAttribute('data-table-cols') || '3');
+            const root = createRoot(el);
+            mountedRoots.set(id, root);
+            root.render(<TableWidget initialRows={rows} initialCols={cols} />);
+        });
     }, []);
 
-    const scheduleAutosave = useCallback(() => {
-        setStatus(s => ({ ...s, saved: false }));
-        if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-        saveTimerRef.current = setTimeout(() => setStatus(s => ({ ...s, saved: true })), 1200);
-        updateStatus();
-    }, [updateStatus]);
+    // ✅ 8. useEffect mount ban đầu
+    useEffect(() => {
+        if (editorRef.current && initialValue) {
+            editorRef.current.innerHTML = initialValue;
+            updateStatus();
+            setTimeout(() => {
+                mountImageWidgets();
+                mountTableWidgets();
+            }, 0);
+        }
+    }, [initialValue, updateStatus, mountImageWidgets, mountTableWidgets]);
+
+    // ✅ 9. MutationObserver effect
+    useEffect(() => {
+        if (!editorRef.current) return;
+        const observer = new MutationObserver(() => {
+            mountImageWidgets();
+            mountTableWidgets();
+        });
+        observer.observe(editorRef.current, { childList: true, subtree: true });
+        mountImageWidgets();
+        mountTableWidgets();
+        return () => observer.disconnect();
+    }, [mountImageWidgets, mountTableWidgets]);
+
+    // ✅ 10. useImperativeHandle
+    useImperativeHandle(ref, () => ({
+        getContent: () => editorRef.current?.innerHTML || '',
+        setContent: (content: string) => {
+            if (editorRef.current) {
+                editorRef.current.innerHTML = content;
+                const rootsToClear = Array.from(mountedRoots.entries());
+                setTimeout(() => {
+                    rootsToClear.forEach(([id, root]) => {
+                        try { root.unmount(); } catch { }
+                        mountedRoots.delete(id);
+                    });
+                    mountImageWidgets();
+                    mountTableWidgets();
+                    updateStatus();
+                }, 0);
+            }
+        }
+    }), [mountImageWidgets, mountTableWidgets, updateStatus]);
+
+    // ✅ 11. useEffect cleanup
+    useEffect(() => {
+        if (editorRef.current) {
+            if (!initialValue) {
+                editorRef.current.innerHTML = "<p><br></p>";
+            }
+            updateStatus();
+        }
+        return () => {
+            const rootsToClear = Array.from(mountedRoots.entries());
+            setTimeout(() => {
+                rootsToClear.forEach(([id, root]) => {
+                    try { root.unmount(); } catch { }
+                    mountedRoots.delete(id);
+                });
+                mountedRoots.clear();
+            }, 0);
+        };
+    }, []);
 
     const saveRange = () => {
         const sel = window.getSelection();
@@ -730,7 +982,8 @@ const CustomEditor: React.FC = () => {
 
     const applyHeading = (tag: HeadingLevel) => {
         setHeading(tag); editorRef.current?.focus();
-        document.execCommand("formatBlock", false, tag); scheduleAutosave();
+        document.execCommand("formatBlock", false, tag);
+        scheduleAutosave();
     };
 
     const applyColor = (color: string) => { setFontColor(color); exec("foreColor", color); };
@@ -758,27 +1011,31 @@ const CustomEditor: React.FC = () => {
         setImageWidgets(m => new Map(m).set(id, { src, alt }));
         const placeholder = document.createElement("span");
         placeholder.setAttribute("data-img-id", id);
+        placeholder.setAttribute("data-img-src", src);
+        placeholder.setAttribute("data-img-alt", alt);
+        placeholder.setAttribute("data-img-width", "280");
+        placeholder.setAttribute("data-img-rotation", "0");
+        placeholder.setAttribute("data-img-align", "left");
+        placeholder.setAttribute("data-img-x", "0");
+        placeholder.setAttribute("data-img-y", "0");
         placeholder.className = "img-placeholder";
         placeholder.contentEditable = "false";
         range.insertNode(placeholder);
         scheduleAutosave();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [scheduleAutosave]);
-
-    const deleteImage = useCallback((id: string) => {
-        setImageWidgets(m => {
-            const next = new Map(m);
-            next.delete(id);
-            return next;
-        });
-        const el = editorRef.current?.querySelector(`[data-img-id="${id}"]`);
-        if (el) {
-            const root = mountedRoots.get(id);
-            if (root) { try { root.unmount(); } catch { /**/ } mountedRoots.delete(id); }
-            el.parentNode?.removeChild(el);
-        }
-        scheduleAutosave();
-    }, [scheduleAutosave]);
+        setTimeout(() => {
+            const el = editorRef.current?.querySelector(`[data-img-id="${id}"]`);
+            if (el && !mountedRoots.has(id)) {
+                const root = createRoot(el);
+                mountedRoots.set(id, root);
+                root.render(<ImageWidget
+                    src={src}
+                    alt={alt}
+                    widgetId={id}
+                    onDelete={() => deleteImage(id)}
+                />);
+            }
+        }, 0);
+    }, [scheduleAutosave, restoreRange, deleteImage]);
 
     const insertCode = (code: string, lang: string) => {
         if (!code) return;
@@ -799,11 +1056,21 @@ const CustomEditor: React.FC = () => {
         setTableWidgets(m => new Map(m).set(id, { rows: 3, cols: 3 }));
         const placeholder = document.createElement("div");
         placeholder.setAttribute("data-table-id", id);
+        placeholder.setAttribute("data-table-rows", "3");
+        placeholder.setAttribute("data-table-cols", "3");
         placeholder.className = "table-placeholder";
         placeholder.contentEditable = "false";
         range.insertNode(placeholder);
         placeholder.insertAdjacentHTML("afterend", "<p><br></p>");
         scheduleAutosave();
+        setTimeout(() => {
+            const el = editorRef.current?.querySelector(`[data-table-id="${id}"]`);
+            if (el && !mountedRoots.has(id)) {
+                const root = createRoot(el);
+                mountedRoots.set(id, root);
+                root.render(<TableWidget initialRows={3} initialCols={3} />);
+            }
+        }, 0);
     };
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
@@ -815,19 +1082,15 @@ const CustomEditor: React.FC = () => {
             setTimeout(() => {
                 const sel = window.getSelection();
                 if (!sel?.rangeCount || !editorRef.current) return;
-
                 const rangeAfter = sel.getRangeAt(0);
                 const anchorNode = rangeAfter.startContainer;
                 const anchorOffset = rangeAfter.startOffset;
-
                 const targetNode = anchorOffset === 0 && anchorNode.previousSibling
                     ? anchorNode.previousSibling
                     : anchorNode;
-
                 if (targetNode.nodeType === Node.TEXT_NODE && targetNode.parentNode?.nodeName !== "A") {
                     autoLinkText(targetNode);
                 }
-
                 try {
                     const parent = rangeAfter.startContainer.parentNode ?? editorRef.current;
                     const newRange = document.createRange();
@@ -840,34 +1103,10 @@ const CustomEditor: React.FC = () => {
                     newRange.collapse(true);
                     sel.removeAllRanges();
                     sel.addRange(newRange);
-                } catch {
-                    // If anything fails, leave cursor as-is
-                }
+                } catch { }
             }, 10);
         }
     };
-
-    useEffect(() => {
-        if (!editorRef.current) return;
-
-        imageWidgets.forEach(({ src, alt }, id) => {
-            const el = editorRef.current!.querySelector(`[data-img-id="${id}"]`);
-            if (el && !mountedRoots.has(id)) {
-                const root = createRoot(el);
-                mountedRoots.set(id, root);
-                root.render(<ImageWidget src={src} alt={alt} onDelete={() => deleteImage(id)} />);
-            }
-        });
-
-        tableWidgets.forEach(({ rows, cols }, id) => {
-            const el = editorRef.current!.querySelector(`[data-table-id="${id}"]`);
-            if (el && !mountedRoots.has(id)) {
-                const root = createRoot(el);
-                mountedRoots.set(id, root);
-                root.render(<TableWidget initialRows={rows} initialCols={cols} />);
-            }
-        });
-    }, [imageWidgets, tableWidgets, deleteImage]);
 
     return (
         <>
@@ -909,7 +1148,6 @@ const CustomEditor: React.FC = () => {
                         <ToolbarButton icon={<Table size={15} />} label="Chèn bảng" onClick={insertTable} />
                     </div>
                 </div>
-
                 <div className="ed-body">
                     <div className="ed-content-wrap">
                         <div
@@ -928,7 +1166,6 @@ const CustomEditor: React.FC = () => {
                         />
                     </div>
                 </div>
-
                 <div className="ed-statusbar">
                     <div className="ed-status-pills">
                         <span className={`ed-pill${status.saved ? " ed-pill-green" : ""}`}>
@@ -939,18 +1176,21 @@ const CustomEditor: React.FC = () => {
                     </div>
                     <span className="ed-statusbar-right">UTF-8</span>
                 </div>
-
                 {modal === "code" && <CodeModal onClose={() => setModal(null)} onInsert={insertCode} />}
                 {modal === "image" && (
                     <UploadImageModal
                         onClose={() => setModal(null)}
                         onConfirm={(src, alt) => { insertImage(src, alt); setModal(null); }}
+                        onImageUpload={onImageUpload}
+                        uploading={uploading}
                     />
                 )}
             </div>
         </>
     );
-};
+});
+
+CustomEditor.displayName = 'CustomEditor';
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
@@ -1002,7 +1242,6 @@ const editorStyles = `
   }
   .ed-body { display: flex; flex: 1; overflow: hidden; }
   .ed-content-wrap { flex: 1; overflow-y: auto; }
-
   #editor {
     outline: none; padding: 1.5rem 2.25rem;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
@@ -1010,7 +1249,6 @@ const editorStyles = `
     min-height: 100%; caret-color: #6366f1;
     box-sizing: border-box;
   }
-
   #editor p { margin-bottom: 0.9em; }
   #editor h1 { font-size: 1.85em; font-weight: 700; margin-bottom: 0.5em; letter-spacing: -0.02em; color: #0f172a; }
   #editor h2 { font-size: 1.4em; font-weight: 600; margin-bottom: 0.4em; color: #0f172a; }
@@ -1046,7 +1284,6 @@ const editorStyles = `
   #editor ol { margin: 0.5em 0 0.5em 1.6em; }
   #editor li { margin: 0.25em 0; }
   #editor ::selection { background: rgba(99,102,241,0.15); }
-
   .highlight-picker {
     position: absolute; top: 34px; left: 0; z-index: 100;
     background: #fff; border: 0.5px solid #e5e7eb; border-radius: 8px;
@@ -1061,8 +1298,6 @@ const editorStyles = `
     padding: 0;
   }
   .highlight-swatch:hover { transform: scale(1.2); border-color: #6366f1; }
-
-  /* Image */
   .img-placeholder { display: block; }
   .img-widget-outer { position: relative; }
   .img-toolbar {
@@ -1086,8 +1321,6 @@ const editorStyles = `
     width: 13px; height: 13px; background: #6366f1;
     border-radius: 3px; cursor: se-resize; z-index: 10; border: 2px solid #fff;
   }
-
-  /* Table */
   .table-placeholder { display: block; margin: 0.85em 0; }
   .table-widget { margin: 0.85em 0; display: inline-block; width: 100%; }
   .table-selected { outline: 2px solid #6366f1; border-radius: 8px; outline-offset: 2px; }
@@ -1117,8 +1350,6 @@ const editorStyles = `
     border-radius: 0 0 6px 6px; font-family: 'Inter', system-ui, sans-serif;
   }
   .tw-add-row:hover { background: #e0e7ff; }
-
-  /* Status */
   .ed-statusbar {
     background: #fafafa; border-top: 0.5px solid #e5e7eb; padding: 5px 12px;
     display: flex; align-items: center; justify-content: space-between;
@@ -1129,8 +1360,6 @@ const editorStyles = `
   .ed-pill { background: #f3f4f6; border-radius: 20px; padding: 2px 9px; font-size: 10.5px; color: #9ca3af; font-family: 'Inter', system-ui, sans-serif; }
   .ed-pill-green { background: #dcfce7; color: #15803d; }
   .ed-statusbar-right { font-size: 11px; color: #9ca3af; font-family: 'Inter', system-ui, sans-serif; }
-
-  /* Modal shared */
   .modal-overlay {
     position: fixed; inset: 0; background: rgba(0,0,0,0.35);
     display: flex; align-items: center; justify-content: center;

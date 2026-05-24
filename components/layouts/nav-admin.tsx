@@ -8,23 +8,12 @@ import { useState, useEffect } from "react";
 
 const PAGE_TITLES: Record<string, string> = {
     "/admin/dashboard": "Trang tổng quan",
-    "/admin/activity": "Hoạt động gần đây",
     "/admin/users": "Người dùng",
-    "/admin/roles": "Phân quyền",
-    "/admin/violate": "Vi phạm",
-    "/admin/coins": "Quản lí xu",
-    "/admin/gioithieu": "Giới thiệu",
-    "/admin/chinhsachbaohanh": "Chính sách bảo hành",
-    "/admin/huongdanthanhtoan": "Hướng dẫn thanh toán",
-    "/admin/quytrinhsudung": "Quy trình sử dụng",
-    "/admin/antoanbaomat": "An toàn bảo mật",
-    "/admin/dieukhoansudung": "Điều khoản sử dụng",
-    "/admin/blog": "Bài viết",
-    "/admin/chitietgiaodich": "Giao dịch",
     "/admin/gopy": "Quản lí góp ý",
     "/admin/affiliate": "Tiếp thị liên kết",
     "/admin/rutgonlink": "Rút gọn liên kết",
     "/admin/danhgia": "Đánh giá",
+    "/admin/allsettings": "Cài đặt chung",
 };
 
 interface NavAdminProps {
