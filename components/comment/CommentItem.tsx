@@ -355,8 +355,7 @@ export default function CommentItem({
     return (
         <>
             <div
-                className={`flex gap-2 mb-3 w-full ${isReply ? 'pl-[10px]' : ''
-                    }`}
+                className={`flex gap-2 mb-3 w-full`}
             >
                 <div className="flex-shrink-0">
                     <div
@@ -635,7 +634,7 @@ export default function CommentItem({
 
                     {/* REPLIES */}
                     {replies.length > 0 && (
-                        <div className="mt-3 space-y-3 pl-[10px]">
+                        <div className="mt-3 space-y-3">
                             {visibleReplies.map(
                                 (reply) => (
                                     <CommentItem
