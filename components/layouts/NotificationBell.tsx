@@ -1,10 +1,10 @@
-// /components/custom/NotificationBell.tsx
+// components/custom/NotificationBell.tsx
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
     Bell, MessageCircle, Heart, ThumbsUp, Bookmark,
-    CheckCheck, Coins, Flame, Info, XCircle, Loader2
+    CheckCheck, Coins, Flame, Info, XCircle, Loader2, X
 } from 'lucide-react';
 import { useSocket } from '@/providers/socket.provider';
 import { useAuthStore } from '@/store/auth.store';
@@ -250,22 +250,249 @@ function NotificationItem({ notification, onMarkAsRead, onClose }: NotificationI
     );
 }
 
+// ─── Mobile Notification Sheet ────────────────────────────────────────────────
+
+interface MobileNotificationSheetProps {
+    open: boolean;
+    onClose: () => void;
+    notifications: INotification[];
+    unreadCount: number;
+    isLoading: boolean;
+    page: number;
+    totalPages: number;
+    onMarkAsRead: (id: string) => void;
+    onMarkAllAsRead: () => void;
+    onLoadMore: () => void;
+}
+
+function MobileNotificationSheet({
+    open,
+    onClose,
+    notifications,
+    unreadCount,
+    isLoading,
+    page,
+    totalPages,
+    onMarkAsRead,
+    onMarkAllAsRead,
+    onLoadMore,
+}: MobileNotificationSheetProps) {
+    const [startY, setStartY] = useState(0);
+    const [currentY, setCurrentY] = useState(0);
+    const [isDragging, setIsDragging] = useState(false);
+    const sheetRef = useRef<HTMLDivElement>(null);
+    const contentRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (open) {
+            const scrollY = window.scrollY;
+            document.body.style.position = "fixed";
+            document.body.style.top = `-${scrollY}px`;
+            document.body.style.width = "100%";
+        } else {
+            const scrollY = document.body.style.top;
+            document.body.style.position = "";
+            document.body.style.top = "";
+            document.body.style.width = "";
+            if (scrollY) window.scrollTo(0, parseInt(scrollY) * -1);
+        }
+        return () => {
+            if (!open) {
+                const scrollY = document.body.style.top;
+                document.body.style.position = "";
+                document.body.style.top = "";
+                document.body.style.width = "";
+                if (scrollY) window.scrollTo(0, parseInt(scrollY) * -1);
+            }
+        };
+    }, [open]);
+
+    useEffect(() => {
+        if (!open) return;
+
+        const handleTouchStart = (e: TouchEvent) => {
+            const isAtTop = contentRef.current?.scrollTop === 0;
+            if (sheetRef.current?.contains(e.target as Node) && isAtTop) {
+                setStartY(e.touches[0].clientY);
+                setIsDragging(true);
+            }
+        };
+
+        const handleTouchMove = (e: TouchEvent) => {
+            if (!isDragging) return;
+            const deltaY = e.touches[0].clientY - startY;
+            if (deltaY > 0 && sheetRef.current) {
+                e.preventDefault();
+                setCurrentY(deltaY);
+                sheetRef.current.style.transform = `translateY(${deltaY}px)`;
+                sheetRef.current.style.transition = 'none';
+            }
+        };
+
+        const handleTouchEnd = () => {
+            if (!isDragging) return;
+            setIsDragging(false);
+            const deltaY = currentY;
+            if (sheetRef.current) {
+                sheetRef.current.style.transition = 'transform 0.3s ease-out';
+                if (deltaY > 100) {
+                    sheetRef.current.style.transform = 'translateY(100%)';
+                    setTimeout(() => {
+                        onClose();
+                        if (sheetRef.current) {
+                            sheetRef.current.style.transform = '';
+                            sheetRef.current.style.transition = '';
+                        }
+                    }, 300);
+                } else {
+                    sheetRef.current.style.transform = 'translateY(0)';
+                    setTimeout(() => {
+                        if (sheetRef.current) {
+                            sheetRef.current.style.transition = '';
+                        }
+                    }, 300);
+                }
+                setCurrentY(0);
+            }
+        };
+
+        const sheetElement = sheetRef.current;
+        sheetElement?.addEventListener('touchstart', handleTouchStart);
+        sheetElement?.addEventListener('touchmove', handleTouchMove, { passive: false });
+        sheetElement?.addEventListener('touchend', handleTouchEnd);
+
+        return () => {
+            sheetElement?.removeEventListener('touchstart', handleTouchStart);
+            sheetElement?.removeEventListener('touchmove', handleTouchMove);
+            sheetElement?.removeEventListener('touchend', handleTouchEnd);
+        };
+    }, [open, isDragging, startY, currentY, onClose]);
+
+    if (!open) return null;
+
+    return (
+        <>
+            <div
+                className="fixed inset-0 z-[80] bg-black/40 transition-opacity duration-300"
+                style={{ opacity: open ? 1 : 0 }}
+                onClick={onClose}
+            />
+            <div
+                ref={sheetRef}
+                className="fixed bottom-0 left-0 right-0 z-[90] bg-[var(--cn-bg-card)] rounded-t-3xl flex flex-col transition-transform duration-300 will-change-transform"
+                style={{
+                    transform: open ? "translateY(0)" : "translateY(100%)",
+                    maxHeight: "90dvh",
+                }}
+            >
+                {/* Drag indicator */}
+                <div className="flex justify-center pt-3 pb-2 flex-shrink-0">
+                    <div className="w-10 h-1 bg-[var(--cn-border)] rounded-full" />
+                </div>
+
+                {/* Header */}
+                <div className="flex items-center justify-between px-4 pb-3 flex-shrink-0">
+                    <h3 className="text-lg font-semibold text-[var(--cn-text-main)]">
+                        Thông báo
+                        {unreadCount > 0 && (
+                            <span className="ml-2 text-sm text-[var(--cn-text-muted)]">
+                                ({unreadCount})
+                            </span>
+                        )}
+                    </h3>
+                    <div className="flex items-center gap-2">
+                        {unreadCount > 0 && (
+                            <button
+                                onClick={onMarkAllAsRead}
+                                className="text-xs text-[var(--cn-primary)] hover:text-[var(--cn-primary-hover)] px-2 py-1 rounded-lg"
+                            >
+                                Đọc tất cả
+                            </button>
+                        )}
+                        <button
+                            onClick={onClose}
+                            className="w-8 h-8 flex items-center justify-center rounded-full bg-[var(--cn-bg-section)] text-[var(--cn-text-muted)]"
+                        >
+                            <X size={18} />
+                        </button>
+                    </div>
+                </div>
+
+                <div className="w-full h-px bg-[var(--cn-border)] flex-shrink-0" />
+
+                {/* Notification List */}
+                <div
+                    ref={contentRef}
+                    className="flex-1 overflow-y-auto pb-6"
+                    style={{ WebkitOverflowScrolling: 'touch' }}
+                >
+                    {isLoading && notifications.length === 0 ? (
+                        <div className="flex items-center justify-center py-12">
+                            <Loader2 className="w-6 h-6 text-[var(--cn-primary)] animate-spin" />
+                        </div>
+                    ) : notifications.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-12 text-[var(--cn-text-muted)]">
+                            <Bell className="w-12 h-12 mb-3 opacity-50" />
+                            <p className="text-sm">Chưa có thông báo nào</p>
+                        </div>
+                    ) : (
+                        <>
+                            <div className="divide-y divide-[var(--cn-border)]">
+                                {notifications.map(notification => (
+                                    <NotificationItem
+                                        key={notification._id}
+                                        notification={notification}
+                                        onMarkAsRead={onMarkAsRead}
+                                        onClose={onClose}
+                                    />
+                                ))}
+                            </div>
+                            {totalPages > 1 && page < totalPages && (
+                                <div className="p-4 text-center">
+                                    <button
+                                        onClick={onLoadMore}
+                                        disabled={isLoading}
+                                        className="px-4 py-2 text-sm text-[var(--cn-primary)] hover:bg-[var(--cn-primary-light)] rounded-lg transition disabled:opacity-50"
+                                    >
+                                        {isLoading ? 'Đang tải...' : 'Xem thêm'}
+                                    </button>
+                                </div>
+                            )}
+                        </>
+                    )}
+                </div>
+            </div>
+        </>
+    );
+}
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function NotificationBell() {
     const { user, token } = useAuthStore();
     const { socket, isConnected } = useSocket();
     const [open, setOpen] = useState(false);
+    const [isMobileSheetOpen, setIsMobileSheetOpen] = useState(false);
     const [notifications, setNotifications] = useState<INotification[]>([]);
     const [unreadCount, setUnreadCount] = useState(0);
     const [isLoading, setIsLoading] = useState(false);
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
+    const [isMobile, setIsMobile] = useState(false);
 
     const isFetchingRef = useRef(false);
-    const dropdownRef = useRef<HTMLDivElement>(null); // Thêm ref cho dropdown
+    const dropdownRef = useRef<HTMLDivElement>(null);
 
-    // Filter by role
+    // Check mobile
+    useEffect(() => {
+        const checkMobile = () => {
+            setIsMobile(window.innerWidth < 768);
+        };
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
+
     const filterByRole = useCallback(
         (list: INotification[]): INotification[] => {
             if (user?.role === 'admin') return list;
@@ -274,7 +501,6 @@ export default function NotificationBell() {
         [user?.role]
     );
 
-    // Fetch notifications
     const fetchNotifications = useCallback(
         async (pageNum: number = 1) => {
             if (!token || !user?._id || isFetchingRef.current) return;
@@ -307,22 +533,22 @@ export default function NotificationBell() {
         [token, user?._id, filterByRole]
     );
 
-    // Click outside to close
+    // Click outside to close (desktop only)
     useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-                setOpen(false);
+        if (!isMobile) {
+            const handleClickOutside = (event: MouseEvent) => {
+                if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                    setOpen(false);
+                }
+            };
+            if (open) {
+                document.addEventListener('mousedown', handleClickOutside);
             }
-        };
-
-        if (open) {
-            document.addEventListener('mousedown', handleClickOutside);
+            return () => {
+                document.removeEventListener('mousedown', handleClickOutside);
+            };
         }
-
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-        };
-    }, [open]);
+    }, [open, isMobile]);
 
     // Initial fetch
     useEffect(() => {
@@ -330,13 +556,6 @@ export default function NotificationBell() {
             fetchNotifications(1);
         }
     }, [token, user?._id]);
-
-    // Fetch when open
-    useEffect(() => {
-        if (open && token && user?._id && unreadCount > 0) {
-            fetchNotifications(1);
-        }
-    }, [open]);
 
     // Socket
     useEffect(() => {
@@ -354,7 +573,6 @@ export default function NotificationBell() {
         };
 
         socket.on('new_notification', handler);
-
         return () => {
             socket.off('new_notification', handler);
         };
@@ -391,91 +609,134 @@ export default function NotificationBell() {
         }
     };
 
+    const handleButtonClick = () => {
+        if (isMobile) {
+            setIsMobileSheetOpen(true);
+        } else {
+            setOpen(!open);
+        }
+    };
+
     if (!token || !user?._id) return null;
 
     return (
-        <div className="relative inline-block" ref={dropdownRef}>
-            <button
-                type="button"
-                onClick={() => setOpen(!open)}
-                className="relative p-1.5 sm:p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                aria-label="Thông báo"
-            >
-                <Bell className="w-4 h-4 sm:w-5 sm:h-5 text-[var(--cn-text-sub)]" />
-                {unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 min-w-[16px] h-[16px] sm:min-w-[18px] sm:h-[18px] bg-red-500 text-white text-[9px] sm:text-[10px] font-bold rounded-full flex items-center justify-center px-[3px] sm:px-1 whitespace-nowrap">
-                        {unreadCount > 99 ? '99+' : unreadCount}
-                    </span>
-                )}
-            </button>
-
-            {open && (
-                <div className="absolute right-0 mt-2 
-                    w-80 max-w-[calc(100vw-32px)] sm:w-[380px] lg:w-[420px]
-                    bg-[var(--cn-bg-card)] border border-[var(--cn-border)] rounded-[var(--cn-radius-md)] shadow-[var(--cn-shadow-lg)] z-20 overflow-hidden animate-slideDown">
-
-                    <div className="sticky top-0 z-10 flex items-center justify-between p-3 sm:p-4 border-b border-[var(--cn-border)] bg-[var(--cn-bg-card)]">
-                        <h3 className="text-sm sm:text-base font-semibold text-[var(--cn-text-main)]">
-                            Thông báo
-                            {unreadCount > 0 && (
-                                <span className="ml-2 text-xs text-[var(--cn-text-muted)]">
-                                    ({unreadCount})
-                                </span>
-                            )}
-                        </h3>
+        <>
+            {/* Desktop Dropdown */}
+            {!isMobile && (
+                <div className="relative inline-block" ref={dropdownRef}>
+                    <button
+                        type="button"
+                        onClick={handleButtonClick}
+                        className="relative p-1.5 sm:p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                        aria-label="Thông báo"
+                    >
+                        <Bell className="w-4 h-4 sm:w-5 sm:h-5 text-[var(--cn-text-sub)]" />
                         {unreadCount > 0 && (
-                            <button
-                                onClick={markAllAsRead}
-                                className="flex items-center gap-1 text-xs text-[var(--cn-primary)] hover:text-[var(--cn-primary-hover)] transition-colors"
-                            >
-                                <CheckCheck className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                                <span className="hidden sm:inline">Đọc tất cả</span>
-                                <span className="sm:hidden">Đọc hết</span>
-                            </button>
+                            <span className="absolute -top-1 -right-1 min-w-[16px] h-[16px] sm:min-w-[18px] sm:h-[18px] bg-red-500 text-white text-[9px] sm:text-[10px] font-bold rounded-full flex items-center justify-center px-[3px] sm:px-1 whitespace-nowrap">
+                                {unreadCount > 99 ? '99+' : unreadCount}
+                            </span>
                         )}
-                    </div>
+                    </button>
 
-                    <div className="max-h-[400px] overflow-y-auto">
-                        {isLoading && notifications.length === 0 ? (
-                            <div className="flex items-center justify-center py-8">
-                                <Loader2 className="w-5 h-5 sm:w-6 sm:h-6 text-[var(--cn-primary)] animate-spin" />
+                    {open && (
+                        <div className="absolute right-0 mt-2 
+                            w-80 max-w-[calc(100vw-32px)] sm:w-[380px] lg:w-[420px]
+                            bg-[var(--cn-bg-card)] border border-[var(--cn-border)] rounded-[var(--cn-radius-md)] shadow-[var(--cn-shadow-lg)] z-20 overflow-hidden animate-slideDown">
+                            <div className="sticky top-0 z-10 flex items-center justify-between p-3 sm:p-4 border-b border-[var(--cn-border)] bg-[var(--cn-bg-card)]">
+                                <h3 className="text-sm sm:text-base font-semibold text-[var(--cn-text-main)]">
+                                    Thông báo
+                                    {unreadCount > 0 && (
+                                        <span className="ml-2 text-xs text-[var(--cn-text-muted)]">
+                                            ({unreadCount})
+                                        </span>
+                                    )}
+                                </h3>
+                                {unreadCount > 0 && (
+                                    <button
+                                        onClick={markAllAsRead}
+                                        className="flex items-center gap-1 text-xs text-[var(--cn-primary)] hover:text-[var(--cn-primary-hover)] transition-colors"
+                                    >
+                                        <CheckCheck className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                                        <span className="hidden sm:inline">Đọc tất cả</span>
+                                        <span className="sm:hidden">Đọc hết</span>
+                                    </button>
+                                )}
                             </div>
-                        ) : notifications.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center py-8 text-[var(--cn-text-muted)]">
-                                <Bell className="w-10 h-10 sm:w-12 sm:h-12 mb-2 opacity-50" />
-                                <p className="text-xs sm:text-sm">Chưa có thông báo nào</p>
-                            </div>
-                        ) : (
-                            <div className="divide-y divide-[var(--cn-border)]">
-                                {notifications.map(notification => (
-                                    <NotificationItem
-                                        key={notification._id}
-                                        notification={notification}
-                                        onMarkAsRead={markAsRead}
-                                        onClose={() => setOpen(false)}
-                                    />
-                                ))}
-                            </div>
-                        )}
 
-                        {totalPages > 1 && page < totalPages && (
-                            <div className="p-2 sm:p-3 text-center border-t border-[var(--cn-border)]">
-                                <CustomButton
-                                    variant="outline-primary"
-                                    size="small"
-                                    onClick={loadMore}
-                                    disabled={isLoading}
-                                    loading={isLoading}
-                                    fullWidth
-                                    className="text-xs sm:text-sm"
-                                >
-                                    {isLoading ? 'Đang tải...' : 'Xem thêm'}
-                                </CustomButton>
+                            <div className="max-h-[400px] overflow-y-auto">
+                                {isLoading && notifications.length === 0 ? (
+                                    <div className="flex items-center justify-center py-8">
+                                        <Loader2 className="w-5 h-5 sm:w-6 sm:h-6 text-[var(--cn-primary)] animate-spin" />
+                                    </div>
+                                ) : notifications.length === 0 ? (
+                                    <div className="flex flex-col items-center justify-center py-8 text-[var(--cn-text-muted)]">
+                                        <Bell className="w-10 h-10 sm:w-12 sm:h-12 mb-2 opacity-50" />
+                                        <p className="text-xs sm:text-sm">Chưa có thông báo nào</p>
+                                    </div>
+                                ) : (
+                                    <div className="divide-y divide-[var(--cn-border)]">
+                                        {notifications.map(notification => (
+                                            <NotificationItem
+                                                key={notification._id}
+                                                notification={notification}
+                                                onMarkAsRead={markAsRead}
+                                                onClose={() => setOpen(false)}
+                                            />
+                                        ))}
+                                    </div>
+                                )}
+
+                                {totalPages > 1 && page < totalPages && (
+                                    <div className="p-2 sm:p-3 text-center border-t border-[var(--cn-border)]">
+                                        <CustomButton
+                                            variant="outline-primary"
+                                            size="small"
+                                            onClick={loadMore}
+                                            disabled={isLoading}
+                                            loading={isLoading}
+                                            fullWidth
+                                            className="text-xs sm:text-sm"
+                                        >
+                                            {isLoading ? 'Đang tải...' : 'Xem thêm'}
+                                        </CustomButton>
+                                    </div>
+                                )}
                             </div>
-                        )}
-                    </div>
+                        </div>
+                    )}
                 </div>
             )}
-        </div>
+
+            {/* Mobile Notification Button */}
+            {isMobile && (
+                <button
+                    type="button"
+                    onClick={handleButtonClick}
+                    className="relative p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                    aria-label="Thông báo"
+                >
+                    <Bell className="w-5 h-5 text-[var(--cn-text-sub)]" />
+                    {unreadCount > 0 && (
+                        <span className="absolute -top-1 -right-1 min-w-[16px] h-[16px] bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-1">
+                            {unreadCount > 99 ? '99+' : unreadCount}
+                        </span>
+                    )}
+                </button>
+            )}
+
+            {/* Mobile Notification Sheet */}
+            <MobileNotificationSheet
+                open={isMobileSheetOpen}
+                onClose={() => setIsMobileSheetOpen(false)}
+                notifications={notifications}
+                unreadCount={unreadCount}
+                isLoading={isLoading}
+                page={page}
+                totalPages={totalPages}
+                onMarkAsRead={markAsRead}
+                onMarkAllAsRead={markAllAsRead}
+                onLoadMore={loadMore}
+            />
+        </>
     );
 }
