@@ -56,52 +56,54 @@ function buildSections(
     user: { fullname: string; role: string },
     iconSize: { width: number; height: number }
 ): SheetSection[] {
+    const iconProps = { size: iconSize.width, variant: "Bold" as const };
+
     return [
         {
             label: "Tài khoản",
             items: [
-                { icon: <User variant="Bold" style={iconSize} />, title: "Trang cá nhân", subtitle: "Xem hồ sơ của bạn", href: `/profile/${user.fullname}` },
-                ...(user.role === "admin" ? [{ icon: <Settings variant="Bold" style={iconSize} />, title: "Trang quản trị", subtitle: "Quản lý hệ thống", href: "/admin/dashboard" }] : []),
-                ...(user.role === "teacher" ? [{ icon: <Settings variant="Bold" style={iconSize} />, title: "Trang quản lý", subtitle: "Quản lý lớp học", href: "/teacher/dashboard" }] : []),
-                { icon: <Clock variant="Bold" style={iconSize} />, title: "Lịch sử giao dịch", subtitle: "Xem các giao dịch của bạn", href: "/me/transactions" },
-                { icon: <Coin1 variant="Bold" style={iconSize} />, title: "Ưu đãi của tôi", subtitle: "Voucher & ưu đãi", href: "/me/voucher" },
+                { icon: <User {...iconProps} />, title: "Trang cá nhân", subtitle: "Xem hồ sơ của bạn", href: `/profile/${user.fullname}` },
+                ...(user.role === "admin" ? [{ icon: <Settings {...iconProps} />, title: "Trang quản trị", subtitle: "Quản lý hệ thống", href: "/admin/dashboard" }] : []),
+                ...(user.role === "teacher" ? [{ icon: <Settings {...iconProps} />, title: "Trang quản lý", subtitle: "Quản lý lớp học", href: "/teacher/dashboard" }] : []),
+                { icon: <Clock {...iconProps} />, title: "Lịch sử giao dịch", subtitle: "Xem các giao dịch của bạn", href: "/me/transactions" },
+                { icon: <Coin1 {...iconProps} />, title: "Ưu đãi của tôi", subtitle: "Voucher & ưu đãi", href: "/me/voucher" },
             ],
         },
         {
             label: "Cộng đồng",
             items: [
-                { icon: <Heart variant="Bold" style={iconSize} />, title: "Hành trình yêu thương", subtitle: "Câu chuyện của bạn", href: "/hanhtrinhyethuong" },
-                { icon: <NhaHang variant="Bold" style={iconSize} />, title: "Tiếp thị liên kết", subtitle: "Nhận xu từ giới thiệu", href: "/affiliate" },
-                { icon: <ArchiveBox variant="Bold" style={iconSize} />, title: "Góp ý", subtitle: "Chia sẻ ý kiến của bạn", href: "/gopy" },
-                { icon: <BoxSearch variant="Bold" style={iconSize} />, title: "Hỏi đáp (FAQ)", subtitle: "Câu hỏi thường gặp", href: "/faq" },
-                { icon: <MessageProgramming variant="Bold" style={iconSize} />, title: "Hỗ trợ dự án", subtitle: "Cùng nhau thực hiện ý tưởng", href: "/hotroduan" },
-                { icon: <Global variant="Bold" style={iconSize} />, title: "Truyền thông chéo", subtitle: "Kết nối & chia sẻ", href: "/truyenthongcheo" },
+                { icon: <Heart {...iconProps} />, title: "Hành trình yêu thương", subtitle: "Câu chuyện của bạn", href: "/hanhtrinhyethuong" },
+                { icon: <NhaHang {...iconProps} />, title: "Tiếp thị liên kết", subtitle: "Nhận xu từ giới thiệu", href: "/affiliate" },
+                { icon: <ArchiveBox {...iconProps} />, title: "Góp ý", subtitle: "Chia sẻ ý kiến của bạn", href: "/gopy" },
+                { icon: <BoxSearch {...iconProps} />, title: "Hỏi đáp (FAQ)", subtitle: "Câu hỏi thường gặp", href: "/faq" },
+                { icon: <MessageProgramming {...iconProps} />, title: "Hỗ trợ dự án", subtitle: "Cùng nhau thực hiện ý tưởng", href: "/hotroduan" },
+                { icon: <Global {...iconProps} />, title: "Truyền thông chéo", subtitle: "Kết nối & chia sẻ", href: "/truyenthongcheo" },
             ],
         },
         {
             label: "Tiện ích",
             items: [
-                { icon: <Link1 variant="Bold" style={iconSize} />, title: "Rút gọn liên kết", subtitle: "Sở hữu link ngắn", href: "/rutgonlink" },
-                { icon: <Message variant="Bold" style={iconSize} />, title: "Gia sư AI", subtitle: "Học cùng trí tuệ nhân tạo", href: "/giasu-ai" },
-                { icon: <DeviceMessage variant="Bold" style={iconSize} />, title: "Chat với Admin", subtitle: "Liên hệ hỗ trợ", href: "/chat-admin" },
-                { icon: <Briefcase variant="Bold" style={iconSize} />, title: "CNjobs", subtitle: "Cơ hội việc làm", href: "/cnjobs" },
-                { icon: <GlobalSearch variant="Bold" style={iconSize} />, title: "CNsocial", subtitle: "Mạng xã hội cộng đồng", href: "/cnsocial" },
+                { icon: <Link1 {...iconProps} />, title: "Rút gọn liên kết", subtitle: "Sở hữu link ngắn", href: "/rutgonlink" },
+                { icon: <Message {...iconProps} />, title: "Gia sư AI", subtitle: "Học cùng trí tuệ nhân tạo", href: "/giasu-ai" },
+                { icon: <DeviceMessage {...iconProps} />, title: "Chat với Admin", subtitle: "Liên hệ hỗ trợ", href: "/chat-admin" },
+                { icon: <Briefcase {...iconProps} />, title: "CNjobs", subtitle: "Cơ hội việc làm", href: "/cnjobs" },
+                { icon: <GlobalSearch {...iconProps} />, title: "CNsocial", subtitle: "Mạng xã hội cộng đồng", href: "/cnsocial" },
             ],
         },
         {
             label: "Học tập",
             items: [
-                { icon: <ArchiveBook variant="Bold" style={iconSize} />, title: "CNbooks", subtitle: "Thư viện sách số", href: "/cnbooks" },
-                { icon: <BookOpen variant="Bold" style={iconSize} />, title: "Khoá học của tôi", subtitle: "Tiếp tục học tập", href: "/me/khoahoc" },
-                { icon: <FileText variant="Bold" style={iconSize} />, title: "Bài viết của tôi", subtitle: "Quản lý nội dung", href: "/me/blog" },
-                { icon: <Home variant="Bold" style={iconSize} />, title: "Khu vườn học tập", subtitle: "Không gian của bạn", href: "/khuvuonhoctap" },
-                { icon: <NhaHang variant="Bold" style={iconSize} />, title: "Nhà hàng công nghệ", subtitle: "Khám phá công nghệ", href: "/nhahangcongnghe" },
+                { icon: <ArchiveBook {...iconProps} />, title: "CNbooks", subtitle: "Thư viện sách số", href: "/cnbooks" },
+                { icon: <BookOpen {...iconProps} />, title: "Khoá học của tôi", subtitle: "Tiếp tục học tập", href: "/me/khoahoc" },
+                { icon: <FileText {...iconProps} />, title: "Bài viết của tôi", subtitle: "Quản lý nội dung", href: "/me/blog" },
+                { icon: <Home {...iconProps} />, title: "Khu vườn học tập", subtitle: "Không gian của bạn", href: "/khuvuonhoctap" },
+                { icon: <NhaHang {...iconProps} />, title: "Nhà hàng công nghệ", subtitle: "Khám phá công nghệ", href: "/nhahangcongnghe" },
             ],
         },
         {
             label: "Cài đặt",
             items: [
-                { icon: <Settings variant="Bold" style={iconSize} />, title: "Cài đặt", subtitle: "Tuỳ chỉnh tài khoản", href: "/me/settings" },
+                { icon: <Settings {...iconProps} />, title: "Cài đặt", subtitle: "Tuỳ chỉnh tài khoản", href: "/me/settings" },
             ],
         },
     ];
@@ -248,16 +250,18 @@ interface MobileSheetProps {
     open: boolean;
 }
 
+// components/layouts/header.tsx - Sửa lại MobileUserSheet
+
 function MobileUserSheet({ user, onLogout, onClose, open }: MobileSheetProps) {
     const iconSize = { width: 20, height: 20 };
     const sections = buildSections(user, iconSize);
     const badgeClass = ROLE_BADGE[user.role] ?? "bg-gray-100 text-gray-500";
 
-    // Thêm state và ref cho swipe
     const [startY, setStartY] = useState(0);
     const [currentY, setCurrentY] = useState(0);
-    const sheetRef = useRef<HTMLDivElement>(null);
     const [isDragging, setIsDragging] = useState(false);
+    const sheetRef = useRef<HTMLDivElement>(null);
+    const contentRef = useRef<HTMLDivElement>(null);
 
     // Xử lý body scroll khi mở sheet
     useEffect(() => {
@@ -284,14 +288,16 @@ function MobileUserSheet({ user, onLogout, onClose, open }: MobileSheetProps) {
         };
     }, [open]);
 
-    // Xử lý swipe để đóng sheet
+    // Xử lý swipe đóng sheet - chỉ khi scrollbar ở top
     useEffect(() => {
         if (!open) return;
 
         const handleTouchStart = (e: TouchEvent) => {
             const target = e.target as HTMLElement;
-            // Chỉ bắt đầu kéo nếu không phải đang kéo scroll trong nội dung
-            if (sheetRef.current?.contains(target) && sheetRef.current.scrollTop === 0) {
+            // Kiểm tra nếu scrollbar đang ở top (scrollTop === 0)
+            const isAtTop = contentRef.current?.scrollTop === 0;
+
+            if (sheetRef.current?.contains(target) && isAtTop) {
                 setStartY(e.touches[0].clientY);
                 setIsDragging(true);
             }
@@ -308,7 +314,7 @@ function MobileUserSheet({ user, onLogout, onClose, open }: MobileSheetProps) {
             }
         };
 
-        const handleTouchEnd = (e: TouchEvent) => {
+        const handleTouchEnd = () => {
             if (!isDragging) return;
             setIsDragging(false);
 
@@ -316,7 +322,6 @@ function MobileUserSheet({ user, onLogout, onClose, open }: MobileSheetProps) {
             if (sheetRef.current) {
                 sheetRef.current.style.transition = 'transform 0.3s ease-out';
                 if (deltaY > 100) {
-                    // Kéo xuống quá 100px thì đóng sheet
                     sheetRef.current.style.transform = 'translateY(100%)';
                     setTimeout(() => {
                         onClose();
@@ -326,7 +331,6 @@ function MobileUserSheet({ user, onLogout, onClose, open }: MobileSheetProps) {
                         }
                     }, 300);
                 } else {
-                    // Kéo ít thì trả về vị trí cũ
                     sheetRef.current.style.transform = 'translateY(0)';
                     setTimeout(() => {
                         if (sheetRef.current) {
@@ -367,12 +371,12 @@ function MobileUserSheet({ user, onLogout, onClose, open }: MobileSheetProps) {
                     maxHeight: "85dvh",
                 }}
             >
-                {/* Thanh kéo - drag indicator */}
+                {/* Thanh kéo - chỉ hiển thị khi scroll ở top */}
                 <div
-                    className="flex justify-center pt-3 pb-1 flex-shrink-0 cursor-grab active:cursor-grabbing"
+                    className="flex justify-center pt-3 pb-1 flex-shrink-0"
                     onTouchStart={(e) => {
-                        const target = e.target as HTMLElement;
-                        if (sheetRef.current?.scrollTop === 0) {
+                        // Chỉ cho phép kéo đóng khi scroll ở top
+                        if (contentRef.current?.scrollTop === 0) {
                             const touch = e.touches[0];
                             setStartY(touch.clientY);
                             setIsDragging(true);
@@ -388,7 +392,7 @@ function MobileUserSheet({ user, onLogout, onClose, open }: MobileSheetProps) {
                             sheetRef.current.style.transition = 'none';
                         }
                     }}
-                    onTouchEnd={(e) => {
+                    onTouchEnd={() => {
                         if (!isDragging) return;
                         setIsDragging(false);
                         const deltaY = currentY;
@@ -442,7 +446,11 @@ function MobileUserSheet({ user, onLogout, onClose, open }: MobileSheetProps) {
 
                 <div className="w-full h-px bg-[var(--cn-border)] flex-shrink-0" />
 
-                <div className="flex-1 overflow-y-auto no-scrollbar pb-6">
+                <div
+                    ref={contentRef}
+                    className="flex-1 overflow-y-auto no-scrollbar pb-6"
+                    style={{ WebkitOverflowScrolling: 'touch' }}
+                >
                     {sections.map((section) => (
                         <div key={section.label} className="px-4 pt-4">
                             <p className="text-[11px] font-semibold text-[var(--cn-text-muted)] uppercase tracking-wider mb-2 px-1">
@@ -469,7 +477,7 @@ function MobileUserSheet({ user, onLogout, onClose, open }: MobileSheetProps) {
                             </div>
                         </div>
                     ))}
-                    <div className="px-4 pt-4">
+                    <div className="px-4 pt-4 pb-8">
                         <button
                             onClick={() => {
                                 onClose();
