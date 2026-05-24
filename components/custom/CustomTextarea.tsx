@@ -13,6 +13,7 @@ interface CustomTextareaProps {
     maxLength?: number;
     required?: boolean;
     disabled?: boolean;
+    className?: string;  // ✅ Thêm dòng này
 }
 
 export const CustomTextarea: React.FC<CustomTextareaProps> = ({
@@ -25,6 +26,7 @@ export const CustomTextarea: React.FC<CustomTextareaProps> = ({
     maxLength,
     required = false,
     disabled = false,
+    className = '',  // ✅ Thêm dòng này
 }) => {
     const [charCount, setCharCount] = useState(value.length);
 
@@ -36,7 +38,7 @@ export const CustomTextarea: React.FC<CustomTextareaProps> = ({
     };
 
     const labelClasses = 'block font-medium text-[var(--cn-text-sub)] mb-1 sm:mb-1.5 text-[11px] lg:text-[13px]';
-    const textareaClasses = `w-full px-3 sm:px-4 py-2 bg-[var(--cn-bg-card)] border rounded-[var(--cn-radius-sm)] transition-all duration-200 outline-none focus:ring-2 resize-none disabled:opacity-50 disabled:cursor-not-allowed text-[12px] lg:text-[14px] ${error
+    const textareaClasses = `w-full px-3 sm:px-4 py-2 bg-[var(--cn-bg-card)] border rounded-[var(--cn-radius-sm)] transition-all duration-200 outline-none focus:ring-2 resize-none disabled:opacity-50 disabled:cursor-not-allowed text-[12px] lg:text-[14px] ${className} ${error
         ? 'border-[var(--cn-error)] focus:border-[var(--cn-error)] focus:ring-[var(--cn-error)]/20'
         : 'border-[var(--cn-border)] focus:border-[var(--cn-primary)] focus:ring-[var(--cn-primary)]/20'
         }`;
