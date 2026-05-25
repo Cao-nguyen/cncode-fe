@@ -101,6 +101,11 @@ const menuItems = [
         categoryId: "settings",
         listLink: [
             {
+                title: "Trung tâm trợ giúp",
+                link: "/admin/helpcenter",
+                icon: <Message size={18} variant="Outline" />,
+            },
+            {
                 title: "Cài đặt chung",
                 link: "/admin/allsettings",
                 icon: <Settings size={18} />,
