@@ -1,19 +1,11 @@
 'use client';
 
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { User, UserCheck, TrendingUp, Eye, Shield, X, Monitor, Smartphone, Laptop, Activity } from "lucide-react";
 import { useSocket } from "@/providers/socket.provider";
 import { useAuthStore } from "@/store/auth.store";
 import { statisticApi } from "@/lib/api/statistic.api";
 import Image from "next/image";
-
-interface OnlineUser {
-    userId: string;
-    fullName: string;
-    avatar?: string;
-    role?: string;
-    device?: string;
-}
 
 interface OnlineStatsData {
     users: number;
@@ -35,12 +27,13 @@ export default function Analytics() {
     useEffect(() => {
         const loadStats = async () => {
             try {
-                const [publicRes, onlineRes] = await Promise.all([
-                    fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/public/stats`).then(r => r.json()),
-                    fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/online-stats`).then(r => r.json())
+                const [publicData, onlineData] = await Promise.all([
+                    statisticApi.getPublicStats(),
+                    statisticApi.getOnlineStats()
                 ]);
-                if (publicRes.success) setStats(publicRes.data);
-                if (onlineRes.success) setOnlineStats(onlineRes.data);
+
+                if (publicData.success) setStats(publicData.data);
+                if (onlineData.success) setOnlineStats(onlineData.data);
             } catch (error) {
                 console.error('Error loading stats:', error);
             } finally {
@@ -70,8 +63,8 @@ export default function Analytics() {
     const getDeviceIcon = (device?: string) => {
         if (!device) return <Laptop size={12} />;
         const d = device.toLowerCase();
-        if (d.includes('android') || d.includes('ios')) return <Smartphone size={12} />;
-        if (d.includes('windows') || d.includes('mac')) return <Monitor size={12} />;
+        if (d.includes('mobile') || d.includes('android') || d.includes('ios') || d.includes('iphone') || d.includes('ipad')) return <Smartphone size={12} />;
+        if (d.includes('desktop') || d.includes('windows') || d.includes('mac') || d.includes('linux')) return <Monitor size={12} />;
         return <Laptop size={12} />;
     };
 
@@ -233,8 +226,6 @@ export default function Analytics() {
                                                 <div className="flex items-center gap-1.5 mt-1 text-gray-400">
                                                     {getDeviceIcon(userItem.device)}
                                                     <span className="text-[11px]">{userItem.device || 'Unknown'}</span>
-                                                    <span className="w-1 h-1 rounded-full bg-green-500" />
-                                                    <span className="text-[10px] text-green-600">Online</span>
                                                 </div>
                                             </div>
                                         </div>
