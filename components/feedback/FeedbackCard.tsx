@@ -1,8 +1,7 @@
-// components/feedback/FeedbackCard.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Heart, Trash2, Edit2, Loader2 } from 'lucide-react';
+import { Heart, Trash2, Edit2, Loader2, Tag, Calendar } from 'lucide-react';
 import { IFeedback } from '@/lib/api/feedback.api';
 import { useAuthStore } from '@/store/auth.store';
 import { formatDistanceToNow } from 'date-fns';
@@ -13,9 +12,18 @@ import { CustomSelect } from '@/components/custom/CustomSelect';
 import { toast } from 'sonner';
 import { feedbackApi } from '@/lib/api/feedback.api';
 import Image from 'next/image';
-import { DeleteConfirmModal } from '@/components/custom/DeleteConfirmModal'; // ✅ Import đúng
+import { DeleteConfirmModal } from '@/components/custom/DeleteConfirmModal';
 
 type FeedbackCategory = 'bug' | 'ui_ux' | 'feature_request' | 'performance' | 'security' | 'other';
+
+interface IReactResponse {
+    success: boolean;
+    data?: {
+        reactCount: number;
+        likedBy: string[];
+    };
+    message?: string;
+}
 
 interface FeedbackCardProps {
     feedback: IFeedback;
@@ -60,13 +68,15 @@ export default function FeedbackCard({
     showActions = true
 }: FeedbackCardProps) {
     const { user, token } = useAuthStore();
+
+    // States
     const [isEditing, setIsEditing] = useState(false);
     const [isLiking, setIsLiking] = useState(false);
+    const [hasLiked, setHasLiked] = useState(feedback.likedBy?.includes(user?._id || '') || false);
     const [localReactCount, setLocalReactCount] = useState(feedback.reactCount || 0);
-    const [hasLiked, setHasLiked] = useState(() => {
-        if (!user?._id || !feedback.likedBy) return false;
-        return feedback.likedBy.includes(user._id);
-    });
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+
     const [editForm, setEditForm] = useState<{
         title: string;
         content: string;
@@ -76,15 +86,12 @@ export default function FeedbackCard({
         content: feedback.content,
         category: feedback.category as FeedbackCategory
     });
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [showDeleteModal, setShowDeleteModal] = useState(false);
 
+    // ✅ Đồng bộ state khi ID feedback hoặc ID user thay đổi (Tránh bị ghi đè khi Parent re-render)
     useEffect(() => {
         setLocalReactCount(feedback.reactCount || 0);
-        if (user?._id && feedback.likedBy) {
-            setHasLiked(feedback.likedBy.includes(user._id));
-        }
-    }, [feedback.reactCount, feedback.likedBy, user?._id]);
+        setHasLiked(feedback.likedBy?.includes(user?._id || '') || false);
+    }, [feedback._id, user?._id]);
 
     const isOwner = user?._id === feedback.userId?._id;
     const categoryConfig = CATEGORY_CONFIG[feedback.category] || CATEGORY_CONFIG.other;
@@ -95,30 +102,30 @@ export default function FeedbackCard({
             toast.error('Vui lòng đăng nhập để ủng hộ');
             return;
         }
-        if (isLiking) return;
-        if (hasLiked) {
-            toast.info('Bạn đã ủng hộ góp ý này rồi');
-            return;
-        }
+        if (isLiking || hasLiked) return;
 
+        // ⚡️ Optimistic Update: Chạy ngay lập tức
         setIsLiking(true);
         setHasLiked(true);
         setLocalReactCount(prev => prev + 1);
 
         try {
-            const result = await feedbackApi.reactFeedback(token, feedback._id);
+            const result = (await feedbackApi.reactFeedback(token, feedback._id)) as IReactResponse;
+
             if (result.success && result.data) {
                 setLocalReactCount(result.data.reactCount);
                 onLikeSuccess?.(feedback._id, result.data.reactCount, result.data.likedBy);
             } else {
-                setHasLiked(false);
-                setLocalReactCount(prev => prev - 1);
-                toast.error(result.message || 'Có lỗi xảy ra');
+                throw new Error(result.message || 'Thao tác thất bại');
             }
-        } catch (error) {
+        } catch (error: unknown) {
+            // Rollback UI
             setHasLiked(false);
             setLocalReactCount(prev => prev - 1);
-            toast.error('Không thể ủng hộ lúc này');
+
+            let errorMessage = 'Không thể ủng hộ lúc này';
+            if (error instanceof Error) errorMessage = error.message;
+            toast.error(errorMessage);
         } finally {
             setIsLiking(false);
         }
@@ -139,9 +146,12 @@ export default function FeedbackCard({
             return;
         }
         setIsSubmitting(true);
-        await onEdit?.(feedback._id, editForm.title, editForm.content, editForm.category);
-        setIsSubmitting(false);
-        setIsEditing(false);
+        try {
+            await onEdit?.(feedback._id, editForm.title, editForm.content, editForm.category);
+            setIsEditing(false);
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     const getUserInitial = () => {
@@ -197,7 +207,7 @@ export default function FeedbackCard({
                             disabled={isSubmitting}
                             className="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition disabled:opacity-50 flex items-center justify-center gap-2"
                         >
-                            {isSubmitting ? 'Đang lưu...' : 'Lưu thay đổi'}
+                            {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : 'Lưu thay đổi'}
                         </button>
                     </div>
                 </div>
@@ -207,8 +217,10 @@ export default function FeedbackCard({
 
     return (
         <>
-            <div className="bg-white rounded-xl border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all duration-300 overflow-hidden">
+            <div className={`bg-white rounded-xl border transition-all duration-300 overflow-hidden ${hasLiked ? 'border-red-200 shadow-sm' : 'border-gray-200 hover:border-blue-300 hover:shadow-md'
+                }`}>
                 <div className="p-5">
+                    {/* Header: User Info & Badges */}
                     <div className="flex items-start justify-between gap-3 mb-3">
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center overflow-hidden flex-shrink-0">
@@ -228,69 +240,80 @@ export default function FeedbackCard({
                             </div>
                             <div>
                                 <p className="font-semibold text-gray-800">{getUserName()}</p>
-                                <p className="text-xs text-gray-400">{formatTime(feedback.createdAt)}</p>
+                                <div className="flex items-center gap-1.5 text-xs text-gray-400">
+                                    <Calendar size={12} />
+                                    <span>{formatTime(feedback.createdAt)}</span>
+                                </div>
                             </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                            <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${categoryConfig.bg} ${categoryConfig.color}`}>
+                        <div className="flex flex-col items-end gap-1.5">
+                            <span className={`px-2.5 py-1 rounded-full text-[10px] uppercase font-bold tracking-wider ${categoryConfig.bg} ${categoryConfig.color}`}>
                                 {categoryConfig.label}
                             </span>
-                            <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${statusConfig.bg} ${statusConfig.color}`}>
+                            <span className={`px-2.5 py-1 rounded-full text-[10px] uppercase font-bold tracking-wider ${statusConfig.bg} ${statusConfig.color}`}>
                                 {statusConfig.label}
                             </span>
                         </div>
                     </div>
 
+                    {/* Content: Title & Text */}
                     <div className="mb-4">
-                        <h3 className="text-lg font-semibold text-gray-800 mb-2">{feedback.title}</h3>
-                        <p className="text-gray-600 leading-relaxed whitespace-pre-wrap">{feedback.content}</p>
+                        <h3 className="text-lg font-bold text-gray-800 mb-2">{feedback.title}</h3>
+                        <p className="text-gray-600 leading-relaxed whitespace-pre-wrap text-sm">{feedback.content}</p>
                     </div>
 
+                    {/* Admin Response Section */}
                     {feedback.adminResponse && (
-                        <div className="mb-4 p-3 rounded-lg bg-blue-50 border-l-4 border-blue-500">
-                            <p className="text-xs font-medium text-blue-600 uppercase mb-1">Phản hồi từ admin</p>
-                            <p className="text-sm text-gray-700">{feedback.adminResponse}</p>
+                        <div className="mb-4 p-4 rounded-xl bg-blue-50/50 border border-blue-100 border-l-4 border-l-blue-500">
+                            <div className="flex items-center gap-2 mb-1.5">
+                                <Tag size={12} className="text-blue-500" />
+                                <p className="text-[10px] font-bold text-blue-600 uppercase tracking-widest">Phản hồi từ admin</p>
+                            </div>
+                            <p className="text-sm text-gray-700 leading-relaxed">{feedback.adminResponse}</p>
                         </div>
                     )}
 
+                    {/* Footer: Like & Owner Actions */}
                     <div className="flex items-center justify-between pt-3 border-t border-gray-100">
                         <button
-                            onClick={handleLike}
-                            disabled={isLiking || hasLiked}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all duration-200 disabled:opacity-50 ${hasLiked
-                                ? 'text-red-500 bg-red-50'
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                handleLike();
+                            }}
+                            disabled={isLiking}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all duration-300 active:scale-95 disabled:opacity-50 ${hasLiked
+                                ? 'text-red-500 bg-red-50 font-bold'
                                 : 'text-gray-500 hover:text-red-500 hover:bg-red-50'
                                 }`}
                         >
                             {isLiking ? (
                                 <Loader2 size={16} className="animate-spin" />
                             ) : (
-                                <div>
-                                    {hasLiked ? (
-                                        <Heart size={16} fill="#ef4444" stroke="#ef4444" data-filled="true" />
-                                    ) : (
-                                        <Heart size={16} fill="none" stroke="currentColor" data-filled="false" />
-                                    )}
-                                </div>
+                                <Heart
+                                    size={16}
+                                    data-filled={hasLiked ? "true" : "false"}
+                                    fill={hasLiked ? "currentColor" : "none"}
+                                    className="transition-all duration-300"
+                                />
                             )}
-                            <span className="text-sm font-medium">{localReactCount}</span>
+                            <span className="text-sm font-bold">{localReactCount}</span>
                         </button>
 
                         {showActions && isOwner && (
                             <div className="flex items-center gap-1">
                                 <button
                                     onClick={() => setIsEditing(true)}
-                                    className="p-1.5 rounded-lg text-gray-400 hover:text-blue-500 hover:bg-blue-50 transition"
+                                    className="p-2 rounded-lg text-gray-400 hover:text-blue-500 hover:bg-blue-50 transition"
                                     title="Chỉnh sửa"
                                 >
-                                    <Edit2 size={14} />
+                                    <Edit2 size={16} />
                                 </button>
                                 <button
                                     onClick={() => setShowDeleteModal(true)}
-                                    className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition"
+                                    className="p-2 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition"
                                     title="Xóa"
                                 >
-                                    <Trash2 size={14} />
+                                    <Trash2 size={16} />
                                 </button>
                             </div>
                         )}
@@ -298,7 +321,7 @@ export default function FeedbackCard({
                 </div>
             </div>
 
-            {/* Delete Confirm Modal */}
+            {/* Modal Xác nhận xóa */}
             <DeleteConfirmModal
                 isOpen={showDeleteModal}
                 onClose={() => setShowDeleteModal(false)}
