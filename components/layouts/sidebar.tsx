@@ -16,6 +16,7 @@ import {
     X,
     EllipsisVertical,
     Settings,
+    Mail,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -98,6 +99,11 @@ const menuItems = [
                 title: "Rút gọn liên kết",
                 link: "/admin/rutgonlink",
                 icon: <Link2 size={18} variant="Outline" />,
+            },
+            {
+                title: "Gửi Email",
+                link: "/admin/sendmail",
+                icon: <Mail size={18} />,
             },
         ],
     },
