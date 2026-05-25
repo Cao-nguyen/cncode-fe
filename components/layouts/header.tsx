@@ -53,25 +53,25 @@ interface SheetItem { icon: React.ReactNode; title: string; subtitle: string; hr
 interface SheetSection { label: string; items: SheetItem[]; }
 
 function buildSections(
-    user: { fullname: string; role: string },
+    user: { username: string; role: string },
     iconSize: { width: number; height: number }
 ): SheetSection[] {
     return [
         {
             label: "Tài khoản",
             items: [
-                { icon: <User variant="Bold" style={iconSize} />, title: "Trang cá nhân", subtitle: "Xem hồ sơ của bạn", href: `/profile/${user.fullname}` },
+                { icon: <User variant="Bold" style={iconSize} />, title: "Trang cá nhân", subtitle: "Xem hồ sơ của bạn", href: `/p/${user.username}` },
                 ...(user.role === "admin" ? [{ icon: <Settings variant="Bold" style={iconSize} />, title: "Trang quản trị", subtitle: "Quản lý hệ thống", href: "/admin/dashboard" }] : []),
                 ...(user.role === "teacher" ? [{ icon: <Settings variant="Bold" style={iconSize} />, title: "Trang quản lý", subtitle: "Quản lý lớp học", href: "/teacher/dashboard" }] : []),
-                { icon: <Clock variant="Bold" style={iconSize} />, title: "Lịch sử giao dịch", subtitle: "Xem các giao dịch của bạn", href: "/me/transactions" },
+                { icon: <Clock variant="Bold" style={iconSize} />, title: "Lịch sử giao dịch", subtitle: "Xem các giao dịch của bạn", href: "/me/lichsugiaodich" },
                 { icon: <Coin1 variant="Bold" style={iconSize} />, title: "Ưu đãi của tôi", subtitle: "Voucher & ưu đãi", href: "/me/voucher" },
             ],
         },
         {
             label: "Cộng đồng",
             items: [
-                { icon: <Heart variant="Bold" style={iconSize} />, title: "Hành trình yêu thương", subtitle: "Câu chuyện của bạn", href: "/hanhtrinhyethuong" },
-                { icon: <NhaHang variant="Bold" style={iconSize} />, title: "Tiếp thị liên kết", subtitle: "Nhận xu từ giới thiệu", href: "/affiliate" },
+                { icon: <Heart variant="Bold" style={iconSize} />, title: "Hành trình yêu thương", subtitle: "Câu chuyện của bạn", href: "/hanhtrinhyeuthuong" },
+                { icon: <NhaHang variant="Bold" style={iconSize} />, title: "Tiếp thị liên kết", subtitle: "Nhận xu từ giới thiệu", href: "/me/affiliate" },
                 { icon: <ArchiveBox variant="Bold" style={iconSize} />, title: "Góp ý", subtitle: "Chia sẻ ý kiến của bạn", href: "/gopy" },
                 { icon: <BoxSearch variant="Bold" style={iconSize} />, title: "Hỏi đáp (FAQ)", subtitle: "Câu hỏi thường gặp", href: "/faq" },
                 { icon: <MessageProgramming variant="Bold" style={iconSize} />, title: "Hỗ trợ dự án", subtitle: "Cùng nhau thực hiện ý tưởng", href: "/hotroduan" },
