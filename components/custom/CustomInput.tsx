@@ -11,6 +11,7 @@ interface CustomInputProps {
     value?: string | number;
     onChange?: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
     onBlur?: (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
+    onKeyPress?: (e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
     name?: string;
     error?: string;
     success?: boolean;
@@ -35,6 +36,7 @@ export const CustomInput = forwardRef<HTMLInputElement, CustomInputProps>(({
     value,
     onChange,
     onBlur,
+    onKeyPress,
     name,
     error,
     success,
@@ -106,6 +108,7 @@ export const CustomInput = forwardRef<HTMLInputElement, CustomInputProps>(({
                         value={value}
                         onChange={handleChange}
                         onBlur={onBlur}
+                        onKeyPress={onKeyPress}
                         rows={rows}
                         maxLength={maxLength}
                         disabled={disabled}
@@ -120,6 +123,7 @@ export const CustomInput = forwardRef<HTMLInputElement, CustomInputProps>(({
                         value={value}
                         onChange={handleChange}
                         onBlur={onBlur}
+                        onKeyPress={onKeyPress}
                         disabled={disabled}
                         min={min}
                         max={max}

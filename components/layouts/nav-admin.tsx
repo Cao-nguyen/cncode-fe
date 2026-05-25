@@ -15,6 +15,8 @@ const PAGE_TITLES: Record<string, string> = {
     "/admin/danhgia": "Đánh giá",
     "/admin/allsettings": "Cài đặt chung",
     "/admin/helpcenter": "Trung tâm trợ giúp",
+    "/admin/sanphamlienket": "Sản phẩm liên kết",
+    "/admin/faq": "Góc hỏi đáp",
 };
 
 interface NavAdminProps {

@@ -74,6 +74,11 @@ const menuItems = [
                 icon: <ShoppingBag size={18} variant="Outline" />,
             },
             {
+                title: "Góc hỏi đáp",
+                link: "/admin/faq",
+                icon: <Message size={18} variant="Outline" />,
+            },
+            {
                 title: "Đánh giá",
                 link: "/admin/danhgia",
                 icon: <Star size={18} variant="Outline" />,
@@ -104,6 +109,11 @@ const menuItems = [
                 title: "Trung tâm trợ giúp",
                 link: "/admin/helpcenter",
                 icon: <Message size={18} variant="Outline" />,
+            },
+            {
+                title: "Sản phẩm liên kết",
+                link: "/admin/sanphamlienket",
+                icon: <Link1 size={18} variant="Outline" />,
             },
             {
                 title: "Cài đặt chung",
