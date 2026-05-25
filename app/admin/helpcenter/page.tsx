@@ -155,6 +155,8 @@ export default function AdminHelpCenterPage() {
                 resetForm();
                 fetchTableData(page, selectedCategory, search);
                 fetchStatsData();
+            } else {
+                toast.error(result.message || 'Thao tác thất bại');
             }
         } catch (error) {
             toast.error('Có lỗi xảy ra');
@@ -171,6 +173,8 @@ export default function AdminHelpCenterPage() {
                 toast.success('Xóa thành công');
                 fetchTableData(page, selectedCategory, search);
                 fetchStatsData();
+            } else {
+                toast.error(result.message || 'Xóa thất bại');
             }
         } catch (error) {
             toast.error('Có lỗi xảy ra');
@@ -186,6 +190,8 @@ export default function AdminHelpCenterPage() {
             if (result.success) {
                 toast.success(faq.isActive ? 'Đã ẩn câu hỏi' : 'Đã hiện câu hỏi');
                 fetchTableData(page, selectedCategory, search);
+            } else {
+                toast.error(result.message || 'Cập nhật thất bại');
             }
         } catch (error) {
             toast.error('Cập nhật thất bại');
@@ -295,8 +301,8 @@ export default function AdminHelpCenterPage() {
                 </div>
             </div>
 
-            {/* Table Container */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden relative min-h-[400px]">
+            {/* Table Container - Không có min-height cố định */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden relative">
 
                 {/* Thanh loading tiến trình nhỏ phía trên cùng bảng */}
                 {tableLoading && (
@@ -322,66 +328,45 @@ export default function AdminHelpCenterPage() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
-                            {faqs.length > 0 ? (
-                                faqs.map((faq, index) => (
-                                    <tr key={faq._id} className="hover:bg-gray-50 transition">
-                                        <td className="px-4 py-3 text-sm text-gray-500 text-center">{(page - 1) * 20 + index + 1}</td>
-                                        <td className="px-4 py-3">
-                                            <p className="text-sm font-medium text-gray-800 line-clamp-2 max-w-[300px]">{faq.question}</p>
-                                        </td>
-                                        <td className="px-4 py-3">
-                                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 whitespace-nowrap">
-                                                {CATEGORY_ICONS[faq.category]}
-                                                {getCategoryLabel(faq.category)}
-                                            </span>
-                                        </td>
-                                        <td className="px-4 py-3 text-center text-sm text-gray-500">{faq.views}</td>
-                                        <td className="px-4 py-3 text-center">
-                                            <span className="inline-flex items-center gap-1 text-sm text-gray-500">
-                                                <Heart size={14} />
-                                                {faq.helpfulCount}
-                                            </span>
-                                        </td>
-                                        <td className="px-4 py-3 text-center">
-                                            <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap ${faq.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-                                                {faq.isActive ? 'Hiển thị' : 'Ẩn'}
-                                            </span>
-                                        </td>
-                                        <td className="px-4 py-3">
-                                            <div className="flex items-center justify-center gap-1">
-                                                <button onClick={() => handleToggleActive(faq)} className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition">
-                                                    {faq.isActive ? <Eye size={16} /> : <EyeOff size={16} />}
-                                                </button>
-                                                <button onClick={() => openEditModal(faq)} className="p-1.5 rounded-lg text-gray-400 hover:text-blue-500 hover:bg-blue-50 transition">
-                                                    <Edit2 size={16} />
-                                                </button>
-                                                <button onClick={() => openDeleteModal(faq._id)} className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition">
-                                                    <Trash2 size={16} />
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))
-                            ) : !tableLoading ? (
-                                <tr>
-                                    <td colSpan={7} className="text-center py-20 text-gray-500">
-                                        <div className="flex flex-col items-center gap-2">
-                                            <HelpCircle size={40} className="text-gray-300" />
-                                            <p>Không tìm thấy kết quả nào phù hợp</p>
+                            {faqs.map((faq, index) => (
+                                <tr key={faq._id} className="hover:bg-gray-50 transition">
+                                    <td className="px-4 py-3 text-sm text-gray-500 text-center">{(page - 1) * 20 + index + 1}</td>
+                                    <td className="px-4 py-3">
+                                        <p className="text-sm font-medium text-gray-800 line-clamp-2 max-w-[300px]">{faq.question}</p>
+                                    </td>
+                                    <td className="px-4 py-3">
+                                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 whitespace-nowrap">
+                                            {CATEGORY_ICONS[faq.category]}
+                                            {getCategoryLabel(faq.category)}
+                                        </span>
+                                    </td>
+                                    <td className="px-4 py-3 text-center text-sm text-gray-500">{faq.views}</td>
+                                    <td className="px-4 py-3 text-center">
+                                        <span className="inline-flex items-center gap-1 text-sm text-gray-500">
+                                            <Heart size={14} />
+                                            {faq.helpfulCount}
+                                        </span>
+                                    </td>
+                                    <td className="px-4 py-3 text-center">
+                                        <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap ${faq.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                                            {faq.isActive ? 'Hiển thị' : 'Ẩn'}
+                                        </span>
+                                    </td>
+                                    <td className="px-4 py-3">
+                                        <div className="flex items-center justify-center gap-1">
+                                            <button onClick={() => handleToggleActive(faq)} className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition">
+                                                {faq.isActive ? <Eye size={16} /> : <EyeOff size={16} />}
+                                            </button>
+                                            <button onClick={() => openEditModal(faq)} className="p-1.5 rounded-lg text-gray-400 hover:text-blue-500 hover:bg-blue-50 transition">
+                                                <Edit2 size={16} />
+                                            </button>
+                                            <button onClick={() => openDeleteModal(faq._id)} className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition">
+                                                <Trash2 size={16} />
+                                            </button>
                                         </div>
                                     </td>
                                 </tr>
-                            ) : null}
-
-                            {/* Loading state khi bảng đang trống */}
-                            {tableLoading && faqs.length === 0 && (
-                                <tr>
-                                    <td colSpan={7} className="text-center py-20">
-                                        <Loader2 className="w-8 h-8 animate-spin text-blue-500 mx-auto" />
-                                        <p className="text-sm text-gray-400 mt-2">Đang tải dữ liệu...</p>
-                                    </td>
-                                </tr>
-                            )}
+                            ))}
                         </tbody>
                     </table>
                 </div>
@@ -403,20 +388,36 @@ export default function AdminHelpCenterPage() {
                 )}
             </div>
 
-            {/* Modals remain same... */}
+            {/* Create/Edit Modal */}
             {showModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowModal(false)}>
                     <div className="bg-white rounded-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto shadow-xl" onClick={(e) => e.stopPropagation()}>
                         <div className="sticky top-0 bg-white px-6 py-4 border-b border-gray-100 flex justify-between items-center">
-                            <h3 className="text-xl font-semibold text-gray-800">{editingFaq ? 'Chỉnh sửa' : 'Thêm mới'}</h3>
-                            <button onClick={() => setShowModal(false)} className="p-2 bg-gray-100 rounded-lg hover:bg-gray-200"><X size={18} /></button>
+                            <h3 className="text-xl font-semibold text-gray-800">{editingFaq ? 'Chỉnh sửa câu hỏi' : 'Thêm câu hỏi mới'}</h3>
+                            <button onClick={() => setShowModal(false)} className="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 hover:bg-gray-200 transition"><X size={18} className="text-gray-500" /></button>
                         </div>
                         <form onSubmit={handleSubmit} className="p-6 space-y-5">
-                            <div><label className="block text-sm font-medium mb-1.5">Câu hỏi *</label><CustomInput value={formData.question} onChange={(e) => setFormData(p => ({ ...p, question: e.target.value }))} /></div>
-                            <div><label className="block text-sm font-medium mb-1.5">Danh mục</label><CustomSelect value={formData.category} onChange={(v) => setFormData(p => ({ ...p, category: v }))} options={CATEGORY_OPTIONS} /></div>
-                            <div><label className="block text-sm font-medium mb-1.5">Thứ tự</label><CustomInput type="number" value={formData.order.toString()} onChange={(e) => setFormData(p => ({ ...p, order: parseInt(e.target.value) || 0 }))} /></div>
-                            <div><label className="block text-sm font-medium mb-1.5">Trả lời *</label><CustomEditor ref={editorRef} initialValue={editingFaq?.answer || ''} /></div>
-                            <div className="flex items-center gap-3"><CustomToggle checked={formData.isActive} onChange={(c) => setFormData(p => ({ ...p, isActive: c }))} /><span className="text-sm">Hiển thị công khai</span></div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1.5">Câu hỏi <span className="text-red-500">*</span></label>
+                                <CustomInput value={formData.question} onChange={(e) => setFormData(p => ({ ...p, question: e.target.value }))} placeholder="Nhập câu hỏi..." />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1.5">Danh mục</label>
+                                <CustomSelect value={formData.category} onChange={(v) => setFormData(p => ({ ...p, category: v }))} options={CATEGORY_OPTIONS} placeholder="Chọn danh mục" />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1.5">Thứ tự hiển thị</label>
+                                <CustomInput type="number" value={formData.order.toString()} onChange={(e) => setFormData(p => ({ ...p, order: parseInt(e.target.value) || 0 }))} placeholder="0" />
+                                <p className="text-xs text-gray-400 mt-1">Số càng nhỏ càng hiển thị lên đầu</p>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1.5">Câu trả lời <span className="text-red-500">*</span></label>
+                                <CustomEditor ref={editorRef} initialValue={editingFaq?.answer || ''} />
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <CustomToggle checked={formData.isActive} onChange={(c) => setFormData(p => ({ ...p, isActive: c }))} />
+                                <span className="text-sm text-gray-700">Hiển thị công khai</span>
+                            </div>
                             <div className="flex gap-3 pt-4">
                                 <CustomButton variant="secondary" className="flex-1" onClick={() => setShowModal(false)}>Hủy</CustomButton>
                                 <CustomButton variant="primary" className="flex-1" type="submit" loading={submitting}>Lưu</CustomButton>
@@ -426,12 +427,14 @@ export default function AdminHelpCenterPage() {
                 </div>
             )}
 
+            {/* Delete Confirm Modal */}
             <ConfirmModalDelete
                 isOpen={showDeleteModal}
                 onClose={() => setShowDeleteModal(false)}
                 onConfirm={handleDelete}
                 title="Xóa câu hỏi"
-                message="Bạn có chắc muốn xóa câu hỏi này không?"
+                message="Bạn có chắc chắn muốn xóa câu hỏi này không?"
+                warning="Hành động này không thể hoàn tác."
             />
 
             <style jsx global>{`

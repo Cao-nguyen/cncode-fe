@@ -73,7 +73,7 @@ const getRoleBadge = (role: string) => {
         case 'teacher':
             return <span className="inline-flex px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-medium whitespace-nowrap">Giáo viên</span>;
         default:
-            return <span className="inline-flex px-2 py-0.5 bg-[var(--cn-primary)] text-white rounded-full text-xs font-medium whitespace-nowrap">Người dùng</span>;
+            return <span className="inline-flex px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-medium whitespace-nowrap">Người dùng</span>;
     }
 };
 
@@ -88,6 +88,7 @@ export default function AdminUsersPage() {
     const [loading, setLoading] = useState(true);
     const [loadingProvince, setLoadingProvince] = useState(true);
     const [loadingPending, setLoadingPending] = useState(false);
+    const [isTableLoading, setIsTableLoading] = useState(false);
 
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(20);
@@ -116,6 +117,7 @@ export default function AdminUsersPage() {
     const [actionLoading, setActionLoading] = useState<{ type: string; userId: string } | null>(null);
 
     const initialFetchDone = useRef(false);
+    const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     // Responsive
     useEffect(() => {
@@ -129,9 +131,10 @@ export default function AdminUsersPage() {
         return () => window.removeEventListener('resize', checkScreen);
     }, []);
 
-    const fetchUsers = useCallback(async (showLoading = true) => {
+    const fetchUsers = useCallback(async (showLoading = true, keepExistingData = false) => {
         if (!token) return;
-        if (showLoading) setLoading(true);
+        if (showLoading && !keepExistingData) setLoading(true);
+        if (!keepExistingData) setIsTableLoading(true);
         try {
             const result = await userApi.getAllUsers(token, filters, page, pageSize);
             if (result.success) {
@@ -144,7 +147,8 @@ export default function AdminUsersPage() {
         } catch (error) {
             console.error('Failed to fetch users:', error);
         } finally {
-            if (showLoading) setLoading(false);
+            if (showLoading && !keepExistingData) setLoading(false);
+            setIsTableLoading(false);
         }
     }, [token, page, pageSize, filters]);
 
@@ -187,20 +191,30 @@ export default function AdminUsersPage() {
     useEffect(() => {
         if (token && !initialFetchDone.current) {
             initialFetchDone.current = true;
-            Promise.all([fetchUsers(), fetchStats(), fetchProvinceStats(), fetchPendingTeachers()]);
+            Promise.all([fetchUsers(true, false), fetchStats(), fetchProvinceStats(), fetchPendingTeachers()]);
         }
     }, [token]);
 
+    // Khi filters thay đổi, reset page và fetch lại (giữ lại dữ liệu cũ)
     useEffect(() => {
         if (initialFetchDone.current) {
             setPage(1);
-            fetchUsers();
+            fetchUsers(true, true);
         }
     }, [filters, pageSize]);
 
     useEffect(() => {
-        if (initialFetchDone.current && page > 0) fetchUsers();
+        if (initialFetchDone.current && page > 0) fetchUsers(true, true);
     }, [page]);
+
+    // Debounce search
+    const handleSearchChange = (value: string) => {
+        if (searchTimeout.current) clearTimeout(searchTimeout.current);
+        searchTimeout.current = setTimeout(() => {
+            setFilters(prev => ({ ...prev, search: value }));
+            setPage(1);
+        }, 500);
+    };
 
     // Socket
     useEffect(() => {
@@ -209,7 +223,7 @@ export default function AdminUsersPage() {
         const handleNewUserRegistered = () => {
             fetchStats();
             fetchProvinceStats();
-            if (activeTab === 'all' && page === 1) fetchUsers(false);
+            if (activeTab === 'all' && page === 1) fetchUsers(false, true);
         };
 
         const handleRoleRequestNotification = () => {
@@ -282,7 +296,7 @@ export default function AdminUsersPage() {
                     });
                 }
                 fetchStats();
-                if (activeTab === 'all' && page === 1) fetchUsers(false);
+                if (activeTab === 'all' && page === 1) fetchUsers(false, true);
             }
         } catch (error) {
             console.error('Approve teacher error:', error);
@@ -398,7 +412,7 @@ export default function AdminUsersPage() {
     ];
 
     if (loading && users.length === 0) {
-        return <div className="flex items-center justify-center min-h-[400px]"><Loader2 className="w-8 h-8 animate-spin text-[var(--cn-primary)]" /></div>;
+        return <div className="flex items-center justify-center min-h-[400px]"><Loader2 className="w-8 h-8 animate-spin text-blue-500" /></div>;
     }
 
     return (
@@ -406,11 +420,11 @@ export default function AdminUsersPage() {
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
-                    <h1 className="text-2xl sm:text-3xl font-bold text-[var(--cn-text-main)]">Quản lý người dùng</h1>
-                    <p className="text-sm text-[var(--cn-text-muted)] mt-1">Quản lý tất cả người dùng trên hệ thống</p>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">Quản lý người dùng</h1>
+                    <p className="text-sm text-gray-500 mt-1">Quản lý tất cả người dùng trên hệ thống</p>
                 </div>
-                <div className="bg-[var(--cn-primary)]/10 px-4 py-2 rounded-full">
-                    <span className="text-sm font-medium text-[var(--cn-primary)]">Tổng: {totalUsers} người</span>
+                <div className="bg-blue-50 px-4 py-2 rounded-full">
+                    <span className="text-sm font-medium text-blue-600">Tổng: {totalUsers} người</span>
                 </div>
             </div>
 
@@ -430,73 +444,80 @@ export default function AdminUsersPage() {
                 ))}
             </div>
 
-            {/* Biểu đồ thống kê theo tỉnh thành */}
-            <div className="bg-[var(--cn-bg-card)] rounded-xl p-4 shadow-sm border border-[var(--cn-border)]">
+            {/* Biểu đồ thống kê theo tỉnh thành - Hiển thị TẤT CẢ các tỉnh */}
+            <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
                 <div className="flex items-center gap-2 mb-4">
-                    <BarChart3 size={20} className="text-[var(--cn-primary)]" />
-                    <h2 className="text-base font-semibold text-[var(--cn-text-main)]">Thống kê người dùng theo tỉnh thành</h2>
+                    <BarChart3 size={20} className="text-blue-500" />
+                    <h2 className="text-base font-semibold text-gray-800">Thống kê người dùng theo tỉnh thành</h2>
                 </div>
 
                 {loadingProvince ? (
                     <div className="flex justify-center items-center h-48">
-                        <Loader2 className="w-8 h-8 animate-spin text-[var(--cn-primary)]" />
+                        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
                     </div>
                 ) : provinceStats.length === 0 ? (
-                    <div className="text-center py-8 text-[var(--cn-text-muted)]">
+                    <div className="text-center py-8 text-gray-400">
                         Chưa có dữ liệu thống kê theo tỉnh thành
                     </div>
                 ) : (
                     <>
                         <div className="overflow-x-auto">
-                            <div className="min-w-[500px]">
-                                <ResponsiveContainer width="100%" height={isMobile ? 300 : 400}>
-                                    <BarChart data={provinceStats.slice(0, 10)} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
-                                        <CartesianGrid strokeDasharray="3 3" stroke="var(--cn-border)" />
-                                        <XAxis dataKey="_id" angle={-45} textAnchor="end" height={70} interval={0} tick={{ fontSize: isMobile ? 10 : 12, fill: 'var(--cn-text-muted)' }} />
-                                        <YAxis tick={{ fontSize: isMobile ? 10 : 12, fill: 'var(--cn-text-muted)' }} />
+                            <div className="min-w-[600px]">
+                                <ResponsiveContainer width="100%" height={isMobile ? 350 : 450}>
+                                    <BarChart data={provinceStats} margin={{ top: 20, right: 30, left: 20, bottom: 80 }}>
+                                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                                        <XAxis
+                                            dataKey="_id"
+                                            angle={-45}
+                                            textAnchor="end"
+                                            height={80}
+                                            interval={0}
+                                            tick={{ fontSize: isMobile ? 9 : 11, fill: '#6b7280' }}
+                                        />
+                                        <YAxis tick={{ fontSize: isMobile ? 10 : 12, fill: '#6b7280' }} />
                                         <Tooltip content={({ active, payload, label }) => {
                                             if (active && payload && payload.length) {
                                                 return (
-                                                    <div className="bg-[var(--cn-bg-card)] p-2 rounded-lg shadow-lg border border-[var(--cn-border)]">
-                                                        <p className="font-semibold text-xs mb-1">{label}</p>
-                                                        <p className="text-xs text-[var(--cn-primary)]">{payload[0]?.value?.toLocaleString()} người dùng</p>
+                                                    <div className="bg-white p-2 rounded-lg shadow-lg border border-gray-200">
+                                                        <p className="font-semibold text-xs mb-1 text-gray-800">{label}</p>
+                                                        <p className="text-xs text-blue-500">{payload[0]?.value?.toLocaleString()} người dùng</p>
                                                     </div>
                                                 );
                                             }
                                             return null;
                                         }} />
-                                        <Legend wrapperStyle={{ color: 'var(--cn-text-muted)' }} />
-                                        <Bar dataKey="count" fill="var(--cn-primary)" name="Số lượng người dùng" radius={[4, 4, 0, 0]} />
+                                        <Legend wrapperStyle={{ color: '#6b7280' }} />
+                                        <Bar dataKey="count" fill="#3b82f6" name="Số lượng người dùng" radius={[4, 4, 0, 0]} />
                                     </BarChart>
                                 </ResponsiveContainer>
                             </div>
                         </div>
 
-                        {/* Bảng tỉnh thành */}
+                        {/* Bảng tỉnh thành - Hiển thị TẤT CẢ các tỉnh */}
                         <div className="mt-6 overflow-x-auto">
                             <table className="w-full text-sm">
-                                <thead className="bg-[var(--cn-primary)]/5">
+                                <thead className="bg-blue-50">
                                     <tr>
-                                        <th className="text-left p-3 font-semibold text-[var(--cn-primary)]">#</th>
-                                        <th className="text-left p-3 font-semibold text-[var(--cn-primary)]">Tỉnh/TP</th>
-                                        <th className="text-left p-3 font-semibold text-[var(--cn-primary)]">Số lượng</th>
-                                        <th className="text-left p-3 font-semibold text-[var(--cn-primary)]">Tỉ lệ</th>
+                                        <th className="text-left p-3 font-semibold text-blue-600">#</th>
+                                        <th className="text-left p-3 font-semibold text-blue-600">Tỉnh/TP</th>
+                                        <th className="text-left p-3 font-semibold text-blue-600">Số lượng</th>
+                                        <th className="text-left p-3 font-semibold text-blue-600">Tỉ lệ</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-[var(--cn-border)]">
+                                <tbody className="divide-y divide-gray-100">
                                     {provinceStats.map((province, idx) => {
                                         const percentage = totalUsers > 0 ? ((province.count / totalUsers) * 100).toFixed(1) : '0';
                                         return (
-                                            <tr key={province._id} className="hover:bg-[var(--cn-hover)] transition">
-                                                <td className="p-3 text-[var(--cn-text-sub)]">{idx + 1}</td>
-                                                <td className="p-3 font-medium text-[var(--cn-text-main)]">{province._id}</td>
-                                                <td className="p-3 text-[var(--cn-text-sub)]">{province.count.toLocaleString()} người</td>
+                                            <tr key={province._id} className="hover:bg-gray-50 transition">
+                                                <td className="p-3 text-gray-500">{idx + 1}</td>
+                                                <td className="p-3 font-medium text-gray-800">{province._id}</td>
+                                                <td className="p-3 text-gray-600">{province.count.toLocaleString()} người</td>
                                                 <td className="p-3">
                                                     <div className="flex items-center gap-2">
-                                                        <div className="flex-1 h-2 bg-[var(--cn-border)] rounded-full overflow-hidden">
-                                                            <div className="h-full bg-[var(--cn-primary)] rounded-full" style={{ width: `${percentage}%` }} />
+                                                        <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                                                            <div className="h-full bg-blue-500 rounded-full" style={{ width: `${percentage}%` }} />
                                                         </div>
-                                                        <span className="text-xs text-[var(--cn-text-muted)] w-12">{percentage}%</span>
+                                                        <span className="text-xs text-gray-400 w-12">{percentage}%</span>
                                                     </div>
                                                 </td>
                                             </tr>
@@ -510,28 +531,30 @@ export default function AdminUsersPage() {
             </div>
 
             {/* Tabs */}
-            <div className="flex gap-2 border-b border-[var(--cn-border)]">
-                <button onClick={() => setActiveTab('all')} className={`px-4 py-2 text-sm font-medium transition ${activeTab === 'all' ? 'border-b-2 border-[var(--cn-primary)] text-[var(--cn-primary)]' : 'text-[var(--cn-text-muted)]'}`}>
+            <div className="flex gap-2 border-b border-gray-200">
+                <button onClick={() => setActiveTab('all')} className={`px-4 py-2 text-sm font-medium transition ${activeTab === 'all' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-500'}`}>
                     Tất cả người dùng <span className="ml-1 text-xs">({totalUsers})</span>
                 </button>
-                <button onClick={() => setActiveTab('pending')} className={`px-4 py-2 text-sm font-medium transition flex items-center gap-1 ${activeTab === 'pending' ? 'border-b-2 border-[var(--cn-primary)] text-[var(--cn-primary)]' : 'text-[var(--cn-text-muted)]'}`}>
+                <button onClick={() => setActiveTab('pending')} className={`px-4 py-2 text-sm font-medium transition flex items-center gap-1 ${activeTab === 'pending' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-500'}`}>
                     Giáo viên chờ duyệt
-                    {pendingTeachers.length > 0 && <span className="px-1.5 py-0.5 bg-[var(--cn-primary)] text-white rounded-full text-xs animate-pulse">{pendingTeachers.length}</span>}
+                    {pendingTeachers.length > 0 && <span className="px-1.5 py-0.5 bg-blue-500 text-white rounded-full text-xs animate-pulse">{pendingTeachers.length}</span>}
                 </button>
             </div>
 
             {/* Filters */}
-            <div className="bg-[var(--cn-bg-card)] rounded-xl p-4 shadow-sm border border-[var(--cn-border)]">
+            <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
                 <div className="flex flex-wrap gap-3 items-center">
                     <div className="flex-1 min-w-[200px]">
-                        <CustomInputSearch
-                            placeholder="Tìm kiếm theo tên hoặc email..."
-                            value={filters.search}
-                            onChange={(value) => setFilters(prev => ({ ...prev, search: value }))}
-                            onSearch={(value) => { setFilters(prev => ({ ...prev, search: value })); setPage(1); }}
-                            size="medium"
-                            variant="default"
-                        />
+                        <div className="relative">
+                            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                            <input
+                                type="text"
+                                defaultValue={filters.search}
+                                onChange={(e) => handleSearchChange(e.target.value)}
+                                placeholder="Tìm kiếm theo tên hoặc email..."
+                                className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20 outline-none text-sm transition-all text-gray-700 placeholder:text-gray-400"
+                            />
+                        </div>
                     </div>
                     <div className="w-48">
                         <CustomSelect
@@ -545,39 +568,39 @@ export default function AdminUsersPage() {
             </div>
 
             {/* Table */}
-            <div className="bg-[var(--cn-bg-card)] rounded-xl shadow-sm border border-[var(--cn-border)] overflow-hidden">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full min-w-[900px]">
-                        <thead className="bg-[var(--cn-primary)]/5 border-b border-[var(--cn-border)]">
-                            <tr>
-                                <th className="text-left px-5 py-4 text-xs font-semibold text-[var(--cn-text-muted)] uppercase">Người dùng</th>
-                                <th className="text-left px-5 py-4 text-xs font-semibold text-[var(--cn-text-muted)] uppercase">Vai trò</th>
-                                <th className="text-left px-5 py-4 text-xs font-semibold text-[var(--cn-text-muted)] uppercase">Tỉnh/TP</th>
-                                <th className="text-left px-5 py-4 text-xs font-semibold text-[var(--cn-text-muted)] uppercase">Xu</th>
-                                <th className="text-left px-5 py-4 text-xs font-semibold text-[var(--cn-text-muted)] uppercase">Streak</th>
-                                <th className="text-left px-5 py-4 text-xs font-semibold text-[var(--cn-text-muted)] uppercase">Tham gia</th>
-                                <th className="text-center px-5 py-4 text-xs font-semibold text-[var(--cn-text-muted)] uppercase">Thao tác</th>
+                        <thead className="bg-gray-50 border-b border-gray-200">
+                            <tr className="text-left">
+                                <th className="px-5 py-4 text-xs font-semibold text-gray-500 uppercase">Người dùng</th>
+                                <th className="px-5 py-4 text-xs font-semibold text-gray-500 uppercase">Vai trò</th>
+                                <th className="px-5 py-4 text-xs font-semibold text-gray-500 uppercase">Tỉnh/TP</th>
+                                <th className="px-5 py-4 text-xs font-semibold text-gray-500 uppercase">Xu</th>
+                                <th className="px-5 py-4 text-xs font-semibold text-gray-500 uppercase">Streak</th>
+                                <th className="px-5 py-4 text-xs font-semibold text-gray-500 uppercase">Tham gia</th>
+                                <th className="text-center px-5 py-4 text-xs font-semibold text-gray-500 uppercase">Thao tác</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-[var(--cn-border)]">
+                        <tbody className="divide-y divide-gray-100">
                             {loading ? (
-                                <tr><td colSpan={7} className="text-center py-16"><Loader2 className="w-8 h-8 animate-spin text-[var(--cn-primary)] mx-auto" /><p className="text-sm text-[var(--cn-text-muted)] mt-3">Đang tải dữ liệu...</p></td></tr>
+                                <tr><td colSpan={7} className="text-center py-16"><Loader2 className="w-8 h-8 animate-spin text-blue-500 mx-auto" /><p className="text-sm text-gray-500 mt-3">Đang tải dữ liệu...</p></td></tr>
                             ) : (activeTab === 'all' ? users : pendingTeachers).length === 0 ? (
-                                <tr><td colSpan={7} className="text-center py-16"><Users size={48} className="text-[var(--cn-text-muted)] mx-auto" /><p className="text-gray-400 mt-2">Không có người dùng nào</p></td></tr>
+                                <tr><td colSpan={7} className="text-center py-16"><Users size={48} className="text-gray-300 mx-auto" /><p className="text-gray-400 mt-2">Không có người dùng nào</p></td></tr>
                             ) : (activeTab === 'all' ? users : pendingTeachers).map((user) => (
-                                <tr key={user._id} className="hover:bg-[var(--cn-hover)] transition cursor-pointer group" onClick={() => { setSelectedUser(user); setShowUserModal(true); }}>
+                                <tr key={user._id} className="hover:bg-gray-50 transition cursor-pointer group" onClick={() => { setSelectedUser(user); setShowUserModal(true); }}>
                                     <td className="px-5 py-4">
                                         <div className="flex items-center gap-3">
-                                            <div className="w-9 h-9 rounded-full bg-[var(--cn-primary)]/10 flex items-center justify-center">
+                                            <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center">
                                                 {user.avatar ? (
                                                     <Image src={user.avatar} alt={user.fullName} width={36} height={36} className="w-full h-full rounded-full object-cover" />
                                                 ) : (
-                                                    <span className="text-sm font-semibold text-[var(--cn-primary)]">{getUserInitial(user)}</span>
+                                                    <span className="text-sm font-semibold text-blue-600">{getUserInitial(user)}</span>
                                                 )}
                                             </div>
                                             <div>
-                                                <p className="text-sm font-medium text-[var(--cn-text-main)]">{user.fullName}</p>
-                                                <p className="text-xs text-[var(--cn-text-muted)]">{user.email}</p>
+                                                <p className="text-sm font-medium text-gray-800">{user.fullName}</p>
+                                                <p className="text-xs text-gray-400">{user.email}</p>
                                             </div>
                                         </div>
                                     </td>
@@ -596,18 +619,18 @@ export default function AdminUsersPage() {
                                     </td>
                                     <td className="px-5 py-4 whitespace-nowrap">
                                         <div className="flex items-center gap-1">
-                                            <MapPin size={14} className="text-[var(--cn-text-muted)] flex-shrink-0" />
-                                            <span className="text-sm text-[var(--cn-text-sub)] truncate max-w-[120px]">{user.province || '---'}</span>
+                                            <MapPin size={14} className="text-gray-400 flex-shrink-0" />
+                                            <span className="text-sm text-gray-600 truncate max-w-[120px]">{user.province || '---'}</span>
                                         </div>
                                     </td>
                                     <td className="px-5 py-4 whitespace-nowrap">
                                         <div className="flex items-center gap-1.5">
-                                            <span className="font-semibold text-[var(--cn-primary)]">{user.coins.toLocaleString()}</span>
-                                            <button onClick={(e) => { e.stopPropagation(); setSelectedUser(user); setShowCoinModal(true); }} className="p-1 text-[var(--cn-text-muted)] hover:text-[var(--cn-primary)] rounded transition"><Coins size={14} /></button>
+                                            <span className="font-semibold text-blue-600">{user.coins.toLocaleString()}</span>
+                                            <button onClick={(e) => { e.stopPropagation(); setSelectedUser(user); setShowCoinModal(true); }} className="p-1 text-gray-400 hover:text-blue-500 rounded transition"><Coins size={14} /></button>
                                         </div>
                                     </td>
-                                    <td className="px-5 py-4"><span className="text-[var(--cn-primary)] font-medium">{user.streak}</span></td>
-                                    <td className="px-5 py-4"><span className="text-sm text-[var(--cn-text-muted)]">{formatDate(user.createdAt)}</span></td>
+                                    <td className="px-5 py-4"><span className="text-blue-600 font-medium">{user.streak}</span></td>
+                                    <td className="px-5 py-4"><span className="text-sm text-gray-500">{formatDate(user.createdAt)}</span></td>
                                     <td className="px-5 py-4">
                                         <div className="flex items-center justify-center gap-1.5" onClick={(e) => e.stopPropagation()}>
                                             <button onClick={() => { setSelectedUser(user); setShowUserModal(true); }} className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition"><Eye size={16} /></button>
@@ -622,14 +645,14 @@ export default function AdminUsersPage() {
                     </table>
                 </div>
                 {activeTab === 'all' && totalPages > 1 && (
-                    <div className="border-t border-[var(--cn-border)] px-5 py-4 flex items-center justify-between">
-                        <div className="text-sm text-[var(--cn-text-muted)]">Hiển thị {(page - 1) * pageSize + 1} - {Math.min(page * pageSize, totalUsers)} trên {totalUsers}</div>
+                    <div className="border-t border-gray-200 px-5 py-4 flex items-center justify-between">
+                        <div className="text-sm text-gray-500">Hiển thị {(page - 1) * pageSize + 1} - {Math.min(page * pageSize, totalUsers)} trên {totalUsers}</div>
                         <div className="flex items-center gap-2">
-                            <button onClick={() => setPage(1)} disabled={page === 1} className="p-2 border border-[var(--cn-border)] rounded-lg disabled:opacity-40 hover:bg-[var(--cn-hover)] transition"><ChevronsLeft size={16} /></button>
-                            <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="p-2 border border-[var(--cn-border)] rounded-lg disabled:opacity-40 hover:bg-[var(--cn-hover)] transition"><ChevronLeft size={16} /></button>
-                            <span className="px-3 text-sm font-medium text-[var(--cn-text-main)]">{page} / {totalPages}</span>
-                            <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} className="p-2 border border-[var(--cn-border)] rounded-lg disabled:opacity-40 hover:bg-[var(--cn-hover)] transition"><ChevronRight size={16} /></button>
-                            <button onClick={() => setPage(totalPages)} disabled={page === totalPages} className="p-2 border border-[var(--cn-border)] rounded-lg disabled:opacity-40 hover:bg-[var(--cn-hover)] transition"><ChevronsRight size={16} /></button>
+                            <button onClick={() => setPage(1)} disabled={page === 1} className="p-2 border border-gray-200 rounded-lg disabled:opacity-40 hover:bg-gray-50 transition"><ChevronsLeft size={16} /></button>
+                            <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="p-2 border border-gray-200 rounded-lg disabled:opacity-40 hover:bg-gray-50 transition"><ChevronLeft size={16} /></button>
+                            <span className="px-3 text-sm font-medium text-gray-700">{page} / {totalPages}</span>
+                            <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} className="p-2 border border-gray-200 rounded-lg disabled:opacity-40 hover:bg-gray-50 transition"><ChevronRight size={16} /></button>
+                            <button onClick={() => setPage(totalPages)} disabled={page === totalPages} className="p-2 border border-gray-200 rounded-lg disabled:opacity-40 hover:bg-gray-50 transition"><ChevronsRight size={16} /></button>
                         </div>
                     </div>
                 )}
@@ -638,26 +661,26 @@ export default function AdminUsersPage() {
             {/* User Detail Modal */}
             {showUserModal && selectedUser && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowUserModal(false)}>
-                    <div className="bg-[var(--cn-bg-card)] rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>
-                        <div className="sticky top-0 bg-[var(--cn-bg-card)] px-6 py-4 border-b border-[var(--cn-border)] flex justify-between items-center">
-                            <h3 className="text-xl font-semibold text-[var(--cn-text-main)]">Chi tiết người dùng</h3>
-                            <button onClick={() => setShowUserModal(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-[var(--cn-bg-section)] hover:bg-[var(--cn-hover)] transition"><X size={18} className="text-[var(--cn-text-muted)]" /></button>
+                    <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>
+                        <div className="sticky top-0 bg-white px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+                            <h3 className="text-xl font-semibold text-gray-800">Chi tiết người dùng</h3>
+                            <button onClick={() => setShowUserModal(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 transition"><X size={18} className="text-gray-500" /></button>
                         </div>
                         <div className="p-6 space-y-5">
-                            <div className="flex items-center gap-4 p-4 bg-[var(--cn-bg-section)] rounded-xl">
-                                <div className="w-14 h-14 rounded-full bg-[var(--cn-primary)]/20 flex items-center justify-center text-[var(--cn-primary)] text-xl font-bold">{getUserInitial(selectedUser)}</div>
-                                <div><p className="font-semibold text-[var(--cn-text-main)] text-lg">{selectedUser.fullName}</p><p className="text-sm text-[var(--cn-text-muted)]">{selectedUser.email}</p>{selectedUser.username && <p className="text-xs text-[var(--cn-primary)]">@{selectedUser.username}</p>}</div>
+                            <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl">
+                                <div className="w-14 h-14 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-xl font-bold">{getUserInitial(selectedUser)}</div>
+                                <div><p className="font-semibold text-gray-800 text-lg">{selectedUser.fullName}</p><p className="text-sm text-gray-500">{selectedUser.email}</p>{selectedUser.username && <p className="text-xs text-blue-500">@{selectedUser.username}</p>}</div>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                                <div className="flex items-center gap-2"><Shield size={14} className="text-[var(--cn-text-muted)]" /> Vai trò: {getRoleBadge(selectedUser.role)}</div>
-                                <div className="flex items-center gap-2"><Coins size={14} className="text-[var(--cn-text-muted)]" /> Xu: {selectedUser.coins.toLocaleString()}</div>
-                                <div className="flex items-center gap-2"><Calendar size={14} className="text-[var(--cn-text-muted)]" /> Streak: {selectedUser.streak}</div>
-                                <div className="flex items-center gap-2"><Mail size={14} className="text-[var(--cn-text-muted)]" /> {selectedUser.email}</div>
-                                <div className="flex items-center gap-2"><MapPin size={14} className="text-[var(--cn-text-muted)]" /> {selectedUser.province || 'Chưa cập nhật'}</div>
-                                {selectedUser.class && <div className="flex items-center gap-2"><GraduationCap size={14} className="text-[var(--cn-text-muted)]" /> Lớp: {selectedUser.class}</div>}
-                                {selectedUser.school && <div className="flex items-center gap-2"><School size={14} className="text-[var(--cn-text-muted)]" /> {selectedUser.school}</div>}
-                                {selectedUser.bio && <div className="md:col-span-2 flex items-start gap-2"><span className="text-[var(--cn-text-muted)]">📝</span><span className="text-[var(--cn-text-sub)]">{selectedUser.bio}</span></div>}
-                                <div className="md:col-span-2 text-[var(--cn-text-muted)]">Ngày tạo: {formatDate(selectedUser.createdAt)}</div>
+                                <div className="flex items-center gap-2"><Shield size={14} className="text-gray-400" /> Vai trò: {getRoleBadge(selectedUser.role)}</div>
+                                <div className="flex items-center gap-2"><Coins size={14} className="text-gray-400" /> Xu: {selectedUser.coins.toLocaleString()}</div>
+                                <div className="flex items-center gap-2"><Calendar size={14} className="text-gray-400" /> Streak: {selectedUser.streak}</div>
+                                <div className="flex items-center gap-2"><Mail size={14} className="text-gray-400" /> {selectedUser.email}</div>
+                                <div className="flex items-center gap-2"><MapPin size={14} className="text-gray-400" /> {selectedUser.province || 'Chưa cập nhật'}</div>
+                                {selectedUser.class && <div className="flex items-center gap-2"><GraduationCap size={14} className="text-gray-400" /> Lớp: {selectedUser.class}</div>}
+                                {selectedUser.school && <div className="flex items-center gap-2"><School size={14} className="text-gray-400" /> {selectedUser.school}</div>}
+                                {selectedUser.bio && <div className="md:col-span-2 flex items-start gap-2"><span className="text-gray-400">📝</span><span className="text-gray-600">{selectedUser.bio}</span></div>}
+                                <div className="md:col-span-2 text-gray-400">Ngày tạo: {formatDate(selectedUser.createdAt)}</div>
                             </div>
                         </div>
                     </div>
@@ -667,14 +690,14 @@ export default function AdminUsersPage() {
             {/* Role Modal */}
             {showRoleModal && selectedUser && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowRoleModal(false)}>
-                    <div className="bg-[var(--cn-bg-card)] rounded-2xl w-full max-w-md shadow-2xl" onClick={e => e.stopPropagation()}>
-                        <div className="px-6 py-4 border-b border-[var(--cn-border)] flex justify-between items-center">
-                            <h3 className="text-xl font-semibold text-[var(--cn-text-main)]">Đổi vai trò</h3>
-                            <button onClick={() => setShowRoleModal(false)} className="p-1 hover:bg-[var(--cn-hover)] rounded-lg transition"><X size={20} className="text-[var(--cn-text-muted)]" /></button>
+                    <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl" onClick={e => e.stopPropagation()}>
+                        <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+                            <h3 className="text-xl font-semibold text-gray-800">Đổi vai trò</h3>
+                            <button onClick={() => setShowRoleModal(false)} className="p-1 hover:bg-gray-100 rounded-lg transition"><X size={20} className="text-gray-500" /></button>
                         </div>
                         <div className="p-6 space-y-5">
-                            <div><label className="block text-sm font-medium mb-2 text-[var(--cn-text-sub)]">Vai trò mới</label><CustomSelect value={selectedRole} onChange={setSelectedRole} options={[{ value: 'user', label: 'Người dùng' }, { value: 'teacher', label: 'Giáo viên' }, { value: 'admin', label: 'Admin' }]} placeholder="Chọn vai trò" /></div>
-                            <div className="flex gap-3"><button onClick={() => setShowRoleModal(false)} className="flex-1 px-4 py-2.5 border border-[var(--cn-border)] rounded-xl text-[var(--cn-text-sub)] font-medium hover:bg-[var(--cn-hover)] transition">Hủy</button><button onClick={handleChangeRole} disabled={actionLoading?.type === 'role'} className="flex-1 px-4 py-2.5 bg-[var(--cn-primary)] text-white rounded-xl font-medium hover:bg-[var(--cn-primary-hover)] transition disabled:opacity-50 flex items-center justify-center gap-2">{actionLoading?.type === 'role' ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle size={16} />}{actionLoading?.type === 'role' ? 'Đang xử lý...' : 'Xác nhận'}</button></div>
+                            <div><label className="block text-sm font-medium mb-2 text-gray-600">Vai trò mới</label><CustomSelect value={selectedRole} onChange={setSelectedRole} options={[{ value: 'user', label: 'Người dùng' }, { value: 'teacher', label: 'Giáo viên' }, { value: 'admin', label: 'Admin' }]} placeholder="Chọn vai trò" /></div>
+                            <div className="flex gap-3"><button onClick={() => setShowRoleModal(false)} className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-gray-600 font-medium hover:bg-gray-50 transition">Hủy</button><button onClick={handleChangeRole} disabled={actionLoading?.type === 'role'} className="flex-1 px-4 py-2.5 bg-blue-500 text-white rounded-xl font-medium hover:bg-blue-600 transition disabled:opacity-50 flex items-center justify-center gap-2">{actionLoading?.type === 'role' ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle size={16} />}{actionLoading?.type === 'role' ? 'Đang xử lý...' : 'Xác nhận'}</button></div>
                         </div>
                     </div>
                 </div>
@@ -683,12 +706,12 @@ export default function AdminUsersPage() {
             {/* Coin Modal */}
             {showCoinModal && selectedUser && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowCoinModal(false)}>
-                    <div className="bg-[var(--cn-bg-card)] rounded-2xl w-full max-w-md shadow-2xl" onClick={e => e.stopPropagation()}>
-                        <div className="px-6 py-4 border-b border-[var(--cn-border)] flex justify-between items-center"><h3 className="text-xl font-semibold text-[var(--cn-text-main)]">Điều chỉnh xu</h3><button onClick={() => setShowCoinModal(false)} className="p-1 hover:bg-[var(--cn-hover)] rounded-lg transition"><X size={20} className="text-[var(--cn-text-muted)]" /></button></div>
+                    <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl" onClick={e => e.stopPropagation()}>
+                        <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center"><h3 className="text-xl font-semibold text-gray-800">Điều chỉnh xu</h3><button onClick={() => setShowCoinModal(false)} className="p-1 hover:bg-gray-100 rounded-lg transition"><X size={20} className="text-gray-500" /></button></div>
                         <div className="p-6 space-y-5">
-                            <div><label className="block text-sm font-medium mb-2 text-[var(--cn-text-sub)]">Số xu (±)</label><input type="number" value={coinAmount} onChange={(e) => setCoinAmount(parseInt(e.target.value) || 0)} placeholder="Nhập số xu..." className="w-full px-4 py-2.5 border border-[var(--cn-border)] rounded-xl text-[var(--cn-text-main)] focus:border-[var(--cn-primary)] focus:outline-none" /><p className="text-xs text-[var(--cn-text-muted)] mt-1">Nhập số dương để cộng, số âm để trừ</p></div>
-                            <div><label className="block text-sm font-medium mb-2 text-[var(--cn-text-sub)]">Lý do</label><CustomTextarea value={coinReason} onChange={setCoinReason} placeholder="Nhập lý do..." rows={3} maxLength={500} /></div>
-                            <div className="flex gap-3"><button onClick={() => setShowCoinModal(false)} className="flex-1 px-4 py-2.5 border border-[var(--cn-border)] rounded-xl text-[var(--cn-text-sub)] font-medium hover:bg-[var(--cn-hover)] transition">Hủy</button><button onClick={handleAdjustCoins} disabled={actionLoading?.type === 'coins'} className="flex-1 px-4 py-2.5 bg-[var(--cn-primary)] text-white rounded-xl font-medium hover:bg-[var(--cn-primary-hover)] transition disabled:opacity-50 flex items-center justify-center gap-2">{actionLoading?.type === 'coins' ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle size={16} />}{actionLoading?.type === 'coins' ? 'Đang xử lý...' : 'Xác nhận'}</button></div>
+                            <div><label className="block text-sm font-medium mb-2 text-gray-600">Số xu (±)</label><input type="number" value={coinAmount} onChange={(e) => setCoinAmount(parseInt(e.target.value) || 0)} placeholder="Nhập số xu..." className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-gray-700 focus:border-blue-400 focus:outline-none" /><p className="text-xs text-gray-400 mt-1">Nhập số dương để cộng, số âm để trừ</p></div>
+                            <div><label className="block text-sm font-medium mb-2 text-gray-600">Lý do</label><CustomTextarea value={coinReason} onChange={setCoinReason} placeholder="Nhập lý do..." rows={3} maxLength={500} /></div>
+                            <div className="flex gap-3"><button onClick={() => setShowCoinModal(false)} className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-gray-600 font-medium hover:bg-gray-50 transition">Hủy</button><button onClick={handleAdjustCoins} disabled={actionLoading?.type === 'coins'} className="flex-1 px-4 py-2.5 bg-blue-500 text-white rounded-xl font-medium hover:bg-blue-600 transition disabled:opacity-50 flex items-center justify-center gap-2">{actionLoading?.type === 'coins' ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle size={16} />}{actionLoading?.type === 'coins' ? 'Đang xử lý...' : 'Xác nhận'}</button></div>
                         </div>
                     </div>
                 </div>
@@ -697,14 +720,14 @@ export default function AdminUsersPage() {
             {/* Violation Modal */}
             {showViolationModal && selectedUser && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowViolationModal(false)}>
-                    <div className="bg-[var(--cn-bg-card)] rounded-2xl w-full max-w-md shadow-2xl" onClick={e => e.stopPropagation()}>
-                        <div className="px-6 py-4 border-b border-[var(--cn-border)] flex justify-between items-center">
-                            <h3 className="text-xl font-semibold text-[var(--cn-text-main)]">Xử lý vi phạm</h3>
-                            <button onClick={() => setShowViolationModal(false)} className="p-1 hover:bg-[var(--cn-hover)] rounded-lg transition"><X size={20} className="text-[var(--cn-text-muted)]" /></button>
+                    <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl" onClick={e => e.stopPropagation()}>
+                        <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+                            <h3 className="text-xl font-semibold text-gray-800">Xử lý vi phạm</h3>
+                            <button onClick={() => setShowViolationModal(false)} className="p-1 hover:bg-gray-100 rounded-lg transition"><X size={20} className="text-gray-500" /></button>
                         </div>
                         <div className="p-6 space-y-5">
                             <div>
-                                <label className="block text-sm font-medium mb-2 text-[var(--cn-text-sub)]">Hành động</label>
+                                <label className="block text-sm font-medium mb-2 text-gray-600">Hành động</label>
                                 <CustomSelect
                                     value={violationAction}
                                     onChange={(value: string) => setViolationAction(value as 'warn' | 'mute' | 'ban')}
@@ -713,11 +736,11 @@ export default function AdminUsersPage() {
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium mb-2 text-[var(--cn-text-sub)]">Lý do</label>
+                                <label className="block text-sm font-medium mb-2 text-gray-600">Lý do</label>
                                 <CustomTextarea value={violationReason} onChange={setViolationReason} placeholder="Nhập lý do..." rows={3} maxLength={500} />
                             </div>
                             <div className="flex gap-3">
-                                <button onClick={() => setShowViolationModal(false)} className="flex-1 px-4 py-2.5 border border-[var(--cn-border)] rounded-xl text-[var(--cn-text-sub)] font-medium hover:bg-[var(--cn-hover)] transition">Hủy</button>
+                                <button onClick={() => setShowViolationModal(false)} className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-gray-600 font-medium hover:bg-gray-50 transition">Hủy</button>
                                 <button onClick={handleMarkViolation} disabled={actionLoading?.type === 'violation'} className="flex-1 px-4 py-2.5 bg-red-500 text-white rounded-xl font-medium hover:bg-red-600 transition disabled:opacity-50 flex items-center justify-center gap-2">
                                     {actionLoading?.type === 'violation' ? <Loader2 className="w-4 h-4 animate-spin" /> : <AlertTriangle size={16} />}
                                     {actionLoading?.type === 'violation' ? 'Đang xử lý...' : 'Xác nhận'}
