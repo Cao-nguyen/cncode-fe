@@ -1,159 +1,191 @@
 'use client';
 
 interface StaticContentProps {
-    content: string;
-    className?: string;
+  content: string;
+  className?: string;
 }
 
 const editorStyles = `
-  .ed-shell {
+  .static-ed-shell {
     background: #ffffff;
-    border: 0.5px solid #d1d5db;
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-    display: flex;
-    flex-direction: column;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     position: relative;
   }
 
-  .ed-body {
+  .static-ed-body {
     display: flex;
     flex: 1;
-    overflow: hidden;
   }
 
-  .ed-content-wrap {
+  .static-ed-content-wrap {
     flex: 1;
-    overflow-y: auto;
   }
 
-  #editor {
-    padding: 1.5rem 2.25rem;
-    font-size: 16px;
-    line-height: 1.8;
+  .static-editor {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
+    font-size: 15px !important;
+    line-height: 1.75 !important;
     color: #111827;
-    min-height: 100%;
     box-sizing: border-box;
+    padding: 5px 0;
   }
 
-  #editor p { margin-bottom: 0.9em; }
+  .static-editor * {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
+    line-height: 1.75 !important;
+  }
 
-  #editor h1 {
-    font-size: 1.85em;
-    font-weight: 700;
-    margin-bottom: 0.5em;
+  .static-editor p {
+    margin: 0 0 0.7em 0 !important;
+    font-size: 15px !important;
+    line-height: 1.75 !important;
+  }
+
+  .static-editor h1 {
+    font-size: 1.7em !important;
+    font-weight: 700 !important;
+    margin: 0.6em 0 0.35em 0 !important;
     letter-spacing: -0.02em;
     color: #0f172a;
+    line-height: 1.3 !important;
   }
 
-  #editor h2 {
-    font-size: 1.4em;
-    font-weight: 600;
-    margin-bottom: 0.4em;
+  .static-editor h2 {
+    font-size: 1.35em !important;
+    font-weight: 700 !important;
+    margin: 0.55em 0 0.3em 0 !important;
     color: #0f172a;
+    line-height: 1.35 !important;
   }
 
-  #editor h3 {
-    font-size: 1.15em;
-    font-weight: 600;
-    margin-bottom: 0.35em;
+  .static-editor h3 {
+    font-size: 1.1em !important;
+    font-weight: 700 !important;
+    margin: 0.5em 0 0.25em 0 !important;
     color: #0f172a;
+    line-height: 1.4 !important;
   }
 
-  #editor blockquote {
+  .static-editor b,
+  .static-editor strong {
+    font-weight: 700 !important;
+  }
+
+  .static-editor blockquote {
     border-left: 3px solid #6366f1;
     padding: 0.5em 1.1em;
-    margin: 0.85em 0;
+    margin: 0.85em 0 !important;
     color: #6b7280;
     font-style: italic;
     background: #f5f5ff;
     border-radius: 0 6px 6px 0;
+    line-height: 1.75 !important;
   }
 
-  #editor code {
-    font-family: 'JetBrains Mono', 'Fira Code', monospace;
-    font-size: 0.85em;
+  .static-editor code {
+    font-family: 'JetBrains Mono', 'Fira Code', monospace !important;
+    font-size: 0.8em;
+    background: #f3f4f6;
+    border: 0.5px solid #e5e7eb;
     padding: 0.15em 0.4em;
     border-radius: 4px;
     color: #4338ca;
+    line-height: 1.75 !important;
   }
 
-  #editor pre {
+  .static-editor sup { font-size: 0.75em; vertical-align: super; line-height: 0 !important; }
+  .static-editor sub { font-size: 0.75em; vertical-align: sub; line-height: 0 !important; }
+
+  .static-editor .ed-code-block {
     background: #1e1e2e;
-    color: #d4d4d4;
-    padding: 1em 1.25em;
+    border: none;
     border-radius: 10px;
-    overflow-x: auto;
-    font-size: 13px;
-    line-height: 1.7;
+    padding: 0;
+    margin: 1em 0;
+    overflow: hidden;
+    font-size: 0;
+    line-height: normal !important;
   }
 
-  #editor a {
+  .static-editor .ed-code-lang-badge {
+    display: block;
+    background: rgba(255,255,255,0.07);
+    color: #636da6;
+    font-size: 10px;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace !important;
+    padding: 4px 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    line-height: 1.6 !important;
+  }
+
+  .static-editor .ed-code-block code {
+    display: block;
+    background: none;
+    border: none;
+    padding: 1em 1.25em;
+    font-size: 13px;
+    line-height: 1.7 !important;
+    color: #d4d4d4;
+    overflow-x: auto;
+    white-space: pre;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace !important;
+  }
+
+  .static-editor a {
     color: #6366f1;
     text-decoration: underline;
     text-decoration-color: rgba(99,102,241,0.4);
+    background: none !important;
   }
 
-  #editor ul { margin: 0.5em 0 0.5em 1.6em; }
-  #editor ol { margin: 0.5em 0 0.5em 1.6em; }
-  #editor li { margin: 0.25em 0; }
+  .static-editor a[href^="mailto:"] {
+    color: #6366f1;
+  }
 
-  /* ===== EXCEL TABLE STYLE ===== */
-  #editor table {
+  .static-editor ul { margin: 0.5em 0 0.5em 1.6em !important; }
+  .static-editor ol { margin: 0.5em 0 0.5em 1.6em !important; }
+  .static-editor li { margin: 0.2em 0 !important; line-height: 1.75 !important; }
+
+  .static-editor ::selection { background: rgba(99,102,241,0.15); }
+
+  /* Table */
+  .static-editor table {
     width: 100%;
     border-collapse: collapse;
     margin: 1em 0;
-    font-size: 0.95em;
-    border: 1px solid #d1d5db;
+    font-size: 13px;
+    table-layout: fixed;
   }
 
-  #editor th,
-  #editor td {
+  .static-editor th,
+  .static-editor td {
     border: 1px solid #d1d5db;
-    padding: 10px 12px;
+    padding: 6px 8px;
     text-align: left;
     vertical-align: top;
     background: #ffffff;
   }
 
-  #editor th {
-    background: #f3f4f6;
+  .static-editor th {
+    background: #f1f5f9;
     font-weight: 600;
-    color: #111827;
+    color: #374151;
   }
 
-  #editor tr:hover td {
+  .static-editor tr:hover td {
     background: #f9fafb;
-  }
-
-  #editor ::selection {
-    background: rgba(99,102,241,0.15);
-  }
-
-  .table-placeholder {
-    display: block;
-    margin: 0.85em 0;
   }
 `;
 
-export default function StaticContent({
-    content,
-}: StaticContentProps) {
-    return (
-        <>
-            <style jsx global>{editorStyles}</style>
-
-
-            <div className="ed-body">
-                <div className="ed-content-wrap">
-                    <div
-                        id="editor"
-                        dangerouslySetInnerHTML={{ __html: content }}
-                    />
-                </div>
-            </div>
-        </>
-    );
+export default function StaticContent({ content, className }: StaticContentProps) {
+  return (
+    <>
+      <style jsx global>{editorStyles}</style>
+      <div className={`static-editor${className ? ` ${className}` : ''}`}
+        dangerouslySetInnerHTML={{ __html: content }}
+      />
+    </>
+  );
 }

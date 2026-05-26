@@ -66,6 +66,7 @@
     "react-player": "^3.4.0",
     "react-redux": "^9.2.0",
     "react-syntax-highlighter": "^16.1.1",
+    "react-youtube": "^10.1.0",
     "recharts": "^3.8.1",
     "shadcn-ui": "^0.9.5",
     "socket.io-client": "^4.6.2",

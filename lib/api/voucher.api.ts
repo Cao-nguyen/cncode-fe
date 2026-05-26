@@ -1,140 +1,107 @@
-// lib/api/voucher.api.ts
-import {
-    ICreateVoucherDto,
-    IUpdateVoucherDto,
-    IAssignVoucherDto,
-    IApplyVoucherDto,
-    IVoucher,
-    IUserVoucher
-} from '@/types/voucher.type';
+import { Voucher, UserVoucher, CreateVoucherDto } from '@/types/voucher.type';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
+const getToken = (): string | null => {
+    if (typeof window === 'undefined') return null;
+    try {
+        const raw = localStorage.getItem('auth-storage');
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        return parsed?.state?.token ?? null;
+    } catch {
+        return null;
+    }
+};
+
+const getAuthHeaders = (): HeadersInit => {
+    const token = getToken();
+    const headers: HeadersInit = { 'Content-Type': 'application/json' };
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    }
+    return headers;
+};
+
 export const voucherApi = {
-    // ============ USER API ============
+    // ============ USER ============
+    getUserVouchers: async (params: { page?: number; limit?: number; status?: string } = {}) => {
+        const query = new URLSearchParams();
+        if (params.page) query.append('page', params.page.toString());
+        if (params.limit) query.append('limit', params.limit.toString());
+        if (params.status) query.append('status', params.status);
 
-    getMyVouchers: async (token: string, status?: string): Promise<{ success: boolean; data: IUserVoucher[] }> => {
-        try {
-            const url = status ? `${API_URL}/api/vouchers/user/vouchers?status=${status}` : `${API_URL}/api/vouchers/user/vouchers`;
-            const res = await fetch(url, {
-                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
-            });
-            return await res.json();
-        } catch (error) {
-            console.error('Get my vouchers error:', error);
-            return { success: false, data: [] };
-        }
+        const url = `${API_URL}/api/vouchers/my-vouchers${query.toString() ? `?${query}` : ''}`;
+        const response = await fetch(url, { headers: getAuthHeaders() });
+        return response.json();
     },
 
-    applyVoucher: async (token: string, data: IApplyVoucherDto): Promise<{ success: boolean; data?: any; message?: string }> => {
-        try {
-            const res = await fetch(`${API_URL}/api/vouchers/user/vouchers/apply`, {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            });
-            return await res.json();
-        } catch (error) {
-            console.error('Apply voucher error:', error);
-            return { success: false, message: 'Có lỗi xảy ra' };
-        }
+    useVoucher: async (userVoucherId: string) => {
+        const response = await fetch(`${API_URL}/api/vouchers/use`, {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ userVoucherId })
+        });
+        return response.json();
     },
 
-    // ============ ADMIN API ============
+    // ============ ADMIN ============
+    getAllVouchers: async (params: { page?: number; limit?: number; search?: string; status?: string } = {}) => {
+        const query = new URLSearchParams();
+        if (params.page) query.append('page', params.page.toString());
+        if (params.limit) query.append('limit', params.limit.toString());
+        if (params.search) query.append('search', params.search);
+        if (params.status) query.append('status', params.status);
 
-    getAllVouchers: async (token: string, params?: { status?: string; search?: string }): Promise<{ success: boolean; data: IVoucher[] }> => {
-        try {
-            const query = new URLSearchParams();
-            if (params?.status) query.append('status', params.status);
-            if (params?.search) query.append('search', params.search);
-            const url = `${API_URL}/api/vouchers/admin/vouchers${query.toString() ? `?${query.toString()}` : ''}`;
-            const res = await fetch(url, {
-                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
-            });
-            return await res.json();
-        } catch (error) {
-            console.error('Get all vouchers error:', error);
-            return { success: false, data: [] };
-        }
+        const url = `${API_URL}/api/vouchers/admin/list${query.toString() ? `?${query}` : ''}`;
+        const response = await fetch(url, { headers: getAuthHeaders() });
+        return response.json();
     },
 
-    getVoucherById: async (token: string, id: string): Promise<{ success: boolean; data?: IVoucher; message?: string }> => {
-        try {
-            const res = await fetch(`${API_URL}/api/vouchers/admin/vouchers/${id}`, {
-                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
-            });
-            return await res.json();
-        } catch (error) {
-            console.error('Get voucher by id error:', error);
-            return { success: false, message: 'Có lỗi xảy ra' };
-        }
+    getStatistics: async () => {
+        const response = await fetch(`${API_URL}/api/vouchers/admin/statistics`, {
+            headers: getAuthHeaders()
+        });
+        return response.json();
     },
 
-    createVoucher: async (token: string, data: ICreateVoucherDto): Promise<{ success: boolean; data?: IVoucher; message?: string }> => {
-        try {
-            const res = await fetch(`${API_URL}/api/vouchers/admin/vouchers`, {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            });
-            return await res.json();
-        } catch (error) {
-            console.error('Create voucher error:', error);
-            return { success: false, message: 'Có lỗi xảy ra' };
-        }
+    getVoucherById: async (id: string) => {
+        const response = await fetch(`${API_URL}/api/vouchers/admin/${id}`, {
+            headers: getAuthHeaders()
+        });
+        return response.json();
     },
 
-    updateVoucher: async (token: string, id: string, data: IUpdateVoucherDto): Promise<{ success: boolean; data?: IVoucher; message?: string }> => {
-        try {
-            const res = await fetch(`${API_URL}/api/vouchers/admin/vouchers/${id}`, {
-                method: 'PUT',
-                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            });
-            return await res.json();
-        } catch (error) {
-            console.error('Update voucher error:', error);
-            return { success: false, message: 'Có lỗi xảy ra' };
-        }
+    createVoucher: async (data: CreateVoucherDto) => {
+        const response = await fetch(`${API_URL}/api/vouchers/admin`, {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify(data)
+        });
+        return response.json();
     },
 
-    deleteVoucher: async (token: string, id: string): Promise<{ success: boolean; message?: string }> => {
-        try {
-            const res = await fetch(`${API_URL}/api/vouchers/admin/vouchers/${id}`, {
-                method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
-            });
-            return await res.json();
-        } catch (error) {
-            console.error('Delete voucher error:', error);
-            return { success: false, message: 'Có lỗi xảy ra' };
-        }
+    updateVoucher: async (id: string, data: Partial<CreateVoucherDto>) => {
+        const response = await fetch(`${API_URL}/api/vouchers/admin/${id}`, {
+            method: 'PUT',
+            headers: getAuthHeaders(),
+            body: JSON.stringify(data)
+        });
+        return response.json();
     },
 
-    assignVoucherToUsers: async (token: string, data: IAssignVoucherDto): Promise<{ success: boolean; message?: string }> => {
-        try {
-            const res = await fetch(`${API_URL}/api/vouchers/admin/vouchers/assign`, {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            });
-            return await res.json();
-        } catch (error) {
-            console.error('Assign voucher error:', error);
-            return { success: false, message: 'Có lỗi xảy ra' };
-        }
+    deleteVoucher: async (id: string) => {
+        const response = await fetch(`${API_URL}/api/vouchers/admin/${id}`, {
+            method: 'DELETE',
+            headers: getAuthHeaders()
+        });
+        return response.json();
     },
 
-    getAssignableUsers: async (token: string, search?: string): Promise<{ success: boolean; data: { _id: string; fullName: string; email: string; avatar?: string }[] }> => {
-        try {
-            const url = search ? `${API_URL}/api/vouchers/admin/users/assignable?search=${encodeURIComponent(search)}` : `${API_URL}/api/vouchers/admin/users/assignable`;
-            const res = await fetch(url, {
-                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
-            });
-            return await res.json();
-        } catch (error) {
-            console.error('Get assignable users error:', error);
-            return { success: false, data: [] };
-        }
-    },
+    getAssignedUsers: async (id: string) => {
+        const response = await fetch(`${API_URL}/api/vouchers/admin/${id}/users`, {
+            headers: getAuthHeaders()
+        });
+        return response.json();
+    }
 };

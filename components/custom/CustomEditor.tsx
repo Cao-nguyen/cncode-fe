@@ -189,34 +189,92 @@ function tokenize(code: string, lang: string): string {
     return result;
 }
 
-// ─── Auto-link detection ──────────────────────────────────────────────────────
+// ─── FIX 1: Auto-link — chỉ link và email, KHÔNG tô màu email dạng ***@gmail ──
 
-const URL_REGEX = /(?:https?:\/\/|www\.)[^\s<>"']+|[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z]{2,})+(?:\/[^\s<>"']*)?/g;
+// Regex riêng biệt cho URL và email
+const EMAIL_REGEX = /[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/g;
+const URL_REGEX = /(?:https?:\/\/|www\.)[^\s<>"']+|(?<![@ \t])\b[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z]{2,})+(?:\/[^\s<>"']*)?/g;
 
 function autoLinkText(node: Node) {
     if (node.nodeType === Node.TEXT_NODE) {
         const text = node.textContent ?? "";
-        if (!URL_REGEX.test(text)) return;
+
+        // Kết hợp cả URL và email, tìm tất cả matches
+        const combined: Array<{ index: number; length: number; url: string; isEmail: boolean }> = [];
+
+        // Tìm emails
+        EMAIL_REGEX.lastIndex = 0;
+        let m: RegExpExecArray | null;
+        while ((m = EMAIL_REGEX.exec(text)) !== null) {
+            combined.push({ index: m.index, length: m[0].length, url: `mailto:${m[0]}`, isEmail: true });
+        }
+
+        // Tìm URLs — nhưng skip nếu vị trí đã bị email chiếm
         URL_REGEX.lastIndex = 0;
+        while ((m = URL_REGEX.exec(text)) !== null) {
+            const overlap = combined.some(e => m!.index >= e.index && m!.index < e.index + e.length);
+            if (!overlap) {
+                const href = m[0].startsWith("http") ? m[0] : `https://${m[0]}`;
+                combined.push({ index: m.index, length: m[0].length, url: href, isEmail: false });
+            }
+        }
+
+        if (combined.length === 0) return;
+
+        combined.sort((a, b) => a.index - b.index);
+
         const frag = document.createDocumentFragment();
         let last = 0;
-        let m: RegExpExecArray | null;
-        while ((m = URL_REGEX.exec(text)) !== null) {
-            if (m.index > last) frag.appendChild(document.createTextNode(text.slice(last, m.index)));
+        for (const item of combined) {
+            if (item.index > last) frag.appendChild(document.createTextNode(text.slice(last, item.index)));
             const a = document.createElement("a");
-            const href = m[0].startsWith("http") ? m[0] : `https://${m[0]}`;
-            a.href = href;
-            a.textContent = m[0];
-            a.target = "_blank";
-            a.rel = "noopener noreferrer";
+            a.href = item.url;
+            a.textContent = text.slice(item.index, item.index + item.length);
+            if (!item.isEmail) { a.target = "_blank"; a.rel = "noopener noreferrer"; }
             frag.appendChild(a);
-            last = m.index + m[0].length;
+            last = item.index + item.length;
         }
         if (last < text.length) frag.appendChild(document.createTextNode(text.slice(last)));
         node.parentNode?.replaceChild(frag, node);
     } else if (node.nodeType === Node.ELEMENT_NODE && node.nodeName !== "A") {
         Array.from(node.childNodes).forEach(autoLinkText);
     }
+}
+
+// ─── FIX 3: Strip paste formatting → plain text với font/size chuẩn ──────────
+
+function stripAndNormalizePaste(html: string): string {
+    // Tạo DOM tạm để parse
+    const tmp = document.createElement("div");
+    tmp.innerHTML = html;
+
+    // Xóa hết style inline, giữ lại cấu trúc block
+    function cleanNode(el: Element) {
+        // Giữ một số thuộc tính semantic nhưng xóa style
+        el.removeAttribute("style");
+        el.removeAttribute("class");
+        el.removeAttribute("font");
+        el.removeAttribute("color");
+        el.removeAttribute("size");
+        el.removeAttribute("face");
+        for (const child of Array.from(el.children)) {
+            cleanNode(child);
+        }
+    }
+    cleanNode(tmp);
+
+    // Unwrap các tag font/span không semantic
+    const unwrapTags = ["font", "span"];
+    for (const tag of unwrapTags) {
+        tmp.querySelectorAll(tag).forEach(el => {
+            const parent = el.parentNode;
+            if (!parent) return;
+            while (el.firstChild) parent.insertBefore(el.firstChild, el);
+            parent.removeChild(el);
+        });
+    }
+
+    return tmp.innerHTML;
 }
 
 // ─── Toolbar Button ───────────────────────────────────────────────────────────
@@ -465,8 +523,6 @@ const UploadImageModal: React.FC<UploadImageModalProps> = ({ onClose, onConfirm,
 
 // ─── Image Widget ─────────────────────────────────────────────────────────────
 
-// components/custom/CustomEditor.tsx - Sửa ImageWidget
-
 const ImageWidget: React.FC<{
     src: string;
     alt: string;
@@ -474,7 +530,6 @@ const ImageWidget: React.FC<{
     onUpdate?: (id: string, data: { width?: number; rotation?: number; align?: string; x?: number; y?: number }) => void;
     widgetId?: string;
 }> = ({ src, alt, onDelete, onUpdate, widgetId }) => {
-    // Lấy giá trị từ attribute nếu có
     const getInitialWidth = () => {
         if (widgetId) {
             const el = document.querySelector(`[data-img-id="${widgetId}"]`);
@@ -525,7 +580,6 @@ const ImageWidget: React.FC<{
     const dragStart = useRef({ mx: 0, my: 0, px: 0, py: 0 });
     const resizeStartRef = useRef({ mx: 0, w: 0 });
 
-    // Lưu thay đổi vào attribute
     const saveChanges = useCallback((updates: { width?: number; rotation?: number; align?: ImgAlign; x?: number; y?: number }) => {
         if (widgetId) {
             const el = document.querySelector(`[data-img-id="${widgetId}"]`);
@@ -793,6 +847,7 @@ const CustomEditor = forwardRef<CustomEditorRef, CustomEditorProps>(({ initialVa
         superscript: false, subscript: false,
     });
     const [status, setStatus] = useState<EditorStatus>({ words: 0, chars: 0, saved: true });
+    // FIX 6: heading state sẽ được update theo vị trí con trỏ thực tế
     const [heading, setHeading] = useState<HeadingLevel>("p");
     const [fontColor, setFontColor] = useState<string>("#111827");
     const [activeHighlight, setActiveHighlight] = useState<string | null>(null);
@@ -803,7 +858,6 @@ const CustomEditor = forwardRef<CustomEditorRef, CustomEditorProps>(({ initialVa
     const [imageWidgets, setImageWidgets] = useState<Map<string, { src: string; alt: string }>>(new Map());
     const [tableWidgets, setTableWidgets] = useState<Map<string, { rows: number; cols: number }>>(new Map());
 
-    // ✅ 1. Khai báo updateStatus TRƯỚC
     const updateStatus = useCallback(() => {
         const text = editorRef.current?.innerText ?? "";
         const words = text.trim() ? text.trim().split(/\s+/).length : 0;
@@ -811,7 +865,6 @@ const CustomEditor = forwardRef<CustomEditorRef, CustomEditorProps>(({ initialVa
         startTransition(() => setStatus(s => ({ ...s, words, chars })));
     }, []);
 
-    // ✅ 2. Khai báo scheduleAutosave SAU updateStatus
     const scheduleAutosave = useCallback(() => {
         setStatus(s => ({ ...s, saved: false }));
         if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
@@ -819,7 +872,24 @@ const CustomEditor = forwardRef<CustomEditorRef, CustomEditorProps>(({ initialVa
         updateStatus();
     }, [updateStatus]);
 
-    // ✅ 3. Khai báo updateActiveStates
+    // FIX 6: Detect block format tại vị trí con trỏ hiện tại
+    const detectHeadingAtCursor = useCallback(() => {
+        const sel = window.getSelection();
+        if (!sel || !sel.rangeCount) return;
+        let node: Node | null = sel.getRangeAt(0).startContainer;
+        while (node && node !== editorRef.current) {
+            if (node.nodeType === Node.ELEMENT_NODE) {
+                const tag = (node as Element).tagName.toLowerCase();
+                if (["h1", "h2", "h3", "p"].includes(tag)) {
+                    setHeading(tag as HeadingLevel);
+                    return;
+                }
+            }
+            node = node.parentNode;
+        }
+        setHeading("p");
+    }, []);
+
     const updateActiveStates = useCallback(() => {
         startTransition(() => {
             setActive({
@@ -835,9 +905,10 @@ const CustomEditor = forwardRef<CustomEditorRef, CustomEditorProps>(({ initialVa
                 subscript: document.queryCommandState("subscript"),
             });
         });
-    }, []);
+        // FIX 6: luôn sync heading khi update states
+        detectHeadingAtCursor();
+    }, [detectHeadingAtCursor]);
 
-    // ✅ 4. Khai báo exec SAU updateActiveStates và scheduleAutosave
     const exec = useCallback((cmd: string, val?: string) => {
         editorRef.current?.focus();
         document.execCommand(cmd, false, val);
@@ -845,7 +916,6 @@ const CustomEditor = forwardRef<CustomEditorRef, CustomEditorProps>(({ initialVa
         scheduleAutosave();
     }, [updateActiveStates, scheduleAutosave]);
 
-    // ✅ 5. Khai báo deleteImage TRƯỚC khi dùng
     const deleteImage = useCallback((id: string) => {
         setImageWidgets(m => {
             const next = new Map(m);
@@ -861,7 +931,6 @@ const CustomEditor = forwardRef<CustomEditorRef, CustomEditorProps>(({ initialVa
         scheduleAutosave();
     }, [scheduleAutosave]);
 
-    // ✅ 6. Khai báo mountImageWidgets (dùng deleteImage)
     const mountImageWidgets = useCallback(() => {
         const editor = editorRef.current;
         if (!editor) return;
@@ -885,7 +954,6 @@ const CustomEditor = forwardRef<CustomEditorRef, CustomEditorProps>(({ initialVa
         });
     }, [deleteImage]);
 
-    // ✅ 7. Khai báo mountTableWidgets
     const mountTableWidgets = useCallback(() => {
         const editor = editorRef.current;
         if (!editor) return;
@@ -902,7 +970,6 @@ const CustomEditor = forwardRef<CustomEditorRef, CustomEditorProps>(({ initialVa
         });
     }, []);
 
-    // ✅ 8. useEffect mount ban đầu
     useEffect(() => {
         if (editorRef.current && initialValue) {
             editorRef.current.innerHTML = initialValue;
@@ -914,7 +981,6 @@ const CustomEditor = forwardRef<CustomEditorRef, CustomEditorProps>(({ initialVa
         }
     }, [initialValue, updateStatus, mountImageWidgets, mountTableWidgets]);
 
-    // ✅ 9. MutationObserver effect
     useEffect(() => {
         if (!editorRef.current) return;
         const observer = new MutationObserver(() => {
@@ -927,7 +993,6 @@ const CustomEditor = forwardRef<CustomEditorRef, CustomEditorProps>(({ initialVa
         return () => observer.disconnect();
     }, [mountImageWidgets, mountTableWidgets]);
 
-    // ✅ 10. useImperativeHandle
     useImperativeHandle(ref, () => ({
         getContent: () => editorRef.current?.innerHTML || '',
         setContent: (content: string) => {
@@ -947,7 +1012,6 @@ const CustomEditor = forwardRef<CustomEditorRef, CustomEditorProps>(({ initialVa
         }
     }), [mountImageWidgets, mountTableWidgets, updateStatus]);
 
-    // ✅ 11. useEffect cleanup
     useEffect(() => {
         if (editorRef.current) {
             if (!initialValue) {
@@ -981,7 +1045,8 @@ const CustomEditor = forwardRef<CustomEditorRef, CustomEditorProps>(({ initialVa
     };
 
     const applyHeading = (tag: HeadingLevel) => {
-        setHeading(tag); editorRef.current?.focus();
+        setHeading(tag);
+        editorRef.current?.focus();
         document.execCommand("formatBlock", false, tag);
         scheduleAutosave();
     };
@@ -1073,40 +1138,270 @@ const CustomEditor = forwardRef<CustomEditorRef, CustomEditorProps>(({ initialVa
         }, 0);
     };
 
+    // ─── FIX 2: Helper đặt cursor ngay sau node ───────────────────────────────
+    const placeCursorAfter = (node: Node) => {
+        const sel = window.getSelection();
+        if (!sel) return;
+        const range = document.createRange();
+        try {
+            // Tìm node text hoặc element tiếp theo sau node này
+            if (node.nextSibling) {
+                if (node.nextSibling.nodeType === Node.TEXT_NODE) {
+                    range.setStart(node.nextSibling, 0);
+                } else {
+                    range.setStartAfter(node);
+                }
+            } else if (node.parentNode) {
+                // Nếu không có sibling, đặt sau parent
+                const parent = node.parentNode;
+                const idx = Array.from(parent.childNodes).indexOf(node as ChildNode);
+                range.setStart(parent, idx + 1);
+            } else {
+                range.setStartAfter(node);
+            }
+            range.collapse(true);
+            sel.removeAllRanges();
+            sel.addRange(range);
+        } catch {
+            // fallback
+        }
+    };
+
+    // ─── FIX 7 & 8: Quote Enter/Backspace logic ───────────────────────────────
+    const handleQuoteEnter = (e: React.KeyboardEvent<HTMLDivElement>): boolean => {
+        const sel = window.getSelection();
+        if (!sel?.rangeCount) return false;
+
+        // Tìm blockquote cha
+        let bq: Element | null = null;
+        let cur: Node | null = sel.getRangeAt(0).startContainer;
+        while (cur && cur !== editorRef.current) {
+            if ((cur as Element).tagName === "BLOCKQUOTE") { bq = cur as Element; break; }
+            cur = cur.parentNode;
+        }
+        if (!bq) return false;
+
+        const range = sel.getRangeAt(0);
+        const atEnd = range.collapsed && range.endOffset === (range.endContainer.textContent?.length ?? 0);
+
+        if (atEnd) {
+            // Kiểm tra nội dung blockquote hiện tại có trống không
+            const bqText = bq.textContent?.trim() ?? "";
+            if (bqText === "") {
+                // FIX 8: blockquote rỗng + Enter → thoát quote, thêm p trống
+                e.preventDefault();
+                const p = document.createElement("p");
+                p.innerHTML = "<br>";
+                bq.parentNode?.insertBefore(p, bq.nextSibling);
+                bq.parentNode?.removeChild(bq);
+                const newRange = document.createRange();
+                newRange.setStart(p, 0);
+                newRange.collapse(true);
+                sel.removeAllRanges();
+                sel.addRange(newRange);
+                scheduleAutosave();
+                return true;
+            }
+
+            // FIX 7: Enter cuối blockquote → kiểm tra dòng cuối có rỗng không
+            // Lấy nội dung phần sau cursor trong blockquote
+            const clonedRange = range.cloneRange();
+            clonedRange.selectNodeContents(bq);
+            clonedRange.setStart(range.endContainer, range.endOffset);
+            const afterText = clonedRange.toString();
+
+            if (afterText.trim() === "") {
+                // Double enter: thoát khỏi blockquote
+                e.preventDefault();
+                // Xóa dòng trống cuối trong blockquote nếu có
+                const lastChild = bq.lastChild;
+                if (lastChild && lastChild.textContent?.trim() === "" && bq.childNodes.length > 1) {
+                    bq.removeChild(lastChild);
+                }
+                const p = document.createElement("p");
+                p.innerHTML = "<br>";
+                bq.parentNode?.insertBefore(p, bq.nextSibling);
+                const newRange = document.createRange();
+                newRange.setStart(p, 0);
+                newRange.collapse(true);
+                sel.removeAllRanges();
+                sel.addRange(newRange);
+                scheduleAutosave();
+                return true;
+            }
+        }
+        return false;
+    };
+
+    const handleQuoteBackspace = (e: React.KeyboardEvent<HTMLDivElement>): boolean => {
+        const sel = window.getSelection();
+        if (!sel?.rangeCount) return false;
+        const range = sel.getRangeAt(0);
+        if (!range.collapsed) return false;
+
+        let cur: Node | null = range.startContainer;
+        let bq: Element | null = null;
+        while (cur && cur !== editorRef.current) {
+            if ((cur as Element).tagName === "BLOCKQUOTE") { bq = cur as Element; break; }
+            cur = cur.parentNode;
+        }
+        if (!bq) return false;
+
+        const bqText = bq.textContent?.trim() ?? "";
+        const atStart = range.startOffset === 0;
+        const containerText = range.startContainer.textContent?.trim() ?? "";
+
+        // FIX 8: Backspace khi blockquote rỗng hoặc con trỏ ở đầu dòng đầu tiên rỗng
+        if ((bqText === "" || (atStart && containerText === "")) && bqText.length <= 1) {
+            e.preventDefault();
+            const p = document.createElement("p");
+            p.innerHTML = "<br>";
+            bq.parentNode?.insertBefore(p, bq);
+            bq.parentNode?.removeChild(bq);
+            const newRange = document.createRange();
+            newRange.setStart(p, 0);
+            newRange.collapse(true);
+            sel.removeAllRanges();
+            sel.addRange(newRange);
+            scheduleAutosave();
+            return true;
+        }
+        return false;
+    };
+
+    // ─── FIX 10: Shift+Enter trong code block → xuống dòng trống ─────────────
+    const handleCodeShiftEnter = (e: React.KeyboardEvent<HTMLDivElement>): boolean => {
+        if (!e.shiftKey) return false;
+        const sel = window.getSelection();
+        if (!sel?.rangeCount) return false;
+        let cur: Node | null = sel.getRangeAt(0).startContainer;
+        let inCode = false;
+        while (cur && cur !== editorRef.current) {
+            if ((cur as Element).tagName === "PRE" && (cur as Element).classList.contains("ed-code-block")) {
+                inCode = true; break;
+            }
+            cur = cur.parentNode;
+        }
+        if (!inCode) return false;
+
+        // Thoát khỏi code block, thêm paragraph sau
+        e.preventDefault();
+        const pre = cur as Element;
+        const p = document.createElement("p");
+        p.innerHTML = "<br>";
+        pre.parentNode?.insertBefore(p, pre.nextSibling);
+        const range = document.createRange();
+        range.setStart(p, 0);
+        range.collapse(true);
+        sel.removeAllRanges();
+        sel.addRange(range);
+        scheduleAutosave();
+        return true;
+    };
+
     const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+        // FIX 10: Shift+Enter trong code block
+        if (e.key === "Enter" && handleCodeShiftEnter(e)) return;
+
+        // FIX 7 & 8: Quote handling
+        if (e.key === "Enter" && !e.shiftKey && handleQuoteEnter(e)) return;
+        if (e.key === "Backspace" && handleQuoteBackspace(e)) return;
+
         if (e.key === "Tab") {
             e.preventDefault();
             exec("indent");
+            return;
         }
+
+        // FIX 2: Autolink sau Space/Enter — cursor đúng vị trí sau link
         if (e.key === " " || e.key === "Enter") {
             setTimeout(() => {
-                const sel = window.getSelection();
-                if (!sel?.rangeCount || !editorRef.current) return;
-                const rangeAfter = sel.getRangeAt(0);
+                const selAfter = window.getSelection();
+                if (!selAfter?.rangeCount || !editorRef.current) return;
+
+                const rangeAfter = selAfter.getRangeAt(0);
                 const anchorNode = rangeAfter.startContainer;
                 const anchorOffset = rangeAfter.startOffset;
-                const targetNode = anchorOffset === 0 && anchorNode.previousSibling
-                    ? anchorNode.previousSibling
-                    : anchorNode;
-                if (targetNode.nodeType === Node.TEXT_NODE && targetNode.parentNode?.nodeName !== "A") {
-                    autoLinkText(targetNode);
+
+                // Tìm text node chứa URL (ngay trước cursor)
+                let targetNode: Node | null = null;
+                if (anchorNode.nodeType === Node.TEXT_NODE) {
+                    targetNode = anchorNode;
+                } else if (anchorNode.nodeType === Node.ELEMENT_NODE) {
+                    const prev = anchorOffset > 0 ? anchorNode.childNodes[anchorOffset - 1] : null;
+                    if (prev?.nodeType === Node.TEXT_NODE) targetNode = prev;
+                    else if (anchorNode.previousSibling?.nodeType === Node.TEXT_NODE) {
+                        targetNode = anchorNode.previousSibling;
+                    }
                 }
+
+                if (!targetNode || targetNode.nodeType !== Node.TEXT_NODE) return;
+                if (targetNode.parentNode?.nodeName === "A") return;
+
+                const fullText = targetNode.textContent ?? "";
+                const hasLink = /(?:https?:\/\/|www\.)[^\s]+|[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/i.test(fullText);
+                if (!hasLink) return;
+
+                // Lưu nextSibling TRƯỚC khi autoLinkText replace node
+                const parent = targetNode.parentNode;
+                const nextSiblingBeforeReplace = targetNode.nextSibling;
+
+                autoLinkText(targetNode);
+                // targetNode giờ đã bị detach, nextSiblingBeforeReplace vẫn còn trong DOM
+
                 try {
-                    const parent = rangeAfter.startContainer.parentNode ?? editorRef.current;
+                    const newSel = window.getSelection();
+                    if (!newSel) return;
                     const newRange = document.createRange();
-                    if (anchorNode.isConnected) {
-                        newRange.setStart(anchorNode, anchorOffset);
-                    } else {
+
+                    if (nextSiblingBeforeReplace && nextSiblingBeforeReplace.isConnected) {
+                        if (nextSiblingBeforeReplace.nodeType === Node.TEXT_NODE) {
+                            // Đặt cursor sau space (offset 1)
+                            newRange.setStart(nextSiblingBeforeReplace, Math.min(1, nextSiblingBeforeReplace.textContent?.length ?? 0));
+                        } else {
+                            newRange.setStartBefore(nextSiblingBeforeReplace);
+                        }
+                    } else if (parent && parent.isConnected) {
+                        // Không có nextSibling → cuối parent
                         newRange.selectNodeContents(parent);
                         newRange.collapse(false);
+                    } else {
+                        return;
                     }
+
                     newRange.collapse(true);
-                    sel.removeAllRanges();
-                    sel.addRange(newRange);
+                    newSel.removeAllRanges();
+                    newSel.addRange(newRange);
                 } catch { }
             }, 10);
         }
     };
+
+    // FIX 3: Handle paste — strip formatting
+    const handlePaste = useCallback((e: React.ClipboardEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        const clipData = e.clipboardData;
+
+        // Ưu tiên plain text nếu có
+        const plainText = clipData.getData("text/plain");
+        const htmlData = clipData.getData("text/html");
+
+        if (htmlData) {
+            // Strip toàn bộ style, giữ cấu trúc block cơ bản
+            const cleaned = stripAndNormalizePaste(htmlData);
+            document.execCommand("insertHTML", false, cleaned);
+        } else if (plainText) {
+            // Plain text: giữ nguyên, chỉ escape HTML
+            const escaped = plainText
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/\n/g, "<br>");
+            document.execCommand("insertHTML", false, escaped);
+        }
+
+        scheduleAutosave();
+    }, [scheduleAutosave]);
 
     return (
         <>
@@ -1135,6 +1430,7 @@ const CustomEditor = forwardRef<CustomEditorRef, CustomEditorProps>(({ initialVa
                         <ToolbarButton icon={<Code size={15} />} label="Code block" onClick={() => { saveRange(); setModal("code"); }} />
                         <Sep />
                         <div className="ed-select-wrapper">
+                            {/* FIX 6: value phản ánh heading thực tại cursor */}
                             <select value={heading} onChange={e => applyHeading(e.target.value as HeadingLevel)} className="ed-select" style={{ width: 110 }}>
                                 <option value="p">Đoạn văn</option>
                                 <option value="h1">Tiêu đề 1</option>
@@ -1159,10 +1455,16 @@ const CustomEditor = forwardRef<CustomEditorRef, CustomEditorProps>(({ initialVa
                             role="textbox"
                             aria-multiline
                             aria-label="Trình soạn thảo"
+                            style={{
+                                fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+                                fontSize: "15px",
+                                lineHeight: "1.75",
+                            }}
                             onInput={() => { updateActiveStates(); scheduleAutosave(); }}
                             onKeyUp={updateActiveStates}
                             onMouseUp={updateActiveStates}
                             onKeyDown={handleKeyDown}
+                            onPaste={handlePaste}
                         />
                     </div>
                 </div>
@@ -1242,48 +1544,101 @@ const editorStyles = `
   }
   .ed-body { display: flex; flex: 1; overflow: hidden; }
   .ed-content-wrap { flex: 1; overflow-y: auto; }
+
+  /* FIX 9: Line-height cố định, không bao giờ thay đổi */
   #editor {
     outline: none; padding: 1.5rem 2.25rem;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-    font-size: 16px; line-height: 1.8; color: #111827;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
+    font-size: 15px !important;
+    line-height: 1.75 !important;
+    color: #111827;
     min-height: 100%; caret-color: #6366f1;
     box-sizing: border-box;
   }
-  #editor p { margin-bottom: 0.9em; }
-  #editor h1 { font-size: 1.85em; font-weight: 700; margin-bottom: 0.5em; letter-spacing: -0.02em; color: #0f172a; }
-  #editor h2 { font-size: 1.4em; font-weight: 600; margin-bottom: 0.4em; color: #0f172a; }
-  #editor h3 { font-size: 1.15em; font-weight: 600; margin-bottom: 0.35em; color: #0f172a; }
+
+  /* FIX 3: Đảm bảo mọi thứ trong editor dùng font Inter */
+  #editor * {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
+    line-height: 1.75 !important;
+  }
+
+  /* FIX 9: Khoảng cách dòng cố định */
+  #editor p {
+    margin: 0 0 0.7em 0 !important;
+    font-size: 15px !important;
+    line-height: 1.75 !important;
+  }
+
+  /* FIX 4 & 5: Heading sizes — rõ ràng, đồng nhất font-weight */
+  #editor h1 {
+    font-size: 1.7em !important;
+    font-weight: 700 !important;
+    margin: 0.6em 0 0.35em 0 !important;
+    letter-spacing: -0.02em;
+    color: #0f172a;
+    line-height: 1.3 !important;
+  }
+  #editor h2 {
+    font-size: 1.35em !important;
+    font-weight: 700 !important;
+    margin: 0.55em 0 0.3em 0 !important;
+    color: #0f172a;
+    line-height: 1.35 !important;
+  }
+  #editor h3 {
+    font-size: 1.1em !important;
+    font-weight: 700 !important;
+    margin: 0.5em 0 0.25em 0 !important;
+    color: #0f172a;
+    line-height: 1.4 !important;
+  }
+
+  /* FIX 4: Bold đồng nhất với heading weight */
+  #editor b, #editor strong {
+    font-weight: 700 !important;
+  }
+
   #editor blockquote {
-    border-left: 3px solid #6366f1; padding: 0.5em 1.1em; margin: 0.85em 0;
+    border-left: 3px solid #6366f1; padding: 0.5em 1.1em; margin: 0.85em 0 !important;
     color: #6b7280; font-style: italic; background: #f5f5ff; border-radius: 0 6px 6px 0;
+    line-height: 1.75 !important;
   }
   #editor code {
-    font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 0.8em;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace !important; font-size: 0.8em;
     background: #f3f4f6; border: 0.5px solid #e5e7eb;
     padding: 0.15em 0.4em; border-radius: 4px; color: #4338ca;
+    line-height: 1.75 !important;
   }
-  #editor sup { font-size: 0.75em; vertical-align: super; }
-  #editor sub { font-size: 0.75em; vertical-align: sub; }
+  #editor sup { font-size: 0.75em; vertical-align: super; line-height: 0 !important; }
+  #editor sub { font-size: 0.75em; vertical-align: sub; line-height: 0 !important; }
   #editor .ed-code-block {
     background: #1e1e2e; border: none; border-radius: 10px;
     padding: 0; margin: 1em 0; overflow: hidden; font-size: 0;
+    line-height: normal !important;
   }
   #editor .ed-code-lang-badge {
     display: block; background: rgba(255,255,255,0.07); color: #636da6;
-    font-size: 10px; font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 10px; font-family: 'JetBrains Mono', 'Fira Code', monospace !important;
     padding: 4px 12px; border-bottom: 1px solid rgba(255,255,255,0.05);
     letter-spacing: 0.08em; text-transform: uppercase;
+    line-height: 1.6 !important;
   }
   #editor .ed-code-block code {
     display: block; background: none; border: none;
-    padding: 1em 1.25em; font-size: 13px; line-height: 1.7;
+    padding: 1em 1.25em; font-size: 13px; line-height: 1.7 !important;
     color: #d4d4d4; overflow-x: auto; white-space: pre;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace !important;
   }
-  #editor a { color: #6366f1; text-decoration: underline; text-decoration-color: rgba(99,102,241,0.4); }
-  #editor ul { margin: 0.5em 0 0.5em 1.6em; }
-  #editor ol { margin: 0.5em 0 0.5em 1.6em; }
-  #editor li { margin: 0.25em 0; }
+
+  /* FIX 1: Link + email — không tô màu nền, chỉ underline xanh */
+  #editor a { color: #6366f1; text-decoration: underline; text-decoration-color: rgba(99,102,241,0.4); background: none !important; }
+  #editor a[href^="mailto:"] { color: #6366f1; }
+
+  #editor ul { margin: 0.5em 0 0.5em 1.6em !important; }
+  #editor ol { margin: 0.5em 0 0.5em 1.6em !important; }
+  #editor li { margin: 0.2em 0 !important; line-height: 1.75 !important; }
   #editor ::selection { background: rgba(99,102,241,0.15); }
+
   .highlight-picker {
     position: absolute; top: 34px; left: 0; z-index: 100;
     background: #fff; border: 0.5px solid #e5e7eb; border-radius: 8px;
@@ -1324,10 +1679,10 @@ const editorStyles = `
   .table-placeholder { display: block; margin: 0.85em 0; }
   .table-widget { margin: 0.85em 0; display: inline-block; width: 100%; }
   .table-selected { outline: 2px solid #6366f1; border-radius: 8px; outline-offset: 2px; }
-  .tw-table { border-collapse: collapse; font-size: 13px; font-family: 'Inter', system-ui, sans-serif; table-layout: fixed; }
+  .tw-table { border-collapse: collapse; font-size: 13px; font-family: 'Inter', system-ui, sans-serif !important; table-layout: fixed; }
   .tw-th { background: #f1f5f9; font-weight: 600; color: #374151; border: 1px solid #d1d5db; padding: 0; position: relative; }
   .tw-td { border: 1px solid #e5e7eb; padding: 0; position: relative; }
-  .tw-cell-input { width: 100%; border: none; outline: none; background: transparent; padding: 6px 8px; font-size: 13px; font-family: 'Inter', system-ui, sans-serif; color: #111827; box-sizing: border-box; }
+  .tw-cell-input { width: 100%; border: none; outline: none; background: transparent; padding: 6px 8px; font-size: 13px; font-family: 'Inter', system-ui, sans-serif !important; color: #111827; box-sizing: border-box; }
   .tw-header-input { font-weight: 600; color: #374151; }
   .tw-col-resize { position: absolute; right: 0; top: 0; bottom: 0; width: 5px; cursor: col-resize; z-index: 5; }
   .tw-col-resize:hover { background: rgba(99,102,241,0.3); }
@@ -1347,7 +1702,7 @@ const editorStyles = `
     display: flex; align-items: center; justify-content: center; gap: 4px;
     width: 100%; background: #f0f9ff; border: 1px dashed #c7d2fe; border-top: none;
     color: #6366f1; font-size: 12px; padding: 5px; cursor: pointer;
-    border-radius: 0 0 6px 6px; font-family: 'Inter', system-ui, sans-serif;
+    border-radius: 0 0 6px 6px; font-family: 'Inter', system-ui, sans-serif !important;
   }
   .tw-add-row:hover { background: #e0e7ff; }
   .ed-statusbar {

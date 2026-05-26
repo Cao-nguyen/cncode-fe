@@ -480,7 +480,7 @@ const SettingsPage = () => {
                     </form>
 
                     {/* Nâng cấp tài khoản */}
-                    {currentUser.role === 'user' && (
+                    {currentUser.role !== 'teacher' && currentUser.role !== 'admin' && (
                         <div className="mt-6 bg-[var(--cn-bg-section)] rounded-[var(--cn-radius-md)] p-4 sm:p-6 border border-[var(--cn-border)]">
                             <h3 className="text-base sm:text-lg font-semibold text-[var(--cn-text-main)] mb-3 sm:mb-4 flex items-center gap-2">
                                 <Award className="w-5 h-5 text-[var(--cn-primary)]" />
@@ -489,6 +489,7 @@ const SettingsPage = () => {
                             <p className="text-xs sm:text-sm text-[var(--cn-text-muted)] mb-4">
                                 Đăng ký trở thành giáo viên để đăng tải bài giảng và chia sẻ kiến thức với cộng đồng.
                             </p>
+
                             {currentUser.requestedRole === 'teacher' ? (
                                 <div className="flex items-center gap-2 p-3 bg-green-50 dark:bg-green-900/20 rounded-[var(--cn-radius-sm)] border border-green-200 dark:border-green-800">
                                     <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0" />

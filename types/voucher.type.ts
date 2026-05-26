@@ -1,70 +1,56 @@
-// types/voucher.type.ts
-
-export type DiscountType = 'percentage' | 'fixed' | 'freeship';
-export type VoucherStatus = 'active' | 'inactive' | 'expired';
-export type UserVoucherStatus = 'available' | 'used' | 'expired';
-
-export interface IVoucher {
+export interface Voucher {
     _id: string;
-    title: string;
-    description: string;
     code: string;
+    name: string;
+    description: string;
+    discountType: 'percentage' | 'fixed';
     discountValue: number;
-    discountType: DiscountType;
-    category: string;
-    minOrder: number;
     maxDiscount?: number;
-    expiryDate: string;
-    usageLimit: number;
+    minOrderValue: number;
+    maxUsage: number;
     usedCount: number;
-    assignedUsers: string[];
-    isGlobal: boolean;
-    status: VoucherStatus;
-    createdBy: {
-        _id: string;
-        fullName: string;
-        email: string;
-    };
+    startDate: string;
+    endDate: string;
+    applicableTo: 'all' | 'course' | 'product' | 'service';
+    assignType: 'all' | 'selected';
+    assignedUsers: Array<{ _id: string; fullName: string; email: string }>;
+    isActive: boolean;
+    statusText?: string;
     createdAt: string;
-    updatedAt: string;
 }
 
-export interface IUserVoucher {
-    _id: string;
-    voucherId: IVoucher;
-    userId: string;
+export interface UserVoucher {
+    id: string;
     code: string;
-    status: UserVoucherStatus;
+    isUsed: boolean;
+    receivedAt: string;
     usedAt?: string;
-    assignedAt: string;
-    expiresAt: string;
+    voucher: {
+        _id: string;
+        name: string;
+        description: string;
+        discountType: string;
+        discountValue: number;
+        maxDiscount?: number;
+        minOrderValue: number;
+        endDate: string;
+    };
+    isExpired: boolean;
+    isAvailable: boolean;
 }
 
-export interface ICreateVoucherDto {
-    title: string;
-    description: string;
+export interface CreateVoucherDto {
     code: string;
+    name: string;
+    description?: string;
+    discountType: 'percentage' | 'fixed';
     discountValue: number;
-    discountType: DiscountType;
-    category: string;
-    minOrder: number;
     maxDiscount?: number;
-    expiryDate: string;
-    usageLimit: number;
+    minOrderValue?: number;
+    maxUsage?: number;
+    startDate: string;
+    endDate: string;
+    applicableTo?: string;
+    assignType: 'all' | 'selected';
     assignedUsers?: string[];
-    isGlobal?: boolean;
-}
-
-export interface IUpdateVoucherDto extends Partial<ICreateVoucherDto> {
-    status?: VoucherStatus;
-}
-
-export interface IAssignVoucherDto {
-    voucherId: string;
-    userIds: string[];
-}
-
-export interface IApplyVoucherDto {
-    code: string;
-    orderTotal: number;
 }

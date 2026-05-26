@@ -17,6 +17,7 @@ import {
     EllipsisVertical,
     Settings,
     Mail,
+    HelpCircle,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -78,6 +79,11 @@ const menuItems = [
                 title: "Góc hỏi đáp",
                 link: "/admin/faq",
                 icon: <Message size={18} variant="Outline" />,
+            },
+            {
+                title: "Hỗ trợ dự án",
+                link: "/admin/hotroduan",
+                icon: <HelpCircle size={18} />,
             },
             {
                 title: "Đánh giá",
