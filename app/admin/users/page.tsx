@@ -26,11 +26,11 @@ import {
     ChevronsLeft,
     ChevronsRight,
     AlertTriangle,
-    UserCog,
     X,
     BarChart3,
     Search,
     Settings,
+    Flame,
 } from 'lucide-react';
 import Image from 'next/image';
 import { format } from 'date-fns';
@@ -47,8 +47,11 @@ import {
 } from 'recharts';
 import { CustomSelect } from '@/components/custom/CustomSelect';
 import { DashboardCard } from '@/components/custom/DashboardCard';
-import { CustomInputSearch } from '@/components/custom/CustomInputSearch';
+import { CustomButton } from '@/components/custom/CustomButton';
+import { CustomInput } from '@/components/custom/CustomInput';
 import { CustomTextarea } from '@/components/custom/CustomTextarea';
+import { ConfirmModalDelete } from '@/components/custom/ConfirmationModal';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast } from 'sonner';
 
 const PAGE_SIZE = 10;
@@ -108,6 +111,9 @@ export default function AdminUsersPage() {
     const [showCoinModal, setShowCoinModal] = useState(false);
     const [showRoleModal, setShowRoleModal] = useState(false);
     const [showViolationModal, setShowViolationModal] = useState(false);
+    const [showTeacherDetailModal, setShowTeacherDetailModal] = useState(false);
+    const [selectedPendingTeacher, setSelectedPendingTeacher] = useState<IUser | null>(null);
+    const [deleteUserTarget, setDeleteUserTarget] = useState<IUser | null>(null);
 
     const [selectedRole, setSelectedRole] = useState('');
     const [violationReason, setViolationReason] = useState('');
@@ -195,7 +201,6 @@ export default function AdminUsersPage() {
         }
     }, [token]);
 
-    // Khi filters thay đổi, reset page và fetch lại (giữ lại dữ liệu cũ)
     useEffect(() => {
         if (initialFetchDone.current) {
             setPage(1);
@@ -207,7 +212,6 @@ export default function AdminUsersPage() {
         if (initialFetchDone.current && page > 0) fetchUsers(true, true);
     }, [page]);
 
-    // Debounce search
     const handleSearchChange = (value: string) => {
         if (searchTimeout.current) clearTimeout(searchTimeout.current);
         searchTimeout.current = setTimeout(() => {
@@ -297,9 +301,11 @@ export default function AdminUsersPage() {
                 }
                 fetchStats();
                 if (activeTab === 'all' && page === 1) fetchUsers(false, true);
+                toast.success(approved ? 'Đã duyệt giáo viên' : 'Đã từ chối');
             }
         } catch (error) {
             console.error('Approve teacher error:', error);
+            toast.error('Có lỗi xảy ra');
         } finally {
             setActionLoading(null);
         }
@@ -318,9 +324,11 @@ export default function AdminUsersPage() {
                 setShowRoleModal(false);
                 setSelectedUser(null);
                 setSelectedRole('');
+                toast.success('Đã đổi vai trò thành công');
             }
         } catch (error) {
             console.error('Change role error:', error);
+            toast.error('Có lỗi xảy ra');
         } finally {
             setActionLoading(null);
         }
@@ -335,9 +343,11 @@ export default function AdminUsersPage() {
                 setShowViolationModal(false);
                 setViolationReason('');
                 setViolationAction('warn');
+                toast.success('Đã xử lý vi phạm');
             }
         } catch (error) {
             console.error('Mark violation error:', error);
+            toast.error('Có lỗi xảy ra');
         } finally {
             setActionLoading(null);
         }
@@ -353,25 +363,34 @@ export default function AdminUsersPage() {
                 setShowCoinModal(false);
                 setCoinAmount(0);
                 setCoinReason('');
+                toast.success(`Đã ${coinAmount > 0 ? 'cộng' : 'trừ'} ${Math.abs(coinAmount)} xu`);
             }
         } catch (error) {
             console.error('Adjust coins error:', error);
+            toast.error('Có lỗi xảy ra');
         } finally {
             setActionLoading(null);
         }
     };
 
-    const handleDeleteUser = async (user: IUser) => {
-        if (!confirm(`Bạn có chắc chắn muốn xóa người dùng "${user.fullName}"?`)) return;
-        if (!token) return;
-        setActionLoading({ type: 'delete', userId: user._id });
+    const handleDeleteUser = async () => {
+        if (!deleteUserTarget || !token) return;
+        setActionLoading({ type: 'delete', userId: deleteUserTarget._id });
         try {
-            await userApi.deleteUser(user._id, token);
+            await userApi.deleteUser(deleteUserTarget._id, token);
+            setDeleteUserTarget(null);
+            toast.success('Đã xóa người dùng');
         } catch (error) {
             console.error('Delete user error:', error);
+            toast.error('Có lỗi xảy ra');
         } finally {
             setActionLoading(null);
         }
+    };
+
+    const handleViewTeacherDetail = (user: IUser) => {
+        setSelectedPendingTeacher(user);
+        setShowTeacherDetailModal(true);
     };
 
     const getPageNumbers = () => {
@@ -444,7 +463,7 @@ export default function AdminUsersPage() {
                 ))}
             </div>
 
-            {/* Biểu đồ thống kê theo tỉnh thành - Hiển thị TẤT CẢ các tỉnh */}
+            {/* Biểu đồ thống kê theo tỉnh thành */}
             <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
                 <div className="flex items-center gap-2 mb-4">
                     <BarChart3 size={20} className="text-blue-500" />
@@ -493,10 +512,9 @@ export default function AdminUsersPage() {
                             </div>
                         </div>
 
-                        {/* Bảng tỉnh thành - Hiển thị TẤT CẢ các tỉnh */}
-                        <div className="mt-6 overflow-x-auto">
+                        <div className="mt-6 overflow-x-auto max-h-[400px] overflow-y-auto">
                             <table className="w-full text-sm">
-                                <thead className="bg-blue-50">
+                                <thead className="bg-blue-50 sticky top-0">
                                     <tr>
                                         <th className="text-left p-3 font-semibold text-blue-600">#</th>
                                         <th className="text-left p-3 font-semibold text-blue-600">Tỉnh/TP</th>
@@ -532,12 +550,26 @@ export default function AdminUsersPage() {
 
             {/* Tabs */}
             <div className="flex gap-2 border-b border-gray-200">
-                <button onClick={() => setActiveTab('all')} className={`px-4 py-2 text-sm font-medium transition ${activeTab === 'all' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-500'}`}>
+                <button
+                    onClick={() => {
+                        setActiveTab('all');
+                        setPage(1);
+                    }}
+                    className={`px-4 py-2 text-sm font-medium transition ${activeTab === 'all' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-500'}`}
+                >
                     Tất cả người dùng <span className="ml-1 text-xs">({totalUsers})</span>
                 </button>
-                <button onClick={() => setActiveTab('pending')} className={`px-4 py-2 text-sm font-medium transition flex items-center gap-1 ${activeTab === 'pending' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-500'}`}>
+                <button
+                    onClick={() => {
+                        setActiveTab('pending');
+                        setPage(1);
+                    }}
+                    className={`px-4 py-2 text-sm font-medium transition flex items-center gap-1 ${activeTab === 'pending' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-500'}`}
+                >
                     Giáo viên chờ duyệt
-                    {pendingTeachers.length > 0 && <span className="px-1.5 py-0.5 bg-blue-500 text-white rounded-full text-xs animate-pulse">{pendingTeachers.length}</span>}
+                    {pendingTeachers.length > 0 && (
+                        <span className="px-1.5 py-0.5 bg-blue-500 text-white rounded-full text-xs animate-pulse">{pendingTeachers.length}</span>
+                    )}
                 </button>
             </div>
 
@@ -583,10 +615,20 @@ export default function AdminUsersPage() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
-                            {loading ? (
-                                <tr><td colSpan={7} className="text-center py-16"><Loader2 className="w-8 h-8 animate-spin text-blue-500 mx-auto" /><p className="text-sm text-gray-500 mt-3">Đang tải dữ liệu...</p></td></tr>
+                            {isTableLoading && activeTab === 'all' && users.length === 0 ? (
+                                <tr>
+                                    <td colSpan={7} className="text-center py-16">
+                                        <Loader2 className="w-8 h-8 animate-spin text-blue-500 mx-auto" />
+                                        <p className="text-sm text-gray-500 mt-3">Đang tải dữ liệu...</p>
+                                    </td>
+                                </tr>
                             ) : (activeTab === 'all' ? users : pendingTeachers).length === 0 ? (
-                                <tr><td colSpan={7} className="text-center py-16"><Users size={48} className="text-gray-300 mx-auto" /><p className="text-gray-400 mt-2">Không có người dùng nào</p></td></tr>
+                                <tr>
+                                    <td colSpan={7} className="text-center py-16">
+                                        <Users size={48} className="text-gray-300 mx-auto" />
+                                        <p className="text-gray-400 mt-2">Không có người dùng nào</p>
+                                    </td>
+                                </tr>
                             ) : (activeTab === 'all' ? users : pendingTeachers).map((user) => (
                                 <tr key={user._id} className="hover:bg-gray-50 transition cursor-pointer group" onClick={() => { setSelectedUser(user); setShowUserModal(true); }}>
                                     <td className="px-5 py-4">
@@ -611,8 +653,12 @@ export default function AdminUsersPage() {
                                             </div>
                                             {activeTab === 'pending' && user.requestedRole === 'teacher' && (
                                                 <div className="flex gap-1">
-                                                    <button onClick={(e) => { e.stopPropagation(); handleApproveTeacher(user._id, true); }} className="px-2 py-0.5 bg-green-100 text-green-700 rounded text-xs hover:bg-green-200 whitespace-nowrap"><CheckCircle size={10} className="inline mr-0.5" /> Duyệt</button>
-                                                    <button onClick={(e) => { e.stopPropagation(); handleApproveTeacher(user._id, false); }} className="px-2 py-0.5 bg-red-100 text-red-700 rounded text-xs hover:bg-red-200 whitespace-nowrap"><XCircle size={10} className="inline mr-0.5" /> Từ chối</button>
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); handleViewTeacherDetail(user); }}
+                                                        className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs hover:bg-blue-200 whitespace-nowrap"
+                                                    >
+                                                        <Eye size={10} className="inline mr-0.5" /> Xem thông tin
+                                                    </button>
                                                 </div>
                                             )}
                                         </div>
@@ -626,17 +672,54 @@ export default function AdminUsersPage() {
                                     <td className="px-5 py-4 whitespace-nowrap">
                                         <div className="flex items-center gap-1.5">
                                             <span className="font-semibold text-blue-600">{user.coins.toLocaleString()}</span>
-                                            <button onClick={(e) => { e.stopPropagation(); setSelectedUser(user); setShowCoinModal(true); }} className="p-1 text-gray-400 hover:text-blue-500 rounded transition"><Coins size={14} /></button>
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); setSelectedUser(user); setShowCoinModal(true); }}
+                                                className="p-1 text-gray-400 hover:text-blue-500 rounded transition"
+                                            >
+                                                <Coins size={14} />
+                                            </button>
                                         </div>
                                     </td>
-                                    <td className="px-5 py-4"><span className="text-blue-600 font-medium">{user.streak}</span></td>
-                                    <td className="px-5 py-4"><span className="text-sm text-gray-500">{formatDate(user.createdAt)}</span></td>
+                                    <td className="px-5 py-4">
+                                        <div className="flex items-center gap-1">
+                                            <Flame size={14} className="text-orange-400" />
+                                            <span className="text-blue-600 font-medium">{user.streak}</span>
+                                        </div>
+                                    </td>
+                                    <td className="px-5 py-4">
+                                        <span className="text-sm text-gray-500">{formatDate(user.createdAt)}</span>
+                                    </td>
                                     <td className="px-5 py-4">
                                         <div className="flex items-center justify-center gap-1.5" onClick={(e) => e.stopPropagation()}>
-                                            <button onClick={() => { setSelectedUser(user); setShowUserModal(true); }} className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition"><Eye size={16} /></button>
-                                            <button onClick={() => { setSelectedUser(user); setShowRoleModal(true); setSelectedRole(user.role); }} className="p-2 text-purple-500 hover:bg-purple-50 rounded-lg transition"><Settings size={16} /></button>
-                                            <button onClick={() => { setSelectedUser(user); setShowViolationModal(true); }} className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition"><AlertTriangle size={16} /></button>
-                                            <button onClick={() => handleDeleteUser(user)} disabled={actionLoading?.userId === user._id} className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition disabled:opacity-50"><Trash2 size={16} /></button>
+                                            <button
+                                                onClick={() => { setSelectedUser(user); setShowUserModal(true); }}
+                                                className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition"
+                                                title="Xem chi tiết"
+                                            >
+                                                <Eye size={16} />
+                                            </button>
+                                            <button
+                                                onClick={() => { setSelectedUser(user); setShowRoleModal(true); setSelectedRole(user.role); }}
+                                                className="p-2 text-purple-500 hover:bg-purple-50 rounded-lg transition"
+                                                title="Đổi vai trò"
+                                            >
+                                                <Settings size={16} />
+                                            </button>
+                                            <button
+                                                onClick={() => { setSelectedUser(user); setShowViolationModal(true); }}
+                                                className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition"
+                                                title="Xử lý vi phạm"
+                                            >
+                                                <AlertTriangle size={16} />
+                                            </button>
+                                            <button
+                                                onClick={() => setDeleteUserTarget(user)}
+                                                disabled={actionLoading?.type === 'delete' && actionLoading?.userId === user._id}
+                                                className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition disabled:opacity-50"
+                                                title="Xóa tài khoản"
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
                                         </div>
                                     </td>
                                 </tr>
@@ -644,19 +727,136 @@ export default function AdminUsersPage() {
                         </tbody>
                     </table>
                 </div>
+
+                {/* Pagination */}
                 {activeTab === 'all' && totalPages > 1 && (
-                    <div className="border-t border-gray-200 px-5 py-4 flex items-center justify-between">
-                        <div className="text-sm text-gray-500">Hiển thị {(page - 1) * pageSize + 1} - {Math.min(page * pageSize, totalUsers)} trên {totalUsers}</div>
+                    <div className="border-t border-gray-200 px-5 py-4 flex items-center justify-between flex-wrap gap-3">
+                        <div className="text-sm text-gray-500">
+                            Hiển thị {(page - 1) * pageSize + 1} - {Math.min(page * pageSize, totalUsers)} trên {totalUsers}
+                        </div>
                         <div className="flex items-center gap-2">
-                            <button onClick={() => setPage(1)} disabled={page === 1} className="p-2 border border-gray-200 rounded-lg disabled:opacity-40 hover:bg-gray-50 transition"><ChevronsLeft size={16} /></button>
-                            <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="p-2 border border-gray-200 rounded-lg disabled:opacity-40 hover:bg-gray-50 transition"><ChevronLeft size={16} /></button>
-                            <span className="px-3 text-sm font-medium text-gray-700">{page} / {totalPages}</span>
-                            <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} className="p-2 border border-gray-200 rounded-lg disabled:opacity-40 hover:bg-gray-50 transition"><ChevronRight size={16} /></button>
-                            <button onClick={() => setPage(totalPages)} disabled={page === totalPages} className="p-2 border border-gray-200 rounded-lg disabled:opacity-40 hover:bg-gray-50 transition"><ChevronsRight size={16} /></button>
+                            <button
+                                onClick={() => setPage(1)}
+                                disabled={page === 1}
+                                className="p-2 border border-gray-200 rounded-lg disabled:opacity-40 hover:bg-gray-50 transition"
+                            >
+                                <ChevronsLeft size={16} />
+                            </button>
+                            <button
+                                onClick={() => setPage(p => Math.max(1, p - 1))}
+                                disabled={page === 1}
+                                className="p-2 border border-gray-200 rounded-lg disabled:opacity-40 hover:bg-gray-50 transition"
+                            >
+                                <ChevronLeft size={16} />
+                            </button>
+
+                            {getPageNumbers().map((p, idx) => (
+                                <button
+                                    key={idx}
+                                    onClick={() => typeof p === 'number' && setPage(p)}
+                                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${page === p
+                                        ? 'bg-blue-500 text-white'
+                                        : typeof p === 'number'
+                                            ? 'border border-gray-200 hover:bg-gray-50 text-gray-700'
+                                            : 'text-gray-400 cursor-default'
+                                        }`}
+                                    disabled={typeof p !== 'number'}
+                                >
+                                    {p}
+                                </button>
+                            ))}
+
+                            <button
+                                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                                disabled={page === totalPages}
+                                className="p-2 border border-gray-200 rounded-lg disabled:opacity-40 hover:bg-gray-50 transition"
+                            >
+                                <ChevronRight size={16} />
+                            </button>
+                            <button
+                                onClick={() => setPage(totalPages)}
+                                disabled={page === totalPages}
+                                className="p-2 border border-gray-200 rounded-lg disabled:opacity-40 hover:bg-gray-50 transition"
+                            >
+                                <ChevronsRight size={16} />
+                            </button>
                         </div>
                     </div>
                 )}
             </div>
+
+            {/* Teacher Detail Modal - Dùng Avatar từ shadcn UI */}
+            {showTeacherDetailModal && selectedPendingTeacher && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowTeacherDetailModal(false)}>
+                    <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl" onClick={e => e.stopPropagation()}>
+                        <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+                            <h3 className="text-xl font-semibold text-gray-800">Thông tin giáo viên</h3>
+                            <button onClick={() => setShowTeacherDetailModal(false)} className="p-1 hover:bg-gray-100 rounded-lg transition">
+                                <X size={20} className="text-gray-500" />
+                            </button>
+                        </div>
+                        <div className="p-6 space-y-4">
+                            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
+                                <Avatar className="w-12 h-12">
+                                    {selectedPendingTeacher.avatar ? (
+                                        <AvatarImage src={selectedPendingTeacher.avatar} alt={selectedPendingTeacher.fullName} />
+                                    ) : null}
+                                    <AvatarFallback className="bg-blue-500 text-white text-lg font-bold">
+                                        {getUserInitial(selectedPendingTeacher)}
+                                    </AvatarFallback>
+                                </Avatar>
+                                <div>
+                                    <p className="font-semibold text-gray-800">{selectedPendingTeacher.fullName}</p>
+                                    <p className="text-sm text-gray-500">{selectedPendingTeacher.email}</p>
+                                </div>
+                            </div>
+
+                            <div className="space-y-3">
+                                <div className="flex gap-2">
+                                    <span className="text-gray-400">Tên giáo viên: </span>
+                                    <span className="text-gray-700 font-medium">{selectedPendingTeacher.teacherName || selectedPendingTeacher.fullName}</span>
+                                </div>
+                                <div className="flex gap-2">
+                                    <span className="text-gray-400">Đơn vị công tác: </span>
+                                    <span className="text-gray-700">{selectedPendingTeacher.teacherWorkUnit || 'Chưa cập nhật'}</span>
+                                </div>
+                                <div className="flex gap-2">
+                                    <span className="text-gray-400">Email: </span>
+                                    <span className="text-gray-700">{selectedPendingTeacher.email}</span>
+                                </div>
+                                <div className="flex gap-2">
+                                    <span className="text-gray-400">Ngày đăng ký: </span>
+                                    <span className="text-gray-700">{formatDate(selectedPendingTeacher.createdAt)}</span>
+                                </div>
+                            </div>
+
+                            <div className="flex gap-3 pt-4 border-t border-gray-100">
+                                <CustomButton
+                                    onClick={() => {
+                                        setShowTeacherDetailModal(false);
+                                        handleApproveTeacher(selectedPendingTeacher._id, true);
+                                    }}
+                                    loading={actionLoading?.type === 'approve' && actionLoading?.userId === selectedPendingTeacher._id}
+                                    className="flex-1"
+                                >
+                                    <CheckCircle size={16} /> Duyệt
+                                </CustomButton>
+                                <CustomButton
+                                    onClick={() => {
+                                        setShowTeacherDetailModal(false);
+                                        handleApproveTeacher(selectedPendingTeacher._id, false);
+                                    }}
+                                    loading={actionLoading?.type === 'approve' && actionLoading?.userId === selectedPendingTeacher._id}
+                                    variant="danger"
+                                    className="flex-1"
+                                >
+                                    <XCircle size={16} /> Từ chối
+                                </CustomButton>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* User Detail Modal */}
             {showUserModal && selectedUser && (
@@ -664,23 +864,70 @@ export default function AdminUsersPage() {
                     <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>
                         <div className="sticky top-0 bg-white px-6 py-4 border-b border-gray-100 flex justify-between items-center">
                             <h3 className="text-xl font-semibold text-gray-800">Chi tiết người dùng</h3>
-                            <button onClick={() => setShowUserModal(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 transition"><X size={18} className="text-gray-500" /></button>
+                            <button onClick={() => setShowUserModal(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 transition">
+                                <X size={18} className="text-gray-500" />
+                            </button>
                         </div>
                         <div className="p-6 space-y-5">
                             <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl">
-                                <div className="w-14 h-14 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-xl font-bold">{getUserInitial(selectedUser)}</div>
-                                <div><p className="font-semibold text-gray-800 text-lg">{selectedUser.fullName}</p><p className="text-sm text-gray-500">{selectedUser.email}</p>{selectedUser.username && <p className="text-xs text-blue-500">@{selectedUser.username}</p>}</div>
+                                <Avatar className="w-14 h-14">
+                                    {selectedUser.avatar ? (
+                                        <AvatarImage src={selectedUser.avatar} alt={selectedUser.fullName} />
+                                    ) : null}
+                                    <AvatarFallback className="bg-blue-500 text-white text-xl font-bold">
+                                        {getUserInitial(selectedUser)}
+                                    </AvatarFallback>
+                                </Avatar>
+                                <div>
+                                    <p className="font-semibold text-gray-800 text-lg">{selectedUser.fullName}</p>
+                                    <p className="text-sm text-gray-500">{selectedUser.email}</p>
+                                    {selectedUser.username && <p className="text-xs text-blue-500">@{selectedUser.username}</p>}
+                                </div>
                             </div>
+
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                                <div className="flex items-center gap-2"><Shield size={14} className="text-gray-400" /> Vai trò: {getRoleBadge(selectedUser.role)}</div>
-                                <div className="flex items-center gap-2"><Coins size={14} className="text-gray-400" /> Xu: {selectedUser.coins.toLocaleString()}</div>
-                                <div className="flex items-center gap-2"><Calendar size={14} className="text-gray-400" /> Streak: {selectedUser.streak}</div>
-                                <div className="flex items-center gap-2"><Mail size={14} className="text-gray-400" /> {selectedUser.email}</div>
-                                <div className="flex items-center gap-2"><MapPin size={14} className="text-gray-400" /> {selectedUser.province || 'Chưa cập nhật'}</div>
-                                {selectedUser.class && <div className="flex items-center gap-2"><GraduationCap size={14} className="text-gray-400" /> Lớp: {selectedUser.class}</div>}
-                                {selectedUser.school && <div className="flex items-center gap-2"><School size={14} className="text-gray-400" /> {selectedUser.school}</div>}
-                                {selectedUser.bio && <div className="md:col-span-2 flex items-start gap-2"><span className="text-gray-400">📝</span><span className="text-gray-600">{selectedUser.bio}</span></div>}
-                                <div className="md:col-span-2 text-gray-400">Ngày tạo: {formatDate(selectedUser.createdAt)}</div>
+                                <div className="flex items-center gap-2">
+                                    <Shield size={14} className="text-gray-400" />
+                                    <span>Vai trò: </span>
+                                    {getRoleBadge(selectedUser.role)}
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <Coins size={14} className="text-gray-400" />
+                                    <span>Xu: <span className="font-semibold text-blue-600">{selectedUser.coins.toLocaleString()}</span></span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <Flame size={14} className="text-gray-400" />
+                                    <span>Streak: <span className="font-semibold text-orange-500">{selectedUser.streak} ngày</span></span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <Mail size={14} className="text-gray-400" />
+                                    <span>{selectedUser.email}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <MapPin size={14} className="text-gray-400" />
+                                    <span>{selectedUser.province || 'Chưa cập nhật'}</span>
+                                </div>
+                                {selectedUser.class && (
+                                    <div className="flex items-center gap-2">
+                                        <GraduationCap size={14} className="text-gray-400" />
+                                        <span>Lớp: {selectedUser.class}</span>
+                                    </div>
+                                )}
+                                {selectedUser.school && (
+                                    <div className="flex items-center gap-2">
+                                        <School size={14} className="text-gray-400" />
+                                        <span>{selectedUser.school}</span>
+                                    </div>
+                                )}
+                                {selectedUser.bio && (
+                                    <div className="md:col-span-2 flex items-start gap-2">
+                                        <span className="text-gray-400">📝</span>
+                                        <span className="text-gray-600">{selectedUser.bio}</span>
+                                    </div>
+                                )}
+                                <div className="md:col-span-2 text-gray-400 text-xs">
+                                    Ngày tạo: {formatDate(selectedUser.createdAt)}
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -693,11 +940,36 @@ export default function AdminUsersPage() {
                     <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl" onClick={e => e.stopPropagation()}>
                         <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
                             <h3 className="text-xl font-semibold text-gray-800">Đổi vai trò</h3>
-                            <button onClick={() => setShowRoleModal(false)} className="p-1 hover:bg-gray-100 rounded-lg transition"><X size={20} className="text-gray-500" /></button>
+                            <button onClick={() => setShowRoleModal(false)} className="p-1 hover:bg-gray-100 rounded-lg transition">
+                                <X size={20} className="text-gray-500" />
+                            </button>
                         </div>
                         <div className="p-6 space-y-5">
-                            <div><label className="block text-sm font-medium mb-2 text-gray-600">Vai trò mới</label><CustomSelect value={selectedRole} onChange={setSelectedRole} options={[{ value: 'user', label: 'Người dùng' }, { value: 'teacher', label: 'Giáo viên' }, { value: 'admin', label: 'Admin' }]} placeholder="Chọn vai trò" /></div>
-                            <div className="flex gap-3"><button onClick={() => setShowRoleModal(false)} className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-gray-600 font-medium hover:bg-gray-50 transition">Hủy</button><button onClick={handleChangeRole} disabled={actionLoading?.type === 'role'} className="flex-1 px-4 py-2.5 bg-blue-500 text-white rounded-xl font-medium hover:bg-blue-600 transition disabled:opacity-50 flex items-center justify-center gap-2">{actionLoading?.type === 'role' ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle size={16} />}{actionLoading?.type === 'role' ? 'Đang xử lý...' : 'Xác nhận'}</button></div>
+                            <div>
+                                <label className="block text-sm font-medium mb-2 text-gray-600">Vai trò mới</label>
+                                <CustomSelect
+                                    value={selectedRole}
+                                    onChange={setSelectedRole}
+                                    options={[
+                                        { value: 'user', label: 'Người dùng' },
+                                        { value: 'teacher', label: 'Giáo viên' },
+                                        { value: 'admin', label: 'Admin' }
+                                    ]}
+                                    placeholder="Chọn vai trò"
+                                />
+                            </div>
+                            <div className="flex gap-3">
+                                <CustomButton variant="secondary" onClick={() => setShowRoleModal(false)} className="flex-1">
+                                    Hủy
+                                </CustomButton>
+                                <CustomButton
+                                    onClick={handleChangeRole}
+                                    loading={actionLoading?.type === 'role'}
+                                    className="flex-1"
+                                >
+                                    {actionLoading?.type === 'role' ? 'Đang xử lý...' : 'Xác nhận'}
+                                </CustomButton>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -707,11 +979,45 @@ export default function AdminUsersPage() {
             {showCoinModal && selectedUser && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowCoinModal(false)}>
                     <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl" onClick={e => e.stopPropagation()}>
-                        <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center"><h3 className="text-xl font-semibold text-gray-800">Điều chỉnh xu</h3><button onClick={() => setShowCoinModal(false)} className="p-1 hover:bg-gray-100 rounded-lg transition"><X size={20} className="text-gray-500" /></button></div>
+                        <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+                            <h3 className="text-xl font-semibold text-gray-800">Điều chỉnh xu</h3>
+                            <button onClick={() => setShowCoinModal(false)} className="p-1 hover:bg-gray-100 rounded-lg transition">
+                                <X size={20} className="text-gray-500" />
+                            </button>
+                        </div>
                         <div className="p-6 space-y-5">
-                            <div><label className="block text-sm font-medium mb-2 text-gray-600">Số xu (±)</label><input type="number" value={coinAmount} onChange={(e) => setCoinAmount(parseInt(e.target.value) || 0)} placeholder="Nhập số xu..." className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-gray-700 focus:border-blue-400 focus:outline-none" /><p className="text-xs text-gray-400 mt-1">Nhập số dương để cộng, số âm để trừ</p></div>
-                            <div><label className="block text-sm font-medium mb-2 text-gray-600">Lý do</label><CustomTextarea value={coinReason} onChange={setCoinReason} placeholder="Nhập lý do..." rows={3} maxLength={500} /></div>
-                            <div className="flex gap-3"><button onClick={() => setShowCoinModal(false)} className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-gray-600 font-medium hover:bg-gray-50 transition">Hủy</button><button onClick={handleAdjustCoins} disabled={actionLoading?.type === 'coins'} className="flex-1 px-4 py-2.5 bg-blue-500 text-white rounded-xl font-medium hover:bg-blue-600 transition disabled:opacity-50 flex items-center justify-center gap-2">{actionLoading?.type === 'coins' ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle size={16} />}{actionLoading?.type === 'coins' ? 'Đang xử lý...' : 'Xác nhận'}</button></div>
+                            <div>
+                                <label className="block text-sm font-medium mb-2 text-gray-600">Số xu (±)</label>
+                                <CustomInput
+                                    type="number"
+                                    value={coinAmount}
+                                    onChange={(e) => setCoinAmount(parseInt(e.target.value) || 0)}
+                                    placeholder="Nhập số xu (dương để cộng, âm để trừ)..."
+                                />
+                                <p className="text-xs text-gray-400 mt-1">Nhập số dương để cộng, số âm để trừ</p>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-2 text-gray-600">Lý do</label>
+                                <CustomTextarea
+                                    value={coinReason}
+                                    onChange={setCoinReason}
+                                    placeholder="Nhập lý do..."
+                                    rows={3}
+                                    maxLength={500}
+                                />
+                            </div>
+                            <div className="flex gap-3">
+                                <CustomButton variant="secondary" onClick={() => setShowCoinModal(false)} className="flex-1">
+                                    Hủy
+                                </CustomButton>
+                                <CustomButton
+                                    onClick={handleAdjustCoins}
+                                    loading={actionLoading?.type === 'coins'}
+                                    className="flex-1"
+                                >
+                                    {actionLoading?.type === 'coins' ? 'Đang xử lý...' : 'Xác nhận'}
+                                </CustomButton>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -723,7 +1029,9 @@ export default function AdminUsersPage() {
                     <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl" onClick={e => e.stopPropagation()}>
                         <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
                             <h3 className="text-xl font-semibold text-gray-800">Xử lý vi phạm</h3>
-                            <button onClick={() => setShowViolationModal(false)} className="p-1 hover:bg-gray-100 rounded-lg transition"><X size={20} className="text-gray-500" /></button>
+                            <button onClick={() => setShowViolationModal(false)} className="p-1 hover:bg-gray-100 rounded-lg transition">
+                                <X size={20} className="text-gray-500" />
+                            </button>
                         </div>
                         <div className="p-6 space-y-5">
                             <div>
@@ -737,19 +1045,42 @@ export default function AdminUsersPage() {
                             </div>
                             <div>
                                 <label className="block text-sm font-medium mb-2 text-gray-600">Lý do</label>
-                                <CustomTextarea value={violationReason} onChange={setViolationReason} placeholder="Nhập lý do..." rows={3} maxLength={500} />
+                                <CustomTextarea
+                                    value={violationReason}
+                                    onChange={setViolationReason}
+                                    placeholder="Nhập lý do vi phạm..."
+                                    rows={3}
+                                    maxLength={500}
+                                />
                             </div>
                             <div className="flex gap-3">
-                                <button onClick={() => setShowViolationModal(false)} className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-gray-600 font-medium hover:bg-gray-50 transition">Hủy</button>
-                                <button onClick={handleMarkViolation} disabled={actionLoading?.type === 'violation'} className="flex-1 px-4 py-2.5 bg-red-500 text-white rounded-xl font-medium hover:bg-red-600 transition disabled:opacity-50 flex items-center justify-center gap-2">
-                                    {actionLoading?.type === 'violation' ? <Loader2 className="w-4 h-4 animate-spin" /> : <AlertTriangle size={16} />}
+                                <CustomButton variant="secondary" onClick={() => setShowViolationModal(false)} className="flex-1">
+                                    Hủy
+                                </CustomButton>
+                                <CustomButton
+                                    onClick={handleMarkViolation}
+                                    loading={actionLoading?.type === 'violation'}
+                                    variant="danger"
+                                    className="flex-1"
+                                >
                                     {actionLoading?.type === 'violation' ? 'Đang xử lý...' : 'Xác nhận'}
-                                </button>
+                                </CustomButton>
                             </div>
                         </div>
                     </div>
                 </div>
             )}
+
+            {/* Delete User Confirm Modal */}
+            <ConfirmModalDelete
+                isOpen={!!deleteUserTarget}
+                onClose={() => setDeleteUserTarget(null)}
+                onConfirm={handleDeleteUser}
+                title="Xóa người dùng"
+                message={`Bạn có chắc chắn muốn xóa người dùng "${deleteUserTarget?.fullName}"?`}
+                warning="Hành động này không thể hoàn tác. Tất cả dữ liệu liên quan sẽ bị xóa vĩnh viễn."
+                isDeleting={actionLoading?.type === 'delete'}
+            />
         </div>
     );
 }

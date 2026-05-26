@@ -24,6 +24,7 @@ import { CustomInput } from '@/components/custom/CustomInput';
 import { CustomSelect } from '@/components/custom/CustomSelect';
 import { CustomTextarea } from '@/components/custom/CustomTextarea';
 import { CustomButton } from '@/components/custom/CustomButton';
+import { toast } from 'sonner';
 
 interface FormData {
     fullName: string;
@@ -131,6 +132,10 @@ const SettingsPage = () => {
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [requestingRole, setRequestingRole] = useState(false);
     const hasFetched = useRef(false);
+
+    const [showTeacherRequestModal, setShowTeacherRequestModal] = useState(false);
+    const [teacherName, setTeacherName] = useState('');
+    const [teacherWorkUnit, setTeacherWorkUnit] = useState('');
 
     const [formData, setFormData] = useState<FormData>({
         fullName: '',
@@ -274,12 +279,52 @@ const SettingsPage = () => {
 
     const handleRequestRole = async () => {
         if (!token) return;
+
+        // Hiển thị popup để nhập thông tin
+        setShowTeacherRequestModal(true);
+    };
+
+    const submitTeacherRequest = async () => {
+        if (!teacherName.trim()) {
+            toast.error('Vui lòng nhập tên giáo viên');
+            return;
+        }
+
+        if (!teacherWorkUnit.trim()) {
+            toast.error('Vui lòng nhập đơn vị công tác');
+            return;
+        }
+
+        if (!token) {
+            toast.error('Bạn chưa đăng nhập');
+            return;
+        }
+
+        setRequestingRole(true);
+
         try {
-            setRequestingRole(true);
-            const response = await userApi.requestRoleChange(token);
-            if (response.success) await fetchUserProfile();
+            const response = await userApi.requestRoleChange(
+                token,
+                {
+                    teacherName: teacherName.trim(),
+                    teacherWorkUnit: teacherWorkUnit.trim(),
+                }
+            );
+
+            if (response.success) {
+                toast.success('Đã gửi yêu cầu lên admin');
+
+                setShowTeacherRequestModal(false);
+                setTeacherName('');
+                setTeacherWorkUnit('');
+
+                await fetchUserProfile();
+            } else {
+                toast.error(response.message || 'Không thể gửi yêu cầu');
+            }
         } catch (error) {
             console.error('Request role error:', error);
+            toast.error('Có lỗi xảy ra');
         } finally {
             setRequestingRole(false);
         }
@@ -571,6 +616,62 @@ const SettingsPage = () => {
                                     className="flex-1"
                                 >
                                     {deleting ? 'Đang xóa...' : 'Xóa vĩnh viễn'}
+                                </CustomButton>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {showTeacherRequestModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+                    <div className="bg-[var(--cn-bg-card)] rounded-[var(--cn-radius-md)] w-full max-w-md border border-[var(--cn-border)] shadow-[var(--cn-shadow-lg)]">
+                        <div className="p-5 border-b border-[var(--cn-border)] flex justify-between items-center">
+                            <div className="flex items-center gap-2 text-[var(--cn-primary)]">
+                                <Award className="w-5 h-5" />
+                                <h2 className="text-lg font-semibold">Đăng ký làm giáo viên</h2>
+                            </div>
+                            <button
+                                onClick={() => setShowTeacherRequestModal(false)}
+                                className="p-1 hover:bg-[var(--cn-hover)] rounded-[var(--cn-radius-sm)] transition"
+                            >
+                                <X className="w-5 h-5 text-[var(--cn-text-muted)]" />
+                            </button>
+                        </div>
+                        <div className="p-5 space-y-4">
+                            <CustomInput
+                                label="Tên giáo viên"
+                                placeholder="Nhập tên của bạn"
+                                value={teacherName}
+                                onChange={(e) => setTeacherName(e.target.value)}
+                                required
+                            />
+                            <CustomInput
+                                label="Đơn vị công tác"
+                                placeholder="Trường học / Trung tâm / Công ty"
+                                value={teacherWorkUnit}
+                                onChange={(e) => setTeacherWorkUnit(e.target.value)}
+                                required
+                            />
+                            <div className="bg-blue-50 dark:bg-blue-950/20 p-3 rounded-[var(--cn-radius-sm)] border border-blue-200">
+                                <p className="text-xs text-blue-700 dark:text-blue-300">
+                                    Sau khi gửi yêu cầu, admin sẽ xem xét và phê duyệt. Bạn sẽ nhận được thông báo khi được duyệt.
+                                </p>
+                            </div>
+                            <div className="flex gap-3 pt-2">
+                                <CustomButton
+                                    onClick={() => setShowTeacherRequestModal(false)}
+                                    variant="secondary"
+                                    className="flex-1"
+                                >
+                                    Hủy
+                                </CustomButton>
+                                <CustomButton
+                                    onClick={submitTeacherRequest}
+                                    loading={requestingRole}
+                                    className="flex-1"
+                                >
+                                    {requestingRole ? 'Đang gửi...' : 'Gửi yêu cầu'}
                                 </CustomButton>
                             </div>
                         </div>

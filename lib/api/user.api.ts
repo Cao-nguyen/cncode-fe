@@ -22,6 +22,8 @@ export interface IUser {
     updatedAt: string;
     isBanned?: boolean;
     isMuted?: boolean;
+    teacherName?: string;
+    teacherWorkUnit?: string;
     violations?: Array<{
         _id: string;
         reason: string;
@@ -116,16 +118,16 @@ export const userApi = {
         return handleResponse<IUser>(response);
     },
 
-    requestRoleChange: async (token: string): Promise<IApiResponse<null>> => {
+    requestRoleChange: async (token: string, additionalData?: { teacherName: string; teacherWorkUnit: string }) => {
         const response = await fetch(`${API_URL}/api/users/request-role`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                Authorization: `Bearer ${token}`
+                'Authorization': `Bearer ${token}`
             },
-            body: JSON.stringify({ requestedRole: 'teacher' })
+            body: JSON.stringify(additionalData || {})
         });
-        return handleResponse<null>(response);
+        return response.json();
     },
 
     changePassword: async (currentPassword: string, newPassword: string, token: string): Promise<IApiResponse<null>> => {
