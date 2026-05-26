@@ -81,8 +81,8 @@ function buildSections(
             label: "Tiện ích",
             items: [
                 { icon: <Link1 variant="Bold" style={iconSize} />, title: "Rút gọn liên kết", subtitle: "Sở hữu link ngắn", href: "/rutgonlink" },
-                { icon: <Message variant="Bold" style={iconSize} />, title: "Gia sư AI", subtitle: "Học cùng trí tuệ nhân tạo", href: "/giasu-ai" },
-                { icon: <DeviceMessage variant="Bold" style={iconSize} />, title: "Chat với Admin", subtitle: "Liên hệ hỗ trợ", href: "/chat-admin" },
+                { icon: <Message variant="Bold" style={iconSize} />, title: "Gia sư AI", subtitle: "Học cùng trí tuệ nhân tạo", href: "/giasuai" },
+                { icon: <DeviceMessage variant="Bold" style={iconSize} />, title: "Chat với Admin", subtitle: "Liên hệ hỗ trợ", href: "/chatwithadmin" },
                 { icon: <Briefcase variant="Bold" style={iconSize} />, title: "CNjobs", subtitle: "Cơ hội việc làm", href: "/cnjobs" },
                 { icon: <GlobalSearch variant="Bold" style={iconSize} />, title: "CNsocial", subtitle: "Mạng xã hội cộng đồng", href: "/cnsocial" },
             ],
