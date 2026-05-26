@@ -31,6 +31,7 @@ import { vi } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { DashboardCard } from '@/components/custom/DashboardCard';
 import { CustomInputSearch } from '@/components/custom/CustomInputSearch';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 const PAGE_SIZE = 10;
 
@@ -93,6 +94,8 @@ export default function AdminAffiliatePage() {
             setLoading(false);
         }
     }, [token, page, search]);
+
+    console.log('Affiliate stats:', stats);
 
     useEffect(() => {
         if (token) {
@@ -242,9 +245,15 @@ export default function AdminAffiliatePage() {
                                     <tr key={stat._id} className="hover:bg-[var(--cn-hover)] transition cursor-pointer group" onClick={() => openDetailModal(stat)}>
                                         <td className="px-5 py-4">
                                             <div className="flex items-center gap-3">
-                                                <div className="w-9 h-9 rounded-full bg-[var(--cn-primary)]/10 flex items-center justify-center">
-                                                    <span className="text-sm font-semibold text-[var(--cn-primary)]">{getUserInitial(stat)}</span>
-                                                </div>
+                                                <Avatar className="w-9 h-9">
+                                                    <AvatarImage
+                                                        src={stat.user?.avatar}
+                                                        alt={stat.user?.fullName || "User"}
+                                                    />
+                                                    <AvatarFallback className="bg-[var(--cn-primary)]/10 text-sm font-semibold text-[var(--cn-primary)]">
+                                                        {getUserInitial(stat)}
+                                                    </AvatarFallback>
+                                                </Avatar>
                                                 <div>
                                                     <p className="text-sm font-medium text-[var(--cn-text-main)]">{stat.user?.fullName || 'N/A'}</p>
                                                     <p className="text-xs text-[var(--cn-text-muted)]">{stat.user?.email}</p>
@@ -339,9 +348,15 @@ export default function AdminAffiliatePage() {
                         <div className="p-6 space-y-5">
                             {/* User Info */}
                             <div className="flex items-center gap-4 p-4 bg-[var(--cn-bg-section)] rounded-xl">
-                                <div className="w-14 h-14 rounded-full bg-[var(--cn-primary)]/20 flex items-center justify-center">
-                                    <span className="text-xl font-bold text-[var(--cn-primary)]">{getUserInitial(selectedStat)}</span>
-                                </div>
+                                <Avatar className="w-18 h-18">
+                                    <AvatarImage
+                                        src={selectedStat.user?.avatar}
+                                        alt={selectedStat.user?.fullName || "User"}
+                                    />
+                                    <AvatarFallback className="bg-[var(--cn-primary)]/10 text-sm font-semibold text-[var(--cn-primary)]">
+                                        {getUserInitial(selectedStat)}
+                                    </AvatarFallback>
+                                </Avatar>
                                 <div>
                                     <p className="font-semibold text-[var(--cn-text-main)] text-lg">{selectedStat.user?.fullName || 'N/A'}</p>
                                     <p className="text-sm text-[var(--cn-text-muted)]">{selectedStat.user?.email}</p>
