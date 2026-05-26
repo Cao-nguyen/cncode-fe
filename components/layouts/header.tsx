@@ -95,7 +95,6 @@ function buildSections(
                 { icon: <BookOpen variant="Bold" style={iconSize} />, title: "Khoá học của tôi", subtitle: "Tiếp tục học tập", href: "/me/khoahoc" },
                 { icon: <FileText variant="Bold" style={iconSize} />, title: "Bài viết của tôi", subtitle: "Quản lý nội dung", href: "/me/blog" },
                 { icon: <Home variant="Bold" style={iconSize} />, title: "Khu vườn học tập", subtitle: "Không gian của bạn", href: "/khuvuonhoctap" },
-                { icon: <NhaHang variant="Bold" style={iconSize} />, title: "Nhà hàng công nghệ", subtitle: "Khám phá công nghệ", href: "/nhahangcongnghe" },
             ],
         },
         {
