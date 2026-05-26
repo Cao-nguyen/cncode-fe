@@ -157,7 +157,7 @@ export default function CNBookDetailPage() {
                                         </label>
                                     )}
                                     <CustomButton onClick={handlePurchase} loading={purchasing} className="!px-8 !py-3">
-                                        <ShoppingBag className="w-5 h-5" /> {book.isFree ? 'Nhận sách miễn phí' : (useCoins ? `Mua bằng ${finalPrice} xu` : `Mua ngay ${formatCurrency(finalPrice)}`)}
+                                        <Link href="/cnbooks/ly-gc-ng-vn-tp-2-965211">Xem sách</Link>
                                     </CustomButton>
                                 </div>
                             )}
