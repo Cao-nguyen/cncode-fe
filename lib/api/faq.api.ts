@@ -1,4 +1,4 @@
-// lib/api/faq.api.ts
+
 import axios from 'axios';
 import { Question, Answer, CreateQuestionDto, CreateAnswerDto, StatisticsData } from '@/types/faq.type';
 
@@ -29,7 +29,7 @@ api.interceptors.request.use((config) => {
 });
 
 export const faqApi = {
-    // Public routes
+    
     getQuestions: async (params?: { page?: number; limit?: number; grade?: string; status?: string; search?: string }) => {
         const response = await api.get<{ success: boolean; questions: Question[]; total: number; totalPages: number }>('/', { params });
         return response.data;
@@ -45,7 +45,6 @@ export const faqApi = {
         return response.data;
     },
 
-    // Question routes
     createQuestion: async (data: CreateQuestionDto) => {
         const response = await api.post<{ success: boolean; data: Question }>('/questions', data);
         return response.data;
@@ -66,7 +65,6 @@ export const faqApi = {
         return response.data;
     },
 
-    // Answer routes
     createAnswer: async (data: CreateAnswerDto) => {
         const response = await api.post<{ success: boolean; data: Answer }>('/answers', data);
         return response.data;
@@ -92,13 +90,11 @@ export const faqApi = {
         return response.data;
     },
 
-    // Report
     report: async (type: 'question' | 'answer', targetId: string, reason: string, description: string) => {
         const response = await api.post<{ success: boolean; message: string }>('/report', { type, targetId, reason, description });
         return response.data;
     },
 
-    // Admin routes
     togglePinQuestion: async (id: string) => {
         const response = await api.put<{ success: boolean; data: Question }>(`/admin/questions/${id}/pin`);
         return response.data;

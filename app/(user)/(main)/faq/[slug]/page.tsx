@@ -1,4 +1,4 @@
-// app/(user)/faq/[slug]/page.tsx
+
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
@@ -42,7 +42,6 @@ const GRADE_LABELS: Record<string, string> = {
     other: 'Khác',
 };
 
-// Report Modal Component (Giữ nguyên UI)
 const ReportModal = ({
     isOpen,
     onClose,
@@ -112,7 +111,6 @@ const ReportModal = ({
     );
 };
 
-// Edit Answer Modal Component (Giữ nguyên UI)
 const EditAnswerModal = ({
     isOpen,
     onClose,
@@ -161,7 +159,6 @@ const EditAnswerModal = ({
     );
 };
 
-// Edit Question Modal Component (Giữ nguyên UI)
 const EditQuestionModal = ({
     isOpen,
     onClose,
@@ -230,7 +227,6 @@ export default function QuestionDetailPage() {
     const [previewImage, setPreviewImage] = useState<string | null>(null);
     const [deleting, setDeleting] = useState(false);
 
-    // Modal states
     const [reportTarget, setReportTarget] = useState<{ type: 'question' | 'answer'; id: string; title: string } | null>(null);
     const [editAnswerTarget, setEditAnswerTarget] = useState<Answer | null>(null);
     const [editQuestionTarget, setEditQuestionTarget] = useState<Question | null>(null);
@@ -239,7 +235,6 @@ export default function QuestionDetailPage() {
 
     useEffect(() => { setCurrentUserId(getUserId()); }, []);
 
-    // ✅ Hàm fetch dữ liệu tách biệt giữa Load lần đầu và Làm mới dữ liệu
     const fetchData = useCallback(async (isSilent = false) => {
         if (!isSilent) setLoading(true);
         try {
@@ -298,7 +293,7 @@ export default function QuestionDetailPage() {
             const res = await faqApi.createAnswer({ questionId: question._id, content });
             if (res.success) {
                 editorRef.current?.setContent('');
-                await fetchData(true); // ✅ Cập nhật ngầm không nháy trang
+                await fetchData(true); 
             }
         } catch (error) { toast.error(getErrorMessage(error)); }
         finally { setSubmitting(false); }
@@ -309,7 +304,7 @@ export default function QuestionDetailPage() {
         try {
             await faqApi.updateQuestion(question._id, { title, content });
             toast.success('Cập nhật câu hỏi thành công');
-            await fetchData(true); // ✅ Cập nhật ngầm
+            await fetchData(true); 
         } catch (error) { toast.error(getErrorMessage(error)); }
     };
 
@@ -328,7 +323,7 @@ export default function QuestionDetailPage() {
         try {
             await faqApi.updateAnswer(answerId, content);
             toast.success('Cập nhật câu trả lời thành công');
-            await fetchData(true); // ✅ Cập nhật ngầm
+            await fetchData(true); 
         } catch (error) { toast.error(getErrorMessage(error)); }
     };
 
@@ -336,7 +331,6 @@ export default function QuestionDetailPage() {
         if (!deleteAnswerTarget) return;
         setDeleting(true);
 
-        // ✅ Optimistic Update: Xoá khỏi UI ngay lập tức
         const oldAnswers = [...answers];
         setAnswers(prev => prev.filter(a => a._id !== deleteAnswerTarget._id));
 
@@ -345,7 +339,7 @@ export default function QuestionDetailPage() {
             toast.success('Câu trả lời đã được xóa.');
             setDeleteAnswerTarget(null);
         } catch (error) {
-            setAnswers(oldAnswers); // Rollback nếu lỗi
+            setAnswers(oldAnswers); 
             toast.error(getErrorMessage(error));
         } finally {
             setDeleting(false);
@@ -520,7 +514,7 @@ export default function QuestionDetailPage() {
                 )}
             </div>
 
-            {/* Modals - Giữ nguyên toàn bộ key và logic đã tối ưu trước đó */}
+            {}
             <ReportModal key={reportTarget?.id} isOpen={!!reportTarget} onClose={() => setReportTarget(null)} onSubmit={handleReport} title={reportTarget?.title || ''} />
             <EditAnswerModal key={editAnswerTarget?._id} isOpen={!!editAnswerTarget} onClose={() => setEditAnswerTarget(null)} onSubmit={(content) => handleUpdateAnswer(editAnswerTarget!._id, content)} initialContent={editAnswerTarget?.content || ''} />
             <EditQuestionModal key={editQuestionTarget?._id} isOpen={!!editQuestionTarget} onClose={() => setEditQuestionTarget(null)} onSubmit={handleUpdateQuestion} initialTitle={editQuestionTarget?.title || ''} initialContent={editQuestionTarget?.content || ''} />

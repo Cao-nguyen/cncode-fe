@@ -5,7 +5,7 @@ import { ReceiptText, PlusCircle } from 'lucide-react';
 export default function EmptyTransaction() {
     return (
         <div className="flex flex-col items-center justify-center min-h-[60vh] px-4">
-            {/* Icon Container */}
+            {}
             <div className="relative mb-6">
                 <div className="absolute inset-0 bg-blue-100 rounded-full blur-2xl opacity-50 animate-pulse"></div>
                 <div className="relative bg-white p-6 rounded-full shadow-sm border border-gray-100">
@@ -13,7 +13,7 @@ export default function EmptyTransaction() {
                 </div>
             </div>
 
-            {/* Content */}
+            {}
             <div className="text-center max-w-sm">
                 <h2 className="text-2xl font-bold text-gray-900 mb-3">
                     Chưa có giao dịch nào
@@ -23,7 +23,7 @@ export default function EmptyTransaction() {
                     Các giao dịch mới sẽ được hiển thị tại đây.
                 </p>
 
-                {/* Buttons */}
+                {}
                 <div className="flex flex-col sm:flex-row gap-3 justify-center">
 
                     <Link

@@ -1,4 +1,4 @@
-// lib/api/notification.api.ts
+
 import { INotification } from '@/types/notification.type';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
@@ -7,10 +7,10 @@ const getToken = () => {
     if (typeof window === 'undefined') return null;
     try {
         const raw = localStorage.getItem('auth-storage');
-        console.log('🔑 raw auth-storage:', raw); // xem có data không
+        console.log('🔑 raw auth-storage:', raw); 
         if (!raw) return null;
         const parsed = JSON.parse(raw);
-        console.log('🔑 token:', parsed?.state?.token); // xem token có không
+        console.log('🔑 token:', parsed?.state?.token); 
         return parsed?.state?.token ?? null;
     } catch {
         return null;
@@ -24,7 +24,7 @@ async function handleResponse<T>(response: Response): Promise<{ success: boolean
             const errorData = await response.json();
             errorMessage = errorData.message || errorMessage;
         } catch {
-            // Không thể parse JSON
+            
         }
         return {
             success: false,
@@ -61,8 +61,6 @@ export const notificationApi = {
             return { notifications: [], total: 0, page: 1, totalPages: 0, unreadCount: 0 };
         }
 
-        // Backend trả về { success, notifications, total, page, totalPages, unreadCount }
-        // KHÔNG có lớp data bọc ngoài
         const result = await response.json();
 
         if (!result.success) {

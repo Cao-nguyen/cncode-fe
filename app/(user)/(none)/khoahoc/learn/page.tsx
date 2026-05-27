@@ -9,7 +9,6 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-// --- ĐỊNH NGHĨA INTERFACES ---
 interface ILesson {
     id: number;
     title: string;
@@ -36,7 +35,6 @@ interface INote {
     text: string;
 }
 
-// --- DỮ LIỆU CỨNG ---
 const SECTIONS: ISection[] = [
     { title: "Phần 1: Tổng quan", lessons: [1, 2] },
     { title: "Phần 2: Khởi động", lessons: [3, 4, 5] },
@@ -74,14 +72,12 @@ const POPUP_QUIZZES: IQuiz[] = [
     }
 ];
 
-// Helper function to load completed lessons from localStorage
 const loadCompletedLessons = (): number[] => {
     if (typeof window === 'undefined') return [];
     const saved = localStorage.getItem('gs_completed');
     return saved ? JSON.parse(saved) : [];
 };
 
-// Helper function to load notes for a specific lesson
 const loadNotesForLesson = (lessonId: number): INote[] => {
     if (typeof window === 'undefined') return [];
     const savedNotes = localStorage.getItem(`gs_notes_${lessonId}`);
@@ -89,7 +85,7 @@ const loadNotesForLesson = (lessonId: number): INote[] => {
 };
 
 export default function LearnCoursePage() {
-    // Use lazy initialization for state that depends on localStorage
+    
     const [completedLessons, setCompletedLessons] = useState<number[]>(loadCompletedLessons);
     const [currentLesson, setCurrentLesson] = useState<ILesson>(LESSONS_DATA[0]);
     const [notes, setNotes] = useState<INote[]>(() => loadNotesForLesson(LESSONS_DATA[0].id));
@@ -101,7 +97,6 @@ export default function LearnCoursePage() {
     const maxTimeRef = useRef<number>(0);
     const quizTriggeredRef = useRef<Set<string>>(new Set());
 
-    // Update notes when current lesson changes (without direct setState warning)
     useEffect(() => {
         const loadNotes = () => {
             const savedNotes = loadNotesForLesson(currentLesson.id);
@@ -113,7 +108,6 @@ export default function LearnCoursePage() {
         loadNotes();
     }, [currentLesson.id]);
 
-    // Save completed lessons to localStorage whenever they change
     useEffect(() => {
         if (typeof window !== 'undefined') {
             localStorage.setItem('gs_completed', JSON.stringify(completedLessons));
@@ -131,7 +125,6 @@ export default function LearnCoursePage() {
         const currentTime: number = targetPlayer.getCurrentTime();
         const roundedTime: number = Math.floor(currentTime);
 
-        // Chặn tua
         if (currentTime > maxTimeRef.current + 3) {
             targetPlayer.seekTo(maxTimeRef.current, true);
             toast.error("Vui lòng không tua nhanh!");
@@ -142,7 +135,6 @@ export default function LearnCoursePage() {
             if (duration) setDisplayProgress(Math.round((maxTimeRef.current / duration) * 100));
         }
 
-        // Hiện Quiz
         const quizKey = `${currentLesson.id}-${roundedTime}`;
         const quiz = POPUP_QUIZZES.find(q =>
             q.lessonId === currentLesson.id && q.timeTrigger === roundedTime
@@ -181,7 +173,7 @@ export default function LearnCoursePage() {
 
         const updated = [...notes, newNote];
         setNotes(updated);
-        // Save to localStorage immediately
+        
         localStorage.setItem(`gs_notes_${currentLesson.id}`, JSON.stringify(updated));
         setNoteInput("");
     };
@@ -189,7 +181,7 @@ export default function LearnCoursePage() {
     return (
         <div className="flex flex-col lg:flex-row h-screen bg-[#0f172a] text-white overflow-hidden">
             <div className="flex-1 overflow-y-auto flex flex-col relative">
-                {/* VIDEO AREA */}
+                {}
                 <div className="aspect-video w-full bg-black relative shadow-2xl">
                     <YouTube
                         videoId={currentLesson.videoId}
@@ -230,7 +222,7 @@ export default function LearnCoursePage() {
                     )}
                 </div>
 
-                {/* CONTENT AREA */}
+                {}
                 <div className="p-6 lg:p-10">
                     <div className="flex flex-col md:flex-row justify-between mb-8 gap-4">
                         <div>
@@ -293,7 +285,7 @@ export default function LearnCoursePage() {
                 </div>
             </div>
 
-            {/* SIDEBAR */}
+            {}
             <div className="w-full lg:w-96 bg-[#0f172a] border-l border-slate-800 flex flex-col">
                 <div className="p-6 border-b border-slate-800 flex items-center gap-3">
                     <BookOpen className="w-5 h-5 text-blue-500" />

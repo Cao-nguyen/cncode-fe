@@ -1,4 +1,4 @@
-// components/common/DeleteConfirmModal.tsx
+
 'use client';
 
 import { Loader2 } from 'lucide-react';

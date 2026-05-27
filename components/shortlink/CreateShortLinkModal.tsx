@@ -1,4 +1,4 @@
-// components/shortlink/CreateShortLinkModal.tsx
+
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -17,7 +17,7 @@ interface CreateShortLinkModalProps {
 
 function normalizeUrl(url: string): string | null {
     if (!url.trim()) return null;
-    const withProtocol = /^https?:\/\//i.test(url.trim()) ? url.trim() : `https://${url.trim()}`;
+    const withProtocol = /^https?:\/\//.test(url) ? url : `https://${url}`;
     try {
         new URL(withProtocol);
         return withProtocol;
@@ -151,7 +151,6 @@ export function CreateShortLinkModal({ isOpen, onClose, onSuccess }: CreateShort
                 originalUrl: link.originalUrl,
             });
 
-            // Reset form
             setOriginalUrl('');
             setCustomAlias('');
             setExpiresInDays(undefined);
@@ -174,7 +173,7 @@ export function CreateShortLinkModal({ isOpen, onClose, onSuccess }: CreateShort
                 className="bg-white rounded-xl w-full max-w-lg shadow-2xl border border-gray-200"
                 onClick={(e) => e.stopPropagation()}
             >
-                {/* Header */}
+                { }
                 <div className="flex items-center justify-between p-5 border-b border-gray-100">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
@@ -193,9 +192,9 @@ export function CreateShortLinkModal({ isOpen, onClose, onSuccess }: CreateShort
                     </button>
                 </div>
 
-                {/* Content */}
+                { }
                 <div className="p-5 space-y-5">
-                    {/* URL gốc */}
+                    { }
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1.5">
                             Đường dẫn gốc <span className="text-red-500">*</span>
@@ -221,7 +220,7 @@ export function CreateShortLinkModal({ isOpen, onClose, onSuccess }: CreateShort
                         )}
                     </div>
 
-                    {/* Toggle tùy chỉnh */}
+                    { }
                     <button
                         type="button"
                         onClick={() => {
@@ -242,7 +241,7 @@ export function CreateShortLinkModal({ isOpen, onClose, onSuccess }: CreateShort
                         <Heart size={12} className="text-blue-400" />
                     </button>
 
-                    {/* Custom alias */}
+                    { }
                     {useCustom && (
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1.5">
@@ -301,7 +300,7 @@ export function CreateShortLinkModal({ isOpen, onClose, onSuccess }: CreateShort
                         </div>
                     )}
 
-                    {/* Expiry */}
+                    { }
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1.5">
                             <Calendar size={14} className="inline mr-1 text-gray-400" />
@@ -326,7 +325,7 @@ export function CreateShortLinkModal({ isOpen, onClose, onSuccess }: CreateShort
                     </div>
                 </div>
 
-                {/* Actions */}
+                { }
                 <div className="flex gap-3 p-5 pt-0">
                     <button
                         onClick={onClose}

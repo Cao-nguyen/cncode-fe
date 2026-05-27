@@ -1,4 +1,4 @@
-// types/shortlink.type.ts
+
 export interface ShortLink {
     shortCode: string;
     shortUrl: string;

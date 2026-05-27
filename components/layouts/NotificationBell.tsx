@@ -1,4 +1,4 @@
-// components/custom/NotificationBell.tsx
+
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -12,8 +12,6 @@ import Link from 'next/link';
 import { notificationApi } from '@/lib/api/notification.api';
 import type { INotification } from '@/types/notification.type';
 import { CustomButton } from '../custom/CustomButton';
-
-// ─── Types ────────────────────────────────────────────────────────────────────
 
 const REACTION_NAMES: Record<string, string> = {
     like: '👍 thích',
@@ -31,8 +29,6 @@ const ADMIN_ONLY_TYPES: INotification['type'][] = [
     'post_reported' as INotification['type'],
     'comment_reported' as INotification['type'],
 ];
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function formatTime(dateString: string): string {
     const date = new Date(dateString);
@@ -172,8 +168,6 @@ const isSystemType = (type: INotification['type']) =>
 const isRoleRequestType = (type: INotification['type']) =>
     type === 'role_request_approved' || type === 'role_request_rejected';
 
-// ─── Notification Item Component ──────────────────────────────────────────────
-
 interface NotificationItemProps {
     notification: INotification;
     onMarkAsRead: (id: string) => void;
@@ -249,8 +243,6 @@ function NotificationItem({ notification, onMarkAsRead, onClose }: NotificationI
         </Link>
     );
 }
-
-// ─── Mobile Notification Sheet ────────────────────────────────────────────────
 
 interface MobileNotificationSheetProps {
     open: boolean;
@@ -385,12 +377,12 @@ function MobileNotificationSheet({
                     maxHeight: "90dvh",
                 }}
             >
-                {/* Drag indicator */}
+                {}
                 <div className="flex justify-center pt-3 pb-2 flex-shrink-0">
                     <div className="w-10 h-1 bg-[var(--cn-border)] rounded-full" />
                 </div>
 
-                {/* Header */}
+                {}
                 <div className="flex items-center justify-between px-4 pb-3 flex-shrink-0">
                     <h3 className="text-lg font-semibold text-[var(--cn-text-main)]">
                         Thông báo
@@ -420,7 +412,7 @@ function MobileNotificationSheet({
 
                 <div className="w-full h-px bg-[var(--cn-border)] flex-shrink-0" />
 
-                {/* Notification List */}
+                {}
                 <div
                     ref={contentRef}
                     className="flex-1 overflow-y-auto pb-6"
@@ -466,8 +458,6 @@ function MobileNotificationSheet({
     );
 }
 
-// ─── Main Component ───────────────────────────────────────────────────────────
-
 export default function NotificationBell() {
     const { user, token } = useAuthStore();
     const { socket, isConnected } = useSocket();
@@ -483,7 +473,6 @@ export default function NotificationBell() {
     const isFetchingRef = useRef(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
-    // Check mobile
     useEffect(() => {
         const checkMobile = () => {
             setIsMobile(window.innerWidth < 768);
@@ -533,7 +522,6 @@ export default function NotificationBell() {
         [token, user?._id, filterByRole]
     );
 
-    // Click outside to close (desktop only)
     useEffect(() => {
         if (!isMobile) {
             const handleClickOutside = (event: MouseEvent) => {
@@ -550,14 +538,12 @@ export default function NotificationBell() {
         }
     }, [open, isMobile]);
 
-    // Initial fetch
     useEffect(() => {
         if (token && user?._id) {
             fetchNotifications(1);
         }
     }, [token, user?._id]);
 
-    // Socket
     useEffect(() => {
         if (!socket || !isConnected || !user?._id) return;
 
@@ -621,7 +607,7 @@ export default function NotificationBell() {
 
     return (
         <>
-            {/* Desktop Dropdown */}
+            {}
             {!isMobile && (
                 <div className="relative inline-block" ref={dropdownRef}>
                     <button
@@ -707,7 +693,7 @@ export default function NotificationBell() {
                 </div>
             )}
 
-            {/* Mobile Notification Button */}
+            {}
             {isMobile && (
                 <button
                     type="button"
@@ -724,7 +710,7 @@ export default function NotificationBell() {
                 </button>
             )}
 
-            {/* Mobile Notification Sheet */}
+            {}
             <MobileNotificationSheet
                 open={isMobileSheetOpen}
                 onClose={() => setIsMobileSheetOpen(false)}

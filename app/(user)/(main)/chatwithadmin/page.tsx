@@ -23,7 +23,7 @@ export default function ContactAdminPage() {
     return (
         <div className="min-h-screen bg-gradient-to-br from-red-50 via-orange-50 to-yellow-50 py-12 px-6">
             <div className="max-w-4xl mx-auto">
-                {/* Warning Banner */}
+                {}
                 <div className="bg-red-600 text-white rounded-2xl p-6 mb-8 shadow-lg">
                     <div className="flex items-center gap-3 mb-3">
                         <AlertTriangle className="w-8 h-8" />
@@ -34,9 +34,9 @@ export default function ContactAdminPage() {
                     </p>
                 </div>
 
-                {/* Main Card */}
+                {}
                 <div className="bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-100">
-                    {/* Header */}
+                    {}
                     <div className="bg-gradient-to-r from-red-500 to-orange-500 p-8 text-white">
                         <div className="flex items-center gap-4 mb-4">
                             <div className="w-16 h-16 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center">
@@ -51,9 +51,9 @@ export default function ContactAdminPage() {
                         </div>
                     </div>
 
-                    {/* Content */}
+                    {}
                     <div className="p-8">
-                        {/* Security Notice */}
+                        {}
                         <div className="mb-8 p-4 bg-yellow-50 border border-yellow-200 rounded-xl">
                             <div className="flex items-start gap-3">
                                 <Lock className="w-5 h-5 text-yellow-600 mt-0.5" />
@@ -67,7 +67,7 @@ export default function ContactAdminPage() {
                             </div>
                         </div>
 
-                        {/* Security Measures */}
+                        {}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
                             <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
                                 <Key className="w-5 h-5 text-blue-600" />
@@ -99,7 +99,7 @@ export default function ContactAdminPage() {
                             </div>
                         </div>
 
-                        {/* Zalo Contact Button */}
+                        {}
                         <div className="text-center mb-8">
                             <div className="inline-block p-1 bg-gradient-to-r from-blue-600 to-blue-500 rounded-2xl shadow-lg">
                                 <a
@@ -122,7 +122,7 @@ export default function ContactAdminPage() {
                             </div>
                         </div>
 
-                        {/* Contact Info */}
+                        {}
                         <div className="border-t border-gray-100 pt-6">
                             <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
                                 <Phone className="w-4 h-4 text-blue-600" />
@@ -148,7 +148,7 @@ export default function ContactAdminPage() {
                             </div>
                         </div>
 
-                        {/* Note */}
+                        {}
                         <div className="mt-6 p-4 bg-blue-50 border border-blue-100 rounded-xl">
                             <p className="text-xs text-blue-800 text-center">
                                 <strong>Lưu ý:</strong> Khi liên hệ qua Zalo, vui lòng cung cấp email đăng ký và nội dung cần hỗ trợ
@@ -156,7 +156,7 @@ export default function ContactAdminPage() {
                             </p>
                         </div>
 
-                        {/* Back Button */}
+                        {}
                         <div className="mt-8 text-center">
                             <Link
                                 href="/"
@@ -168,7 +168,7 @@ export default function ContactAdminPage() {
                     </div>
                 </div>
 
-                {/* Trust Badges */}
+                {}
                 <div className="mt-8 flex flex-wrap justify-center gap-4">
                     <div className="flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur-sm rounded-full">
                         <Shield className="w-4 h-4 text-green-600" />

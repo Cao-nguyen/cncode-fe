@@ -1,4 +1,4 @@
-// app/(user)/cnbooks/[slug]/page.tsx
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -77,7 +77,7 @@ export default function CNBookDetailPage() {
 
     const finalPrice = book.isFree ? 0 : (book.discountPrice && book.discountPrice < book.price ? book.discountPrice : book.price);
     const discountPercent = book.price > 0 ? Math.round(((book.price - finalPrice) / book.price) * 100) : 0;
-    const isPurchased = false; // Cần kiểm tra từ API user book
+    const isPurchased = false; 
 
     return (
         <div className="min-h-screen bg-gray-50 py-8">
@@ -165,7 +165,7 @@ export default function CNBookDetailPage() {
                     </div>
                 </div>
 
-                {/* Sections Preview */}
+                {}
                 {book.sections && book.sections.length > 0 && (
                     <div className="mt-8 bg-white rounded-xl border border-gray-200 p-6">
                         <h2 className="text-xl font-bold text-gray-800 mb-4">📑 Mục lục</h2>

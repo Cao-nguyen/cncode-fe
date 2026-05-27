@@ -1,4 +1,4 @@
-// components/shortlink/AdminLinksTable.tsx
+
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
@@ -134,7 +134,7 @@ export function AdminLinksTable() {
     return (
         <div className="w-full">
             <div className="space-y-6">
-                {/* Header Section - CHỈ 1 LẦN */}
+                {}
                 <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-50 to-indigo-50/30 p-6 border border-blue-100">
                     <div className="absolute top-0 right-0 w-80 h-80 bg-gradient-to-br from-blue-200/30 to-transparent rounded-full blur-3xl" />
                     <div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -159,7 +159,7 @@ export function AdminLinksTable() {
                     </div>
                 </div>
 
-                {/* Stats Card - CHỈ 1 LẦN */}
+                {}
                 <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
                     <div className="flex items-center gap-4">
                         <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center">
@@ -184,7 +184,7 @@ export function AdminLinksTable() {
                     </div>
                 </div>
 
-                {/* Loading State */}
+                {}
                 {isLoading && links.length === 0 ? (
                     <div className="grid grid-cols-1 gap-4">
                         {[1, 2, 3, 4].map((i) => (
@@ -207,7 +207,7 @@ export function AdminLinksTable() {
                     </div>
                 ) : (
                     <>
-                        {/* Card Grid Layout */}
+                        {}
                         <div className="grid grid-cols-1 gap-5">
                             {links.map((link) => {
                                 const expiry = getExpiryStatus(link.expiresAt);
@@ -219,7 +219,7 @@ export function AdminLinksTable() {
                                         className="bg-white rounded-xl border border-gray-200 hover:border-blue-300 hover:shadow-lg transition-all duration-300 overflow-hidden"
                                     >
                                         <div className="p-6">
-                                            {/* Header Row */}
+                                            {}
                                             <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
                                                 <div className="flex-1 min-w-0">
                                                     <div className="flex items-center gap-2 flex-wrap mb-1">
@@ -261,7 +261,7 @@ export function AdminLinksTable() {
                                                 </div>
                                             </div>
 
-                                            {/* Original URL */}
+                                            {}
                                             <div className="mb-4 p-3 rounded-lg bg-gray-50 border border-gray-100">
                                                 <div className="flex items-center gap-2 mb-2">
                                                     <Globe size={12} className="text-gray-400" />
@@ -278,7 +278,7 @@ export function AdminLinksTable() {
                                                 </a>
                                             </div>
 
-                                            {/* Stats Grid */}
+                                            {}
                                             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
                                                 <div className="flex items-center gap-2 p-2 rounded-lg bg-blue-50">
                                                     <div className="w-7 h-7 rounded-lg bg-white flex items-center justify-center">
@@ -333,7 +333,7 @@ export function AdminLinksTable() {
                                                 </div>
                                             </div>
 
-                                            {/* Footer Actions */}
+                                            {}
                                             <div className="flex flex-wrap items-center justify-end gap-2 pt-3 border-t border-gray-100">
                                                 <a
                                                     href={link.originalUrl}
@@ -358,7 +358,7 @@ export function AdminLinksTable() {
                             })}
                         </div>
 
-                        {/* Pagination */}
+                        {}
                         {totalPages > 1 && (
                             <div className="flex items-center justify-center gap-2 pt-4 pb-4">
                                 <button
@@ -405,7 +405,7 @@ export function AdminLinksTable() {
                 )}
             </div>
 
-            {/* Delete Confirmation Modal */}
+            {}
             <ConfirmModalDelete
                 isOpen={deleteModalOpen}
                 onClose={() => {
@@ -419,7 +419,7 @@ export function AdminLinksTable() {
                 warning="Link đã xóa sẽ không thể truy cập được nữa."
             />
 
-            {/* Create Short Link Modal */}
+            {}
             <CreateShortLinkModal
                 isOpen={isCreateModalOpen}
                 onClose={() => setIsCreateModalOpen(false)}

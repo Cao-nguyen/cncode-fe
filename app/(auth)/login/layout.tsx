@@ -1,5 +1,5 @@
 import { ReactNode } from "react";
-import type { Metadata } from "next"; // Sửa đường dẫn đúng
+import type { Metadata } from "next"; 
 
 export const metadata: Metadata = {
     title: "Đăng nhập"

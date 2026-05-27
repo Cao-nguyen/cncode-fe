@@ -1,4 +1,4 @@
-// components/custom/CourseCard.tsx
+
 'use client';
 
 import React from 'react';
@@ -71,7 +71,7 @@ export const CourseCard: React.FC<CourseCardProps> = ({
 
     return (
         <div className="group bg-[var(--cn-bg-card)] rounded-[var(--cn-radius-md)] overflow-hidden border border-[var(--cn-border)] shadow-[var(--cn-shadow-sm)] hover:shadow-[var(--cn-shadow-md)] transition-all duration-300">
-            {/* Thumbnail */}
+            {}
             <div className="relative h-44 overflow-hidden bg-gradient-to-br from-[var(--cn-primary)]/20 to-[var(--cn-primary)]/5">
                 {thumbnail ? (
                     <Image
@@ -86,7 +86,7 @@ export const CourseCard: React.FC<CourseCardProps> = ({
                     </div>
                 )}
 
-                {/* Badges */}
+                {}
                 {isHot && (
                     <span className="absolute top-2 left-2 px-2 py-0.5 bg-orange-500 text-white text-[11px] lg:text-[13px] font-medium rounded-[var(--cn-radius-sm)]">
                         🔥 Hot
@@ -109,19 +109,19 @@ export const CourseCard: React.FC<CourseCardProps> = ({
                 )}
             </div>
 
-            {/* Content */}
+            {}
             <div className="p-4">
-                {/* Title */}
+                {}
                 <h3 className="text-sm lg:text-base font-bold text-[var(--cn-text-main)] mb-2 line-clamp-2 group-hover:text-[var(--cn-primary)] transition-colors">
                     {title}
                 </h3>
 
-                {/* Description */}
+                {}
                 <p className="text-[12px] lg:text-[14px] text-[var(--cn-text-sub)] mb-3 line-clamp-2">
                     {description}
                 </p>
 
-                {/* Instructor */}
+                {}
                 <div className="flex items-center gap-2 mb-3">
                     <div className="w-5 h-5 rounded-full bg-[var(--cn-primary)]/10 overflow-hidden flex-shrink-0">
                         {instructorAvatar ? (
@@ -143,7 +143,7 @@ export const CourseCard: React.FC<CourseCardProps> = ({
                     </span>
                 </div>
 
-                {/* Stats */}
+                {}
                 <div className="flex flex-wrap items-center gap-3 mb-3 text-[11px] lg:text-[13px] text-[var(--cn-text-muted)]">
                     {rating > 0 && (
                         <div className="flex items-center gap-1">
@@ -165,14 +165,14 @@ export const CourseCard: React.FC<CourseCardProps> = ({
                     )}
                 </div>
 
-                {/* Level Badge */}
+                {}
                 {level && (
                     <div className={`inline-flex px-1.5 py-0.5 rounded-full text-[10px] lg:text-[12px] font-medium ${getLevelColor()} mb-3`}>
                         {getLevelLabel()}
                     </div>
                 )}
 
-                {/* Price */}
+                {}
                 <div className="flex items-center justify-between pt-3 border-t border-[var(--cn-border)]">
                     <div>
                         {displayOriginalPrice ? (

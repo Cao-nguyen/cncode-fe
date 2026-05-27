@@ -1,4 +1,4 @@
-// components/public/PublicRatingSection.tsx
+
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -24,7 +24,6 @@ interface EditRatingData {
     id: string;
 }
 
-// Modal đánh giá
 function RatingModal({ isOpen, onClose, onSubmit, initialRating = 0, initialContent = '', isEdit = false }: {
     isOpen: boolean;
     onClose: () => void;
@@ -114,7 +113,6 @@ function RatingModal({ isOpen, onClose, onSubmit, initialRating = 0, initialCont
     );
 }
 
-// Component hiển thị thống kê
 function RatingStats({ stats, onOpenModal, hasUserRated, onEditRating, onDeleteRating, userRating }: {
     stats: RatingStatsType;
     onOpenModal: () => void;
@@ -204,7 +202,6 @@ function RatingStats({ stats, onOpenModal, hasUserRated, onEditRating, onDeleteR
     );
 }
 
-// Slideshow đánh giá
 function RatingSlideshow({ ratings, loading, onEdit, onDelete, currentUserId, onRefresh }: {
     ratings: IRating[];
     loading: boolean;
@@ -384,7 +381,7 @@ function RatingSlideshow({ ratings, loading, onEdit, onDelete, currentUserId, on
                 )}
             </div>
 
-            {/* Delete Confirmation Modal */}
+            {}
             <DeleteConfirmModal
                 isOpen={deleteModalOpen}
                 onClose={handleCloseDeleteModal}
@@ -477,7 +474,6 @@ export default function PublicRatingSection() {
         }
     }, [user]);
 
-    // Socket realtime listeners
     useEffect(() => {
         if (!socket || !isConnected) return;
 

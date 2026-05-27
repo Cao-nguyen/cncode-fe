@@ -1,4 +1,4 @@
-// components/shortlink/CreateShortLink.tsx
+
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -16,7 +16,7 @@ type AliasState = 'idle' | 'checking' | 'available' | 'taken';
 
 function normalizeUrl(url: string): string | null {
     if (!url.trim()) return null;
-    const withProtocol = /^https?:\/\//i.test(url.trim()) ? url.trim() : `https://${url.trim()}`;
+    const withProtocol = /^https?:\/\//.test(url) ? url : `https://${url}`;
     try {
         new URL(withProtocol);
         return withProtocol;
@@ -39,7 +39,6 @@ export function CreateShortLink() {
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const { createLink, isCreating } = useShortLinkStore();
 
-    // Check alias availability - dùng useCallback để tránh re-run không cần thiết
     const checkAliasAvailability = useCallback(async (alias: string) => {
         if (!alias || alias.length < 3) {
             setAliasState('idle');
@@ -63,18 +62,15 @@ export function CreateShortLink() {
         }
     }, []);
 
-    // Debounce customAlias changes
     useEffect(() => {
         if (!useCustom) return;
 
         const alias = customAlias.trim();
 
-        // Clear previous timeout
         if (debounceRef.current) {
             clearTimeout(debounceRef.current);
         }
 
-        // Reset state if alias is empty or too short
         if (alias.length === 0) {
             setAliasState('idle');
             setCheckedAlias('');
@@ -86,10 +82,8 @@ export function CreateShortLink() {
             return;
         }
 
-        // Set checking state immediately
         setAliasState('checking');
 
-        // Debounce API call
         debounceRef.current = setTimeout(() => {
             checkAliasAvailability(alias);
         }, 600);
@@ -127,7 +121,7 @@ export function CreateShortLink() {
     };
 
     const handleSubmit = async () => {
-        // Validate URL
+
         if (!originalUrl.trim()) {
             setOriginalUrlError('Vui lòng nhập URL');
             toast.error('Vui lòng nhập URL');
@@ -141,7 +135,6 @@ export function CreateShortLink() {
             return;
         }
 
-        // Validate custom alias
         if (useCustom && customAlias.trim()) {
             if (isCheckingAlias || aliasState === 'checking') {
                 toast.warning('Đang kiểm tra alias, vui lòng chờ...');
@@ -160,7 +153,7 @@ export function CreateShortLink() {
                 expiresInDays: expiresInDays,
             });
             setCreatedLink(link);
-            // Reset form
+
             setOriginalUrl('');
             setCustomAlias('');
             setExpiresInDays(undefined);
@@ -178,7 +171,7 @@ export function CreateShortLink() {
     return (
         <div className="space-y-5">
             <div className="space-y-4">
-                {/* URL gốc */}
+                { }
                 <div className="flex flex-col gap-1.5">
                     <label className="uppercase text-xs font-semibold tracking-wide text-[var(--cn-text-sub)]">
                         Đường dẫn gốc
@@ -193,7 +186,7 @@ export function CreateShortLink() {
                     />
                 </div>
 
-                {/* Toggle tùy chỉnh */}
+                { }
                 <button
                     type="button"
                     onClick={() => {
@@ -214,7 +207,7 @@ export function CreateShortLink() {
                     <Heart size={13} variant="Bold" className="text-[var(--cn-primary)]" />
                 </button>
 
-                {/* Custom alias */}
+                { }
                 {useCustom && (
                     <div className="flex flex-col gap-1.5">
                         <label className="uppercase text-xs font-semibold tracking-wide text-[var(--cn-text-sub)]">
@@ -272,7 +265,7 @@ export function CreateShortLink() {
                     </div>
                 )}
 
-                {/* Expiry */}
+                { }
                 <div className="flex flex-col gap-1.5">
                     <label className="uppercase text-xs font-semibold tracking-wide text-[var(--cn-text-sub)]">
                         Hết hạn sau{' '}
@@ -288,7 +281,7 @@ export function CreateShortLink() {
                     />
                 </div>
 
-                {/* Submit button */}
+                { }
                 <CustomButton
                     onClick={handleSubmit}
                     variant="primary"
@@ -303,7 +296,7 @@ export function CreateShortLink() {
                 </CustomButton>
             </div>
 
-            {/* Result */}
+            { }
             {createdLink && (
                 <div className="p-4 rounded-[var(--cn-radius-md)] border border-green-200 bg-green-50 space-y-3">
                     <div className="flex items-center gap-2">

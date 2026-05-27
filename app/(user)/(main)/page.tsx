@@ -4,8 +4,6 @@ import Analytics from "@/components/common/Analytics";
 import FeatureShowcase from "@/components/home/FeatureShowcase";
 import PublicRatingSection from "@/components/home/PublicRatingSection";
 
-
-
 export default function Home() {
 
     return (

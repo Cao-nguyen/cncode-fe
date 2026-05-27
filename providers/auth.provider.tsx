@@ -10,7 +10,6 @@ interface AuthProviderProps {
 export default function AuthProvider({ children }: AuthProviderProps) {
     const _hasHydrated = useAuthStore((state) => state._hasHydrated);
 
-    // Hiển thị loading trong khi Zustand persist đang hydrate dữ liệu
     if (!_hasHydrated) {
         return (
             <div className="flex items-center justify-center min-h-screen">
@@ -22,6 +21,5 @@ export default function AuthProvider({ children }: AuthProviderProps) {
         );
     }
 
-    // Đã hydrate xong, render children bình thường
     return <>{children}</>;
 }

@@ -1,4 +1,4 @@
-// types/user.type.ts
+
 export interface IUser {
     _id: string;
     fullName: string;

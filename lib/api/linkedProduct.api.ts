@@ -1,4 +1,4 @@
-// lib/api/linkedProduct.api.ts
+
 import axios from 'axios';
 import { LinkedProduct, CreateLinkedProductDto, UpdateLinkedProductDto, ProductsResponse } from '@/types/linkedProduct.type';
 
@@ -16,12 +16,10 @@ const getToken = (): string | null => {
     }
 };
 
-// Tạo axios instance với interceptor
 const api = axios.create({
     baseURL: `${API_URL}/api/linked-products`,
 });
 
-// Interceptor thêm token vào mọi request
 api.interceptors.request.use(
     (config) => {
         const token = getToken();
@@ -34,13 +32,12 @@ api.interceptors.request.use(
 );
 
 export const linkedProductApi = {
-    // Public routes (không cần token)
+    
     getPublicProducts: async () => {
         const response = await api.get<{ success: boolean; products: LinkedProduct[] }>('/public');
         return response.data;
     },
 
-    // Admin routes (cần token)
     getUserProducts: async (params?: { page?: number; limit?: number; status?: string }) => {
         const response = await api.get<ProductsResponse>('/my-products', { params });
         return response.data;

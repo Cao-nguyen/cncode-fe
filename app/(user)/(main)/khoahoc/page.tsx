@@ -1,4 +1,4 @@
-// app/khoahoc/page.tsx
+
 'use client';
 
 import React from 'react';
@@ -24,7 +24,7 @@ export default function CoursesPage() {
     return (
         <div className="min-h-screen bg-gray-50/50 py-12 px-6">
             <div className="max-w-7xl mx-auto">
-                {/* Header */}
+                {}
                 <div className="mb-12">
                     <h1 className="text-3xl font-black text-gray-900 tracking-tight uppercase">
                         Khoá học trực tuyến
@@ -32,14 +32,14 @@ export default function CoursesPage() {
                     <p className="text-gray-500 mt-2">Nâng cao kỹ năng mỗi ngày cùng CNcode</p>
                 </div>
 
-                {/* Grid Khóa học */}
+                {}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                     {COURSES_DATA.map((course) => (
                         <div
                             key={course.id}
                             className="group bg-white rounded-[32px] border border-gray-100 shadow-sm overflow-hidden hover:shadow-2xl hover:shadow-blue-100/50 transition-all duration-500 hover:-translate-y-2"
                         >
-                            {/* Thumbnail */}
+                            {}
                             <div className="relative aspect-[15/10] overflow-hidden">
                                 <img
                                     src={course.thumbnail}
@@ -53,7 +53,7 @@ export default function CoursesPage() {
                                 </div>
                             </div>
 
-                            {/* Content */}
+                            {}
                             <div className="p-8">
                                 <div className="flex items-center gap-4 text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-4">
                                     <div className="flex items-center gap-1.5">

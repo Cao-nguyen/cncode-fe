@@ -11,8 +11,6 @@ interface Service {
     sublabel: string;
 }
 
-// ─── Logo Icons ───────────────────────────────────────────────────────────────
-
 const IconCNbooks = () => (
     <div className="border border-slate-200 rounded-full px-4 py-1.5 inline-flex items-baseline gap-0.5 bg-white">
         <span className="text-[15px] font-black text-red-500 tracking-tight italic">CN</span>
@@ -106,8 +104,6 @@ const IconLuyentap = () => (
     </div>
 );
 
-// ─── Data ─────────────────────────────────────────────────────────────────────
-
 const SERVICES: Service[] = [
     { tooltip: "Xem CNbooks", href: "/cnbooks", label: "CNbooks", sublabel: "Sách & tài liệu học tập", icon: <IconCNbooks /> },
     { tooltip: "Xem CNjobs", href: "/cnjobs", label: "CNjobs", sublabel: "Việc làm & tuyển dụng", icon: <IconCNjobs /> },
@@ -123,8 +119,6 @@ const SERVICES: Service[] = [
     { tooltip: "Luyện tập", href: "/luyentap", label: "Luyện tập", sublabel: "Lên trình tư duy cùng bài tập", icon: <IconLuyentap /> },
 ];
 
-// ─── ServiceItem ──────────────────────────────────────────────────────────────
-
 function ServiceItem({ svc }: { svc: Service }) {
     const [hovered, setHovered] = useState(false);
 
@@ -136,7 +130,7 @@ function ServiceItem({ svc }: { svc: Service }) {
                 onMouseEnter={() => setHovered(true)}
                 onMouseLeave={() => setHovered(false)}
             >
-                {/* Tooltip — ẩn trên mobile */}
+                {}
                 <div
                     className="absolute left-1/2 pointer-events-none z-10 whitespace-nowrap hidden sm:block"
                     style={{
@@ -160,7 +154,7 @@ function ServiceItem({ svc }: { svc: Service }) {
                     />
                 </div>
 
-                {/* Icon */}
+                {}
                 <div
                     className="mb-3 sm:mb-5 flex items-center justify-center"
                     style={{
@@ -171,12 +165,12 @@ function ServiceItem({ svc }: { svc: Service }) {
                     {svc.icon}
                 </div>
 
-                {/* Label */}
+                {}
                 <p className="text-xs sm:text-sm font-bold text-slate-800 mb-0.5 sm:mb-1 leading-tight">
                     {svc.label}
                 </p>
 
-                {/* Sublabel — ẩn trên mobile nhỏ */}
+                {}
                 <p className="hidden sm:block text-xs text-slate-400 leading-snug">
                     {svc.sublabel}
                 </p>
@@ -185,14 +179,12 @@ function ServiceItem({ svc }: { svc: Service }) {
     );
 }
 
-// ─── Main ─────────────────────────────────────────────────────────────────────
-
 export default function CNServicesGrid() {
     return (
-        // Div lớn — shadow
+        
         <div className="mt-5 sm:mt-5 bg-white rounded-2xl md:rounded-3xl p-2 sm:p-3 w-[95%] max-w-6xl mx-auto" style={{ boxShadow: "0 -8px 24px -4px rgba(0,0,0,0.18), 0 4px 8px -4px rgba(0,0,0,0.04)" }}>
 
-            {/* Div giữa — border */}
+            {}
             <div className="border border-slate-200 rounded-2xl md:rounded-3xl">
                 <div className="grid grid-cols-2 sm:grid-cols-3">
                     {SERVICES.map((svc) => (

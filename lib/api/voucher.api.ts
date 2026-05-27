@@ -24,7 +24,7 @@ const getAuthHeaders = (): HeadersInit => {
 };
 
 export const voucherApi = {
-    // ============ USER ============
+    
     getUserVouchers: async (params: { page?: number; limit?: number; status?: string } = {}) => {
         const query = new URLSearchParams();
         if (params.page) query.append('page', params.page.toString());
@@ -45,7 +45,6 @@ export const voucherApi = {
         return response.json();
     },
 
-    // ============ ADMIN ============
     getAllVouchers: async (params: { page?: number; limit?: number; search?: string; status?: string } = {}) => {
         const query = new URLSearchParams();
         if (params.page) query.append('page', params.page.toString());

@@ -1,4 +1,4 @@
-// components/custom/VoucherCard.tsx
+
 'use client';
 
 import React, { useState } from 'react';
@@ -84,7 +84,7 @@ export const VoucherCard: React.FC<VoucherCardProps> = ({
 
     return (
         <div className={`bg-white rounded-xl overflow-hidden shadow-sm border transition-all duration-200 ${disabled ? 'opacity-50' : 'hover:shadow-md'}`}>
-            {/* Header - màu sắc theo loại */}
+            {}
             <div className={`bg-gradient-to-r ${getTypeColor()} px-3 py-2`}>
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -95,12 +95,12 @@ export const VoucherCard: React.FC<VoucherCardProps> = ({
                 </div>
             </div>
 
-            {/* Body */}
+            {}
             <div className="p-3">
                 <h3 className="font-semibold text-sm text-gray-800 line-clamp-1">{title}</h3>
                 <p className="text-[11px] text-gray-400 mt-0.5 line-clamp-1">{description}</p>
 
-                {/* Hạn dùng */}
+                {}
                 <div className="flex items-center gap-1 mt-2">
                     <Calendar size={10} className="text-gray-300" />
                     <span className="text-[10px] text-gray-400">
@@ -108,7 +108,7 @@ export const VoucherCard: React.FC<VoucherCardProps> = ({
                     </span>
                 </div>
 
-                {/* Mã và nút */}
+                {}
                 <div className="flex items-center gap-2 mt-2">
                     <div className="flex-1 bg-gray-50 rounded-lg px-2 py-1.5 border border-gray-100">
                         <code className="text-xs font-mono font-bold text-gray-700">{code}</code>

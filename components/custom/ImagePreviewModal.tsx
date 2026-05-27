@@ -23,17 +23,14 @@ export const ImagePreviewModal = ({ src, isOpen, onClose }: ImagePreviewModalPro
     const [rotation, setRotation] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
 
-    // Lưu kích thước thực tế của ảnh (natural size) và vùng chứa (container)
     const [naturalSize, setNaturalSize] = useState({ width: 0, height: 0 });
     const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
 
     const containerRef = useRef<HTMLDivElement>(null);
 
-    // Tính toán vùng giới hạn kéo dựa trên tỷ lệ "contain" của Next Image
     const dragConstraints = useMemo(() => {
         if (!naturalSize.width || !containerSize.width) return { left: 0, right: 0, top: 0, bottom: 0 };
 
-        // Tính toán kích thước hiển thị của ảnh khi dùng object-fit: contain
         const contentRatio = naturalSize.width / naturalSize.height;
         const containerRatio = containerSize.width / containerSize.height;
 
@@ -57,7 +54,6 @@ export const ImagePreviewModal = ({ src, isOpen, onClose }: ImagePreviewModalPro
         };
     }, [naturalSize, containerSize, scale]);
 
-    // Cập nhật kích thước vùng chứa
     useEffect(() => {
         const updateSize = () => {
             if (containerRef.current) {
@@ -75,7 +71,6 @@ export const ImagePreviewModal = ({ src, isOpen, onClose }: ImagePreviewModalPro
         return () => window.removeEventListener('resize', updateSize);
     }, [isOpen]);
 
-    // Wheel zoom
     useEffect(() => {
         const handleWheel = (e: WheelEvent) => {
             if (!isOpen) return;
@@ -91,7 +86,6 @@ export const ImagePreviewModal = ({ src, isOpen, onClose }: ImagePreviewModalPro
         return () => container?.removeEventListener('wheel', handleWheel);
     }, [isOpen]);
 
-    // ESC to close
     useEffect(() => {
         const handleEsc = (e: KeyboardEvent) => {
             if (e.key === 'Escape') onClose();
@@ -112,7 +106,7 @@ export const ImagePreviewModal = ({ src, isOpen, onClose }: ImagePreviewModalPro
                     className="fixed inset-0 z-[9999] flex flex-col bg-black/95 backdrop-blur-md select-none touch-none"
                     onClick={onClose}
                 >
-                    {/* Toolbar */}
+                    {}
                     <div className="relative z-[110] w-full flex justify-center pt-4 pb-2">
                         <motion.div
                             initial={{ y: -20 }}
@@ -132,7 +126,7 @@ export const ImagePreviewModal = ({ src, isOpen, onClose }: ImagePreviewModalPro
                         </motion.div>
                     </div>
 
-                    {/* Viewer Area */}
+                    {}
                     <div
                         ref={containerRef}
                         className="flex-1 w-full relative flex items-center justify-center overflow-hidden"
@@ -144,7 +138,7 @@ export const ImagePreviewModal = ({ src, isOpen, onClose }: ImagePreviewModalPro
                         )}
 
                         <motion.div
-                            key={src} // ⚡️ Key reset: Tự động đưa state & vị trí về mặc định khi đổi ảnh/đóng mở
+                            key={src} 
                             drag
                             dragConstraints={dragConstraints}
                             dragElastic={0.1}
@@ -169,13 +163,13 @@ export const ImagePreviewModal = ({ src, isOpen, onClose }: ImagePreviewModalPro
                                         });
                                         setIsLoading(false);
                                     }}
-                                    unoptimized // Tùy chọn: để Next.js không cần xử lý ảnh nếu bạn muốn tốc độ load nhanh nhất cho preview
+                                    unoptimized 
                                 />
                             </div>
                         </motion.div>
                     </div>
 
-                    {/* Footer Info */}
+                    {}
                     <div className="relative z-[110] w-full flex justify-center pb-6 pointer-events-none">
                         <motion.div
                             initial={{ y: 20 }}

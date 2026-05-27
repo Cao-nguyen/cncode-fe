@@ -3,7 +3,6 @@
 import React, { useState } from 'react';
 import { BookOpen, PlayCircle, ArrowLeft, CheckCircle2, XCircle, RefreshCcw, Award, ChevronRight, Target } from 'lucide-react';
 
-// --- TẤT CẢ DATA ĐỀ BÀI ---
 const QUIZ_DATA = [
     {
         id: "bai17",
@@ -89,16 +88,14 @@ const QUIZ_DATA = [
 ];
 
 export default function LuyenTapPage() {
-    // --- STATE QUẢN LÝ TĨNH ---
+    
     const [view, setView] = useState<'list' | 'quiz'>('list');
     const [selectedQuizId, setSelectedQuizId] = useState<string | null>(null);
     const [userAnswers, setUserAnswers] = useState<Record<number, number>>({});
     const [isSubmitted, setIsSubmitted] = useState(false);
 
-    // Lấy data quiz đang chọn
     const quiz = QUIZ_DATA.find(q => q.id === selectedQuizId);
 
-    // --- CÁC HÀM XỬ LÝ ---
     const handleStartQuiz = (id: string) => {
         setSelectedQuizId(id);
         setUserAnswers({});
@@ -126,7 +123,6 @@ export default function LuyenTapPage() {
         return quiz.questions.reduce((acc, q) => (userAnswers[q.id] === q.correct ? acc + 1 : acc), 0);
     };
 
-    // --- GIAO DIỆN 1: DANH SÁCH (TABLE) ---
     if (view === 'list') {
         return (
             <div className="min-h-screen bg-gray-50/50 p-6 lg:p-10">
@@ -186,13 +182,12 @@ export default function LuyenTapPage() {
         );
     }
 
-    // --- GIAO DIỆN 2: LÀM BÀI (QUIZ) ---
     if (!quiz) return null;
     const score = getScore();
 
     return (
         <div className="min-h-screen bg-gray-50/30 pb-24">
-            {/* Header Làm bài */}
+            {}
             <div className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-gray-100">
                 <div className="max-w-4xl mx-auto px-6 h-16 flex items-center justify-between">
                     <button
@@ -215,7 +210,7 @@ export default function LuyenTapPage() {
             </div>
 
             <div className="max-w-3xl mx-auto p-6 mt-8">
-                {/* Score Card nếu đã nộp bài */}
+                {}
                 {isSubmitted && (
                     <div className="mb-10 bg-white rounded-[32px] p-8 border border-blue-100 shadow-xl shadow-blue-50 text-center animate-in fade-in zoom-in duration-500">
                         <Award className="w-16 h-16 text-yellow-500 mx-auto mb-4" />
@@ -232,7 +227,7 @@ export default function LuyenTapPage() {
                     </div>
                 )}
 
-                {/* Danh sách câu hỏi */}
+                {}
                 <div className="space-y-6">
                     {quiz.questions.map((q, qIdx) => (
                         <div key={q.id} className={`bg-white rounded-[28px] border transition-all p-6 sm:p-8 ${isSubmitted
@@ -282,7 +277,7 @@ export default function LuyenTapPage() {
                     ))}
                 </div>
 
-                {/* Footer nộp bài */}
+                {}
                 {!isSubmitted && (
                     <div className="mt-12 flex justify-center">
                         <button

@@ -1,4 +1,4 @@
-// app/(user)/faq/page.tsx
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -48,7 +48,7 @@ const QuestionCard = ({ question, onLike, isLiked }: { question: Question; onLik
 
     return (
         <div className="bg-[var(--cn-bg-card)] rounded-xl border border-[var(--cn-border)] p-5 hover:shadow-md transition-all">
-            {/* Dòng 1: Avatar - Tên - Badge */}
+            {}
             <div className="flex items-center gap-3 mb-3">
                 <Avatar className="w-8 h-8">
                     {!question.isAnonymous && question.userId?.avatar ? (
@@ -67,14 +67,14 @@ const QuestionCard = ({ question, onLike, isLiked }: { question: Question; onLik
                 </Badge>
             </div>
 
-            {/* Dòng 2: Title */}
+            {}
             <Link href={`/faq/${question.slug}`}>
                 <h3 className="text-base lg:text-lg font-semibold text-[var(--cn-text-main)] hover:text-[var(--cn-primary)] transition-colors line-clamp-1 mb-3">
                     {question.title}
                 </h3>
             </Link>
 
-            {/* Dòng 3: Actions */}
+            {}
             <div className="flex items-center gap-5 text-sm">
                 <div className="flex items-center gap-1.5 text-[var(--cn-text-muted)] group cursor-default">
                     <div className="p-1 rounded-full bg-gray-100 group-hover:bg-gray-200 transition-colors">
@@ -191,7 +191,7 @@ export default function FAQPage() {
     return (
         <div className="min-h-screen bg-gradient-to-b from-[var(--cn-bg-main)] to-[var(--cn-bg-section)] py-8 lg:py-12">
             <div className="container mx-auto px-4 max-w-5xl">
-                {/* Header */}
+                {}
                 <div className="text-center mb-10">
                     <div className="inline-flex items-center gap-2 px-3 py-1 bg-[var(--cn-primary)]/10 rounded-full mb-4">
                         <Sparkles className="w-4 h-4 text-[var(--cn-primary)]" />
@@ -201,7 +201,7 @@ export default function FAQPage() {
                     <p className="text-sm lg:text-base text-[var(--cn-text-sub)]">Gặp khó khăn với bài tập? Đặt câu hỏi và nhận sự trợ giúp từ cộng đồng</p>
                 </div>
 
-                {/* Statistics */}
+                {}
                 {statistics && (
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                         <StatCard icon={<FileQuestion className="w-5 h-5 text-blue-600" />} label="Tổng câu hỏi" value={statistics.totalQuestions} color="bg-blue-100" />
@@ -211,7 +211,7 @@ export default function FAQPage() {
                     </div>
                 )}
 
-                {/* Filter and Search */}
+                {}
                 <div className="flex flex-col sm:flex-row gap-4 mb-6">
                     <div className="flex-1">
                         <CustomInput
@@ -237,7 +237,7 @@ export default function FAQPage() {
                     </Link>
                 </div>
 
-                {/* Questions List */}
+                {}
                 {loading ? (
                     <div className="flex justify-center py-16">
                         <div className="w-10 h-10 border-4 border-[var(--cn-primary)] border-t-transparent rounded-full animate-spin" />

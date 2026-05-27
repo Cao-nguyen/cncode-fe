@@ -19,7 +19,6 @@ import {
     Flag
 } from 'lucide-react';
 
-// --- INTERFACES ---
 interface IBlog {
     _id: string;
     title: string;
@@ -34,7 +33,6 @@ interface IBlog {
     author: string;
 }
 
-// --- DỮ LIỆU BLOG TỪ JSON ---
 const BLOGS_DATA: IBlog[] = [
     {
         "_id": "67e920a20dd0de43927fa336",
@@ -194,7 +192,6 @@ const BLOGS_DATA: IBlog[] = [
     }
 ];
 
-// Component Blog Detail
 const BlogDetail = ({ blog, onBack }: { blog: IBlog; onBack: () => void }) => {
     const formatDate = (dateStr: string): string => {
         const date = new Date(dateStr);
@@ -207,7 +204,7 @@ const BlogDetail = ({ blog, onBack }: { blog: IBlog; onBack: () => void }) => {
 
     return (
         <div className="min-h-screen bg-gray-50/30 pb-20">
-            {/* Header */}
+            {}
             <div className="bg-white border-b border-gray-100 pt-8 pb-4 px-6 sticky top-0 z-10">
                 <div className="max-w-4xl mx-auto">
                     <button
@@ -242,9 +239,9 @@ const BlogDetail = ({ blog, onBack }: { blog: IBlog; onBack: () => void }) => {
                 </div>
             </div>
 
-            {/* Content */}
+            {}
             <div className="max-w-4xl mx-auto px-6 py-8">
-                {/* Featured Image */}
+                {}
                 <div className="rounded-2xl overflow-hidden mb-8 shadow-lg">
                     <img
                         src={blog.img}
@@ -253,14 +250,14 @@ const BlogDetail = ({ blog, onBack }: { blog: IBlog; onBack: () => void }) => {
                     />
                 </div>
 
-                {/* Blog Content */}
+                {}
                 <article className="prose prose-lg max-w-none">
                     <ReactMarkdown remarkPlugins={[remarkGfm]}>
                         {blog.content}
                     </ReactMarkdown>
                 </article>
 
-                {/* Interaction Buttons */}
+                {}
                 <div className="flex items-center gap-4 mt-12 pt-8 border-t border-gray-100">
                     <button className="flex items-center gap-2 px-6 py-2 bg-gray-50 hover:bg-gray-100 rounded-full transition-colors">
                         <ThumbsUp className="w-4 h-4" />
@@ -276,7 +273,7 @@ const BlogDetail = ({ blog, onBack }: { blog: IBlog; onBack: () => void }) => {
                     </button>
                 </div>
 
-                {/* Comments Section */}
+                {}
                 <div className="mt-12">
                     <h3 className="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
                         <MessageCircle className="w-5 h-5" />
@@ -364,7 +361,6 @@ const BlogDetail = ({ blog, onBack }: { blog: IBlog; onBack: () => void }) => {
     );
 };
 
-// Main Component
 export default function BlogListPage() {
     const [searchTerm, setSearchTerm] = useState<string>('');
     const [selectedBlog, setSelectedBlog] = useState<IBlog | null>(null);
@@ -384,15 +380,13 @@ export default function BlogListPage() {
         });
     };
 
-    // Nếu đã chọn blog, hiển thị chi tiết
     if (selectedBlog) {
         return <BlogDetail blog={selectedBlog} onBack={() => setSelectedBlog(null)} />;
     }
 
-    // Hiển thị danh sách blog
     return (
         <div className="min-h-screen bg-gray-50/30 pb-20">
-            {/* Header Section */}
+            {}
             <div className="bg-white border-b border-gray-100 pt-12 pb-8 px-6">
                 <div className="max-w-7xl mx-auto">
                     <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
@@ -409,7 +403,7 @@ export default function BlogListPage() {
                             </p>
                         </div>
 
-                        {/* Search Bar */}
+                        {}
                         <div className="relative w-full md:w-80">
                             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                             <input
@@ -424,7 +418,7 @@ export default function BlogListPage() {
                 </div>
             </div>
 
-            {/* Blog Grid */}
+            {}
             <div className="max-w-7xl mx-auto px-6 mt-12">
                 {filteredBlogs.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -434,7 +428,7 @@ export default function BlogListPage() {
                                 onClick={() => setSelectedBlog(blog)}
                                 className="group bg-white rounded-[32px] border border-gray-100 overflow-hidden hover:shadow-2xl hover:shadow-blue-100/50 hover:-translate-y-2 transition-all duration-500 cursor-pointer"
                             >
-                                {/* Thumbnail */}
+                                {}
                                 <div className="relative aspect-[16/9] overflow-hidden">
                                     <img
                                         src={blog.img}
@@ -447,7 +441,7 @@ export default function BlogListPage() {
                                     </div>
                                 </div>
 
-                                {/* Content */}
+                                {}
                                 <div className="p-6 sm:p-8">
                                     <div className="flex items-center gap-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">
                                         <div className="flex items-center gap-1.5">

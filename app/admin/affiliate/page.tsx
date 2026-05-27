@@ -1,4 +1,4 @@
-// app/admin/affiliate/page.tsx
+
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -58,7 +58,6 @@ export default function AdminAffiliatePage() {
         clicks: 0,
     });
 
-    // Responsive
     useEffect(() => {
         const checkScreen = () => {
             setIsMobile(window.innerWidth < 640);
@@ -103,7 +102,6 @@ export default function AdminAffiliatePage() {
         }
     }, [token, page, search, fetchStats]);
 
-    // Socket realtime
     useEffect(() => {
         if (!socket || !isConnected) return;
 
@@ -180,7 +178,7 @@ export default function AdminAffiliatePage() {
 
     return (
         <div className="space-y-6 pb-8 px-3 sm:px-4">
-            {/* Header */}
+            {}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
                     <h1 className="text-2xl sm:text-3xl font-bold text-[var(--cn-text-main)]">Tiếp thị liên kết</h1>
@@ -191,7 +189,7 @@ export default function AdminAffiliatePage() {
                 </div>
             </div>
 
-            {/* Stats Cards */}
+            {}
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
                 {cardConfigs.map((card) => (
                     <DashboardCard
@@ -207,7 +205,7 @@ export default function AdminAffiliatePage() {
                 ))}
             </div>
 
-            {/* Table */}
+            {}
             <div className="bg-[var(--cn-bg-card)] rounded-xl shadow-sm border border-[var(--cn-border)] overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full min-w-[900px]">
@@ -303,7 +301,7 @@ export default function AdminAffiliatePage() {
                     </table>
                 </div>
 
-                {/* Pagination */}
+                {}
                 {totalPages > 1 && (
                     <div className="border-t border-[var(--cn-border)] px-5 py-4 flex items-center justify-between">
                         <div className="text-sm text-[var(--cn-text-muted)]">
@@ -337,7 +335,7 @@ export default function AdminAffiliatePage() {
                 )}
             </div>
 
-            {/* Detail Modal */}
+            {}
             {showDetailModal && selectedStat && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowDetailModal(false)}>
                     <div className="bg-[var(--cn-bg-card)] rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>
@@ -346,7 +344,7 @@ export default function AdminAffiliatePage() {
                             <button onClick={() => setShowDetailModal(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-[var(--cn-bg-section)] hover:bg-[var(--cn-hover)] transition"><X size={18} className="text-[var(--cn-text-muted)]" /></button>
                         </div>
                         <div className="p-6 space-y-5">
-                            {/* User Info */}
+                            {}
                             <div className="flex items-center gap-4 p-4 bg-[var(--cn-bg-section)] rounded-xl">
                                 <Avatar className="w-18 h-18">
                                     <AvatarImage
@@ -364,7 +362,7 @@ export default function AdminAffiliatePage() {
                                 </div>
                             </div>
 
-                            {/* Info Tags */}
+                            {}
                             <div className="flex flex-wrap gap-3">
                                 <div className="flex items-center gap-2 px-3 py-1.5 bg-[var(--cn-bg-section)] rounded-full">
                                     <Tag size={14} className="text-[var(--cn-primary)]" />
@@ -376,7 +374,7 @@ export default function AdminAffiliatePage() {
                                 </div>
                             </div>
 
-                            {/* Link */}
+                            {}
                             <div>
                                 <label className="block text-xs font-semibold uppercase text-[var(--cn-text-muted)] mb-2">LINK GIỚI THIỆU</label>
                                 <div className="p-3 bg-[var(--cn-bg-section)] rounded-xl flex items-center justify-between gap-2">
@@ -387,7 +385,7 @@ export default function AdminAffiliatePage() {
                                 </div>
                             </div>
 
-                            {/* Stats Grid */}
+                            {}
                             <div>
                                 <label className="block text-xs font-semibold uppercase text-[var(--cn-text-muted)] mb-2">THỐNG KÊ</label>
                                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

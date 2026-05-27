@@ -1,9 +1,10 @@
-// libs/upload.ts
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
 interface UploadResponse {
     success: boolean;
     url?: string;
+    messageId?: string;
     message?: string;
 }
 
@@ -33,7 +34,6 @@ const getToken = (): string | null => {
     }
 };
 
-// ✅ HÀM NÉN ẢNH
 const compressImage = (base64: string, maxWidth: number = 1200, quality: number = 0.7): Promise<string> => {
     return new Promise((resolve) => {
         const img = new Image();
@@ -87,10 +87,10 @@ export const uploadApi = {
                 };
             }
 
-            // Trả về đúng cấu trúc { success: true, url: string }
             return {
                 success: true,
                 url: data.data?.url,
+                messageId: data.data?.messageId,
                 message: data.message
             };
         } catch (error) {
@@ -105,7 +105,6 @@ export const uploadApi = {
             return { success: false };
         }
 
-        // ✅ NÉN TẤT CẢ ẢNH TRƯỚC KHI UPLOAD
         const compressedImages = await Promise.all(
             images.map(img => compressImage(img, 1200, 0.7))
         );
@@ -153,6 +152,79 @@ export const uploadApi = {
 
             return data;
         } catch (error) {
+            return { success: false, message: 'Lỗi kết nối' };
+        }
+    },
+
+    uploadFile: async (base64File: string, folder: string = 'general'): Promise<UploadResponse> => {
+        const token = getToken();
+        if (!token) {
+            return { success: false, message: 'Chưa đăng nhập' };
+        }
+
+        try {
+            const response = await fetch(`${API_URL}/api/upload/file`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ file: base64File, folder })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok || !data.success) {
+                return {
+                    success: false,
+                    message: data.message || 'Upload thất bại'
+                };
+            }
+
+            return {
+                success: true,
+                url: data.data?.url,
+                messageId: data.data?.messageId,
+                message: data.message
+            };
+        } catch (error) {
+            console.error('Upload error:', error);
+            return { success: false, message: 'Lỗi kết nối' };
+        }
+    },
+
+    uploadVideo: async (base64Video: string, folder: string = 'general'): Promise<UploadResponse> => {
+        const token = getToken();
+        if (!token) {
+            return { success: false, message: 'Chưa đăng nhập' };
+        }
+
+        try {
+            const response = await fetch(`${API_URL}/api/upload/video`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ video: base64Video, folder })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok || !data.success) {
+                return {
+                    success: false,
+                    message: data.message || 'Upload thất bại'
+                };
+            }
+
+            return {
+                success: true,
+                url: data.data?.url,
+                message: data.message
+            };
+        } catch (error) {
+            console.error('Upload error:', error);
             return { success: false, message: 'Lỗi kết nối' };
         }
     }

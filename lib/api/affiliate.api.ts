@@ -1,4 +1,3 @@
-// lib/api/affiliate.api.ts
 
 import type {
     IAffiliateApiResponse,
@@ -16,7 +15,7 @@ async function handleResponse<T>(response: Response): Promise<IAffiliateApiRespo
         try {
             const err = await response.json();
             message = err.message || message;
-        } catch { /* ignore */ }
+        } catch {  }
         return { success: false, data: null as T, message };
     }
     const data = await response.json();
@@ -24,7 +23,7 @@ async function handleResponse<T>(response: Response): Promise<IAffiliateApiRespo
 }
 
 export const affiliateApi = {
-    /** Admin: lấy thống kê toàn bộ affiliate */
+    
     getAdminStats: async (
         filters: IAffiliateFilters,
         token: string
@@ -42,7 +41,6 @@ export const affiliateApi = {
         return handleResponse<IAffiliateStatsResponse>(response);
     },
 
-    /** User: lấy thông tin affiliate của bản thân */
     getMyInfo: async (token: string): Promise<IAffiliateApiResponse<IMyAffiliateInfo>> => {
         const response = await fetch(
             `${API_URL}/api/affiliate/my-affiliate`,
@@ -51,7 +49,6 @@ export const affiliateApi = {
         return handleResponse<IMyAffiliateInfo>(response);
     },
 
-    /** Leaderboard (public) */
     getLeaderboard: async (limit = 10): Promise<IAffiliateApiResponse<ILeaderboardUser[]>> => {
         const response = await fetch(
             `${API_URL}/api/affiliate/leaderboard?limit=${limit}`
@@ -59,10 +56,9 @@ export const affiliateApi = {
         return handleResponse<ILeaderboardUser[]>(response);
     },
 
-    /** Track click (public) */
     trackClick: async (code: string): Promise<void> => {
         try {
             await fetch(`${API_URL}/api/affiliate/click/${code}`, { method: 'POST' });
-        } catch { /* ignore tracking errors */ }
+        } catch {  }
     },
 };

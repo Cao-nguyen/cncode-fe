@@ -1,4 +1,4 @@
-// app/system-error/page.tsx
+
 'use client';
 
 import React from 'react';
@@ -11,7 +11,7 @@ export default function SystemErrorPage() {
     return (
         <div className="min-h-screen bg-white flex items-center justify-center p-6">
             <div className="max-w-md w-full text-center">
-                {/* Icon Alert */}
+                {}
                 <div className="relative inline-flex mb-8">
                     <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center">
                         <AlertTriangle className="w-10 h-10 text-red-500" />
@@ -24,7 +24,7 @@ export default function SystemErrorPage() {
                     </div>
                 </div>
 
-                {/* Content */}
+                {}
                 <h1 className="text-2xl font-bold text-gray-900 mb-3">
                     Hệ thống đang gặp sự cố
                 </h1>
@@ -32,7 +32,7 @@ export default function SystemErrorPage() {
                     Rất tiếc, một lỗi không mong muốn đã xảy ra. Chúng tôi đã ghi nhận sự cố này và đang nỗ lực khắc phục sớm nhất có thể.
                 </p>
 
-                {/* Contact Box */}
+                {}
                 <div className="bg-gray-50 rounded-2xl p-6 border border-gray-100 mb-8">
                     <div className="flex items-center gap-4 text-left">
                         <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -55,7 +55,7 @@ export default function SystemErrorPage() {
                     </a>
                 </div>
 
-                {/* Footer Links */}
+                {}
                 <div className="flex flex-col gap-4">
                     <Link
                         href="/"

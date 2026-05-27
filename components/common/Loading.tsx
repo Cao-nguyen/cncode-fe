@@ -28,7 +28,7 @@ export default function Loading({
 
     return (
         <div className="flex flex-col items-center justify-center gap-5 py-12">
-            {/* Icon */}
+            {}
             <div
                 className="w-20 h-20 flex items-center justify-center animate-[spinBounce_1.6s_cubic-bezier(0.4,0,0.2,1)_infinite]"
                 style={{ background: "#29b6f6", borderRadius: "14px" }}
@@ -38,7 +38,7 @@ export default function Loading({
                 </span>
             </div>
 
-            {/* Label */}
+            {}
             <p className="text-[15px] text-gray-400 m-0">
                 {text}
                 {[0, 0.2, 0.4].map((delay, i) => (

@@ -54,9 +54,9 @@ export default function NavAdmin({ open, onToggle }: NavAdminProps) {
     return (
         <div className="rounded-t-2xl bg-white dark:bg-[#0f0f0f]">
             <header className="flex h-14 items-center justify-between px-2 sm:px-4">
-                {/* Left section */}
+                {}
                 <div className="flex items-center gap-1 sm:gap-2">
-                    {/* Menu button - luôn hiển thị trên mobile */}
+                    {}
                     <button
                         onClick={onToggle}
                         className={btnBase}
@@ -70,10 +70,10 @@ export default function NavAdmin({ open, onToggle }: NavAdminProps) {
                         />
                     </button>
 
-                    {/* Divider - ẩn trên mobile khi không đủ chỗ */}
+                    {}
                     {!isMobile && <div className="mx-1 h-5 w-px bg-black/[0.1] dark:bg-white/[0.1]" />}
 
-                    {/* Breadcrumb - rút gọn trên mobile */}
+                    {}
                     <div className="flex items-center gap-1 sm:gap-1.5 text-[10px] sm:text-[12.5px]">
                         <span className="text-gray-400 dark:text-gray-500 hidden sm:inline">Admin</span>
                         <span className="text-gray-400 dark:text-gray-500 sm:hidden">A</span>
@@ -85,9 +85,9 @@ export default function NavAdmin({ open, onToggle }: NavAdminProps) {
                     </div>
                 </div>
 
-                {/* Right section */}
+                {}
                 <div className="flex items-center gap-0.5 sm:gap-1">
-                    {/* Home button - ẩn text trên mobile */}
+                    {}
                     <button
                         onClick={() => router.push("/")}
                         className={btnBase}
@@ -96,16 +96,16 @@ export default function NavAdmin({ open, onToggle }: NavAdminProps) {
                         <House size={18} />
                     </button>
 
-                    {/* Divider - ẩn trên mobile */}
+                    {}
                     {!isMobile && <div className="mx-1 h-5 w-px bg-black/[0.1] dark:bg-white/[0.1]" />}
 
-                    {/* Notification */}
+                    {}
                     <NotificationBell />
 
-                    {/* Divider - ẩn trên mobile */}
+                    {}
                     {!isMobile && <div className="mx-1 h-5 w-px bg-black/[0.1] dark:bg-white/[0.1]" />}
 
-                    {/* Logout button - rút gọn trên mobile */}
+                    {}
                     <button
                         onClick={handleLogout}
                         className="flex items-center gap-1 sm:gap-1.5 rounded-lg px-2 sm:px-3 py-2 text-[10px] sm:text-[12.5px] font-medium text-red-500 transition-colors hover:bg-red-50 dark:hover:bg-red-500/10"

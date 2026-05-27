@@ -1,4 +1,4 @@
-// components/custom/ProductCard.tsx
+
 'use client';
 
 import React from 'react';
@@ -50,7 +50,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
     return (
         <div className="group bg-[var(--cn-bg-card)] rounded-[var(--cn-radius-md)] overflow-hidden border border-[var(--cn-border)] shadow-[var(--cn-shadow-sm)] hover:shadow-[var(--cn-shadow-md)] transition-all duration-300">
-            {/* Image */}
+            {}
             <div className="relative h-48 overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900">
                 {image ? (
                     <Image
@@ -65,7 +65,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                     </div>
                 )}
 
-                {/* Badges */}
+                {}
                 {isHot && (
                     <span className="absolute top-2 left-2 px-2 py-0.5 bg-orange-500 text-white text-[11px] lg:text-[13px] font-medium rounded-[var(--cn-radius-sm)]">
                         🔥 Hot
@@ -82,7 +82,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                     </span>
                 )}
 
-                {/* Wishlist Button */}
+                {}
                 {onWishlist && (
                     <button
                         onClick={onWishlist}
@@ -93,9 +93,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                 )}
             </div>
 
-            {/* Content */}
+            {}
             <div className="p-4">
-                {/* Rating */}
+                {}
                 {rating > 0 && (
                     <div className="flex items-center gap-1 mb-2">
                         <Star className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400" />
@@ -108,12 +108,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                     </div>
                 )}
 
-                {/* Title */}
+                {}
                 <h3 className="text-sm lg:text-base font-semibold text-[var(--cn-text-main)] mb-2 line-clamp-2 group-hover:text-[var(--cn-primary)] transition-colors">
                     {name}
                 </h3>
 
-                {/* Specs */}
+                {}
                 {specs.length > 0 && (
                     <div className="flex flex-wrap gap-1 mb-3">
                         {specs.slice(0, 2).map((spec, idx) => (
@@ -129,7 +129,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                     </div>
                 )}
 
-                {/* Features */}
+                {}
                 {(warranty || shipping || returnPolicy) && (
                     <div className="space-y-1 mb-3">
                         {warranty && (
@@ -153,7 +153,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                     </div>
                 )}
 
-                {/* Price */}
+                {}
                 <div className="flex items-center justify-between pt-3 border-t border-[var(--cn-border)]">
                     <div>
                         {originalPrice ? (

@@ -1,4 +1,4 @@
-// app/admin/faq/page.tsx
+
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
@@ -58,7 +58,6 @@ const StatCard = ({ icon, label, value, color }: { icon: React.ReactNode; label:
     </div>
 );
 
-// View Question Modal
 const ViewQuestionModal = ({ isOpen, onClose, question }: { isOpen: boolean; onClose: () => void; question: Question | null }) => {
     const [answers, setAnswers] = useState<Answer[]>([]);
     const [loading, setLoading] = useState(false);
@@ -157,8 +156,6 @@ const ViewQuestionModal = ({ isOpen, onClose, question }: { isOpen: boolean; onC
     );
 };
 
-// Answer Modal
-// Answer Modal - body scroll, editor không scroll, dùng size bình thường
 const AnswerQuestionModal = ({ isOpen, onClose, question, onSuccess }: { isOpen: boolean; onClose: () => void; question: Question | null; onSuccess: () => void }) => {
     const editorRef = useRef<CustomEditorRef>(null);
     const [submitting, setSubmitting] = useState(false);
@@ -201,7 +198,6 @@ const AnswerQuestionModal = ({ isOpen, onClose, question, onSuccess }: { isOpen:
     );
 };
 
-// Row Component
 const AdminQuestionRow = ({
     question,
     onView,
@@ -267,7 +263,6 @@ const AdminQuestionRow = ({
     );
 };
 
-// PAGE COMPONENT
 export default function AdminFAQPage() {
     const [questions, setQuestions] = useState<Question[]>([]);
     const [statistics, setStatistics] = useState<StatisticsData | null>(null);

@@ -1,4 +1,3 @@
-// types/affiliate.type.ts
 
 export interface IAffiliateUser {
     _id: string;

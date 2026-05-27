@@ -1,4 +1,4 @@
-// components/custom/CustomTextarea.tsx
+
 'use client';
 
 import React, { useState } from 'react';
@@ -13,7 +13,7 @@ interface CustomTextareaProps {
     maxLength?: number;
     required?: boolean;
     disabled?: boolean;
-    className?: string;  // ✅ Thêm dòng này
+    className?: string;  
 }
 
 export const CustomTextarea: React.FC<CustomTextareaProps> = ({
@@ -26,7 +26,7 @@ export const CustomTextarea: React.FC<CustomTextareaProps> = ({
     maxLength,
     required = false,
     disabled = false,
-    className = '',  // ✅ Thêm dòng này
+    className = '',  
 }) => {
     const [charCount, setCharCount] = useState(value.length);
 

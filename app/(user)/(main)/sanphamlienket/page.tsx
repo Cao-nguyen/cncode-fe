@@ -1,4 +1,4 @@
-// app/(user)/sanphamlienket/page.tsx
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -39,7 +39,7 @@ export default function SanPhamLienKetPage() {
     return (
         <div className="min-h-screen bg-[var(--cn-bg-main)] py-8">
             <div className="container mx-auto px-4 max-w-7xl">
-                {/* Header */}
+                {}
                 <div className="text-center mb-8">
                     <h1 className="text-2xl font-bold text-[var(--cn-text-main)] mb-2">
                         Sản Phẩm Hệ Sinh Thái
@@ -49,7 +49,7 @@ export default function SanPhamLienKetPage() {
                     </p>
                 </div>
 
-                {/* Products Grid */}
+                {}
                 {products.length === 0 ? (
                     <div className="text-center py-12">
                         <ImageIcon className="w-16 h-16 mx-auto text-[var(--cn-text-muted)] mb-4" />
@@ -62,7 +62,7 @@ export default function SanPhamLienKetPage() {
                                 key={product._id}
                                 className="bg-[var(--cn-bg-card)] rounded-[var(--cn-radius-md)] overflow-hidden border border-[var(--cn-border)] hover:shadow-[var(--cn-shadow-md)] transition-all duration-300"
                             >
-                                {/* Ảnh - tỷ lệ 3:2 (tương ứng 1500x1000) */}
+                                {}
                                 <div className="relative aspect-[3/2] bg-[var(--cn-bg-section)]">
                                     {product.thumbnailUrl ? (
                                         <Image
@@ -79,13 +79,13 @@ export default function SanPhamLienKetPage() {
                                     )}
                                 </div>
 
-                                {/* Nội dung */}
+                                {}
                                 <div className="p-3">
                                     <h3 className="text-sm font-semibold text-[var(--cn-text-main)] text-center line-clamp-2 mb-3 min-h-[40px]">
                                         {product.name}
                                     </h3>
 
-                                    {/* Nút nhỏ gọn */}
+                                    {}
                                     <Link
                                         href={product.productUrl}
                                         target="_blank"

@@ -1,4 +1,4 @@
-// lib/api/cnbook.api.ts
+
 import {
     Book, UserBook, CreateBookDto, CreateSectionDto,
     CreateLessonDto, CreateExerciseDto, BookStats, ExerciseAnswerResult,
@@ -30,7 +30,7 @@ const getAuthHeaders = (): HeadersInit => {
 };
 
 export const cnbookApi = {
-    // ============ PUBLIC ============
+    
     getBooks: async (params: { page?: number; limit?: number; category?: string; search?: string; sort?: string } = {}): Promise<{ success: boolean; books: Book[]; total: number; totalPages: number }> => {
         const query = new URLSearchParams();
         if (params.page) query.append('page', params.page.toString());
@@ -44,13 +44,12 @@ export const cnbookApi = {
     },
 
     getBookById: async (id: string): Promise<{ success: boolean; data: Book }> => {
-        const response = await fetch(`${API_URL}/api/cnbooks/detail/${id}`, {  // 👈 THÊM /detail/
+        const response = await fetch(`${API_URL}/api/cnbooks/detail/${id}`, {  
             headers: getAuthHeaders()
         });
         return response.json();
     },
 
-    // Sửa getUserBooks URL
     getUserBooks: async (params: { page?: number; limit?: number; status?: string; search?: string } = {}): Promise<{ success: boolean; books: Book[]; total: number; totalPages: number }> => {
         const query = new URLSearchParams();
         if (params.page) query.append('page', params.page.toString());
@@ -58,7 +57,7 @@ export const cnbookApi = {
         if (params.status) query.append('status', params.status);
         if (params.search) query.append('search', params.search);
 
-        const response = await fetch(`${API_URL}/api/cnbooks/user/books?${query.toString()}`, {  // 👈 THÊM /user/books
+        const response = await fetch(`${API_URL}/api/cnbooks/user/books?${query.toString()}`, {  
             headers: getAuthHeaders()
         });
         return response.json();
@@ -69,7 +68,6 @@ export const cnbookApi = {
         return response.json();
     },
 
-    // ============ USER (cần đăng nhập) ============
     purchaseBook: async (bookId: string, useCoins: boolean = false): Promise<{ success: boolean; data: UserBook; message?: string }> => {
         const response = await fetch(`${API_URL}/api/cnbooks/purchase`, {
             method: 'POST',
@@ -120,7 +118,6 @@ export const cnbookApi = {
         return response.json();
     },
 
-    // ============ AUTHOR (tạo/sửa sách) ============
     createBook: async (data: CreateBookDto): Promise<{ success: boolean; data: Book }> => {
         const response = await fetch(`${API_URL}/api/cnbooks`, {
             method: 'POST',
@@ -147,7 +144,6 @@ export const cnbookApi = {
         return response.json();
     },
 
-    // Sections
     addSection: async (bookId: string, data: CreateSectionDto): Promise<{ success: boolean; data: Book }> => {
         const response = await fetch(`${API_URL}/api/cnbooks/${bookId}/sections`, {
             method: 'POST',
@@ -174,7 +170,6 @@ export const cnbookApi = {
         return response.json();
     },
 
-    // Lessons
     addLesson: async (bookId: string, sectionId: string, data: CreateLessonDto): Promise<{ success: boolean; data: Lesson }> => {
         const response = await fetch(`${API_URL}/api/cnbooks/${bookId}/sections/${sectionId}/lessons`, {
             method: 'POST',
@@ -201,7 +196,6 @@ export const cnbookApi = {
         return response.json();
     },
 
-    // Exercises
     addExercise: async (lessonId: string, data: CreateExerciseDto): Promise<{ success: boolean; data: Exercise }> => {
         const response = await fetch(`${API_URL}/api/cnbooks/lessons/${lessonId}/exercises`, {
             method: 'POST',
@@ -228,7 +222,6 @@ export const cnbookApi = {
         return response.json();
     },
 
-    // ============ ADMIN ============
     getAdminBooks: async (params: { page?: number; limit?: number; status?: string; search?: string; category?: string } = {}): Promise<{ success: boolean; books: Book[]; total: number; totalPages: number }> => {
         const query = new URLSearchParams();
         if (params.page) query.append('page', params.page.toString());

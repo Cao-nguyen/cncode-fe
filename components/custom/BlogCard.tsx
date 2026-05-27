@@ -1,4 +1,4 @@
-// components/custom/BlogCard.tsx
+
 'use client';
 
 import React from 'react';
@@ -46,7 +46,7 @@ export const BlogCard: React.FC<BlogCardProps> = ({
 
     return (
         <div className="group bg-[var(--cn-bg-card)] rounded-[var(--cn-radius-md)] overflow-hidden border border-[var(--cn-border)] shadow-[var(--cn-shadow-sm)] hover:shadow-[var(--cn-shadow-md)] transition-all duration-300">
-            {/* Image */}
+            {}
             <div className="relative h-48 overflow-hidden bg-gradient-to-br from-[var(--cn-primary)]/20 to-[var(--cn-primary)]/5">
                 {image ? (
                     <Image
@@ -69,9 +69,9 @@ export const BlogCard: React.FC<BlogCardProps> = ({
                 )}
             </div>
 
-            {/* Content */}
+            {}
             <div className="p-4">
-                {/* Author & Date */}
+                {}
                 <div className="flex items-center gap-2 mb-3">
                     <div className="w-6 h-6 rounded-full bg-[var(--cn-primary)]/10 overflow-hidden flex-shrink-0">
                         {authorAvatar ? (
@@ -95,17 +95,17 @@ export const BlogCard: React.FC<BlogCardProps> = ({
                     </div>
                 </div>
 
-                {/* Title */}
+                {}
                 <h3 className="text-sm lg:text-base font-bold text-[var(--cn-text-main)] mb-2 line-clamp-2 group-hover:text-[var(--cn-primary)] transition-colors">
                     {title}
                 </h3>
 
-                {/* Description */}
+                {}
                 <p className="text-[12px] lg:text-[14px] text-[var(--cn-text-sub)] mb-3 line-clamp-3">
                     {description}
                 </p>
 
-                {/* Meta Info */}
+                {}
                 <div className="flex items-center justify-between pt-3 border-t border-[var(--cn-border)]">
                     <div className="flex items-center gap-3 text-[11px] lg:text-[13px] text-[var(--cn-text-muted)]">
                         <div className="flex items-center gap-1">

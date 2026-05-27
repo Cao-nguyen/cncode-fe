@@ -1,4 +1,4 @@
-// lib/notification-helper.ts
+
 import { notificationApi } from './api/notification.api';
 
 interface SendNotificationParams {

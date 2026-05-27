@@ -1,4 +1,4 @@
-// app/quy-trinh-su-dung/page.tsx
+
 'use client';
 
 import { useState, useEffect } from 'react';

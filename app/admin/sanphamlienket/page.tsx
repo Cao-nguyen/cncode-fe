@@ -1,4 +1,4 @@
-// app/admin/sanphamlienket/page.tsx
+
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -30,7 +30,7 @@ export default function AdminSanPhamLienKetPage() {
         setLoading(true);
         try {
             const res = await linkedProductApi.getUserProducts({ limit: 100 });
-            console.log('Fetch products response:', res); // Debug
+            console.log('Fetch products response:', res); 
 
             if (res.success) {
                 setProducts(res.products || []);
@@ -53,7 +53,7 @@ export default function AdminSanPhamLienKetPage() {
 
         setUploading(true);
         try {
-            // Convert file to base64
+            
             const base64 = await new Promise<string>((resolve) => {
                 const reader = new FileReader();
                 reader.onload = (e) => resolve(e.target?.result as string);
@@ -95,7 +95,7 @@ export default function AdminSanPhamLienKetPage() {
             fetchProducts();
         } catch (error) {
             console.error('Error saving product:', error);
-            // Sử dụng type assertion hoặc kiểm tra instance
+            
             if (error instanceof Error) {
                 alert(error.message);
             } else if (typeof error === 'object' && error !== null && 'message' in error) {
@@ -140,7 +140,7 @@ export default function AdminSanPhamLienKetPage() {
     return (
         <div className="min-h-screen p-6">
             <div className="max-w-7xl mx-auto">
-                {/* Header */}
+                {}
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
                     <div>
                         <h1 className="text-2xl font-bold text-[var(--cn-text-main)]">Quản lý sản phẩm hệ sinh thái</h1>
@@ -158,7 +158,7 @@ export default function AdminSanPhamLienKetPage() {
                     </button>
                 </div>
 
-                {/* Products Grid Admin */}
+                {}
                 {loading ? (
                     <div className="flex justify-center py-12">
                         <Loader2 className="w-8 h-8 animate-spin text-[var(--cn-primary)]" />
@@ -184,7 +184,7 @@ export default function AdminSanPhamLienKetPage() {
                                 key={product._id}
                                 className="group bg-[var(--cn-bg-card)] rounded-[var(--cn-radius-md)] overflow-hidden border border-[var(--cn-border)] hover:shadow-[var(--cn-shadow-md)] transition-all duration-300"
                             >
-                                {/* Image */}
+                                {}
                                 <div className="relative h-40 overflow-hidden bg-[var(--cn-bg-section)]">
                                     {product.thumbnailUrl ? (
                                         <Image
@@ -202,7 +202,7 @@ export default function AdminSanPhamLienKetPage() {
                                     )}
                                 </div>
 
-                                {/* Content */}
+                                {}
                                 <div className="p-3">
                                     <h3 className="text-sm font-semibold text-[var(--cn-text-main)] text-center line-clamp-2 min-h-[40px]">
                                         {product.name}
@@ -238,7 +238,7 @@ export default function AdminSanPhamLienKetPage() {
                 )}
             </div>
 
-            {/* Modal Add/Edit */}
+            {}
             {showModal && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowModal(false)}>
                     <div className="bg-[var(--cn-bg-card)] rounded-[var(--cn-radius-lg)] w-full max-w-md" onClick={(e) => e.stopPropagation()}>
@@ -252,7 +252,7 @@ export default function AdminSanPhamLienKetPage() {
                         </div>
 
                         <div className="p-5 space-y-4">
-                            {/* Product Name */}
+                            {}
                             <div>
                                 <label className="block text-sm font-medium text-[var(--cn-text-sub)] mb-1">
                                     Tên sản phẩm <span className="text-red-500">*</span>
@@ -266,7 +266,7 @@ export default function AdminSanPhamLienKetPage() {
                                 />
                             </div>
 
-                            {/* Thumbnail Upload */}
+                            {}
                             <div>
                                 <label className="block text-sm font-medium text-[var(--cn-text-sub)] mb-1">Ảnh thumbnail</label>
                                 <div
@@ -317,7 +317,7 @@ export default function AdminSanPhamLienKetPage() {
                                 </div>
                             </div>
 
-                            {/* Product URL */}
+                            {}
                             <div>
                                 <label className="block text-sm font-medium text-[var(--cn-text-sub)] mb-1">
                                     URL sản phẩm <span className="text-red-500">*</span>

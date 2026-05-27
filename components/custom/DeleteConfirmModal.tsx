@@ -1,4 +1,4 @@
-// components/common/DeleteConfirmModal.tsx
+
 'use client';
 
 import React from 'react';
@@ -10,7 +10,7 @@ interface DeleteConfirmModalProps {
     onConfirm: () => void;
     title?: string;
     message?: string;
-    warning?: string;  // ✅ Thêm dòng này
+    warning?: string;  
     isDeleting?: boolean;
 }
 
@@ -20,7 +20,7 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
     onConfirm,
     title = 'Xác nhận xóa',
     message = 'Bạn có chắc chắn muốn xóa mục này không?',
-    warning = 'Dữ liệu đã xóa sẽ không thể khôi phục.',  // ✅ Thêm dòng này
+    warning = 'Dữ liệu đã xóa sẽ không thể khôi phục.',  
     isDeleting = false,
 }) => {
     if (!isOpen) return null;
@@ -31,7 +31,7 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
                 className="bg-[var(--cn-bg-card)] rounded-[var(--cn-radius-md)] w-full max-w-md shadow-[var(--cn-shadow-lg)] border border-[var(--cn-border)]"
                 onClick={(e) => e.stopPropagation()}
             >
-                {/* Header */}
+                {}
                 <div className="flex items-center justify-between p-5 border-b border-[var(--cn-border)]">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
@@ -47,14 +47,14 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
                     </button>
                 </div>
 
-                {/* Content */}
+                {}
                 <div className="p-5 space-y-2">
                     <p className="text-sm text-[var(--cn-text-sub)]">{message}</p>
                     <p className="text-sm text-red-500">{warning}</p>
                     <p className="text-xs text-[var(--cn-text-muted)] italic">* Hành động này không thể hoàn tác.</p>
                 </div>
 
-                {/* Actions */}
+                {}
                 <div className="flex gap-3 p-5 pt-0">
                     <button
                         onClick={onClose}

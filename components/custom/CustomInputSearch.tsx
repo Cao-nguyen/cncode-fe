@@ -1,4 +1,4 @@
-// components/custom/CustomInputSearch.tsx
+
 'use client'
 
 import React, { useState, useRef, useEffect } from 'react';
@@ -142,7 +142,7 @@ export const CustomInputSearch: React.FC<CustomInputSearchProps> = ({
                 return 'px-3 py-1.5 text-[11px] lg:text-[13px]';
             case 'large':
                 return 'px-5 py-3 text-[13px] lg:text-[15px]';
-            default: // medium
+            default: 
                 return 'px-4 py-2 text-[12px] lg:text-[14px]';
         }
     };

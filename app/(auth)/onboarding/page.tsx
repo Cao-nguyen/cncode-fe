@@ -1,4 +1,4 @@
-// /app/(auth)/onboarding/page.tsx
+
 'use client'
 
 import Image from 'next/image'
@@ -23,7 +23,6 @@ export default function OnboardingPage() {
 
   const isUsernameValid = isUsernameAvailable && !isCheckingUsername
 
-  // Chuyển đổi options sang format cho CustomSelect
   const classSelectOptions = classOptions.map(opt => ({ value: opt, label: opt }))
   const provinceSelectOptions = provinceOptions.map(opt => ({ value: opt, label: opt }))
 
@@ -31,7 +30,7 @@ export default function OnboardingPage() {
     <div className="min-h-screen bg-[var(--cn-bg-main)] py-8 sm:py-12 lg:py-16 px-4 sm:px-6 lg:px-8">
       <div className="max-w-[320px] sm:max-w-[500px] lg:max-w-[600px] mx-auto">
 
-        {/* Header */}
+        {}
         <div className="text-center mb-8 sm:mb-10 lg:mb-12">
           <Image
             src="/images/logo.png"
@@ -50,7 +49,7 @@ export default function OnboardingPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5 lg:space-y-6">
-          {/* General Error */}
+          {}
           {errors.general && (
             <div className="p-3 sm:p-4 bg-red-50 border border-red-200 rounded-[var(--cn-radius-sm)] flex items-center gap-2 sm:gap-3 text-[var(--cn-error)]">
               <AlertCircle size={16} className="flex-shrink-0 sm:w-[18px] sm:h-[18px]" />
@@ -58,7 +57,7 @@ export default function OnboardingPage() {
             </div>
           )}
 
-          {/* Username */}
+          {}
           <CustomInput
             label="Tên người dùng"
             placeholder="username"
@@ -72,7 +71,7 @@ export default function OnboardingPage() {
             disabled={loading}
           />
 
-          {/* Class */}
+          {}
           <CustomSelect
             label="Lớp"
             options={classSelectOptions}
@@ -84,7 +83,7 @@ export default function OnboardingPage() {
             disabled={loading}
           />
 
-          {/* Province */}
+          {}
           <CustomSelect
             label="Tỉnh/Thành phố"
             options={provinceSelectOptions}
@@ -96,7 +95,7 @@ export default function OnboardingPage() {
             disabled={loading}
           />
 
-          {/* School */}
+          {}
           <CustomInput
             label="Trường học"
             placeholder="Ví dụ: THPT Tân Quới"
@@ -107,7 +106,7 @@ export default function OnboardingPage() {
             disabled={loading}
           />
 
-          {/* Birthday */}
+          {}
           <CustomInput
             label="Ngày sinh"
             type="date"
@@ -118,7 +117,7 @@ export default function OnboardingPage() {
             disabled={loading}
           />
 
-          {/* Bio */}
+          {}
           <CustomInput
             label="Bio"
             placeholder="Giới thiệu đôi chút về bạn..."
@@ -131,7 +130,7 @@ export default function OnboardingPage() {
             disabled={loading}
           />
 
-          {/* Submit Button */}
+          {}
           <CustomButton
             type="submit"
             variant="primary"

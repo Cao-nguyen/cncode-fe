@@ -1,4 +1,4 @@
-// types/notification.type.ts
+
 export interface CoinsUpdatedPayload {
     coins: number;
     userId: string;

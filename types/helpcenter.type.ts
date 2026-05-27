@@ -1,4 +1,4 @@
-// types/helpcenter.type.ts
+
 export interface HelpCenterFAQ {
     _id: string;
     question: string;

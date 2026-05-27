@@ -133,15 +133,37 @@ const editorStyles = `
     font-family: 'JetBrains Mono', 'Fira Code', monospace !important;
   }
 
-  .static-editor a {
-    color: #6366f1;
-    text-decoration: underline;
-    text-decoration-color: rgba(99,102,241,0.4);
-    background: none !important;
+  .static-editor a { 
+    color: #2563eb !important; 
+    text-decoration: underline !important; 
+    text-decoration-color: #2563eb !important;
+    text-decoration-thickness: 1px !important;
+    background: rgba(37, 99, 235, 0.08) !important; 
+    padding: 1px 3px !important;
+    border-radius: 3px !important;
+    cursor: pointer !important;
+    transition: all 0.15s !important;
   }
 
-  .static-editor a[href^="mailto:"] {
-    color: #6366f1;
+  .static-editor a:hover { 
+    color: #1d4ed8 !important; 
+    text-decoration-color: #1d4ed8 !important;
+    background: rgba(37, 99, 235, 0.15) !important;
+  }
+
+  .static-editor a[href^="mailto:"] { 
+    color: #2563eb !important; 
+  }
+
+  /* Math inline styling */
+  .static-editor .math-inline {
+    display: inline-block;
+    vertical-align: middle;
+    margin: 0 2px;
+  }
+
+  .static-editor .math-inline math-field {
+    font-size: 15px !important;
   }
 
   .static-editor ul { margin: 0.5em 0 0.5em 1.6em !important; }

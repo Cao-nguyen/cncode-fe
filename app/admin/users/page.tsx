@@ -53,8 +53,10 @@ import { CustomTextarea } from '@/components/custom/CustomTextarea';
 import { ConfirmModalDelete } from '@/components/custom/ConfirmationModal';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast } from 'sonner';
+import AdminUsersDashboard from '@/components/admin/AdminUsersDashboard';
 
 const PAGE_SIZE = 10;
+const DEFAULT_PAGE_SIZE = 10;
 
 const ROLE_OPTIONS = [
     { value: '', label: 'Tất cả' },
@@ -94,7 +96,7 @@ export default function AdminUsersPage() {
     const [isTableLoading, setIsTableLoading] = useState(false);
 
     const [page, setPage] = useState(1);
-    const [pageSize, setPageSize] = useState(20);
+    const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
     const [totalPages, setTotalPages] = useState(1);
     const [totalUsers, setTotalUsers] = useState(0);
 
@@ -105,6 +107,7 @@ export default function AdminUsersPage() {
     const [filters, setFilters] = useState<IUserFilters>({
         search: '', role: '', status: '', sortBy: 'createdAt', sortOrder: 'desc'
     });
+    const [searchInput, setSearchInput] = useState('');
 
     const [selectedUser, setSelectedUser] = useState<IUser | null>(null);
     const [showUserModal, setShowUserModal] = useState(false);
@@ -213,11 +216,12 @@ export default function AdminUsersPage() {
     }, [page]);
 
     const handleSearchChange = (value: string) => {
+        setSearchInput(value);
         if (searchTimeout.current) clearTimeout(searchTimeout.current);
         searchTimeout.current = setTimeout(() => {
             setFilters(prev => ({ ...prev, search: value }));
             setPage(1);
-        }, 500);
+        }, 300);
     };
 
     // Socket
@@ -548,6 +552,15 @@ export default function AdminUsersPage() {
                 )}
             </div>
 
+            {/* Dashboard Charts */}
+            <AdminUsersDashboard
+                stats={stats}
+                provinceStats={provinceStats}
+                loadingProvince={loadingProvince}
+                isMobile={isMobile}
+                isTablet={isTablet}
+            />
+
             {/* Tabs */}
             <div className="flex gap-2 border-b border-gray-200">
                 <button
@@ -577,16 +590,13 @@ export default function AdminUsersPage() {
             <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
                 <div className="flex flex-wrap gap-3 items-center">
                     <div className="flex-1 min-w-[200px]">
-                        <div className="relative">
-                            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                            <input
-                                type="text"
-                                defaultValue={filters.search}
-                                onChange={(e) => handleSearchChange(e.target.value)}
-                                placeholder="Tìm kiếm theo tên hoặc email..."
-                                className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20 outline-none text-sm transition-all text-gray-700 placeholder:text-gray-400"
-                            />
-                        </div>
+                        <CustomInput
+                            type="text"
+                            value={searchInput}
+                            onChange={(e) => handleSearchChange(e.target.value)}
+                            placeholder="Tìm kiếm theo tên hoặc email..."
+                            icon={<Search size={16} />}
+                        />
                     </div>
                     <div className="w-48">
                         <CustomSelect
@@ -1072,8 +1082,7 @@ export default function AdminUsersPage() {
             )}
 
             {/* Delete User Confirm Modal */}
-            <ConfirmModalDelete
-                isOpen={!!deleteUserTarget}
+            <ConfirmModalDelete isOpen={!!deleteUserTarget}
                 onClose={() => setDeleteUserTarget(null)}
                 onConfirm={handleDeleteUser}
                 title="Xóa người dùng"

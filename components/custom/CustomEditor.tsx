@@ -37,7 +37,10 @@ import {
     Superscript,
     Subscript,
     Trash2,
-    Loader2
+    Loader2,
+    Sigma,
+    FileText,
+    Video
 } from "lucide-react";
 import { createRoot } from "react-dom/client";
 import { toast } from "sonner";
@@ -45,7 +48,7 @@ import { toast } from "sonner";
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type HeadingLevel = "p" | "h1" | "h2" | "h3";
-type ModalMode = "image" | "code" | null;
+type ModalMode = "image" | "code" | "math" | "file" | "video" | null;
 type ImgAlign = "left" | "center" | "right";
 
 interface ActiveStates {
@@ -76,6 +79,13 @@ interface CustomEditorProps {
 export interface CustomEditorRef {
     getContent: () => string;
     setContent: (content: string) => void;
+}
+
+// Type definitions for mathlive
+interface MathfieldElement extends HTMLElement {
+    value: string;
+    readOnly: boolean;
+    mathVirtualKeyboardPolicy?: string;
 }
 
 declare global {
@@ -189,33 +199,133 @@ function tokenize(code: string, lang: string): string {
     return result;
 }
 
-// ─── FIX 1: Auto-link — chỉ link và email, KHÔNG tô màu email dạng ***@gmail ──
+// ─── File Card HTML Generator ─────────────────────────────────────────────────
 
-// Regex riêng biệt cho URL và email
+function generateFileCardHTML(filename: string, messageId: string, fileSize: string): string {
+    const ext = filename.split('.').pop()?.toLowerCase() ?? '';
+
+    // SVG icons và màu sắc theo loại file
+    const configs: Record<string, { svg: string; color: string; canPreview: boolean }> = {
+        pdf: {
+            svg: '<svg viewBox="0 0 24 24" width="28" height="28"><path fill="#e11d48" d="M19,2L14,2L14,9L20,9L20,4C20,2.89 19.1,2 19,2M13,2H6C4.89,2 4,2.89 4,4V20C4,21.11 4.89,22 6,22H18C19.11,22 20,21.11 20,20V10L13,2M9,19H7V13H9C10.1,13 11,13.9 11,15V17C11,18.1 10.1,19 9,19M15,19H13V13H17V15H15V16H17V18H15V19M9,15V17H7V15H9M13,3.5L18.5,9H13V3.5Z"/></svg>',
+            color: '#e11d48',
+            canPreview: true
+        },
+        doc: {
+            svg: '<svg viewBox="0 0 24 24" width="28" height="28"><path fill="#2b579a" d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M15.2,19H13.8L12.8,14.4L11.7,19H10.3L8.7,12.1H10.1L11.3,17.5L12.3,12.8H13.3L14.3,17.5L15.5,12.1H16.9L15.2,19M13,9V3.5L18.5,9H13Z"/></svg>',
+            color: '#2b579a',
+            canPreview: false
+        },
+        docx: {
+            svg: '<svg viewBox="0 0 24 24" width="28" height="28"><path fill="#2b579a" d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M15.2,19H13.8L12.8,14.4L11.7,19H10.3L8.7,12.1H10.1L11.3,17.5L12.3,12.8H13.3L14.3,17.5L15.5,12.1H16.9L15.2,19M13,9V3.5L18.5,9H13Z"/></svg>',
+            color: '#2b579a',
+            canPreview: false
+        },
+        xls: {
+            svg: '<svg viewBox="0 0 24 24" width="28" height="28"><path fill="#107c10" d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M15.8,19H14.4L12.4,14.6L10.4,19H9L11.7,13.1L9,7.2H10.4L12.4,11.6L14.4,7.2H15.8L13.1,13.1L15.8,19M13,9V3.5L18.5,9H13Z"/></svg>',
+            color: '#107c10',
+            canPreview: false
+        },
+        xlsx: {
+            svg: '<svg viewBox="0 0 24 24" width="28" height="28"><path fill="#107c10" d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M15.8,19H14.4L12.4,14.6L10.4,19H9L11.7,13.1L9,7.2H10.4L12.4,11.6L14.4,7.2H15.8L13.1,13.1L15.8,19M13,9V3.5L18.5,9H13Z"/></svg>',
+            color: '#107c10',
+            canPreview: false
+        },
+        ppt: {
+            svg: '<svg viewBox="0 0 24 24" width="28" height="28"><path fill="#d24726" d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M16,13H13V12H16V13M16,15H13V14H16V15M16,17H13V16H16V17M11,13H8V12H11V13M11,15H8V14H11V15M11,17H8V16H11V17M13,9V3.5L18.5,9H13Z"/></svg>',
+            color: '#d24726',
+            canPreview: false
+        },
+        pptx: {
+            svg: '<svg viewBox="0 0 24 24" width="28" height="28"><path fill="#d24726" d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M16,13H13V12H16V13M16,15H13V14H16V15M16,17H13V16H16V17M11,13H8V12H11V13M11,15H8V14H11V15M11,17H8V16H11V17M13,9V3.5L18.5,9H13Z"/></svg>',
+            color: '#d24726',
+            canPreview: false
+        },
+        zip: {
+            svg: '<svg viewBox="0 0 24 24" width="28" height="28"><path fill="#f59e0b" d="M14,17H12V15H10V17H8V15H10V13H8V11H10V13H12V11H10V9H12V7H14V9H12V11H14V13H12V15H14V17M14,2H6C4.89,2 4,2.89 4,4V20C4,21.11 4.89,22 6,22H18C19.11,22 20,21.11 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/></svg>',
+            color: '#f59e0b',
+            canPreview: false
+        },
+        rar: {
+            svg: '<svg viewBox="0 0 24 24" width="28" height="28"><path fill="#f59e0b" d="M14,17H12V15H10V17H8V15H10V13H8V11H10V13H12V11H10V9H12V7H14V9H12V11H14V13H12V15H14V17M14,2H6C4.89,2 4,2.89 4,4V20C4,21.11 4.89,22 6,22H18C19.11,22 20,21.11 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/></svg>',
+            color: '#f59e0b',
+            canPreview: false
+        },
+        '7z': {
+            svg: '<svg viewBox="0 0 24 24" width="28" height="28"><path fill="#f59e0b" d="M14,17H12V15H10V17H8V15H10V13H8V11H10V13H12V11H10V9H12V7H14V9H12V11H14V13H12V15H14V17M14,2H6C4.89,2 4,2.89 4,4V20C4,21.11 4.89,22 6,22H18C19.11,22 20,21.11 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/></svg>',
+            color: '#f59e0b',
+            canPreview: false
+        },
+    };
+
+    const config = configs[ext] ?? {
+        svg: '<svg viewBox="0 0 24 24" width="28" height="28"><path fill="#64748b" d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/></svg>',
+        color: '#64748b',
+        canPreview: false
+    };
+
+    return `
+        <div class="file-card" contenteditable="false" data-message-id="${messageId}" style="background:#ffffff;width:100%;max-width:550px;padding:12px 16px;border-radius:12px;display:flex;align-items:center;border:1px solid #edf2f7;transition:all 0.2s ease;margin:12px 0;font-family:Inter,system-ui,sans-serif;" onmouseover="this.style.borderColor='#cbd5e0';this.style.boxShadow='0 4px 12px rgba(0,0,0,0.05)';this.style.transform='translateY(-1px)';" onmouseout="this.style.borderColor='#edf2f7';this.style.boxShadow='none';this.style.transform='translateY(0)';">
+            <div style="width:48px;height:48px;border-radius:10px;display:flex;align-items:center;justify-content:center;margin-right:16px;flex-shrink:0;position:relative;background:${config.color}12;">
+                ${config.svg}
+            </div>
+            <div style="flex-grow:1;min-width:0;">
+                <div style="font-size:14.5px;font-weight:600;color:#2d3748;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px;" title="${filename}">${filename}</div>
+                <div style="font-size:12px;color:#718096;display:flex;gap:10px;">
+                    <span>${fileSize}</span>
+                    <span>•</span>
+                    <span>Vừa xong</span>
+                </div>
+            </div>
+            <button onclick="(()=>{const a=document.createElement('a');a.href='http://localhost:5000/api/upload/proxy/file/${messageId}';a.download='${filename}';a.click();})()" style="width:36px;height:36px;border-radius:8px;border:none;background:#f8fafc;color:#64748b;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:0.2s;margin-left:12px;" onmouseover="this.style.background='#e2e8f0';this.style.color='#1e293b';" onmouseout="this.style.background='#f8fafc';this.style.color='#64748b';" title="Tải xuống">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+            </button>
+        </div>
+    `;
+}
+
+// ─── FIX 1: Auto-link và highlight email/link ────────────────────────────────
+
+// Regex cho email và URL (bao gồm cả có và không có https)
 const EMAIL_REGEX = /[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/g;
-const URL_REGEX = /(?:https?:\/\/|www\.)[^\s<>"']+|(?<![@ \t])\b[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z]{2,})+(?:\/[^\s<>"']*)?/g;
+// Cải thiện URL_REGEX để bắt được domain như cncode.io.vn
+const URL_REGEX = /(?:https?:\/\/)?(?:www\.)?[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+(?:\.[a-zA-Z]{2,})+(?:\/[^\s<>"']*)?/g;
 
 function autoLinkText(node: Node) {
     if (node.nodeType === Node.TEXT_NODE) {
         const text = node.textContent ?? "";
 
         // Kết hợp cả URL và email, tìm tất cả matches
-        const combined: Array<{ index: number; length: number; url: string; isEmail: boolean }> = [];
+        const combined: Array<{ index: number; length: number; url: string; isEmail: boolean; text: string }> = [];
 
-        // Tìm emails
+        // Tìm emails - highlight với màu xanh dương
         EMAIL_REGEX.lastIndex = 0;
         let m: RegExpExecArray | null;
         while ((m = EMAIL_REGEX.exec(text)) !== null) {
-            combined.push({ index: m.index, length: m[0].length, url: `mailto:${m[0]}`, isEmail: true });
+            combined.push({
+                index: m.index,
+                length: m[0].length,
+                url: `mailto:${m[0]}`,
+                isEmail: true,
+                text: m[0]
+            });
         }
 
-        // Tìm URLs — nhưng skip nếu vị trí đã bị email chiếm
+        // Tìm URLs - skip nếu vị trí đã bị email chiếm
         URL_REGEX.lastIndex = 0;
         while ((m = URL_REGEX.exec(text)) !== null) {
             const overlap = combined.some(e => m!.index >= e.index && m!.index < e.index + e.length);
             if (!overlap) {
-                const href = m[0].startsWith("http") ? m[0] : `https://${m[0]}`;
-                combined.push({ index: m.index, length: m[0].length, url: href, isEmail: false });
+                const matchText = m[0];
+                // Xác định href: thêm https:// nếu chưa có protocol
+                const href = matchText.match(/^https?:\/\//) ? matchText : `https://${matchText}`;
+                combined.push({
+                    index: m.index,
+                    length: m[0].length,
+                    url: href,
+                    isEmail: false,
+                    text: matchText
+                });
             }
         }
 
@@ -229,8 +339,17 @@ function autoLinkText(node: Node) {
             if (item.index > last) frag.appendChild(document.createTextNode(text.slice(last, item.index)));
             const a = document.createElement("a");
             a.href = item.url;
-            a.textContent = text.slice(item.index, item.index + item.length);
-            if (!item.isEmail) { a.target = "_blank"; a.rel = "noopener noreferrer"; }
+            a.textContent = item.text;
+            a.style.color = "#2563eb";
+            a.style.textDecoration = "underline";
+            a.style.textDecorationColor = "#2563eb";
+            a.style.background = "rgba(37, 99, 235, 0.08)";
+            a.style.padding = "1px 3px";
+            a.style.borderRadius = "3px";
+            if (!item.isEmail) {
+                a.target = "_blank";
+                a.rel = "noopener noreferrer";
+            }
             frag.appendChild(a);
             last = item.index + item.length;
         }
@@ -366,6 +485,99 @@ const CodeModal: React.FC<{ onClose: () => void; onInsert: (code: string, lang: 
     );
 };
 
+// ─── Math Modal ───────────────────────────────────────────────────────────────
+
+const MathModal: React.FC<{ onClose: () => void; onInsert: (latex: string) => void }> = ({ onClose, onInsert }) => {
+    const mathFieldRef = useRef<HTMLDivElement>(null);
+    const [mathField, setMathField] = useState<MathfieldElement | null>(null);
+
+    useEffect(() => {
+        if (mathFieldRef.current && !mathField) {
+            import('mathlive').then((MathLive) => {
+                // Configure mathlive fonts path - để null để tự động load từ package
+                const MathfieldElementClass = MathLive.MathfieldElement as unknown as {
+                    new(): MathfieldElement;
+                    fontsDirectory: string | null;
+                };
+
+                // Không set fontsDirectory, để mathlive tự động tìm fonts
+                const mf = new MathfieldElementClass();
+                mf.style.fontSize = '20px';
+                mf.style.padding = '12px';
+                mf.style.border = '1px solid #d1d5db';
+                mf.style.borderRadius = '6px';
+                mf.style.minHeight = '60px';
+                mf.style.background = '#ffffff';
+
+                // Cấu hình virtual keyboard - ẩn nút toggle keyboard
+                mf.mathVirtualKeyboardPolicy = 'manual';
+
+                // Ẩn các nút toggle keyboard trong mathfield
+                const style = document.createElement('style');
+                style.textContent = `
+                    math-field::part(virtual-keyboard-toggle) {
+                        display: none !important;
+                    }
+                `;
+                document.head.appendChild(style);
+                mf.addEventListener('focus', () => {
+                    if (typeof window !== 'undefined' && (window as Window & { mathVirtualKeyboard?: { show(): void } }).mathVirtualKeyboard) {
+                        (window as Window & { mathVirtualKeyboard: { show(): void } }).mathVirtualKeyboard.show();
+                    }
+                });
+
+                mathFieldRef.current?.appendChild(mf);
+                setMathField(mf);
+
+                // Show keyboard ngay khi mở modal
+                setTimeout(() => {
+                    mf.focus();
+                    if (typeof window !== 'undefined' && (window as Window & { mathVirtualKeyboard?: { show(): void } }).mathVirtualKeyboard) {
+                        (window as Window & { mathVirtualKeyboard: { show(): void } }).mathVirtualKeyboard.show();
+                    }
+                }, 100);
+            }).catch(err => {
+                console.error('Failed to load mathlive:', err);
+            });
+        }
+
+        return () => {
+            if (typeof window !== 'undefined' && (window as Window & { mathVirtualKeyboard?: { hide(): void } }).mathVirtualKeyboard) {
+                (window as Window & { mathVirtualKeyboard: { hide(): void } }).mathVirtualKeyboard.hide();
+            }
+        };
+    }, [mathField]);
+
+    const handleInsert = () => {
+        if (mathField) {
+            const latex = mathField.value;
+            if (latex && latex.trim()) {
+                onInsert(latex.trim());
+                onClose();
+            }
+        }
+    };
+
+    return (
+        <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
+            <div className="modal-box" style={{ width: 480 }}>
+                <div className="modal-header">
+                    <span className="modal-title">Chèn công thức toán</span>
+                    <button onClick={onClose} className="modal-close-btn"><X size={20} /></button>
+                </div>
+                <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 8, fontFamily: "Inter, system-ui, sans-serif" }}>
+                    Sử dụng bàn phím ảo để nhập công thức toán học
+                </div>
+                <div ref={mathFieldRef} style={{ marginBottom: 12 }} />
+                <div className="modal-actions">
+                    <button onClick={onClose} className="btn-cancel">Hủy</button>
+                    <button onClick={handleInsert} className="btn-ok">Chèn</button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 // ─── Upload Image Modal ───────────────────────────────────────────────────────
 
 interface UploadImageModalProps {
@@ -422,7 +634,7 @@ const UploadImageModal: React.FC<UploadImageModalProps> = ({ onClose, onConfirm,
                 reader.readAsDataURL(blob);
             });
 
-            const result = await uploadApi.uploadImage(base64, 'editor');
+            const result = await uploadApi.uploadFile(base64, 'editor');
 
             if (!result?.success || !result.url) {
                 toast.error(result?.message || "Upload thất bại");
@@ -514,6 +726,225 @@ const UploadImageModal: React.FC<UploadImageModalProps> = ({ onClose, onConfirm,
                     <button onClick={handleConfirm} className="btn-ok" disabled={(tab === "upload" ? !blobUrl : !url) || isUploading}>
                         {isUploading ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
                         {isUploading ? "Đang upload..." : "Chèn ảnh"}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// ─── Upload File Modal ────────────────────────────────────────────────────────
+
+interface UploadFileModalProps {
+    onClose: () => void;
+    onConfirm: (messageId: string, filename: string) => void;
+}
+
+const UploadFileModal: React.FC<UploadFileModalProps> = ({ onClose, onConfirm }) => {
+    const [file, setFile] = useState<File | null>(null);
+    const [dragging, setDragging] = useState(false);
+    const [isUploading, setIsUploading] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const handleFile = (selectedFile: File) => {
+        setFile(selectedFile);
+    };
+
+    const handleDrop = (e: React.DragEvent) => {
+        e.preventDefault();
+        setDragging(false);
+        const droppedFile = e.dataTransfer.files[0];
+        if (droppedFile) handleFile(droppedFile);
+    };
+
+    const handleConfirm = async () => {
+        if (!file) return;
+
+        setIsUploading(true);
+
+        try {
+            const base64 = await new Promise<string>((resolve) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result as string);
+                reader.readAsDataURL(file);
+            });
+
+            const result = await uploadApi.uploadFile(base64, 'editor');
+
+            if (!result?.success) {
+                toast.error(result?.message || "Upload thất bại");
+                return;
+            }
+
+            if (!result.messageId) {
+                toast.error("Không nhận được messageId từ server");
+                return;
+            }
+
+            onConfirm(result.messageId, file.name);
+            toast.success("Upload file thành công");
+            onClose();
+
+        } catch (error) {
+            console.error(error);
+            toast.error("Có lỗi xảy ra khi upload");
+        } finally {
+            setIsUploading(false);
+        }
+    };
+
+    return (
+        <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
+            <div className="modal-box" style={{ width: 420 }}>
+                <div className="modal-header">
+                    <span className="modal-title">Chèn file</span>
+                    <button onClick={onClose} className="modal-close-btn"><X size={20} /></button>
+                </div>
+
+                <div
+                    onDragOver={e => { e.preventDefault(); setDragging(true); }}
+                    onDragLeave={() => setDragging(false)}
+                    onDrop={handleDrop}
+                    onClick={() => fileInputRef.current?.click()}
+                    style={{
+                        border: `1.5px dashed ${dragging ? "#6366f1" : "#d1d5db"}`,
+                        borderRadius: 8, padding: "28px 16px", textAlign: "center",
+                        cursor: "pointer", background: dragging ? "#f5f5ff" : "#fafafa",
+                        transition: "all 0.15s", marginBottom: 10,
+                    }}>
+                    <input ref={fileInputRef} type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.rar" style={{ display: "none" }}
+                        onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
+                    {file ? (
+                        <div>
+                            <FileText size={32} style={{ margin: "0 auto", display: "block", color: "#6366f1" }} />
+                            <div style={{ fontSize: 13, color: "#111827", marginTop: 8, fontFamily: "system-ui,sans-serif", fontWeight: 500 }}>{file.name}</div>
+                            <div style={{ fontSize: 11, color: "#6b7280", marginTop: 4, fontFamily: "system-ui,sans-serif" }}>
+                                {(file.size / 1024 / 1024).toFixed(2)} MB
+                            </div>
+                        </div>
+                    ) : (
+                        <div style={{ fontFamily: "system-ui,sans-serif" }}>
+                            <FileText size={28} style={{ margin: "0 auto", display: "block", color: "#9ca3af" }} />
+                            <div style={{ fontSize: 13, color: "#6b7280", marginTop: 8 }}>Kéo thả file vào đây</div>
+                            <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 4 }}>hoặc click để chọn file</div>
+                        </div>
+                    )}
+                </div>
+
+                <div className="modal-actions" style={{ marginTop: 12 }}>
+                    <button onClick={onClose} className="btn-cancel" disabled={isUploading}>Hủy</button>
+                    <button onClick={handleConfirm} className="btn-ok" disabled={!file || isUploading}>
+                        {isUploading ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
+                        {isUploading ? "Đang upload..." : "Chèn file"}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// ─── Upload Video Modal ───────────────────────────────────────────────────────
+
+interface UploadVideoModalProps {
+    onClose: () => void;
+    onConfirm: (url: string, filename: string) => void;
+}
+
+const UploadVideoModal: React.FC<UploadVideoModalProps> = ({ onClose, onConfirm }) => {
+    const [video, setVideo] = useState<File | null>(null);
+    const [preview, setPreview] = useState<string | null>(null);
+    const [dragging, setDragging] = useState(false);
+    const [isUploading, setIsUploading] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const handleFile = (selectedFile: File) => {
+        if (!selectedFile.type.startsWith("video/")) return;
+        setVideo(selectedFile);
+        const objectUrl = URL.createObjectURL(selectedFile);
+        setPreview(objectUrl);
+    };
+
+    const handleDrop = (e: React.DragEvent) => {
+        e.preventDefault();
+        setDragging(false);
+        const droppedFile = e.dataTransfer.files[0];
+        if (droppedFile) handleFile(droppedFile);
+    };
+
+    const handleConfirm = async () => {
+        if (!video) return;
+
+        setIsUploading(true);
+
+        try {
+            const base64 = await new Promise<string>((resolve) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result as string);
+                reader.readAsDataURL(video);
+            });
+
+            const result = await uploadApi.uploadVideo(base64, 'editor');
+
+            if (!result?.success || !result.url) {
+                toast.error(result?.message || "Upload thất bại");
+                return;
+            }
+
+            onConfirm(result.url, video.name);
+            toast.success("Upload video thành công");
+            onClose();
+
+        } catch (error) {
+            console.error(error);
+            toast.error("Có lỗi xảy ra khi upload");
+        } finally {
+            setIsUploading(false);
+        }
+    };
+
+    return (
+        <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
+            <div className="modal-box" style={{ width: 420 }}>
+                <div className="modal-header">
+                    <span className="modal-title">Chèn video</span>
+                    <button onClick={onClose} className="modal-close-btn"><X size={20} /></button>
+                </div>
+
+                <div
+                    onDragOver={e => { e.preventDefault(); setDragging(true); }}
+                    onDragLeave={() => setDragging(false)}
+                    onDrop={handleDrop}
+                    onClick={() => fileInputRef.current?.click()}
+                    style={{
+                        border: `1.5px dashed ${dragging ? "#6366f1" : "#d1d5db"}`,
+                        borderRadius: 8, padding: "28px 16px", textAlign: "center",
+                        cursor: "pointer", background: dragging ? "#f5f5ff" : "#fafafa",
+                        transition: "all 0.15s", marginBottom: 10,
+                    }}>
+                    <input ref={fileInputRef} type="file" accept="video/*" style={{ display: "none" }}
+                        onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
+                    {preview ? (
+                        <div>
+                            <video src={preview} controls
+                                style={{ maxHeight: 120, maxWidth: "100%", borderRadius: 6, marginBottom: 6 }} />
+                            <div style={{ fontSize: 11, color: "#6b7280", fontFamily: "system-ui,sans-serif" }}>
+                                {video?.name} • {video ? (video.size / 1024 / 1024).toFixed(2) : 0} MB
+                            </div>
+                        </div>
+                    ) : (
+                        <div style={{ fontFamily: "system-ui,sans-serif" }}>
+                            <Video size={28} style={{ margin: "0 auto", display: "block", color: "#9ca3af" }} />
+                            <div style={{ fontSize: 13, color: "#6b7280", marginTop: 8 }}>Kéo thả video vào đây</div>
+                            <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 4 }}>hoặc click để chọn file</div>
+                        </div>
+                    )}
+                </div>
+
+                <div className="modal-actions" style={{ marginTop: 12 }}>
+                    <button onClick={onClose} className="btn-cancel" disabled={isUploading}>Hủy</button>
+                    <button onClick={handleConfirm} className="btn-ok" disabled={!video || isUploading}>
+                        {isUploading ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
+                        {isUploading ? "Đang upload..." : "Chèn video"}
                     </button>
                 </div>
             </div>
@@ -727,7 +1158,7 @@ const ImageWidget: React.FC<{
 
 // ─── Table Widget ─────────────────────────────────────────────────────────────
 
-const TableWidget: React.FC<{ initialRows: number; initialCols: number }> = ({ initialRows, initialCols }) => {
+const TableWidget: React.FC<{ initialRows: number; initialCols: number; onDelete?: () => void }> = ({ initialRows, initialCols, onDelete }) => {
     const [data, setData] = useState<string[][]>(() =>
         Array.from({ length: initialRows + 1 }, (_, r) =>
             Array.from({ length: initialCols }, (_, c) => r === 0 ? `Header ${c + 1}` : "")
@@ -821,9 +1252,20 @@ const TableWidget: React.FC<{ initialRows: number; initialCols: number }> = ({ i
                 </table>
             </div>
             {selected && (
-                <button className="tw-add-row" onClick={addRow}>
-                    <Plus size={12} /> Thêm hàng
-                </button>
+                <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                    <button className="tw-add-row" onClick={addRow}>
+                        <Plus size={12} /> Thêm hàng
+                    </button>
+                    {onDelete && (
+                        <button
+                            className="tw-delete-table"
+                            onClick={(e) => { e.stopPropagation(); onDelete(); }}
+                            title="Xóa bảng"
+                        >
+                            <Trash2 size={12} /> Xóa bảng
+                        </button>
+                    )}
+                </div>
             )}
         </div>
     );
@@ -931,6 +1373,21 @@ const CustomEditor = forwardRef<CustomEditorRef, CustomEditorProps>(({ initialVa
         scheduleAutosave();
     }, [scheduleAutosave]);
 
+    const deleteTable = useCallback((id: string) => {
+        setTableWidgets(m => {
+            const next = new Map(m);
+            next.delete(id);
+            return next;
+        });
+        const el = editorRef.current?.querySelector(`[data-table-id="${id}"]`);
+        if (el) {
+            const root = mountedRoots.get(id);
+            if (root) { try { root.unmount(); } catch { } mountedRoots.delete(id); }
+            el.parentNode?.removeChild(el);
+        }
+        scheduleAutosave();
+    }, [scheduleAutosave]);
+
     const mountImageWidgets = useCallback(() => {
         const editor = editorRef.current;
         if (!editor) return;
@@ -966,18 +1423,25 @@ const CustomEditor = forwardRef<CustomEditorRef, CustomEditorProps>(({ initialVa
             const cols = parseInt(el.getAttribute('data-table-cols') || '3');
             const root = createRoot(el);
             mountedRoots.set(id, root);
-            root.render(<TableWidget initialRows={rows} initialCols={cols} />);
+            root.render(<TableWidget
+                initialRows={rows}
+                initialCols={cols}
+                onDelete={() => deleteTable(id)}
+            />);
         });
-    }, []);
+    }, [deleteTable]);
 
     useEffect(() => {
         if (editorRef.current && initialValue) {
-            editorRef.current.innerHTML = initialValue;
-            updateStatus();
-            setTimeout(() => {
-                mountImageWidgets();
-                mountTableWidgets();
-            }, 0);
+            // FIX 3: Chỉ set innerHTML lần đầu tiên, không re-render khi initialValue thay đổi
+            if (!editorRef.current.innerHTML || editorRef.current.innerHTML === '<p><br></p>') {
+                editorRef.current.innerHTML = initialValue;
+                updateStatus();
+                setTimeout(() => {
+                    mountImageWidgets();
+                    mountTableWidgets();
+                }, 0);
+            }
         }
     }, [initialValue, updateStatus, mountImageWidgets, mountTableWidgets]);
 
@@ -1133,9 +1597,50 @@ const CustomEditor = forwardRef<CustomEditorRef, CustomEditorProps>(({ initialVa
             if (el && !mountedRoots.has(id)) {
                 const root = createRoot(el);
                 mountedRoots.set(id, root);
-                root.render(<TableWidget initialRows={3} initialCols={3} />);
+                root.render(<TableWidget
+                    initialRows={3}
+                    initialCols={3}
+                    onDelete={() => deleteTable(id)}
+                />);
             }
         }, 0);
+    };
+
+    const insertMath = (latex: string) => {
+        if (!latex) return;
+        editorRef.current?.focus();
+        restoreRange();
+
+        // FIX 11: Sử dụng math-live để render công thức - bỏ bg và border
+        const mathId = `math-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        const html = `<span class="math-inline" data-math-id="${mathId}" data-latex="${latex.replace(/"/g, '"')}" contenteditable="false"></span>&nbsp;`;
+        document.execCommand("insertHTML", false, html);
+
+        // Render công thức bằng math-live
+        setTimeout(() => {
+            const mathEl = editorRef.current?.querySelector(`[data-math-id="${mathId}"]`);
+            if (mathEl && typeof window !== 'undefined') {
+                import('mathlive').then((MathLive) => {
+                    const mf = new MathLive.MathfieldElement();
+                    mf.value = latex;
+                    mf.readOnly = true;
+                    mf.style.display = 'inline-block';
+                    mf.style.fontSize = '15px';
+                    mf.style.background = 'transparent';
+                    mf.style.padding = '0';
+                    mf.style.border = 'none';
+                    mathEl.innerHTML = '';
+                    mathEl.appendChild(mf);
+                }).catch(err => {
+                    console.error('Failed to load mathlive:', err);
+                    // Fallback: hiển thị LaTeX text
+                    mathEl.textContent = latex;
+                    mathEl.setAttribute('style', 'font-family:monospace;color:#111827;');
+                });
+            }
+        }, 0);
+
+        scheduleAutosave();
     };
 
     // ─── FIX 2: Helper đặt cursor ngay sau node ───────────────────────────────
@@ -1307,6 +1812,78 @@ const CustomEditor = forwardRef<CustomEditorRef, CustomEditorProps>(({ initialVa
         if (e.key === "Enter" && !e.shiftKey && handleQuoteEnter(e)) return;
         if (e.key === "Backspace" && handleQuoteBackspace(e)) return;
 
+        // FIX: Xóa công thức và ảnh khi bấm Backspace/Delete
+        if (e.key === "Backspace" || e.key === "Delete") {
+            const sel = window.getSelection();
+            if (sel?.rangeCount) {
+                const range = sel.getRangeAt(0);
+                let node: Node | null = range.startContainer;
+
+                // Tìm math-inline element
+                while (node && node !== editorRef.current) {
+                    if (node.nodeType === Node.ELEMENT_NODE) {
+                        const el = node as Element;
+                        if (el.classList.contains('math-inline')) {
+                            e.preventDefault();
+                            el.parentNode?.removeChild(el);
+                            scheduleAutosave();
+                            return;
+                        }
+                        // Tìm img-placeholder element
+                        if (el.classList.contains('img-placeholder') || el.hasAttribute('data-img-id')) {
+                            e.preventDefault();
+                            const imgId = el.getAttribute('data-img-id');
+                            if (imgId) deleteImage(imgId);
+                            scheduleAutosave();
+                            return;
+                        }
+                    }
+                    node = node.parentNode;
+                }
+
+                // Kiểm tra nếu cursor ngay trước/sau math/image element
+                if (range.collapsed) {
+                    const container = range.startContainer;
+                    if (container.nodeType === Node.ELEMENT_NODE) {
+                        const offset = range.startOffset;
+                        if (e.key === "Backspace" && offset > 0) {
+                            const prevNode = container.childNodes[offset - 1];
+                            if (prevNode && (prevNode as Element).classList?.contains('math-inline')) {
+                                e.preventDefault();
+                                prevNode.parentNode?.removeChild(prevNode);
+                                scheduleAutosave();
+                                return;
+                            }
+                            // Xóa ảnh khi Backspace
+                            if (prevNode && ((prevNode as Element).classList?.contains('img-placeholder') || (prevNode as Element).hasAttribute?.('data-img-id'))) {
+                                e.preventDefault();
+                                const imgId = (prevNode as Element).getAttribute('data-img-id');
+                                if (imgId) deleteImage(imgId);
+                                scheduleAutosave();
+                                return;
+                            }
+                        } else if (e.key === "Delete" && offset < container.childNodes.length) {
+                            const nextNode = container.childNodes[offset];
+                            if (nextNode && (nextNode as Element).classList?.contains('math-inline')) {
+                                e.preventDefault();
+                                nextNode.parentNode?.removeChild(nextNode);
+                                scheduleAutosave();
+                                return;
+                            }
+                            // Xóa ảnh khi Delete
+                            if (nextNode && ((nextNode as Element).classList?.contains('img-placeholder') || (nextNode as Element).hasAttribute?.('data-img-id'))) {
+                                e.preventDefault();
+                                const imgId = (nextNode as Element).getAttribute('data-img-id');
+                                if (imgId) deleteImage(imgId);
+                                scheduleAutosave();
+                                return;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         if (e.key === "Tab") {
             e.preventDefault();
             exec("indent");
@@ -1339,7 +1916,8 @@ const CustomEditor = forwardRef<CustomEditorRef, CustomEditorProps>(({ initialVa
                 if (targetNode.parentNode?.nodeName === "A") return;
 
                 const fullText = targetNode.textContent ?? "";
-                const hasLink = /(?:https?:\/\/|www\.)[^\s]+|[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/i.test(fullText);
+                // Cải thiện regex để bắt được domain như cncode.io.vn
+                const hasLink = /(?:https?:\/\/)?(?:www\.)?[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+(?:\.[a-zA-Z]{2,})|[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/i.test(fullText);
                 if (!hasLink) return;
 
                 // Lưu nextSibling TRƯỚC khi autoLinkText replace node
@@ -1356,8 +1934,9 @@ const CustomEditor = forwardRef<CustomEditorRef, CustomEditorProps>(({ initialVa
 
                     if (nextSiblingBeforeReplace && nextSiblingBeforeReplace.isConnected) {
                         if (nextSiblingBeforeReplace.nodeType === Node.TEXT_NODE) {
-                            // Đặt cursor sau space (offset 1)
-                            newRange.setStart(nextSiblingBeforeReplace, Math.min(1, nextSiblingBeforeReplace.textContent?.length ?? 0));
+                            // Đặt cursor sau space/enter
+                            const offset = e.key === " " ? Math.min(1, nextSiblingBeforeReplace.textContent?.length ?? 0) : 0;
+                            newRange.setStart(nextSiblingBeforeReplace, offset);
                         } else {
                             newRange.setStartBefore(nextSiblingBeforeReplace);
                         }
@@ -1428,6 +2007,7 @@ const CustomEditor = forwardRef<CustomEditorRef, CustomEditorProps>(({ initialVa
                         <Sep />
                         <ToolbarButton icon={<Quote size={15} />} label="Trích dẫn" onClick={() => { editorRef.current?.focus(); document.execCommand("formatBlock", false, "blockquote"); scheduleAutosave(); }} />
                         <ToolbarButton icon={<Code size={15} />} label="Code block" onClick={() => { saveRange(); setModal("code"); }} />
+                        <ToolbarButton icon={<Sigma size={15} />} label="Công thức toán" onClick={() => { saveRange(); setModal("math"); }} />
                         <Sep />
                         <div className="ed-select-wrapper">
                             {/* FIX 6: value phản ánh heading thực tại cursor */}
@@ -1479,12 +2059,48 @@ const CustomEditor = forwardRef<CustomEditorRef, CustomEditorProps>(({ initialVa
                     <span className="ed-statusbar-right">UTF-8</span>
                 </div>
                 {modal === "code" && <CodeModal onClose={() => setModal(null)} onInsert={insertCode} />}
+                {modal === "math" && <MathModal onClose={() => setModal(null)} onInsert={insertMath} />}
                 {modal === "image" && (
                     <UploadImageModal
                         onClose={() => setModal(null)}
                         onConfirm={(src, alt) => { insertImage(src, alt); setModal(null); }}
                         onImageUpload={onImageUpload}
                         uploading={uploading}
+                    />
+                )}
+                {modal === "file" && (
+                    <UploadFileModal
+                        onClose={() => setModal(null)}
+                        onConfirm={(messageId, filename) => {
+                            editorRef.current?.focus();
+                            restoreRange();
+
+                            // Estimate file size - sẽ hiển thị khi có thông tin từ server
+                            const fileSize = '0 MB';
+
+                            // Generate HTML cho file card với messageId
+                            const fileCardHTML = generateFileCardHTML(filename, messageId, fileSize);
+
+                            // Insert HTML vào editor
+                            document.execCommand("insertHTML", false, fileCardHTML + '<p><br></p>');
+
+                            scheduleAutosave();
+                            setModal(null);
+                        }}
+                    />
+                )}
+                {modal === "video" && (
+                    <UploadVideoModal
+                        onClose={() => setModal(null)}
+                        onConfirm={(url, filename) => {
+                            editorRef.current?.focus();
+                            restoreRange();
+                            // Thêm crossorigin và preload cho video
+                            const html = `<div contenteditable="false" style="margin:1em 0;"><video src="${url}" controls crossorigin="anonymous" preload="metadata" style="max-width:100%;border-radius:8px;"></video></div><p><br></p>`;
+                            document.execCommand("insertHTML", false, html);
+                            scheduleAutosave();
+                            setModal(null);
+                        }}
                     />
                 )}
             </div>
@@ -1630,9 +2246,36 @@ const editorStyles = `
     font-family: 'JetBrains Mono', 'Fira Code', monospace !important;
   }
 
-  /* FIX 1: Link + email — không tô màu nền, chỉ underline xanh */
-  #editor a { color: #6366f1; text-decoration: underline; text-decoration-color: rgba(99,102,241,0.4); background: none !important; }
-  #editor a[href^="mailto:"] { color: #6366f1; }
+  /* FIX 1: Link + email — màu xanh, gạch chân và highlight background */
+  #editor a { 
+    color: #2563eb !important; 
+    text-decoration: underline !important; 
+    text-decoration-color: #2563eb !important;
+    text-decoration-thickness: 1px !important;
+    background: rgba(37, 99, 235, 0.08) !important; 
+    padding: 1px 3px !important;
+    border-radius: 3px !important;
+    cursor: pointer !important;
+    transition: all 0.15s !important;
+  }
+  #editor a:hover { 
+    color: #1d4ed8 !important; 
+    text-decoration-color: #1d4ed8 !important;
+    background: rgba(37, 99, 235, 0.15) !important;
+  }
+  #editor a[href^="mailto:"] { 
+    color: #2563eb !important; 
+  }
+
+  /* FIX 11: Math inline styling */
+  #editor .math-inline {
+    display: inline-block;
+    vertical-align: middle;
+    margin: 0 2px;
+  }
+  #editor .math-inline math-field {
+    font-size: 15px !important;
+  }
 
   #editor ul { margin: 0.5em 0 0.5em 1.6em !important; }
   #editor ol { margin: 0.5em 0 0.5em 1.6em !important; }
@@ -1700,11 +2343,19 @@ const editorStyles = `
   .tw-add-col:hover { background: #e0e7ff; }
   .tw-add-row {
     display: flex; align-items: center; justify-content: center; gap: 4px;
-    width: 100%; background: #f0f9ff; border: 1px dashed #c7d2fe; border-top: none;
+    background: #f0f9ff; border: 1px dashed #c7d2fe;
     color: #6366f1; font-size: 12px; padding: 5px; cursor: pointer;
-    border-radius: 0 0 6px 6px; font-family: 'Inter', system-ui, sans-serif !important;
+    border-radius: 6px; font-family: 'Inter', system-ui, sans-serif !important;
+    flex: 1;
   }
   .tw-add-row:hover { background: #e0e7ff; }
+  .tw-delete-table {
+    display: flex; align-items: center; justify-content: center; gap: 4px;
+    background: #fef2f2; border: 1px dashed #fecaca;
+    color: #ef4444; font-size: 12px; padding: 5px; cursor: pointer;
+    border-radius: 6px; font-family: 'Inter', system-ui, sans-serif !important;
+  }
+  .tw-delete-table:hover { background: #fee2e2; }
   .ed-statusbar {
     background: #fafafa; border-top: 0.5px solid #e5e7eb; padding: 5px 12px;
     display: flex; align-items: center; justify-content: space-between;
@@ -1716,14 +2367,30 @@ const editorStyles = `
   .ed-pill-green { background: #dcfce7; color: #15803d; }
   .ed-statusbar-right { font-size: 11px; color: #9ca3af; font-family: 'Inter', system-ui, sans-serif; }
   .modal-overlay {
-    position: fixed; inset: 0; background: rgba(0,0,0,0.35);
+    position: fixed; inset: 0; background: rgba(0,0,0,0.5);
     display: flex; align-items: center; justify-content: center;
-    z-index: 200; border-radius: 12px;
+    z-index: 105;
+    backdrop-filter: blur(2px);
   }
   .modal-box {
-    background: #fff; border: 0.5px solid #d1d5db; border-radius: 10px;
-    padding: 1.25rem; width: 380px; box-shadow: 0 8px 32px rgba(0,0,0,0.12);
-    display: flex; flex-direction: column; gap: 8px;
+    background: #fff; border: 0.5px solid #d1d5db; border-radius: 12px;
+    padding: 1.5rem; width: 420px; box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+    display: flex; flex-direction: column; gap: 10px;
+    position: relative;
+    z-index: 106;
+    max-height: 85vh;
+    overflow-y: auto;
+    animation: modalFadeIn 0.2s ease-out;
+  }
+  @keyframes modalFadeIn {
+    from {
+      opacity: 0;
+      transform: scale(0.95) translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
   }
   .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
   .modal-title { font-size: 14px; font-weight: 600; color: #111827; font-family: 'Inter', system-ui, sans-serif; }

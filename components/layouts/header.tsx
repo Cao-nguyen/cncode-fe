@@ -1,4 +1,4 @@
-// components/layouts/header.tsx
+
 'use client';
 
 import Link from "next/link";
@@ -246,8 +246,6 @@ interface MobileSheetProps {
     open: boolean;
 }
 
-// components/layouts/header.tsx - Sửa lại MobileUserSheet
-
 function MobileUserSheet({ user, onLogout, onClose, open }: MobileSheetProps) {
     const iconSize = { width: 20, height: 20 };
     const sections = buildSections(user, iconSize);
@@ -259,7 +257,6 @@ function MobileUserSheet({ user, onLogout, onClose, open }: MobileSheetProps) {
     const sheetRef = useRef<HTMLDivElement>(null);
     const contentRef = useRef<HTMLDivElement>(null);
 
-    // Xử lý body scroll khi mở sheet
     useEffect(() => {
         if (open) {
             const scrollY = window.scrollY;
@@ -284,13 +281,12 @@ function MobileUserSheet({ user, onLogout, onClose, open }: MobileSheetProps) {
         };
     }, [open]);
 
-    // Xử lý swipe đóng sheet - chỉ khi scrollbar ở top
     useEffect(() => {
         if (!open) return;
 
         const handleTouchStart = (e: TouchEvent) => {
             const target = e.target as HTMLElement;
-            // Kiểm tra nếu scrollbar đang ở top (scrollTop === 0)
+            
             const isAtTop = contentRef.current?.scrollTop === 0;
 
             if (sheetRef.current?.contains(target) && isAtTop) {
@@ -367,11 +363,11 @@ function MobileUserSheet({ user, onLogout, onClose, open }: MobileSheetProps) {
                     maxHeight: "85dvh",
                 }}
             >
-                {/* Thanh kéo - chỉ hiển thị khi scroll ở top */}
+                {}
                 <div
                     className="flex justify-center pt-3 pb-1 flex-shrink-0"
                     onTouchStart={(e) => {
-                        // Chỉ cho phép kéo đóng khi scroll ở top
+                        
                         if (contentRef.current?.scrollTop === 0) {
                             const touch = e.touches[0];
                             setStartY(touch.clientY);
@@ -509,7 +505,6 @@ export default function Header() {
     const displayStreak = user && token ? (user?.streak ?? 0) : 0;
     const displayRole = user?.role || "user";
 
-    // Kiểm tra token validity định kỳ
     useEffect(() => {
         const checkTokenValidity = async () => {
             const currentToken = localStorage.getItem('token');
@@ -526,7 +521,7 @@ export default function Header() {
                     router.push('/login');
                 }
             } catch {
-                // Lỗi mạng, bỏ qua
+                
             }
         };
 
@@ -534,7 +529,6 @@ export default function Header() {
         return () => clearInterval(interval);
     }, [router]);
 
-    // Lắng nghe force logout từ socket
     useEffect(() => {
         if (!socket || !isConnected) return;
 

@@ -200,7 +200,7 @@ export default function AdminFeedbackPage() {
 
     return (
         <div className="space-y-6 pb-8 px-4">
-            {/* Header */}
+            {}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
                     <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">Quản lý góp ý</h1>
@@ -211,7 +211,7 @@ export default function AdminFeedbackPage() {
                 </div>
             </div>
 
-            {/* Stats Cards */}
+            {}
             <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
                 {statusOrder.map((status) => (
                     <div key={status} className={`rounded-xl p-3 text-center border ${statusColors[status].replace('text', 'border').replace('bg', '')} ${statusColors[status].split(' ')[0]}`}>
@@ -221,7 +221,7 @@ export default function AdminFeedbackPage() {
                 ))}
             </div>
 
-            {/* Filters */}
+            {}
             <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
                 <div className="flex flex-wrap gap-3 items-center">
                     <div className="flex-1 min-w-[200px]">
@@ -252,9 +252,9 @@ export default function AdminFeedbackPage() {
                 </div>
             </div>
 
-            {/* Table */}
+            {}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden relative">
-                {/* Thanh loading nhỏ trên đầu bảng */}
+                {}
                 {loading && (
                     <div className="absolute top-0 left-0 w-full h-[2px] bg-blue-100 overflow-hidden z-20">
                         <div className="h-full bg-blue-500 animate-[loading_1.5s_infinite_linear]" style={{ width: '30%', position: 'absolute' }}></div>
@@ -349,7 +349,7 @@ export default function AdminFeedbackPage() {
                 )}
             </div>
 
-            {/* Các Modal giữ nguyên UI */}
+            {}
             {showDetailModal && selectedFeedback && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowDetailModal(false)}>
                     <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>

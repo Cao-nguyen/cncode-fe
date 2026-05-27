@@ -17,7 +17,6 @@ export const useAuthStore = create<AuthState>()(
         (set, get) => ({
             ...initialState,
 
-            // Thêm method để set hydrated
             setHydrated: (state: boolean) => {
                 set({ _hasHydrated: state });
             },
@@ -36,7 +35,7 @@ export const useAuthStore = create<AuthState>()(
             forceLogout: (): void => {
                 localStorage.removeItem('token');
                 localStorage.removeItem('auth-storage');
-                set({ ...initialState, _hasHydrated: true }); // Giữ lại _hasHydrated = true
+                set({ ...initialState, _hasHydrated: true }); 
             },
 
             checkAndSync: async (): Promise<void> => {
@@ -178,7 +177,7 @@ export const useAuthStore = create<AuthState>()(
                         });
                     }
                 } catch {
-                    // ignore
+                    
                 } finally {
                     localStorage.removeItem('token');
                     localStorage.removeItem('auth-storage');
@@ -343,13 +342,13 @@ export const useAuthStore = create<AuthState>()(
             onRehydrateStorage: () => (state) => {
                 console.log('onRehydrateStorage called:', state);
                 if (state) {
-                    // Cách 1: Dùng setTimeout để đảm bảo setState sau khi rehydrate
+                    
                     setTimeout(() => {
                         useAuthStore.setState({ _hasHydrated: true });
                         console.log('_hasHydrated set to true');
                     }, 0);
                 } else {
-                    // Nếu không có state, cũng set hydrated = true
+                    
                     setTimeout(() => {
                         useAuthStore.setState({ _hasHydrated: true });
                     }, 0);

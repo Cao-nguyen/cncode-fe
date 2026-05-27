@@ -1,4 +1,4 @@
-// types/linkedProduct.type.ts
+
 export interface LinkedProduct {
     _id: string;
     userId: string;

@@ -1,4 +1,4 @@
-// components/comment/CommentItem.tsx
+
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -461,7 +461,7 @@ export default function CommentItem({
                                     />
                                 </button>
 
-                                {/* DROPDOWN MENU */}
+                                {}
                                 {showMoreMenu && (
                                     <div
                                         ref={moreMenuRef}
@@ -571,10 +571,10 @@ export default function CommentItem({
                         )}
                     </div>
 
-                    {/* ACTIONS */}
+                    {}
                     {!comment.isDeleted && (
                         <div className="relative">
-                            {/* REACTION PICKER */}
+                            {}
                             {showReactionPicker && (
                                 <div
                                     ref={reactionPickerRef}
@@ -680,7 +680,7 @@ export default function CommentItem({
                                 </button>
                             </div>
 
-                            {/* REACTION COUNT SUMMARY */}
+                            {}
                             {reactionCount > 0 && (
                                 <div className="mt-1 ml-1 flex items-center gap-0.5">
                                     {activeReactions
@@ -701,7 +701,7 @@ export default function CommentItem({
                         </div>
                     )}
 
-                    {/* REPLY INPUT */}
+                    {}
                     {showReplyInput && (
                         <div className="mt-3 flex gap-2">
                             <CustomTextarea
@@ -759,7 +759,7 @@ export default function CommentItem({
                         </div>
                     )}
 
-                    {/* REPLIES */}
+                    {}
                     {replies.length > 0 && (
                         <div className="mt-3 space-y-3">
                             {visibleReplies.map(
@@ -819,7 +819,7 @@ export default function CommentItem({
                 </div>
             </div>
 
-            {/* REPORT MODAL */}
+            {}
             {showReportModal && (
                 <div
                     className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4"

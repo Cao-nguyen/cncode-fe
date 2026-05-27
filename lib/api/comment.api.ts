@@ -1,4 +1,4 @@
-// lib/api/comment.api.ts
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export interface CommentUser {
@@ -158,7 +158,7 @@ export const commentApi = {
 
     getReactionUsers: async (token: string, commentId: string, reactionType?: string, page = 1, limit = 50) => {
         try {
-            // Nếu không có reactionType hoặc reactionType là 'all', không gửi type
+            
             let url = `${API_URL}/api/comments/${commentId}/reactions?page=${page}&limit=${limit}`;
             if (reactionType && reactionType !== 'all') {
                 url += `&type=${reactionType}`;

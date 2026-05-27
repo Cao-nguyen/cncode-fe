@@ -1,4 +1,4 @@
-// components/shortlink/MyLinksList.tsx
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -119,7 +119,7 @@ export function MyLinksList() {
 
     return (
         <div className="space-y-5">
-            {/* Card Grid */}
+            {}
             <div className="grid grid-cols-1 gap-4">
                 {links.map((link: ShortLink) => {
                     const expiry = getExpiryStatus(link.expiresAt);
@@ -131,7 +131,7 @@ export function MyLinksList() {
                             className="bg-white rounded-xl border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all duration-300 overflow-hidden"
                         >
                             <div className="p-5">
-                                {/* Header - Short Link */}
+                                {}
                                 <div className="flex items-start justify-between gap-3 mb-3">
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-2 flex-wrap mb-1">
@@ -171,7 +171,7 @@ export function MyLinksList() {
                                     </div>
                                 </div>
 
-                                {/* Original URL */}
+                                {}
                                 <div className="mb-3 p-2 rounded-lg bg-gray-50">
                                     <div className="flex items-center gap-1.5 mb-1">
                                         <Globe size={11} className="text-gray-400" />
@@ -188,7 +188,7 @@ export function MyLinksList() {
                                     </a>
                                 </div>
 
-                                {/* Stats Row */}
+                                {}
                                 <div className="flex flex-wrap items-center gap-4">
                                     <div className="flex items-center gap-1.5">
                                         <MousePointerClick size={13} className="text-blue-500" />
@@ -211,7 +211,7 @@ export function MyLinksList() {
                 })}
             </div>
 
-            {/* Pagination */}
+            {}
             {totalPages > 1 && (
                 <div className="flex items-center justify-center gap-2 pt-4">
                     <button
@@ -255,7 +255,7 @@ export function MyLinksList() {
                 </div>
             )}
 
-            {/* Delete Modal */}
+            {}
             <ConfirmModalDelete
                 isOpen={deleteModalOpen}
                 onClose={() => {

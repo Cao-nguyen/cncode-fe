@@ -24,7 +24,7 @@ export default function HelpCenterPage() {
     const { token } = useAuthStore();
     const [faqs, setFaqs] = useState<HelpCenterFAQ[]>([]);
     const [loading, setLoading] = useState(true);
-    const [isMounted, setIsMounted] = useState(false); // Fix Hydration
+    const [isMounted, setIsMounted] = useState(false); 
     const [expandedId, setExpandedId] = useState<string | null>(null);
     const [selectedCategory, setSelectedCategory] = useState('all');
     const [searchTerm, setSearchTerm] = useState('');
@@ -33,13 +33,12 @@ export default function HelpCenterPage() {
     const [previewSrc, setPreviewSrc] = useState<string | null>(null);
     const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
-    // ✅ Đảm bảo component đã mount và đã đọc được token từ localStorage
     useEffect(() => {
         setIsMounted(true);
     }, []);
 
     const fetchFAQs = useCallback(async () => {
-        // Chỉ hiện loading xoay ở giữa màn hình lần đầu tiên
+        
         if (faqs.length === 0) setLoading(true);
 
         try {
@@ -52,7 +51,7 @@ export default function HelpCenterPage() {
         } finally {
             setLoading(false);
         }
-    }, [selectedCategory, searchTerm, token, faqs.length]); // ✅ Token ở đây giúp fetch lại khi auth xong
+    }, [selectedCategory, searchTerm, token, faqs.length]); 
 
     useEffect(() => {
         if (isMounted) fetchFAQs();

@@ -1,4 +1,4 @@
-// app/(user)/(public)/gopy/page.tsx - sửa phần handleLike
+
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -99,7 +99,6 @@ export default function FeedbackPage() {
         }
     }, [page, selectedStatus, selectedCategory]);
 
-    // Xử lý like thành công - cập nhật state mà không fetch lại toàn bộ
     const handleLikeSuccess = useCallback((feedbackId: string, newReactCount: number) => {
         setFeedbacks(prev => prev.map(f =>
             f._id === feedbackId
@@ -125,9 +124,7 @@ export default function FeedbackPage() {
 
     const handleDeleteFeedback = async (feedbackId: string) => {
         if (!token) return;
-        // ❌ Xóa dòng này
-        // if (!confirm('Bạn có chắc chắn muốn xóa góp ý này không?')) return;
-
+        
         const result = await feedbackApi.deleteFeedback(token, feedbackId);
         if (result.success) {
             toast.success('Xóa góp ý thành công');
@@ -137,7 +134,6 @@ export default function FeedbackPage() {
         }
     };
 
-    // Socket realtime
     useEffect(() => {
         if (!socket || !isConnected) return;
 
@@ -227,7 +223,7 @@ export default function FeedbackPage() {
 
     return (
         <div className="max-w-6xl mx-auto px-4 py-6 sm:py-8">
-            {/* Header */}
+            {}
             <div className="text-center mb-8">
                 <h1 className="text-3xl font-bold text-gray-800">Góp ý & Phản hồi</h1>
                 <p className="text-sm text-gray-500 mt-2">
@@ -235,7 +231,7 @@ export default function FeedbackPage() {
                 </p>
             </div>
 
-            {/* Stats Cards */}
+            {}
             {Object.keys(stats.byStatus || {}).length > 0 && (
                 <div className="grid grid-cols-3 sm:grid-cols-6 gap-3 mb-6">
                     {statusOrder.map((status) => (
@@ -250,7 +246,7 @@ export default function FeedbackPage() {
                 </div>
             )}
 
-            {/* Filters and Create Button */}
+            {}
             <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center justify-between gap-3 mb-6">
                 <div className="flex flex-wrap gap-2">
                     <div className="flex flex-wrap gap-1 bg-gray-100 rounded-lg p-1">
@@ -291,7 +287,7 @@ export default function FeedbackPage() {
                 </button>
             </div>
 
-            {/* Feedbacks List */}
+            {}
             {loading && page === 1 ? (
                 <div className="flex justify-center py-12">
                     <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
@@ -316,7 +312,7 @@ export default function FeedbackPage() {
                 </div>
             )}
 
-            {/* Load More */}
+            {}
             {page < totalPages && (
                 <div className="text-center mt-6">
                     <button
@@ -330,7 +326,7 @@ export default function FeedbackPage() {
                 </div>
             )}
 
-            {/* Create Modal */}
+            {}
             {showCreateModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowCreateModal(false)}>
                     <div className="bg-white rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>

@@ -1,4 +1,3 @@
-// app/admin/hotroduan/page.tsx
 
 'use client';
 
@@ -93,7 +92,7 @@ const ViewProjectModal = ({ isOpen, onClose, project }: { isOpen: boolean; onClo
                             <StaticContent content={project.content} />
                         </div>
 
-                        {/* Hiển thị phản hồi trong modal xem chi tiết */}
+                        {}
                         {project.replies.length > 0 && (
                             <div className="mt-6 pt-4 border-t border-gray-200">
                                 <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
@@ -218,7 +217,7 @@ const StatusModal = ({ isOpen, onClose, project, onSuccess }: { isOpen: boolean;
                 className="bg-white rounded-2xl w-full max-w-md overflow-hidden"
                 onClick={(e) => e.stopPropagation()}
             >
-                {/* HEADER */}
+                {}
                 <div className="sticky top-0 z-50 bg-white px-5 py-4 border-b border-gray-200 flex justify-between items-center rounded-t-2xl">
                     <h3 className="text-lg font-semibold text-gray-800">
                         Cập nhật trạng thái
@@ -232,7 +231,7 @@ const StatusModal = ({ isOpen, onClose, project, onSuccess }: { isOpen: boolean;
                     </button>
                 </div>
 
-                {/* CONTENT */}
+                {}
                 <div className="p-5 space-y-4">
                     <CustomSelect
                         label="Trạng thái"
@@ -244,7 +243,7 @@ const StatusModal = ({ isOpen, onClose, project, onSuccess }: { isOpen: boolean;
                     />
                 </div>
 
-                {/* FOOTER */}
+                {}
                 <div className="flex justify-end gap-3 p-5 pt-0">
                     <CustomButton variant="secondary" onClick={onClose}>
                         Hủy

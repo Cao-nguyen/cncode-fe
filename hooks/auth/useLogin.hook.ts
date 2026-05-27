@@ -12,7 +12,7 @@ export const useLogin = () => {
 
   useEffect(() => {
     const checkAuth = async () => {
-      // Chờ hydrate xong
+      
       if (!_hasHydrated) {
         return;
       }

@@ -1,4 +1,4 @@
-// app/settings/page.tsx
+
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -280,7 +280,6 @@ const SettingsPage = () => {
     const handleRequestRole = async () => {
         if (!token) return;
 
-        // Hiển thị popup để nhập thông tin
         setShowTeacherRequestModal(true);
     };
 
@@ -377,13 +376,13 @@ const SettingsPage = () => {
         <div className="max-w-5xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
             <div className="bg-[var(--cn-bg-card)] rounded-[var(--cn-radius-md)] border border-[var(--cn-border)] shadow-[var(--cn-shadow-sm)] overflow-hidden">
 
-                {/* Header */}
+                {}
                 <div className="border-b border-[var(--cn-border)] p-4 sm:p-6">
                     <h1 className="text-xl sm:text-2xl font-bold text-[var(--cn-primary)]">Cài đặt tài khoản</h1>
                     <p className="text-xs sm:text-sm text-[var(--cn-text-muted)] mt-1">Quản lý thông tin cá nhân</p>
                 </div>
 
-                {/* Avatar + name */}
+                {}
                 <div className="flex flex-col items-center py-6 sm:py-8 border-b border-[var(--cn-border)] bg-[var(--cn-bg-section)]">
                     <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden bg-[var(--cn-bg-card)] ring-4 ring-[var(--cn-border)] flex items-center justify-center">
                         {currentUser.avatar ? (
@@ -413,7 +412,7 @@ const SettingsPage = () => {
                     </div>
                 </div>
 
-                {/* Form */}
+                {}
                 <div className="p-4 sm:p-6">
                     <form onSubmit={handleUpdateProfile} className="space-y-4 sm:space-y-6">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
@@ -479,7 +478,7 @@ const SettingsPage = () => {
                         </div>
                     </form>
 
-                    {/* Nâng cấp tài khoản */}
+                    {}
                     {currentUser.role !== 'teacher' && currentUser.role !== 'admin' && (
                         <div className="mt-6 bg-[var(--cn-bg-section)] rounded-[var(--cn-radius-md)] p-4 sm:p-6 border border-[var(--cn-border)]">
                             <h3 className="text-base sm:text-lg font-semibold text-[var(--cn-text-main)] mb-3 sm:mb-4 flex items-center gap-2">
@@ -510,7 +509,7 @@ const SettingsPage = () => {
                         </div>
                     )}
 
-                    {/* Thống kê tài khoản */}
+                    {}
                     <div className="mt-6 bg-[var(--cn-bg-section)] rounded-[var(--cn-radius-md)] p-4 sm:p-6 border border-[var(--cn-border)]">
                         <h3 className="text-base sm:text-lg font-semibold text-[var(--cn-text-main)] mb-3 sm:mb-4 flex items-center gap-2">
                             <Coins className="w-5 h-5 text-[var(--cn-primary)]" />
@@ -538,7 +537,7 @@ const SettingsPage = () => {
                         </div>
                     </div>
 
-                    {/* Xóa tài khoản */}
+                    {}
                     <div className="mt-6 bg-red-50 dark:bg-red-950/20 rounded-[var(--cn-radius-md)] p-4 sm:p-6 border border-red-200 dark:border-red-800">
                         <h3 className="text-base sm:text-lg font-semibold text-red-600 dark:text-red-400 mb-3 sm:mb-4 flex items-center gap-2">
                             <Trash2 className="w-5 h-5" />
@@ -556,7 +555,7 @@ const SettingsPage = () => {
                         </CustomButton>
                     </div>
 
-                    {/* Đăng xuất */}
+                    {}
                     <div className="mt-6 pt-4 border-t border-[var(--cn-border)]">
                         <CustomButton
                             onClick={handleLogout}
@@ -569,7 +568,7 @@ const SettingsPage = () => {
                 </div>
             </div>
 
-            {/* Modal xác nhận xóa tài khoản */}
+            {}
             {showDeleteConfirm && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
                     <div className="bg-[var(--cn-bg-card)] rounded-[var(--cn-radius-md)] w-full max-w-md border border-red-200 dark:border-red-800 shadow-[var(--cn-shadow-lg)]">

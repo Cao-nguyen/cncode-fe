@@ -1,4 +1,4 @@
-// components/custom/ConfirmationModal.tsx
+
 'use client';
 
 import React from 'react';
@@ -31,7 +31,7 @@ export const ConfirmModalDelete: React.FC<ConfirmModalDeleteProps> = ({
                 className="bg-[var(--cn-bg-card)] rounded-[var(--cn-radius-md)] w-full max-w-md shadow-[var(--cn-shadow-lg)] border border-[var(--cn-border)]"
                 onClick={(e) => e.stopPropagation()}
             >
-                {/* Header */}
+                {}
                 <div className="flex items-center justify-between p-5 border-b border-[var(--cn-border)]">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
@@ -47,14 +47,14 @@ export const ConfirmModalDelete: React.FC<ConfirmModalDeleteProps> = ({
                     </button>
                 </div>
 
-                {/* Content */}
+                {}
                 <div className="p-5 space-y-2">
                     <p className="text-sm text-[var(--cn-text-sub)]">{message}</p>
                     <p className="text-sm text-red-500">{warning}</p>
                     <p className="text-xs text-[var(--cn-text-muted)] italic">* Hành động này không thể hoàn tác.</p>
                 </div>
 
-                {/* Actions */}
+                {}
                 <div className="flex gap-3 p-5 pt-0">
                     <button
                         onClick={onClose}

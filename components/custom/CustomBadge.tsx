@@ -1,4 +1,4 @@
-// components/custom/CustomBadge.tsx
+
 'use client';
 
 import React from 'react';

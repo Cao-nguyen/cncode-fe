@@ -1,4 +1,4 @@
-// lib/api/user.api.ts
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
 export interface IUser {
@@ -81,7 +81,7 @@ async function handleResponse<T>(response: Response): Promise<IApiResponse<T>> {
             const errorData = await response.json();
             errorMessage = errorData.message || errorMessage;
         } catch {
-            // Không thể parse JSON
+            
         }
         return {
             success: false,
@@ -95,7 +95,7 @@ async function handleResponse<T>(response: Response): Promise<IApiResponse<T>> {
 }
 
 export const userApi = {
-    // User APIs
+    
     getProfile: async (token: string): Promise<IApiResponse<IUser>> => {
         const response = await fetch(`${API_URL}/api/users/profile`, {
             headers: {
@@ -155,7 +155,6 @@ export const userApi = {
         return handleResponse<{ url: string }>(response);
     },
 
-    // Admin APIs
     getAllUsers: async (token: string, filters: IUserFilters, page: number, limit: number): Promise<IApiResponse<IUser[]>> => {
         const params = new URLSearchParams({
             page: page.toString(),

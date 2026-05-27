@@ -1,4 +1,4 @@
-// lib/api/feedback.api.ts
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export interface IFeedback {
@@ -17,7 +17,7 @@ export interface IFeedback {
     priority: 'low' | 'medium' | 'high';
     adminResponse: string;
     reactCount: number;
-    likedBy: string[];  // ✅ Thêm field này
+    likedBy: string[];  
     viewCount: number;
     commentCount: number;
     isPinned: boolean;
@@ -88,7 +88,7 @@ export const feedbackApi = {
             return {
                 success: data.success,
                 message: data.message,
-                data: data.data // { reactCount: number, liked: boolean }
+                data: data.data 
             };
         } catch (error) {
             console.error('React feedback error:', error);

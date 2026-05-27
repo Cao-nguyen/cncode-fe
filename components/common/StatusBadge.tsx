@@ -1,4 +1,4 @@
-// components/common/StatusBadge.tsx
+
 'use client';
 
 import { Clock, Eye, CheckCircle, Wrench, Trophy, XCircle } from 'lucide-react';

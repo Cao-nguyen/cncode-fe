@@ -17,8 +17,6 @@ import {
     ChevronUp,
 } from "lucide-react";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
 export type ReactionType = "like" | "love" | "haha" | "wow" | "care" | "sad" | "angry";
 
 export interface CommentUser {
@@ -36,7 +34,7 @@ export interface Comment {
     id: string;
     author: CommentUser;
     content: string;
-    createdAt: number; // unix ms
+    createdAt: number; 
     myReaction: ReactionType | null;
     reactions: CommentReaction[];
     replies: Comment[];
@@ -44,25 +42,23 @@ export interface Comment {
 }
 
 export interface CommentSectionProps {
-    /** Danh sách comment từ bên ngoài */
+    
     comments: Comment[];
-    /** User hiện tại đang đăng nhập */
+    
     currentUser: CommentUser;
-    /** Thêm comment gốc */
+    
     onAddComment: (content: string) => void;
-    /** Thêm reply vào một comment */
+    
     onAddReply: (parentId: string, content: string) => void;
-    /** React vào comment (hoặc reply) */
+    
     onReact: (commentId: string, type: ReactionType, parentId?: string) => void;
-    /** Xóa comment hoặc reply */
+    
     onDelete: (commentId: string, parentId?: string) => void;
-    /** Placeholder cho ô input chính */
+    
     placeholder?: string;
-    /** Ẩn nút Thích (nếu chưa cần) */
+    
     showReactions?: boolean;
 }
-
-// ─── Constants ────────────────────────────────────────────────────────────────
 
 const REACTION_LABEL: Record<ReactionType, string> = {
     like: "Thích",
@@ -84,8 +80,6 @@ const REACTION_COLOR: Record<ReactionType, string> = {
     angry: "#E9710F",
 };
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
 function timeAgo(ts: number): string {
     const d = Math.floor((Date.now() - ts) / 1000);
     if (d < 60) return "Vừa xong";
@@ -93,8 +87,6 @@ function timeAgo(ts: number): string {
     if (d < 86400) return `${Math.floor(d / 3600)} giờ`;
     return `${Math.floor(d / 86400)} ngày`;
 }
-
-// ─── Auto-resize Textarea ─────────────────────────────────────────────────────
 
 interface AutoTextareaProps {
     value: string;
@@ -135,8 +127,6 @@ function AutoTextarea({ value, onChange, onSubmit, placeholder, autoFocus }: Aut
         />
     );
 }
-
-// ─── Comment Input ────────────────────────────────────────────────────────────
 
 interface CommentInputProps {
     currentUser: CommentUser;
@@ -209,12 +199,10 @@ function CommentInput({ currentUser, onSubmit, placeholder, autoFocus, compact }
     );
 }
 
-// ─── Reaction Button ──────────────────────────────────────────────────────────
-
 interface ReactionButtonProps {
     myReaction: ReactionType | null;
     totalCount: number;
-    onToggle: () => void; // toggle like / unlike
+    onToggle: () => void; 
 }
 
 function ReactionButton({ myReaction, totalCount, onToggle }: ReactionButtonProps) {
@@ -244,8 +232,6 @@ function ReactionButton({ myReaction, totalCount, onToggle }: ReactionButtonProp
         </div>
     );
 }
-
-// ─── Context Menu ─────────────────────────────────────────────────────────────
 
 interface ContextMenuProps {
     isOwn: boolean;
@@ -308,8 +294,6 @@ function ContextMenu({ isOwn, onDelete, onClose }: ContextMenuProps) {
     );
 }
 
-// ─── Comment Item ─────────────────────────────────────────────────────────────
-
 interface CommentItemProps {
     comment: Comment;
     currentUser: CommentUser;
@@ -343,7 +327,7 @@ function CommentItem({
 
     return (
         <div className={`flex gap-2 items-start ${isReply ? "pl-10" : ""}`}>
-            {/* Avatar */}
+            {}
             <img
                 src={comment.author.avatar}
                 alt={comment.author.name}
@@ -351,23 +335,23 @@ function CommentItem({
             />
 
             <div className="flex-1 min-w-0">
-                {/* Bubble */}
+                {}
                 <div className="group/bubble relative inline-block max-w-full">
                     <div className="bg-[#f0f2f5] rounded-[18px] px-3 py-[7px] inline-block max-w-full">
-                        {/* Author */}
+                        {}
                         <span className="text-[13px] font-bold text-[#050505] block mb-[1px]">
                             {comment.author.name}
                             {comment.isEdited && (
                                 <span className="text-[11px] font-normal text-[#65676b] ml-1">· Đã chỉnh sửa</span>
                             )}
                         </span>
-                        {/* Content */}
+                        {}
                         <p className="text-[14px] text-[#050505] leading-[1.45] m-0 whitespace-pre-wrap break-words">
                             {comment.content}
                         </p>
                     </div>
 
-                    {/* Reaction badge */}
+                    {}
                     {totalReactions > 0 && (
                         <div className="absolute -bottom-3.5 right-2 flex items-center gap-1 bg-white rounded-full shadow-[0_1px_6px_rgba(0,0,0,0.16)] px-1.5 py-[3px] border border-black/[0.06] cursor-pointer hover:bg-gray-50 transition-colors z-10">
                             <ThumbsUp
@@ -380,7 +364,7 @@ function CommentItem({
                         </div>
                     )}
 
-                    {/* More button — visible on hover */}
+                    {}
                     <div className="absolute -right-8 top-1/2 -translate-y-1/2 opacity-0 group-hover/bubble:opacity-100 transition-opacity relative">
                         <div className="relative">
                             <button
@@ -401,7 +385,7 @@ function CommentItem({
                     </div>
                 </div>
 
-                {/* Actions row */}
+                {}
                 <div className={`flex items-center gap-0.5 pl-1 flex-wrap ${totalReactions > 0 ? "mt-5" : "mt-[3px]"}`}>
                     <ReactionButton
                         myReaction={comment.myReaction}
@@ -423,7 +407,7 @@ function CommentItem({
 
                     <span className="text-[11px] text-[#65676b] px-1">{timeAgo(comment.createdAt)}</span>
 
-                    {/* More button (always visible, smaller) */}
+                    {}
                     <div className="relative ml-auto">
                         <button
                             onClick={() => setMenuOpen((p) => !p)}
@@ -442,7 +426,7 @@ function CommentItem({
                     </div>
                 </div>
 
-                {/* Replies toggle */}
+                {}
                 {!isReply && comment.replies.length > 0 && (
                     <button
                         onClick={() => setShowReplies((p) => !p)}
@@ -457,7 +441,7 @@ function CommentItem({
                     </button>
                 )}
 
-                {/* Replies list */}
+                {}
                 {!isReply && showReplies && comment.replies.length > 0 && (
                     <div className="flex flex-col gap-3 mt-3">
                         {comment.replies.map((r) => (
@@ -475,7 +459,7 @@ function CommentItem({
                     </div>
                 )}
 
-                {/* Reply input */}
+                {}
                 {replyOpen && (
                     <div className="mt-2">
                         <CommentInput
@@ -496,8 +480,6 @@ function CommentItem({
     );
 }
 
-// ─── Main Component ───────────────────────────────────────────────────────────
-
 export default function CommentSection({
     comments,
     currentUser,
@@ -512,21 +494,21 @@ export default function CommentSection({
 
     return (
         <div className="w-full font-sans">
-            {/* Header count */}
+            {}
             {total > 0 && (
                 <p className="text-[13px] text-[#65676b] mb-3 px-1">
                     {total} bình luận
                 </p>
             )}
 
-            {/* Input */}
+            {}
             <CommentInput
                 currentUser={currentUser}
                 onSubmit={onAddComment}
                 placeholder={placeholder}
             />
 
-            {/* List */}
+            {}
             {comments.length > 0 && (
                 <div className="flex flex-col gap-4 mt-4">
                     {comments.map((c) => (

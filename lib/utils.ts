@@ -1,16 +1,11 @@
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
 
-/**
- * Normalize various URL formats to a valid URL string.
- * Accepts: https://..., http://..., www.xxx, naked domains like tinhoctre.vn
- */
 export function normalizeUrl(raw: string): string | null {
     if (!raw) return null;
     const trimmed = raw.trim();
 
-    // Already has protocol
-    if (/^https?:\/\//i.test(trimmed)) {
+    if (/^https?:\/\//.test(trimmed)) {
         try {
             new URL(trimmed);
             return trimmed;
@@ -19,11 +14,10 @@ export function normalizeUrl(raw: string): string | null {
         }
     }
 
-    // www.xxx or naked domain
     const withProtocol = 'https://' + trimmed;
     try {
         new URL(withProtocol);
-        // Basic domain check — must have at least one dot
+
         if (!trimmed.includes('.')) return null;
         return withProtocol;
     } catch {

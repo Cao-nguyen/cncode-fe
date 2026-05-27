@@ -1,4 +1,4 @@
-// app/(user)/hotroduan/edit/[id]/page.tsx
+
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';

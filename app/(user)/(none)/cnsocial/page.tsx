@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import Link from 'next/link'; // Thêm Link để điều hướng
+import Link from 'next/link'; 
 import {
     Share2,
     Search,
@@ -13,7 +13,7 @@ import {
     Lightbulb,
     MessageCircle,
     Clock,
-    ArrowLeft // Thêm icon mũi tên trở về
+    ArrowLeft 
 } from 'lucide-react';
 
 export default function CNsocialIntro() {
@@ -27,10 +27,10 @@ export default function CNsocialIntro() {
     return (
         <div className="min-h-screen bg-[#F8FAFC] text-[#1E293B] font-sans selection:bg-blue-100">
 
-            {/* HEADER */}
+            {}
             <nav className="max-w-7xl mx-auto px-6 py-8 flex justify-between items-center">
                 <div className="flex items-center gap-6">
-                    {/* Nút trở về nhỏ ở Header */}
+                    {}
                     <Link
                         href="/"
                         className="flex items-center gap-2 text-slate-500 hover:text-blue-600 transition-colors font-bold text-sm group"
@@ -55,7 +55,7 @@ export default function CNsocialIntro() {
                 </div>
             </nav>
 
-            {/* HERO SECTION */}
+            {}
             <section className="max-w-7xl mx-auto px-6 pt-16 pb-24 text-center">
                 <motion.div {...fadeIn}>
                     <h1 className="text-4xl md:text-6xl lg:text-7xl font-extrabold text-slate-900 leading-tight mb-8">
@@ -68,7 +68,7 @@ export default function CNsocialIntro() {
                 </motion.div>
             </section>
 
-            {/* CHI TIẾT DỰ ÁN */}
+            {}
             <section className="max-w-7xl mx-auto px-6 pb-32">
                 <div className="grid lg:grid-cols-2 gap-16 items-center">
 
@@ -117,11 +117,11 @@ export default function CNsocialIntro() {
                 </div>
             </section>
 
-            {/* GRID TÍNH NĂNG */}
+            {}
             <section className="bg-white py-24">
                 <div className="max-w-7xl mx-auto px-6">
                     <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-                        {/* Box 1 */}
+                        {}
                         <motion.div {...fadeIn} className="p-8 bg-slate-50 rounded-[2rem] border border-slate-100 hover:shadow-lg transition-all">
                             <div className="w-12 h-12 bg-blue-600 text-white rounded-xl flex items-center justify-center mb-6 shadow-lg">
                                 <Search className="w-6 h-6" />
@@ -132,7 +132,7 @@ export default function CNsocialIntro() {
                             </p>
                         </motion.div>
 
-                        {/* Box 2 */}
+                        {}
                         <motion.div {...fadeIn} className="p-8 bg-slate-50 rounded-[2rem] border border-slate-100 hover:shadow-lg transition-all">
                             <div className="w-12 h-12 bg-yellow-500 text-white rounded-xl flex items-center justify-center mb-6 shadow-lg">
                                 <Lightbulb className="w-6 h-6" />
@@ -143,7 +143,7 @@ export default function CNsocialIntro() {
                             </p>
                         </motion.div>
 
-                        {/* Box 3 */}
+                        {}
                         <motion.div {...fadeIn} className="p-8 bg-slate-50 rounded-[2rem] border border-slate-100 hover:shadow-lg transition-all">
                             <div className="w-12 h-12 bg-indigo-600 text-white rounded-xl flex items-center justify-center mb-6 shadow-lg">
                                 <Target className="w-6 h-6" />
@@ -154,7 +154,7 @@ export default function CNsocialIntro() {
                             </p>
                         </motion.div>
 
-                        {/* Box 4 */}
+                        {}
                         <motion.div {...fadeIn} className="p-8 bg-slate-50 rounded-[2rem] border border-slate-100 hover:shadow-lg transition-all">
                             <div className="w-12 h-12 bg-pink-600 text-white rounded-xl flex items-center justify-center mb-6 shadow-lg">
                                 <MessageCircle className="w-6 h-6" />
@@ -168,7 +168,7 @@ export default function CNsocialIntro() {
                 </div>
             </section>
 
-            {/* QUOTE SECTION */}
+            {}
             <section className="max-w-5xl mx-auto px-6 py-32 text-center">
                 <motion.div {...fadeIn} className="bg-blue-600 rounded-[3rem] p-12 md:p-20 text-white shadow-2xl relative overflow-hidden">
                     <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
@@ -181,7 +181,7 @@ export default function CNsocialIntro() {
                         {`Tầm nhìn CNsocial`}
                     </p>
 
-                    {/* Nút quay lại trang chủ lớn ở cuối trang */}
+                    {}
                     <div className="relative z-10">
                         <Link
                             href="/"

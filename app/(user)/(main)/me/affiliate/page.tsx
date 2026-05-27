@@ -1,4 +1,4 @@
-// app/(user)/(main)/affiliate/page.tsx
+
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -117,7 +117,7 @@ export default function AffiliatePage() {
 
     return (
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 sm:py-6 md:py-10 space-y-4 sm:space-y-6">
-            {/* Header */}
+            {}
             <div className="text-center">
                 <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-[var(--cn-primary)]">Tiếp thị liên kết</h1>
                 <p className="text-xs sm:text-sm text-[var(--cn-text-muted)] mt-1 sm:mt-2">
@@ -128,7 +128,7 @@ export default function AffiliatePage() {
             {token && user ? (
                 affiliate ? (
                     <div className="space-y-4 sm:space-y-6">
-                        {/* Link giới thiệu - Full width trên mobile */}
+                        {}
                         <div className="bg-[var(--cn-bg-card)] rounded-[var(--cn-radius-md)] p-4 sm:p-5 border border-[var(--cn-border)] shadow-[var(--cn-shadow-sm)]">
                             <div className="flex items-center gap-2 mb-3 sm:mb-4">
                                 <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[var(--cn-primary)]/10 flex items-center justify-center">
@@ -147,7 +147,7 @@ export default function AffiliatePage() {
                             </p>
                         </div>
 
-                        {/* Stats Cards - Grid 2x2 trên mobile, 4x1 trên desktop */}
+                        {}
                         <div className="grid grid-cols-2 gap-3 sm:gap-4">
                             <DashboardCard
                                 title="Lượt đăng ký"
@@ -171,7 +171,7 @@ export default function AffiliatePage() {
                             />
                         </div>
 
-                        {/* Cơ chế thưởng */}
+                        {}
                         <div className="bg-gradient-to-r from-[var(--cn-primary)]/10 to-[var(--cn-primary)]/5 rounded-[var(--cn-radius-md)] p-4 sm:p-5 border border-[var(--cn-primary)]/20">
                             <div className="flex items-center gap-2 mb-3 sm:mb-4">
                                 <TrendingUp size={16} className="text-[var(--cn-primary)] sm:w-[18px] sm:h-[18px]" />
@@ -217,7 +217,7 @@ export default function AffiliatePage() {
                             </div>
                         </div>
 
-                        {/* Leaderboard */}
+                        {}
                         {leaderboard.length > 0 && (
                             <div className="bg-[var(--cn-bg-card)] rounded-[var(--cn-radius-md)] p-4 sm:p-5 border border-[var(--cn-border)]">
                                 <div className="flex items-center gap-2 mb-4 sm:mb-6">
@@ -225,7 +225,7 @@ export default function AffiliatePage() {
                                     <h2 className="text-base sm:text-lg font-semibold text-[var(--cn-text-main)]">Bảng xếp hạng</h2>
                                 </div>
 
-                                {/* Top 3 - Stack trên mobile, row trên tablet */}
+                                {}
                                 <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 mb-6 sm:mb-8">
                                     {top3.map((item, idx) => {
                                         const rank = idx + 1;
@@ -267,7 +267,7 @@ export default function AffiliatePage() {
                                     })}
                                 </div>
 
-                                {/* Còn lại */}
+                                {}
                                 {restLeaderboard.length > 0 && (
                                     <div className="space-y-2 pt-3 sm:pt-4 border-t border-[var(--cn-border)]">
                                         {restLeaderboard.map((item, idx) => (
@@ -302,7 +302,7 @@ export default function AffiliatePage() {
                             </div>
                         )}
 
-                        {/* Danh sách người đã đăng ký */}
+                        {}
                         {referredUsers.length > 0 ? (
                             <div className="bg-[var(--cn-bg-card)] rounded-[var(--cn-radius-md)] p-4 sm:p-5 border border-[var(--cn-border)]">
                                 <h2 className="text-base sm:text-lg font-semibold text-[var(--cn-text-main)] mb-3 sm:mb-4">
@@ -336,7 +336,7 @@ export default function AffiliatePage() {
                                     ))}
                                 </div>
 
-                                {/* Xem thêm / Thu gọn */}
+                                {}
                                 {referredUsers.length > 5 && (
                                     <button
                                         onClick={() => setShowAllReferred(!showAllReferred)}

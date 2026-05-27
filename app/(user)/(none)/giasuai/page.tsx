@@ -4,20 +4,17 @@ import { useState, useRef, useEffect } from "react";
 import Groq from "groq-sdk";
 import ReactMarkdown from "react-markdown";
 
-// Định nghĩa interface cho message
 interface IMessage {
     role: "user" | "assistant" | "system";
     content: string;
 }
 
-// Cấu hình Groq API
 const API_KEY = "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";
 const groq = new Groq({
     apiKey: API_KEY,
     dangerouslyAllowBrowser: true
 });
 
-// Model mạnh nhất trên Groq hiện tại
 const MODEL_NAME = "llama-3.3-70b-versatile";
 
 export default function ComputerScienceTutor() {
@@ -47,7 +44,7 @@ export default function ComputerScienceTutor() {
         setIsLoading(true);
 
         try {
-            // Chuẩn bị danh sách tin nhắn cho Groq với đúng type
+            
             const chatCompletion = await groq.chat.completions.create({
                 messages: [
                     {
@@ -81,7 +78,7 @@ export default function ComputerScienceTutor() {
 
     return (
         <div className="flex flex-col h-screen bg-slate-50 text-slate-900">
-            {/* Header */}
+            {}
             <header className="bg-orange-600 text-white p-4 shadow-lg flex items-center justify-between">
                 <div className="flex items-center gap-2">
                     <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center text-orange-600 font-bold">
@@ -94,7 +91,7 @@ export default function ComputerScienceTutor() {
                 </div>
             </header>
 
-            {/* Chat Container */}
+            {}
             <main className="flex-1 overflow-y-auto p-4 space-y-4">
                 {messages.map((msg, index) => (
                     <div
@@ -123,7 +120,7 @@ export default function ComputerScienceTutor() {
                 <div ref={scrollRef} />
             </main>
 
-            {/* Input Area */}
+            {}
             <footer className="p-4 bg-white border-t border-slate-200">
                 <form onSubmit={handleSendMessage} className="max-w-4xl mx-auto flex gap-2">
                     <input

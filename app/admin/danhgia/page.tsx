@@ -82,7 +82,6 @@ export default function AdminRatingsPage() {
         }
     }, [token]);
 
-    // Socket realtime listeners
     useEffect(() => {
         if (!socket || !isConnected) return;
 
@@ -186,7 +185,7 @@ export default function AdminRatingsPage() {
     return (
         <>
             <div className="space-y-4 sm:space-y-6 pb-8 px-3 sm:px-4">
-                {/* Header */}
+                {}
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <div>
                         <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">Quản lý đánh giá</h1>
@@ -196,7 +195,7 @@ export default function AdminRatingsPage() {
                     </div>
                 </div>
 
-                {/* Thống kê */}
+                {}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="rounded-xl p-4 sm:p-5 shadow-sm border border-main/20 bg-white dark:bg-gray-900">
                         <div className="flex items-center gap-2 mb-2">
@@ -233,9 +232,7 @@ export default function AdminRatingsPage() {
                     </div>
                 </div>
 
-
-
-                {/* Danh sách đánh giá */}
+                {}
                 {loading && ratings.length === 0 ? (
                     <div className="flex justify-center py-12">
                         <Loader2 className="w-8 h-8 animate-spin text-main" data-filled={true} />
@@ -246,7 +243,7 @@ export default function AdminRatingsPage() {
                     </div>
                 ) : (
                     <>
-                        {/* Mobile card view */}
+                        {}
                         <div className="block md:hidden space-y-3">
                             {ratings.map((rating) => (
                                 <div
@@ -307,7 +304,7 @@ export default function AdminRatingsPage() {
                             ))}
                         </div>
 
-                        {/* Tablet/Laptop table view */}
+                        {}
                         <div className="hidden md:block rounded-xl shadow-sm border border-main/20 overflow-hidden bg-white dark:bg-gray-900">
                             <div className="overflow-x-auto">
                                 <table className="w-full">
@@ -384,7 +381,7 @@ export default function AdminRatingsPage() {
                             </div>
                         </div>
 
-                        {/* Pagination */}
+                        {}
                         {totalPages > 1 && (
                             <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4">
                                 <div className="text-xs sm:text-sm text-gray-500 order-2 sm:order-1">
@@ -415,7 +412,7 @@ export default function AdminRatingsPage() {
                 )}
             </div>
 
-            {/* Modal chi tiết đánh giá */}
+            {}
             {showDetailModal && selectedRating && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowDetailModal(false)}>
                     <div className="bg-white dark:bg-gray-900 rounded-xl w-full max-w-md max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>

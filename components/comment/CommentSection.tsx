@@ -1,4 +1,4 @@
-// components/comment/CommentSection.tsx
+
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -66,7 +66,6 @@ export default function CommentSection({ targetType, targetId }: CommentSectionP
         fetchComments(1);
     }, [fetchComments]);
 
-    // Socket realtime
     useEffect(() => {
         if (!socket || !isConnected) return;
 

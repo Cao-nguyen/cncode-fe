@@ -23,7 +23,6 @@ import {
 import { toast } from 'sonner';
 import Link from 'next/link';
 
-// --- INTERFACES ---
 interface IUser {
     _id: string;
     email: string;
@@ -53,7 +52,6 @@ interface IAuthState {
     version: number;
 }
 
-// Helper function to get user data
 const getUserData = (): IUser | null => {
     if (typeof window === 'undefined') return null;
     try {
@@ -67,7 +65,6 @@ const getUserData = (): IUser | null => {
     }
 };
 
-// Helper function to get edit form initial data
 const getInitialEditForm = (user: IUser | null) => {
     if (!user) return {
         fullName: '',
@@ -90,20 +87,17 @@ const getInitialEditForm = (user: IUser | null) => {
 };
 
 export default function ProfilePage() {
-    // Lazy initialization for user state
+    
     const [user, setUser] = useState<IUser | null>(() => getUserData());
     const [isEditing, setIsEditing] = useState(false);
     const [loading, setLoading] = useState(true);
 
-    // Lazy initialization for edit form
     const [editForm, setEditForm] = useState(() => getInitialEditForm(user));
 
-    // Update edit form when user changes
     useEffect(() => {
         setEditForm(getInitialEditForm(user));
     }, [user]);
 
-    // Simulate loading
     useEffect(() => {
         const timer = setTimeout(() => setLoading(false), 500);
         return () => clearTimeout(timer);
@@ -113,16 +107,7 @@ export default function ProfilePage() {
         if (!user) return;
 
         try {
-            // Thay thế bằng API thực tế của bạn
-            // const response = await fetch(`/api/users/${user._id}`, {
-            //     method: 'PUT',
-            //     headers: {
-            //         'Content-Type': 'application/json',
-            //     },
-            //     body: JSON.stringify(editForm)
-            // });
-
-            // Update local state
+            
             setUser({
                 ...user,
                 fullName: editForm.fullName,
@@ -195,14 +180,14 @@ export default function ProfilePage() {
 
     return (
         <div className="min-h-screen bg-gray-50/30 pb-20">
-            {/* Cover Image */}
+            {}
             <div className="relative h-48 md:h-64 bg-gradient-to-r from-blue-500 to-purple-600">
                 <div className="absolute inset-0 bg-black/20"></div>
                 <div className="absolute bottom-0 left-0 right-0 p-6">
                     <div className="max-w-7xl mx-auto">
                         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
                             <div className="flex items-center gap-4">
-                                {/* Avatar */}
+                                {}
                                 <div className="relative">
                                     <div className="w-24 h-24 md:w-32 md:h-32 rounded-full border-4 border-white bg-white overflow-hidden shadow-lg">
                                         {user.avatar ? (
@@ -244,12 +229,12 @@ export default function ProfilePage() {
                 </div>
             </div>
 
-            {/* Main Content */}
+            {}
             <div className="max-w-7xl mx-auto px-6 mt-8">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* Left Column - Profile Info */}
+                    {}
                     <div className="lg:col-span-1 space-y-6">
-                        {/* Coin & Streak */}
+                        {}
                         {(user.coins > 0 || user.streak > 0) && (
                             <div className="bg-gradient-to-br from-yellow-400 to-orange-500 rounded-2xl p-6 text-white shadow-lg">
                                 {user.coins > 0 && (
@@ -273,7 +258,7 @@ export default function ProfilePage() {
                             </div>
                         )}
 
-                        {/* Personal Info */}
+                        {}
                         {(user.email || user.birthday || user.class || user.school || user.province) && (
                             <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
                                 <h3 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
@@ -331,9 +316,9 @@ export default function ProfilePage() {
                         )}
                     </div>
 
-                    {/* Right Column - Bio & Edit Form */}
+                    {}
                     <div className="lg:col-span-2 space-y-6">
-                        {/* Bio Section */}
+                        {}
                         <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
                             <h3 className="text-sm font-bold text-gray-900 mb-4">Giới thiệu</h3>
                             {isEditing ? (
@@ -351,7 +336,7 @@ export default function ProfilePage() {
                             )}
                         </div>
 
-                        {/* Edit Form - Hiển thị khi đang chỉnh sửa */}
+                        {}
                         {isEditing && (
                             <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
                                 <h3 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">

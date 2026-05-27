@@ -1,4 +1,4 @@
-// app/admin/allsettings/page.tsx
+
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -62,7 +62,7 @@ export default function AdminAllSettingsPage() {
     const [saving, setSaving] = useState<boolean>(false);
     const [savedTab, setSavedTab] = useState<string | null>(null);
     const editorRefs = useRef<Record<string, CustomEditorRef | null>>({});
-    // ✅ Thêm state để force re-mount editor khi chuyển tab
+    
     const [editorKey, setEditorKey] = useState<number>(0);
 
     const fetchSettings = useCallback(async () => {
@@ -115,17 +115,15 @@ export default function AdminAllSettingsPage() {
         }
     };
 
-    // ✅ Xử lý khi chuyển tab: cập nhật key để force re-mount editor
     const handleTabChange = (tabId: string) => {
         setActiveTab(tabId);
-        setEditorKey(prev => prev + 1); // Force re-mount
+        setEditorKey(prev => prev + 1); 
     };
 
-    // ✅ Lưu ref khi editor được mount
     const handleEditorRef = (el: CustomEditorRef | null) => {
         if (el) {
             editorRefs.current[activeTab] = el;
-            // Set content sau khi mount
+            
             if (el.setContent && currentValue) {
                 setTimeout(() => {
                     if (el.getContent() !== currentValue) {
@@ -198,7 +196,7 @@ export default function AdminAllSettingsPage() {
                 </div>
 
                 <div className="p-4">
-                    {/* ✅ Thêm key để force re-mount editor khi chuyển tab */}
+                    {}
                     <CustomEditor
                         key={`editor-${activeTab}-${editorKey}`}
                         ref={handleEditorRef}

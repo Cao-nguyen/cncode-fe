@@ -56,7 +56,7 @@ const JourneyPage = () => {
     return (
         <div className="min-h-screen bg-white font-sans text-text-main relative overflow-x-hidden">
 
-            {/* --- NÚT QUAY LẠI (Tối ưu mobile: nhỏ hơn, gọn hơn) --- */}
+            {}
             <Link href="/" className="fixed top-4 left-4 md:top-6 md:left-6 z-50 group">
                 <motion.div
                     initial={{ opacity: 0, x: -20 }}
@@ -68,7 +68,7 @@ const JourneyPage = () => {
                 </motion.div>
             </Link>
 
-            {/* --- HERO SECTION --- */}
+            {}
             <section className="relative overflow-hidden pt-28 pb-16 md:pt-40 md:pb-32 px-4">
                 <div className="absolute top-[-5%] left-[-10%] w-[70%] h-[40%] bg-primary-light rounded-full blur-[100px] opacity-50 -z-10" />
 
@@ -96,7 +96,7 @@ const JourneyPage = () => {
                 </div>
             </section>
 
-            {/* --- PROGRESS SECTION (Tối ưu layout mobile) --- */}
+            {}
             <section className="py-12 md:py-20 px-4 bg-bg-main/40">
                 <div className="max-w-4xl mx-auto text-center">
                     <div className="bg-white p-6 md:p-12 rounded-[2rem] md:rounded-[3rem] shadow-xl border border-border relative">
@@ -116,7 +116,7 @@ const JourneyPage = () => {
                             </div>
                         </div>
 
-                        {/* Progress Bar */}
+                        {}
                         <div className="relative h-8 md:h-10 bg-bg-section rounded-xl md:rounded-2xl p-1 shadow-inner border border-border overflow-hidden">
                             <motion.div
                                 initial={{ width: 0 }}
@@ -128,7 +128,7 @@ const JourneyPage = () => {
                             </motion.div>
                         </div>
 
-                        {/* Markers (Ẩn bớt trên mobile cực nhỏ để tránh chồng chéo) */}
+                        {}
                         <div className="mt-4 flex justify-between text-[8px] md:text-[10px] font-bold text-text-muted px-1 uppercase tracking-tighter md:tracking-widest">
                             <span className="text-primary font-black">Bắt đầu</span>
                             <span className="hidden sm:block">1,250</span>
@@ -146,7 +146,7 @@ const JourneyPage = () => {
                 </div>
             </section>
 
-            {/* --- MISSION SECTION (Grid 1 cột trên mobile) --- */}
+            {}
             <section className="py-16 md:py-24 px-4 bg-white">
                 <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 md:gap-20 items-center">
                     <motion.div
@@ -162,7 +162,7 @@ const JourneyPage = () => {
                                 className="object-cover"
                             />
                         </div>
-                        {/* Floating Badge (Điều chỉnh cho mobile) */}
+                        {}
                         <div className="absolute -bottom-4 -right-2 md:-bottom-6 md:-right-6 bg-white p-4 md:p-6 rounded-xl md:rounded-2xl shadow-xl border border-border flex items-center gap-3">
                             <div className="w-10 h-10 md:w-12 md:h-12 bg-red-50 rounded-lg flex items-center justify-center text-red-500">
                                 <Heart fill="currentColor" size={20} />

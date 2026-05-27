@@ -69,7 +69,6 @@ export default function FeedbackCard({
 }: FeedbackCardProps) {
     const { user, token } = useAuthStore();
 
-    // States
     const [isEditing, setIsEditing] = useState(false);
     const [isLiking, setIsLiking] = useState(false);
     const [hasLiked, setHasLiked] = useState(feedback.likedBy?.includes(user?._id || '') || false);
@@ -87,7 +86,6 @@ export default function FeedbackCard({
         category: feedback.category as FeedbackCategory
     });
 
-    // ✅ Đồng bộ state khi ID feedback hoặc ID user thay đổi (Tránh bị ghi đè khi Parent re-render)
     useEffect(() => {
         setLocalReactCount(feedback.reactCount || 0);
         setHasLiked(feedback.likedBy?.includes(user?._id || '') || false);
@@ -104,7 +102,6 @@ export default function FeedbackCard({
         }
         if (isLiking || hasLiked) return;
 
-        // ⚡️ Optimistic Update: Chạy ngay lập tức
         setIsLiking(true);
         setHasLiked(true);
         setLocalReactCount(prev => prev + 1);
@@ -119,7 +116,7 @@ export default function FeedbackCard({
                 throw new Error(result.message || 'Thao tác thất bại');
             }
         } catch (error: unknown) {
-            // Rollback UI
+            
             setHasLiked(false);
             setLocalReactCount(prev => prev - 1);
 
@@ -220,7 +217,7 @@ export default function FeedbackCard({
             <div className={`bg-white rounded-xl border transition-all duration-300 overflow-hidden ${hasLiked ? 'border-red-200 shadow-sm' : 'border-gray-200 hover:border-blue-300 hover:shadow-md'
                 }`}>
                 <div className="p-5">
-                    {/* Header: User Info & Badges */}
+                    {}
                     <div className="flex items-start justify-between gap-3 mb-3">
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center overflow-hidden flex-shrink-0">
@@ -256,13 +253,13 @@ export default function FeedbackCard({
                         </div>
                     </div>
 
-                    {/* Content: Title & Text */}
+                    {}
                     <div className="mb-4">
                         <h3 className="text-lg font-bold text-gray-800 mb-2">{feedback.title}</h3>
                         <p className="text-gray-600 leading-relaxed whitespace-pre-wrap text-sm">{feedback.content}</p>
                     </div>
 
-                    {/* Admin Response Section */}
+                    {}
                     {feedback.adminResponse && (
                         <div className="mb-4 p-4 rounded-xl bg-blue-50/50 border border-blue-100 border-l-4 border-l-blue-500">
                             <div className="flex items-center gap-2 mb-1.5">
@@ -273,7 +270,7 @@ export default function FeedbackCard({
                         </div>
                     )}
 
-                    {/* Footer: Like & Owner Actions */}
+                    {}
                     <div className="flex items-center justify-between pt-3 border-t border-gray-100">
                         <button
                             onClick={(e) => {
@@ -321,7 +318,7 @@ export default function FeedbackCard({
                 </div>
             </div>
 
-            {/* Modal Xác nhận xóa */}
+            {}
             <DeleteConfirmModal
                 isOpen={showDeleteModal}
                 onClose={() => setShowDeleteModal(false)}

@@ -1,4 +1,3 @@
-// lib/api/garden.api.ts
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -24,8 +23,7 @@ const getAuthHeaders = (): HeadersInit => {
 };
 
 export const gardenApi = {
-    // ==================== USER ROUTES ====================
-
+    
     getGarden: async () => {
         try {
             const response = await fetch(`${API_URL}/api/garden/status`, {
@@ -136,8 +134,6 @@ export const gardenApi = {
             return { success: false, message: 'Không thể gửi đáp án' };
         }
     },
-
-    // ==================== ADMIN ROUTES ====================
 
     getAllQuestions: async (page: number = 1, limit: number = 10) => {
         try {

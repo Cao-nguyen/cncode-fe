@@ -1,4 +1,4 @@
-// lib/api/helpcenter.api.ts
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 const getToken = (): string | null => {
@@ -14,15 +14,13 @@ const getToken = (): string | null => {
 };
 
 export const helpCenterApi = {
-    // ========== PUBLIC ROUTES ==========
-
+    
     getFAQs: async (category: string = 'all', search: string = '', page: number = 1, limit: number = 50, token?: string | null) => {
         try {
             let url = `${API_URL}/api/helpcenter?page=${page}&limit=${limit}`;
             if (category !== 'all') url += `&category=${category}`;
             if (search) url += `&search=${encodeURIComponent(search)}`;
 
-            // Ưu tiên token truyền vào, nếu không thì lấy từ localStorage
             const activeToken = token || getToken();
             const headers: HeadersInit = {};
             if (activeToken) {
@@ -72,8 +70,6 @@ export const helpCenterApi = {
             return { success: false, message: 'Có lỗi xảy ra' };
         }
     },
-
-    // ========== ADMIN ROUTES ==========
 
     getAllFAQs: async (page: number = 1, limit: number = 20, category: string = 'all', search: string = '') => {
         try {

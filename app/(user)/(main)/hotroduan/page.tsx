@@ -1,4 +1,4 @@
-// app/(user)/hotroduan/page.tsx
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -119,7 +119,6 @@ export default function HelpProjectPage() {
     const [debouncedSearch, setDebouncedSearch] = useState<string>('');
     const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
-    // Debounce search
     useEffect(() => {
         const handler = setTimeout(() => {
             setDebouncedSearch(searchInput);
@@ -138,7 +137,7 @@ export default function HelpProjectPage() {
             const res = await helpProjectApi.getUserProjects({
                 page,
                 limit: 9,
-                search: debouncedSearch // ✅ FIX HERE
+                search: debouncedSearch 
             });
 
             if (res.success) {

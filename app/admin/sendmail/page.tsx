@@ -1,4 +1,4 @@
-// app/admin/sendmail/page.tsx
+
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
@@ -58,11 +58,9 @@ export default function AdminSendMailPage() {
     const [roleFilter, setRoleFilter] = useState('all');
     const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    // Selected users
     const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
     const [selectAll, setSelectAll] = useState(false);
 
-    // Mail form
     const [subject, setSubject] = useState('');
     const [subjectError, setSubjectError] = useState('');
     const [contentError, setContentError] = useState('');
@@ -93,7 +91,7 @@ export default function AdminSendMailPage() {
                     const errorData = await response.json();
                     errorMessage = errorData.message || errorMessage;
                 } catch {
-                    // Nếu response không phải JSON, giữ nguyên errorMessage
+                    
                 }
                 throw new Error(errorMessage);
             }
@@ -120,7 +118,6 @@ export default function AdminSendMailPage() {
         fetchUsers();
     }, [fetchUsers]);
 
-    // Search debounce
     useEffect(() => {
         if (searchTimeout.current) clearTimeout(searchTimeout.current);
         searchTimeout.current = setTimeout(() => {
@@ -179,7 +176,7 @@ export default function AdminSendMailPage() {
         setSending(true);
         try {
             const token = getToken();
-            // ✅ Sửa URL từ /send-mail thành /sendmail/send cho khớp Backend
+            
             const response = await fetch(`${API_URL}/api/admin/sendmail/send`, {
                 method: 'POST',
                 headers: {
@@ -226,7 +223,7 @@ export default function AdminSendMailPage() {
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* Left: User Selection */}
+                    {}
                     <div className="space-y-4">
                         <div className="bg-[var(--cn-bg-card)] rounded-2xl border border-[var(--cn-border)] p-5 shadow-sm">
                             <div className="flex items-center justify-between mb-4">
@@ -328,7 +325,7 @@ export default function AdminSendMailPage() {
                         </div>
                     </div>
 
-                    {/* Right: Content Form */}
+                    {}
                     <div className="space-y-4">
                         <div className="bg-[var(--cn-bg-card)] rounded-2xl border border-[var(--cn-border)] p-6 shadow-sm">
                             <h2 className="font-bold text-[var(--cn-text-main)] flex items-center gap-2 mb-6 text-lg">

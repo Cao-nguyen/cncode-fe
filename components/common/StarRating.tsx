@@ -1,4 +1,4 @@
-// components/common/StarRating.tsx
+
 'use client';
 
 import { useState } from 'react';

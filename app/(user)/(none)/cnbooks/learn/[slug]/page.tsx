@@ -1,4 +1,4 @@
-// app/(user)/cnbooks/learn/[slug]/page.tsx
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -35,10 +35,8 @@ const ExerciseItem = ({ exercise, onAnswer, userAnswer }: ExerciseItemProps) => 
     const submitted = userAnswer !== undefined && userAnswer !== null;
     const isCorrect = submitted ? checkLogic(userAnswer) : false;
 
-    // ✅ Không dùng useEffect, khởi tạo trực tiếp từ props
-    // Khi component re-render với userAnswer mới, state sẽ được cập nhật ở đây
     if (submitted && exercise.type === 'short_answer' && shortAnswer !== String(userAnswer)) {
-        // Cập nhật state đồng bộ, không phải trong effect
+        
         setShortAnswer(String(userAnswer));
     }
 
@@ -271,7 +269,7 @@ export default function LearnCNBookPage() {
 
     return (
         <div className="h-screen flex flex-col bg-white overflow-hidden">
-            {/* Header */}
+            {}
             <header className="h-14 flex-shrink-0 bg-white border-b border-gray-200 flex items-center justify-between px-4 z-50">
                 <div className="flex items-center gap-3">
                     <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-2 hover:bg-gray-50 rounded-lg">
@@ -293,7 +291,7 @@ export default function LearnCNBookPage() {
             </header>
 
             <div className="flex-1 flex overflow-hidden">
-                {/* Sidebar */}
+                {}
                 <aside className={`fixed lg:static top-0 left-0 h-full w-80 bg-white border-r border-gray-100 z-[60] transform transition-transform duration-300 flex flex-col ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
                     }`}>
                     <div className="p-5 border-b border-gray-50 flex-shrink-0">
@@ -339,7 +337,7 @@ export default function LearnCNBookPage() {
                     </div>
                 </aside>
 
-                {/* Main Content */}
+                {}
                 <main className="flex-1 flex flex-col min-w-0 bg-gray-50/30">
                     <div className="flex-1 overflow-y-auto p-6 lg:p-10">
                         <div className="max-w-3xl mx-auto pb-20">
@@ -378,7 +376,7 @@ export default function LearnCNBookPage() {
                         </div>
                     </div>
 
-                    {/* Footer Nav */}
+                    {}
                     {currentLesson && (
                         <div className="h-20 flex-shrink-0 bg-white border-t border-gray-100 px-6 flex items-center">
                             <div className="max-w-3xl mx-auto w-full flex justify-between gap-4">

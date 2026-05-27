@@ -1,4 +1,4 @@
-// app/forum/page.tsx
+
 'use client';
 
 import React from 'react';

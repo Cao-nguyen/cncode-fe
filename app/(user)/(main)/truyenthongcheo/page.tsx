@@ -76,7 +76,7 @@ export default function MaintenancePage() {
     ];
 
     useEffect(() => {
-        // Target date for maintenance completion (example: 7 days from now)
+        
         const targetDate = new Date();
         targetDate.setDate(targetDate.getDate() + 7);
         targetDate.setHours(20, 0, 0, 0);
@@ -128,7 +128,7 @@ export default function MaintenancePage() {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
-            {/* Animated Background */}
+            {}
             <div className="fixed inset-0 overflow-hidden pointer-events-none">
                 <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob"></div>
                 <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-2000"></div>
@@ -136,7 +136,7 @@ export default function MaintenancePage() {
             </div>
 
             <div className="relative z-10 max-w-6xl mx-auto px-6 py-12">
-                {/* Header */}
+                {}
                 <div className="text-center mb-12">
                     <div className="inline-flex items-center gap-3 px-6 py-3 bg-white/10 backdrop-blur-md rounded-full border border-white/20 mb-6">
                         <Construction className="w-5 h-5 text-yellow-400 animate-pulse" />
@@ -154,7 +154,7 @@ export default function MaintenancePage() {
                     </p>
                 </div>
 
-                {/* Countdown Timer */}
+                {}
                 <div className="mb-12">
                     <div className="bg-white/5 backdrop-blur-md rounded-2xl p-6 border border-white/10">
                         <div className="flex items-center justify-center gap-2 mb-4">
@@ -190,7 +190,7 @@ export default function MaintenancePage() {
                     </div>
                 </div>
 
-                {/* Security Notice */}
+                {}
                 <div className="mb-12 bg-yellow-500/10 backdrop-blur-md rounded-xl p-6 border border-yellow-500/20">
                     <div className="flex items-start gap-4">
                         <div className="w-10 h-10 bg-yellow-500/20 rounded-full flex items-center justify-center flex-shrink-0">
@@ -206,7 +206,7 @@ export default function MaintenancePage() {
                     </div>
                 </div>
 
-                {/* Contact Section */}
+                {}
                 <div className="bg-white/5 backdrop-blur-md rounded-2xl p-8 border border-white/10">
                     <div className="text-center mb-6">
                         <h3 className="text-xl font-bold text-white mb-2">Cần hỗ trợ ngay?</h3>
@@ -237,7 +237,7 @@ export default function MaintenancePage() {
                     </div>
                 </div>
 
-                {/* Footer Note */}
+                {}
                 <div className="mt-8 text-center">
                     <p className="text-xs text-gray-400">
                         © 2026 CNcode. Tất cả các quyền được bảo lưu.
@@ -245,7 +245,7 @@ export default function MaintenancePage() {
                 </div>
             </div>
 
-            {/* Custom Animations */}
+            {}
             <style jsx global>{`
                 @keyframes blob {
                     0% {
