@@ -87,9 +87,15 @@ export const uploadApi = {
                 };
             }
 
+            // Convert relative URL to absolute URL if needed
+            let imageUrl = data.data?.url;
+            if (imageUrl && imageUrl.startsWith('/')) {
+                imageUrl = `${API_URL}${imageUrl}`;
+            }
+
             return {
                 success: true,
-                url: data.data?.url,
+                url: imageUrl,
                 messageId: data.data?.messageId,
                 message: data.message
             };
