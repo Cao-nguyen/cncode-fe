@@ -231,7 +231,7 @@ export default function AdminHelpCenterPage() {
 
     return (
         <div className="space-y-6 pb-8 px-4">
-            {}
+            { }
             <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-50 to-indigo-50/30 p-6 border border-blue-100">
                 <div className="absolute top-0 right-0 w-80 h-80 bg-gradient-to-br from-blue-200/30 to-transparent rounded-full blur-3xl" />
                 <div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -253,7 +253,7 @@ export default function AdminHelpCenterPage() {
                 </div>
             </div>
 
-            {}
+            { }
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div className="bg-white rounded-xl p-4 border border-gray-200">
                     <p className="text-sm text-gray-500">Tổng số</p>
@@ -275,7 +275,7 @@ export default function AdminHelpCenterPage() {
                 </div>
             </div>
 
-            {}
+            { }
             <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
                 <div className="flex flex-wrap gap-3 items-center">
                     <div className="flex-1 min-w-[200px]">
@@ -301,10 +301,10 @@ export default function AdminHelpCenterPage() {
                 </div>
             </div>
 
-            {}
+            { }
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden relative">
 
-                {}
+                { }
                 {tableLoading && (
                     <div className="absolute top-0 left-0 w-full h-0.5 bg-blue-100 overflow-hidden z-20">
                         <div className="w-full h-full bg-blue-500 animate-[loading_1.5s_infinite_linear]" style={{
@@ -371,7 +371,7 @@ export default function AdminHelpCenterPage() {
                     </table>
                 </div>
 
-                {}
+                { }
                 {totalPages > 1 && (
                     <div className="border-t border-gray-200 px-4 py-3 flex items-center justify-between">
                         <div className="text-sm text-gray-500">Tổng: {total} câu hỏi</div>
@@ -388,7 +388,7 @@ export default function AdminHelpCenterPage() {
                 )}
             </div>
 
-            {}
+            { }
             {showModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowModal(false)}>
                     <div className="bg-white rounded-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto shadow-xl" onClick={(e) => e.stopPropagation()}>
@@ -412,7 +412,11 @@ export default function AdminHelpCenterPage() {
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1.5">Câu trả lời <span className="text-red-500">*</span></label>
-                                <CustomEditor ref={editorRef} initialValue={editingFaq?.answer || ''} />
+                                <CustomEditor
+                                    key={editingFaq?._id || 'new'}
+                                    ref={editorRef}
+                                    initialValue={editingFaq?.answer || ''}
+                                />
                             </div>
                             <div className="flex items-center gap-3">
                                 <CustomToggle checked={formData.isActive} onChange={(c) => setFormData(p => ({ ...p, isActive: c }))} />
@@ -427,7 +431,7 @@ export default function AdminHelpCenterPage() {
                 </div>
             )}
 
-            {}
+            { }
             <ConfirmModalDelete
                 isOpen={showDeleteModal}
                 onClose={() => setShowDeleteModal(false)}

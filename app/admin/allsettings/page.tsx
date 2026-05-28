@@ -62,7 +62,7 @@ export default function AdminAllSettingsPage() {
     const [saving, setSaving] = useState<boolean>(false);
     const [savedTab, setSavedTab] = useState<string | null>(null);
     const editorRefs = useRef<Record<string, CustomEditorRef | null>>({});
-    
+
     const [editorKey, setEditorKey] = useState<number>(0);
 
     const fetchSettings = useCallback(async () => {
@@ -117,20 +117,13 @@ export default function AdminAllSettingsPage() {
 
     const handleTabChange = (tabId: string) => {
         setActiveTab(tabId);
-        setEditorKey(prev => prev + 1); 
+        setEditorKey(prev => prev + 1);
     };
 
     const handleEditorRef = (el: CustomEditorRef | null) => {
         if (el) {
             editorRefs.current[activeTab] = el;
-            
-            if (el.setContent && currentValue) {
-                setTimeout(() => {
-                    if (el.getContent() !== currentValue) {
-                        el.setContent(currentValue);
-                    }
-                }, 100);
-            }
+            // Không cần setContent vì đã có initialValue prop và key để force remount
         }
     };
 
@@ -196,7 +189,7 @@ export default function AdminAllSettingsPage() {
                 </div>
 
                 <div className="p-4">
-                    {}
+                    { }
                     <CustomEditor
                         key={`editor-${activeTab}-${editorKey}`}
                         ref={handleEditorRef}

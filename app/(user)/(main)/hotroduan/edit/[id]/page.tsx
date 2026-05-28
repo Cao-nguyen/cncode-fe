@@ -175,7 +175,11 @@ export default function EditHelpProjectPage() {
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">Nội dung dự án <span className="text-red-500">*</span></label>
-                            <CustomEditor ref={editorRef} initialValue={content} />
+                            <CustomEditor
+                                key={params.id as string}
+                                ref={editorRef}
+                                initialValue={content}
+                            />
                             {contentError && <p className="mt-2 text-sm text-red-500">{contentError}</p>}
                         </div>
 

@@ -13,7 +13,6 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast } from 'sonner';
 import { Eye, MessageCircle, CheckCircle, Clock, ChevronLeft, ChevronRight, Search, ShieldCheck, Send, FileText, Trash2, X } from 'lucide-react';
 import StaticContent from '@/components/common/StaticContent';
-import { ImagePreviewModal } from '@/components/custom/ImagePreviewModal';
 import CustomEditor from '@/components/custom/CustomEditor';
 
 const STATUS_OPTIONS = [
@@ -48,8 +47,6 @@ const StatCard = ({ icon, label, value, color }: { icon: React.ReactNode; label:
 );
 
 const ViewProjectModal = ({ isOpen, onClose, project }: { isOpen: boolean; onClose: () => void; project: HelpProject | null }) => {
-    const [previewImage, setPreviewImage] = useState<string | null>(null);
-
     if (!isOpen || !project) return null;
 
     const formatDate = (date: string) => new Date(date).toLocaleDateString('vi-VN', {
@@ -88,11 +85,9 @@ const ViewProjectModal = ({ isOpen, onClose, project }: { isOpen: boolean; onClo
                                 <div className="flex items-center gap-1 text-xs text-gray-400"><Clock className="w-3 h-3" /><span>{formatDate(project.createdAt)}</span></div>
                             </div>
                         </div>
-                        <div onClick={(e) => { const target = e.target as HTMLElement; if (target.tagName === 'IMG') setPreviewImage(target.getAttribute('src')); }}>
-                            <StaticContent content={project.content} />
-                        </div>
+                        <StaticContent content={project.content} />
 
-                        {}
+                        { }
                         {project.replies.length > 0 && (
                             <div className="mt-6 pt-4 border-t border-gray-200">
                                 <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
@@ -129,7 +124,6 @@ const ViewProjectModal = ({ isOpen, onClose, project }: { isOpen: boolean; onClo
                     </div>
                 </div>
             </div>
-            <ImagePreviewModal src={previewImage} isOpen={!!previewImage} onClose={() => setPreviewImage(null)} />
         </>
     );
 };
@@ -217,7 +211,7 @@ const StatusModal = ({ isOpen, onClose, project, onSuccess }: { isOpen: boolean;
                 className="bg-white rounded-2xl w-full max-w-md overflow-hidden"
                 onClick={(e) => e.stopPropagation()}
             >
-                {}
+                { }
                 <div className="sticky top-0 z-50 bg-white px-5 py-4 border-b border-gray-200 flex justify-between items-center rounded-t-2xl">
                     <h3 className="text-lg font-semibold text-gray-800">
                         Cập nhật trạng thái
@@ -231,7 +225,7 @@ const StatusModal = ({ isOpen, onClose, project, onSuccess }: { isOpen: boolean;
                     </button>
                 </div>
 
-                {}
+                { }
                 <div className="p-5 space-y-4">
                     <CustomSelect
                         label="Trạng thái"
@@ -243,7 +237,7 @@ const StatusModal = ({ isOpen, onClose, project, onSuccess }: { isOpen: boolean;
                     />
                 </div>
 
-                {}
+                { }
                 <div className="flex justify-end gap-3 p-5 pt-0">
                     <CustomButton variant="secondary" onClick={onClose}>
                         Hủy
@@ -258,8 +252,6 @@ const StatusModal = ({ isOpen, onClose, project, onSuccess }: { isOpen: boolean;
 };
 
 const ViewRepliesModal = ({ isOpen, onClose, project, onSuccess }: { isOpen: boolean; onClose: () => void; project: HelpProject | null; onSuccess: () => void }) => {
-    const [previewImage, setPreviewImage] = useState<string | null>(null);
-
     if (!isOpen || !project) return null;
 
     const formatDate = (date: string) => new Date(date).toLocaleDateString('vi-VN', {
@@ -314,9 +306,7 @@ const ViewRepliesModal = ({ isOpen, onClose, project, onSuccess }: { isOpen: boo
                                                     {isAdmin && <span className="text-xs bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded">Admin</span>}
                                                     <span className="text-xs text-gray-400">{formatDate(reply.createdAt)}</span>
                                                 </div>
-                                                <div onClick={(e) => { const target = e.target as HTMLElement; if (target.tagName === 'IMG') setPreviewImage(target.getAttribute('src')); }}>
-                                                    <StaticContent content={reply.content} />
-                                                </div>
+                                                <StaticContent content={reply.content} />
                                             </div>
                                         </div>
                                     );
@@ -326,7 +316,6 @@ const ViewRepliesModal = ({ isOpen, onClose, project, onSuccess }: { isOpen: boo
                     </div>
                 </div>
             </div>
-            <ImagePreviewModal src={previewImage} isOpen={!!previewImage} onClose={() => setPreviewImage(null)} />
         </>
     );
 };

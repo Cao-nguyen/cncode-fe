@@ -19,6 +19,7 @@ const PAGE_TITLES: Record<string, string> = {
     "/admin/faq": "Góc hỏi đáp",
     "/admin/sendmail": "Gửi Email",
     "/admin/hotroduan": "Hỗ trợ dự án",
+    "/admin/blog": "Quản lý Blog",
 };
 
 interface NavAdminProps {
@@ -54,9 +55,9 @@ export default function NavAdmin({ open, onToggle }: NavAdminProps) {
     return (
         <div className="rounded-t-2xl bg-white dark:bg-[#0f0f0f]">
             <header className="flex h-14 items-center justify-between px-2 sm:px-4">
-                {}
+                { }
                 <div className="flex items-center gap-1 sm:gap-2">
-                    {}
+                    { }
                     <button
                         onClick={onToggle}
                         className={btnBase}
@@ -70,10 +71,10 @@ export default function NavAdmin({ open, onToggle }: NavAdminProps) {
                         />
                     </button>
 
-                    {}
+                    { }
                     {!isMobile && <div className="mx-1 h-5 w-px bg-black/[0.1] dark:bg-white/[0.1]" />}
 
-                    {}
+                    { }
                     <div className="flex items-center gap-1 sm:gap-1.5 text-[10px] sm:text-[12.5px]">
                         <span className="text-gray-400 dark:text-gray-500 hidden sm:inline">Admin</span>
                         <span className="text-gray-400 dark:text-gray-500 sm:hidden">A</span>
@@ -85,9 +86,9 @@ export default function NavAdmin({ open, onToggle }: NavAdminProps) {
                     </div>
                 </div>
 
-                {}
+                { }
                 <div className="flex items-center gap-0.5 sm:gap-1">
-                    {}
+                    { }
                     <button
                         onClick={() => router.push("/")}
                         className={btnBase}
@@ -96,16 +97,16 @@ export default function NavAdmin({ open, onToggle }: NavAdminProps) {
                         <House size={18} />
                     </button>
 
-                    {}
+                    { }
                     {!isMobile && <div className="mx-1 h-5 w-px bg-black/[0.1] dark:bg-white/[0.1]" />}
 
-                    {}
+                    { }
                     <NotificationBell />
 
-                    {}
+                    { }
                     {!isMobile && <div className="mx-1 h-5 w-px bg-black/[0.1] dark:bg-white/[0.1]" />}
 
-                    {}
+                    { }
                     <button
                         onClick={handleLogout}
                         className="flex items-center gap-1 sm:gap-1.5 rounded-lg px-2 sm:px-3 py-2 text-[10px] sm:text-[12.5px] font-medium text-red-500 transition-colors hover:bg-red-50 dark:hover:bg-red-500/10"

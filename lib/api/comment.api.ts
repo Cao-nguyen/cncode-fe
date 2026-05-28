@@ -158,7 +158,7 @@ export const commentApi = {
 
     getReactionUsers: async (token: string, commentId: string, reactionType?: string, page = 1, limit = 50) => {
         try {
-            
+
             let url = `${API_URL}/api/comments/${commentId}/reactions?page=${page}&limit=${limit}`;
             if (reactionType && reactionType !== 'all') {
                 url += `&type=${reactionType}`;
@@ -177,7 +177,7 @@ export const commentApi = {
 
             return {
                 success: true,
-                data: data.data,
+                data: data.data || [],
                 total: data.total,
                 page: data.page,
                 totalPages: data.totalPages

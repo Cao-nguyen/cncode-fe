@@ -634,7 +634,7 @@ const UploadImageModal: React.FC<UploadImageModalProps> = ({ onClose, onConfirm,
                 reader.readAsDataURL(blob);
             });
 
-            const result = await uploadApi.uploadFile(base64, 'editor');
+            const result = await uploadApi.uploadImage(base64, 'editor');
 
             if (!result?.success || !result.url) {
                 toast.error(result?.message || "Upload thất bại");
@@ -1297,6 +1297,7 @@ const CustomEditor = forwardRef<CustomEditorRef, CustomEditorProps>(({ initialVa
 
     const imageCounter = useRef(0);
     const tableCounter = useRef(0);
+    const hasInitialized = useRef(false);
     const [imageWidgets, setImageWidgets] = useState<Map<string, { src: string; alt: string }>>(new Map());
     const [tableWidgets, setTableWidgets] = useState<Map<string, { rows: number; cols: number }>>(new Map());
 
@@ -1431,19 +1432,19 @@ const CustomEditor = forwardRef<CustomEditorRef, CustomEditorProps>(({ initialVa
         });
     }, [deleteTable]);
 
+    // Set initial content only once on mount - use ref to prevent re-initialization
     useEffect(() => {
-        if (editorRef.current && initialValue) {
-            // FIX 3: Chỉ set innerHTML lần đầu tiên, không re-render khi initialValue thay đổi
-            if (!editorRef.current.innerHTML || editorRef.current.innerHTML === '<p><br></p>') {
-                editorRef.current.innerHTML = initialValue;
-                updateStatus();
-                setTimeout(() => {
-                    mountImageWidgets();
-                    mountTableWidgets();
-                }, 0);
-            }
+        if (editorRef.current && !hasInitialized.current) {
+            hasInitialized.current = true;
+            editorRef.current.innerHTML = initialValue || '<p><br></p>';
+            updateStatus();
+            setTimeout(() => {
+                mountImageWidgets();
+                mountTableWidgets();
+            }, 0);
         }
-    }, [initialValue, updateStatus, mountImageWidgets, mountTableWidgets]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []); // Empty deps - only run once on mount, ignore initialValue changes
 
     useEffect(() => {
         if (!editorRef.current) return;

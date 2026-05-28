@@ -138,13 +138,16 @@ export default function CNBooksPage() {
     return (
         <div className="min-h-screen bg-gray-50 py-8">
             <div className="container mx-auto px-4 max-w-7xl">
-                {}
+                { }
                 <div className="text-center mb-8">
-                    <h1 className="text-3xl font-bold text-gray-800 mb-2">📚 CNBooks - Thư viện sách điện tử</h1>
+                    <h1 className="text-3xl font-bold text-gray-800 mb-2 flex items-center gap-2">
+                        <BookOpen className="w-8 h-8 text-blue-600" />
+                        CNBooks - Thư viện sách điện tử
+                    </h1>
                     <p className="text-gray-500">Khám phá kho tàng kiến thức với các đầu sách chất lượng cao</p>
                 </div>
 
-                {}
+                { }
                 <div className="flex flex-wrap gap-2 mb-6 justify-center">
                     {CATEGORIES.map(cat => (
                         <button
@@ -160,7 +163,7 @@ export default function CNBooksPage() {
                     ))}
                 </div>
 
-                {}
+                { }
                 <div className="flex flex-col sm:flex-row gap-4 mb-8">
                     <div className="flex-1">
                         <CustomInput
@@ -180,7 +183,7 @@ export default function CNBooksPage() {
                     </div>
                 </div>
 
-                {}
+                { }
                 {loading ? (
                     <div className="flex justify-center py-12">
                         <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />

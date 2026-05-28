@@ -12,13 +12,15 @@ import {
     Check,
     MessageCircle,
     Heart,
-    AlertTriangle
+    AlertTriangle,
+    Loader2
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { useAuthStore } from '@/store/auth.store';
 import { toast } from 'sonner';
 import { CustomTextarea } from '@/components/custom/CustomTextarea';
+import { commentApi } from '@/lib/api/comment.api';
 
 interface CommentUser {
     _id: string;
@@ -165,6 +167,14 @@ export default function CommentItem({
         useState(false);
     const [selectedReason, setSelectedReason] = useState('');
     const [customReason, setCustomReason] = useState('');
+    const [showReactionModal, setShowReactionModal] = useState(false);
+    const [reactionUsers, setReactionUsers] = useState<Array<{
+        userId: CommentUser;
+        reactionType: string;
+        createdAt: string;
+    }>>([]);
+    const [loadingReactions, setLoadingReactions] = useState(false);
+    const [selectedReactionTab, setSelectedReactionTab] = useState('all');
 
     const reactionPickerRef = useRef<HTMLDivElement>(null);
     const moreMenuRef = useRef<HTMLDivElement>(null);
@@ -352,6 +362,39 @@ export default function CommentItem({
         )
         : null;
 
+    const fetchReactionUsers = async (reactionType: string = 'all') => {
+        const { token } = useAuthStore.getState();
+        if (!token) return;
+
+        setLoadingReactions(true);
+        try {
+            const result = await commentApi.getReactionUsers(
+                token,
+                comment._id,
+                reactionType === 'all' ? undefined : reactionType
+            );
+            console.log('Reaction users result:', result);
+            if (result.success) {
+                console.log('Setting reaction users:', result.data);
+                setReactionUsers(result.data || []);
+            }
+        } catch (error) {
+            console.error('Fetch reaction users error:', error);
+        } finally {
+            setLoadingReactions(false);
+        }
+    };
+
+    const handleOpenReactionModal = () => {
+        setShowReactionModal(true);
+        fetchReactionUsers('all');
+    };
+
+    const handleReactionTabChange = (tab: string) => {
+        setSelectedReactionTab(tab);
+        fetchReactionUsers(tab);
+    };
+
     return (
         <>
             <div
@@ -461,7 +504,7 @@ export default function CommentItem({
                                     />
                                 </button>
 
-                                {}
+                                { }
                                 {showMoreMenu && (
                                     <div
                                         ref={moreMenuRef}
@@ -571,10 +614,10 @@ export default function CommentItem({
                         )}
                     </div>
 
-                    {}
+                    { }
                     {!comment.isDeleted && (
                         <div className="relative">
-                            {}
+                            { }
                             {showReactionPicker && (
                                 <div
                                     ref={reactionPickerRef}
@@ -647,11 +690,6 @@ export default function CommentItem({
                                             </span>
                                         </>
                                     )}
-                                    {reactionCount > 0 && (
-                                        <span className="text-gray-500 ml-0.5">
-                                            {reactionCount}
-                                        </span>
-                                    )}
                                 </button>
 
                                 <button
@@ -678,30 +716,32 @@ export default function CommentItem({
                                         <span>({comment.replyCount})</span>
                                     )}
                                 </button>
-                            </div>
 
-                            {}
-                            {reactionCount > 0 && (
-                                <div className="mt-1 ml-1 flex items-center gap-0.5">
-                                    {activeReactions
-                                        .slice(0, 3)
-                                        .map((reaction, idx) => (
-                                            <img
-                                                key={`${reaction.type}-${idx}`}
-                                                src={reaction.icon}
-                                                alt={reaction.label}
-                                                className="w-3.5 h-3.5"
-                                            />
-                                        ))}
-                                    <span className="text-xs text-gray-500 ml-0.5">
-                                        {reactionCount}
-                                    </span>
-                                </div>
-                            )}
+                                {reactionCount > 0 && (
+                                    <button
+                                        onClick={handleOpenReactionModal}
+                                        className="flex items-center gap-1 px-2 py-1 cursor-pointer hover:bg-gray-100 rounded-lg transition"
+                                    >
+                                        {activeReactions
+                                            .slice(0, 3)
+                                            .map((reaction, idx) => (
+                                                <img
+                                                    key={`${reaction.type}-${idx}`}
+                                                    src={reaction.icon}
+                                                    alt={reaction.label}
+                                                    className="w-3.5 h-3.5"
+                                                />
+                                            ))}
+                                        <span className="text-xs text-gray-500 font-medium">
+                                            {reactionCount}
+                                        </span>
+                                    </button>
+                                )}
+                            </div>
                         </div>
                     )}
 
-                    {}
+                    { }
                     {showReplyInput && (
                         <div className="mt-3 flex gap-2">
                             <CustomTextarea
@@ -759,7 +799,7 @@ export default function CommentItem({
                         </div>
                     )}
 
-                    {}
+                    { }
                     {replies.length > 0 && (
                         <div className="mt-3 space-y-3">
                             {visibleReplies.map(
@@ -819,7 +859,7 @@ export default function CommentItem({
                 </div>
             </div>
 
-            {}
+            { }
             {showReportModal && (
                 <div
                     className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4"
@@ -927,6 +967,115 @@ export default function CommentItem({
                                 <Flag size={16} />
                                 Gửi báo cáo
                             </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Reaction Modal */}
+            {showReactionModal && (
+                <div
+                    className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4"
+                    onClick={() => setShowReactionModal(false)}
+                >
+                    <div
+                        className="bg-white rounded-xl w-full max-w-md max-h-[80vh] overflow-hidden shadow-xl"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {/* Header */}
+                        <div className="sticky top-0 bg-white px-5 py-4 border-b border-gray-100 flex justify-between items-center z-10">
+                            <h3 className="text-lg font-semibold text-gray-800">
+                                Cảm xúc ({reactionCount})
+                            </h3>
+                            <button
+                                onClick={() => setShowReactionModal(false)}
+                                className="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 hover:bg-gray-200 transition"
+                            >
+                                <X size={16} className="text-gray-500" />
+                            </button>
+                        </div>
+
+                        {/* Tabs */}
+                        <div className="flex gap-1 px-5 py-3 border-b border-gray-100 overflow-x-auto">
+                            <button
+                                onClick={() => handleReactionTabChange('all')}
+                                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition whitespace-nowrap ${selectedReactionTab === 'all'
+                                    ? 'bg-blue-500 text-white'
+                                    : 'text-gray-600 hover:bg-gray-100'
+                                    }`}
+                            >
+                                Tất cả {reactionCount > 0 && `(${reactionCount})`}
+                            </button>
+                            {activeReactions.map((reaction) => (
+                                <button
+                                    key={reaction.type}
+                                    onClick={() => handleReactionTabChange(reaction.type)}
+                                    className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium transition whitespace-nowrap ${selectedReactionTab === reaction.type
+                                        ? 'bg-blue-500 text-white'
+                                        : 'text-gray-600 hover:bg-gray-100'
+                                        }`}
+                                >
+                                    <img src={reaction.icon} alt={reaction.label} className="w-4 h-4" />
+                                    {comment.reactions[reaction.type]}
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* User List */}
+                        <div className="overflow-y-auto max-h-[50vh]">
+                            {loadingReactions ? (
+                                <div className="flex justify-center py-8">
+                                    <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
+                                </div>
+                            ) : reactionUsers.length === 0 ? (
+                                <div className="text-center py-8 text-gray-400">
+                                    <p>Chưa có ai thả cảm xúc</p>
+                                </div>
+                            ) : (
+                                <div className="divide-y divide-gray-100">
+                                    {reactionUsers.map((item, index) => {
+                                        console.log('Rendering user item:', item);
+                                        const reactionType = REACTION_TYPES.find(r => r.type === item.reactionType);
+
+                                        if (!item.userId) {
+                                            console.warn('Missing userId for item:', item);
+                                            return null;
+                                        }
+
+                                        return (
+                                            <div key={index} className="flex items-center gap-3 px-5 py-3 hover:bg-gray-50 transition">
+                                                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center overflow-hidden flex-shrink-0">
+                                                    {item.userId.avatar ? (
+                                                        <Image
+                                                            src={item.userId.avatar}
+                                                            alt={item.userId.fullName || 'User'}
+                                                            width={40}
+                                                            height={40}
+                                                            className="w-full h-full object-cover"
+                                                        />
+                                                    ) : (
+                                                        <span className="text-white font-bold text-sm">
+                                                            {item.userId.fullName?.charAt(0).toUpperCase() || 'U'}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="font-semibold text-sm text-gray-800 truncate">
+                                                        {item.userId.fullName || 'Người dùng'}
+                                                    </p>
+                                                </div>
+                                                {reactionType && (
+                                                    <img
+                                                        src={reactionType.icon}
+                                                        alt={reactionType.label}
+                                                        className="w-6 h-6 flex-shrink-0"
+                                                    />
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

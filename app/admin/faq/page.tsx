@@ -19,7 +19,6 @@ import { CustomInputSearch } from '@/components/custom/CustomInputSearch';
 import { CustomButton } from '@/components/custom/CustomButton';
 import { CustomSelect } from '@/components/custom/CustomSelect';
 import { ConfirmModalDelete } from '@/components/custom/ConfirmationModal';
-import { ImagePreviewModal } from '@/components/custom/ImagePreviewModal';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
@@ -61,7 +60,6 @@ const StatCard = ({ icon, label, value, color }: { icon: React.ReactNode; label:
 const ViewQuestionModal = ({ isOpen, onClose, question }: { isOpen: boolean; onClose: () => void; question: Question | null }) => {
     const [answers, setAnswers] = useState<Answer[]>([]);
     const [loading, setLoading] = useState(false);
-    const [previewImage, setPreviewImage] = useState<string | null>(null);
 
     const fetchAnswers = useCallback(async () => {
         if (!question) return;
@@ -113,9 +111,7 @@ const ViewQuestionModal = ({ isOpen, onClose, question }: { isOpen: boolean; onC
                                 </div>
                             </div>
                             <h3 className="text-2xl font-extrabold text-[var(--cn-text-main)] mb-4 leading-tight">{question.title}</h3>
-                            <div onClick={(e) => { const t = e.target as HTMLElement; if (t.tagName === 'IMG') setPreviewImage(t.getAttribute('src')); }}>
-                                <StaticContent content={question.content} className="mb-5" />
-                            </div>
+                            <StaticContent content={question.content} className="mb-5" />
                             <div className="flex items-center gap-4 text-xs font-bold text-[var(--cn-text-muted)]">
                                 <div className="flex items-center gap-1.5 bg-[var(--cn-bg-section)] px-3 py-1.5 rounded-full"><Eye className="w-3.5 h-3.5" /><span>{question.viewCount}</span></div>
                                 <div className="flex items-center gap-1.5 bg-[var(--cn-bg-section)] px-3 py-1.5 rounded-full"><MessageCircle className="w-3.5 h-3.5" /><span>{answers.length}</span></div>
@@ -143,7 +139,7 @@ const ViewQuestionModal = ({ isOpen, onClose, question }: { isOpen: boolean; onC
                                                 <span className="text-[10px] text-[var(--cn-text-muted)]">{formatDate(answer.createdAt)}</span>
                                             </div>
                                         </div>
-                                        <div onClick={(e) => { const t = e.target as HTMLElement; if (t.tagName === 'IMG') setPreviewImage(t.getAttribute('src')); }}><StaticContent content={answer.content} className="mb-3" /></div>
+                                        <StaticContent content={answer.content} className="mb-3" />
                                     </div>
                                 ))
                             )}
@@ -151,7 +147,6 @@ const ViewQuestionModal = ({ isOpen, onClose, question }: { isOpen: boolean; onC
                     </div>
                 </div>
             </div>
-            <ImagePreviewModal src={previewImage} isOpen={!!previewImage} onClose={() => setPreviewImage(null)} />
         </>
     );
 };

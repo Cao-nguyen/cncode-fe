@@ -19,7 +19,6 @@ import { CustomSelect } from '@/components/custom/CustomSelect';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { ConfirmModalDelete } from '@/components/custom/ConfirmationModal';
-import { ImagePreviewModal } from '@/components/custom/ImagePreviewModal';
 import { toast } from 'sonner';
 
 const getUserId = (): string | null => {
@@ -224,7 +223,6 @@ export default function QuestionDetailPage() {
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-    const [previewImage, setPreviewImage] = useState<string | null>(null);
     const [deleting, setDeleting] = useState(false);
 
     const [reportTarget, setReportTarget] = useState<{ type: 'question' | 'answer'; id: string; title: string } | null>(null);
@@ -254,8 +252,6 @@ export default function QuestionDetailPage() {
     useEffect(() => {
         if (params.slug) fetchData();
     }, [params.slug, fetchData]);
-
-    const handleImageClick = (src: string) => { setPreviewImage(src); };
 
     const handleLikeQuestion = async () => {
         if (!question) return;
@@ -293,7 +289,7 @@ export default function QuestionDetailPage() {
             const res = await faqApi.createAnswer({ questionId: question._id, content });
             if (res.success) {
                 editorRef.current?.setContent('');
-                await fetchData(true); 
+                await fetchData(true);
             }
         } catch (error) { toast.error(getErrorMessage(error)); }
         finally { setSubmitting(false); }
@@ -304,7 +300,7 @@ export default function QuestionDetailPage() {
         try {
             await faqApi.updateQuestion(question._id, { title, content });
             toast.success('Cập nhật câu hỏi thành công');
-            await fetchData(true); 
+            await fetchData(true);
         } catch (error) { toast.error(getErrorMessage(error)); }
     };
 
@@ -323,7 +319,7 @@ export default function QuestionDetailPage() {
         try {
             await faqApi.updateAnswer(answerId, content);
             toast.success('Cập nhật câu trả lời thành công');
-            await fetchData(true); 
+            await fetchData(true);
         } catch (error) { toast.error(getErrorMessage(error)); }
     };
 
@@ -339,7 +335,7 @@ export default function QuestionDetailPage() {
             toast.success('Câu trả lời đã được xóa.');
             setDeleteAnswerTarget(null);
         } catch (error) {
-            setAnswers(oldAnswers); 
+            setAnswers(oldAnswers);
             toast.error(getErrorMessage(error));
         } finally {
             setDeleting(false);
@@ -423,9 +419,7 @@ export default function QuestionDetailPage() {
                         </div>
                     </div>
 
-                    <div onClick={(e) => { const target = e.target as HTMLElement; if (target.tagName === 'IMG') handleImageClick(target.getAttribute('src') || ''); }}>
-                        <StaticContent content={question.content} />
-                    </div>
+                    <StaticContent content={question.content} />
 
                     <div className="flex flex-wrap items-center gap-4 pt-4 border-t border-[var(--cn-border)]">
                         <div className="flex items-center gap-1.5 text-[var(--cn-text-muted)] bg-[var(--cn-bg-section)] px-3 py-1.5 rounded-full"><Eye className="w-4 h-4" /><span className="text-sm">{question.viewCount} lượt xem</span></div>
@@ -473,9 +467,7 @@ export default function QuestionDetailPage() {
                                         <button onClick={() => setReportTarget({ type: 'answer', id: answer._id, title: `Câu trả lời của ${answerDisplayName}` })} className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors" title="Báo cáo"><Flag className="w-4 h-4" /></button>
                                     </div>
                                 </div>
-                                <div onClick={(e) => { const target = e.target as HTMLElement; if (target.tagName === 'IMG') handleImageClick(target.getAttribute('src') || ''); }}>
-                                    <StaticContent content={answer.content} />
-                                </div>
+                                <StaticContent content={answer.content} />
                                 <div className="flex items-center gap-3 pt-2 border-t border-[var(--cn-border)]">
                                     <button onClick={() => handleLikeAnswer(answer._id)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm transition-all duration-300 ${answer.isLiked ? 'bg-red-50 text-red-500' : 'bg-gray-50 text-gray-500 hover:bg-red-50 hover:text-red-500'}`}>
                                         <Heart className={`w-3.5 h-3.5 transition-all duration-300 ${answer.isLiked ? 'scale-110' : ''}`} data-filled={answer.isLiked ? "true" : "false"} fill={answer.isLiked ? "currentColor" : "none"} />
@@ -514,13 +506,11 @@ export default function QuestionDetailPage() {
                 )}
             </div>
 
-            {}
             <ReportModal key={reportTarget?.id} isOpen={!!reportTarget} onClose={() => setReportTarget(null)} onSubmit={handleReport} title={reportTarget?.title || ''} />
             <EditAnswerModal key={editAnswerTarget?._id} isOpen={!!editAnswerTarget} onClose={() => setEditAnswerTarget(null)} onSubmit={(content) => handleUpdateAnswer(editAnswerTarget!._id, content)} initialContent={editAnswerTarget?.content || ''} />
             <EditQuestionModal key={editQuestionTarget?._id} isOpen={!!editQuestionTarget} onClose={() => setEditQuestionTarget(null)} onSubmit={handleUpdateQuestion} initialTitle={editQuestionTarget?.title || ''} initialContent={editQuestionTarget?.content || ''} />
             <ConfirmModalDelete isOpen={deleteQuestionConfirm} onClose={() => setDeleteQuestionConfirm(false)} onConfirm={handleDeleteQuestion} title="Xóa câu hỏi" message={`Bạn có chắc chắn muốn xóa câu hỏi "${question?.title}"?`} warning="Tất cả câu trả lời sẽ bị xóa vĩnh viễn." />
             <ConfirmModalDelete isOpen={!!deleteAnswerTarget} onClose={() => setDeleteAnswerTarget(null)} onConfirm={handleDeleteAnswer} title="Xóa câu trả lời" message="Bạn có chắc chắn muốn xóa câu trả lời này?" warning="Hành động này không thể hoàn tác." />
-            <ImagePreviewModal src={previewImage} isOpen={!!previewImage} onClose={() => setPreviewImage(null)} />
         </div>
     );
 }

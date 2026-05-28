@@ -64,6 +64,11 @@ const menuItems = [
         category: "Quản lí nội dung",
         categoryId: "content",
         listLink: [
+            {
+                title: "Quản lý Blog",
+                link: "/admin/blog",
+                icon: <Document size={18} variant="Outline" />,
+            },
         ],
     },
     {

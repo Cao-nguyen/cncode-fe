@@ -13,7 +13,6 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast } from 'sonner';
 import { ArrowLeft, Calendar, MessageCircle, Edit2, Trash2, Send } from 'lucide-react';
 import StaticContent from '@/components/common/StaticContent';
-import { ImagePreviewModal } from '@/components/custom/ImagePreviewModal';
 import { ConfirmModalDelete } from '@/components/custom/ConfirmationModal';
 
 const getUserInitial = (name: string): string => name?.charAt(0).toUpperCase() || '?';
@@ -53,7 +52,6 @@ export default function HelpProjectDetailPage() {
     const [project, setProject] = useState<HelpProject | null>(null);
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
-    const [previewImage, setPreviewImage] = useState<string | null>(null);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [deleting, setDeleting] = useState(false);
     const currentUserId = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('auth-storage') || '{}')?.state?.user?._id : null;
@@ -187,9 +185,7 @@ export default function HelpProjectDetailPage() {
                             </div>
                         </div>
 
-                        <div onClick={(e) => { const target = e.target as HTMLElement; if (target.tagName === 'IMG') setPreviewImage(target.getAttribute('src')); }}>
-                            <StaticContent content={project.content} />
-                        </div>
+                        <StaticContent content={project.content} />
                     </div>
                 </div>
 
@@ -219,7 +215,6 @@ export default function HelpProjectDetailPage() {
                 </div>
             </div>
 
-            <ImagePreviewModal src={previewImage} isOpen={!!previewImage} onClose={() => setPreviewImage(null)} />
             <ConfirmModalDelete isOpen={showDeleteConfirm} onClose={() => setShowDeleteConfirm(false)} onConfirm={handleDelete} title="Xóa dự án" message={`Bạn có chắc chắn muốn xóa dự án "${project.title}"?`} warning="Hành động này không thể hoàn tác." isDeleting={deleting} />
         </div>
     );

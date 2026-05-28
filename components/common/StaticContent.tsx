@@ -1,5 +1,8 @@
 'use client';
 
+import { useState } from 'react';
+import { ImagePreviewModal } from '@/components/custom/ImagePreviewModal';
+
 interface StaticContentProps {
   content: string;
   className?: string;
@@ -199,14 +202,54 @@ const editorStyles = `
   .static-editor tr:hover td {
     background: #f9fafb;
   }
+
+  /* Images */
+  .static-editor img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    margin: 1em 0;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+
+  .static-editor img:hover {
+    transform: scale(1.02);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
 `;
 
 export default function StaticContent({ content, className }: StaticContentProps) {
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+
+  const handleClick = (e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    if (target.tagName === 'IMG') {
+      const img = target as HTMLImageElement;
+      setPreviewImage(img.src);
+      setIsPreviewOpen(true);
+    }
+  };
+
+  const handleClosePreview = () => {
+    setIsPreviewOpen(false);
+    setPreviewImage(null);
+  };
+
   return (
     <>
       <style jsx global>{editorStyles}</style>
-      <div className={`static-editor${className ? ` ${className}` : ''}`}
+      <div
+        className={`static-editor${className ? ` ${className}` : ''}`}
         dangerouslySetInnerHTML={{ __html: content }}
+        onClick={handleClick}
+      />
+
+      <ImagePreviewModal
+        src={previewImage}
+        isOpen={isPreviewOpen}
+        onClose={handleClosePreview}
       />
     </>
   );

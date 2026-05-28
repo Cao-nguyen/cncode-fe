@@ -7,11 +7,12 @@ import { useSocket } from '@/providers/socket.provider';
 import { commentApi, CommentType } from '@/lib/api/comment.api';
 import CommentItem from './CommentItem';
 import { CustomTextarea } from '@/components/custom/CustomTextarea';
+import { DeleteConfirmModal } from '@/components/custom/DeleteConfirmModal';
 import { Loader2, Send } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface CommentSectionProps {
-    targetType: 'post' | 'lesson' | 'workspace' | 'task' | 'feedback' | 'feed' | 'short_video';
+    targetType: 'post' | 'lesson' | 'workspace' | 'task' | 'feedback' | 'feed' | 'short_video' | 'blog';
     targetId: string;
 }
 
@@ -25,6 +26,9 @@ export default function CommentSection({ targetType, targetId }: CommentSectionP
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [hasMore, setHasMore] = useState(false);
+    const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+    const [commentToDelete, setCommentToDelete] = useState<string | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     const fetchComments = useCallback(async (pageNum: number = 1, append: boolean = false) => {
         try {
@@ -202,17 +206,28 @@ export default function CommentSection({ targetType, targetId }: CommentSectionP
 
     const handleDelete = async (commentId: string) => {
         if (!token) return;
+        setCommentToDelete(commentId);
+        setDeleteModalOpen(true);
+    };
 
-        if (confirm('Bạn có chắc chắn muốn xóa bình luận này không?')) {
-            try {
-                const result = await commentApi.deleteComment(token, commentId);
-                if (result.success) {
-                    toast.success('Xóa bình luận thành công');
-                    fetchComments(page);
-                }
-            } catch (error) {
-                toast.error('Xóa thất bại');
+    const confirmDelete = async () => {
+        if (!token || !commentToDelete) return;
+
+        setIsDeleting(true);
+        try {
+            const result = await commentApi.deleteComment(token, commentToDelete);
+            if (result.success) {
+                toast.success('Xóa bình luận thành công');
+                setDeleteModalOpen(false);
+                setCommentToDelete(null);
+                fetchComments(page);
+            } else {
+                toast.error(result.message || 'Xóa thất bại');
             }
+        } catch (error) {
+            toast.error('Xóa thất bại');
+        } finally {
+            setIsDeleting(false);
         }
     };
 
@@ -248,9 +263,17 @@ export default function CommentSection({ targetType, targetId }: CommentSectionP
 
             {user ? (
                 <div className="flex gap-3 mb-6">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
-                        {user.fullName?.charAt(0).toUpperCase() || 'U'}
-                    </div>
+                    {user.avatar ? (
+                        <img
+                            src={user.avatar}
+                            alt={user.fullName || 'User'}
+                            className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+                        />
+                    ) : (
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                            {user.fullName?.charAt(0).toUpperCase() || 'U'}
+                        </div>
+                    )}
                     <div className="flex-1">
                         <CustomTextarea
                             value={newComment}
@@ -314,6 +337,19 @@ export default function CommentSection({ targetType, targetId }: CommentSectionP
                     </button>
                 </div>
             )}
+
+            <DeleteConfirmModal
+                isOpen={deleteModalOpen}
+                onClose={() => {
+                    setDeleteModalOpen(false);
+                    setCommentToDelete(null);
+                }}
+                onConfirm={confirmDelete}
+                title="Xóa bình luận"
+                message="Bạn có chắc chắn muốn xóa bình luận này không?"
+                warning="Bình luận đã xóa sẽ không thể khôi phục."
+                isDeleting={isDeleting}
+            />
         </div>
     );
 }
