@@ -1,4 +1,16 @@
 import axios from 'axios';
+import type {
+    Blog,
+    CreateBlogData,
+    UpdateBlogData,
+    BlogStats,
+    BlogGrowthData,
+    TopBlogData,
+    GetBlogsParams,
+    GetBlogsAdminParams,
+    ApiResponse,
+    BlogPagination
+} from '@/types/blog';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
@@ -29,39 +41,10 @@ apiClient.interceptors.request.use((config) => {
     return config;
 });
 
-export interface Blog {
-    _id: string;
-    title: string;
-    slug: string;
-    thumbnail: string;
-    excerpt: string;
-    content: string;
-    author: {
-        _id: string;
-        fullName: string;
-        avatar?: string;
-        email?: string;
-    };
-    category: 'technology' | 'education' | 'tutorial' | 'news' | 'other';
-    tags: string[];
-    isPublished: boolean;
-    publishedAt?: string;
-    viewCount: number;
-    likeCount: number;
-    commentCount: number;
-    createdAt: string;
-    updatedAt: string;
-}
-
 export interface BlogsResponse {
     success: boolean;
     data: Blog[];
-    pagination: {
-        page: number;
-        limit: number;
-        total: number;
-        totalPages: number;
-    };
+    pagination: BlogPagination;
     message?: string;
 }
 
@@ -73,13 +56,7 @@ export interface BlogResponse {
 
 export const blogApi = {
     // Public APIs
-    getBlogs: async (params?: {
-        page?: number;
-        limit?: number;
-        category?: string;
-        search?: string;
-        sort?: string;
-    }): Promise<BlogsResponse> => {
+    getBlogs: async (params?: GetBlogsParams): Promise<BlogsResponse> => {
         const queryParams = new URLSearchParams();
         if (params?.page) queryParams.append('page', params.page.toString());
         if (params?.limit) queryParams.append('limit', params.limit.toString());
@@ -102,54 +79,27 @@ export const blogApi = {
     },
 
     // Admin APIs
-    getBlogStats: async (): Promise<{
-        success: boolean;
-        data: {
-            total: number;
-            published: number;
-            draft: number;
-            totalViews: number;
-        };
-        message?: string;
-    }> => {
+    getBlogStats: async (): Promise<ApiResponse<BlogStats>> => {
         const response = await apiClient.get('/blog/admin/stats');
         return response.data;
     },
 
-    getBlogGrowthChart: async (days?: number): Promise<{
-        success: boolean;
-        data: Array<{ date: string; count: number }>;
-        message?: string;
-    }> => {
+    getBlogGrowthChart: async (days?: number): Promise<ApiResponse<BlogGrowthData[]>> => {
         const response = await apiClient.get(`/blog/admin/growth-chart${days ? `?days=${days}` : ''}`);
         return response.data;
     },
 
-    getTopViewedBlogs: async (limit?: number): Promise<{
-        success: boolean;
-        data: Array<{ _id: string; title: string; viewCount: number; thumbnail: string }>;
-        message?: string;
-    }> => {
+    getTopViewedBlogs: async (limit?: number): Promise<ApiResponse<TopBlogData[]>> => {
         const response = await apiClient.get(`/blog/admin/top-viewed${limit ? `?limit=${limit}` : ''}`);
         return response.data;
     },
 
-    getTopLikedBlogs: async (limit?: number): Promise<{
-        success: boolean;
-        data: Array<{ _id: string; title: string; likeCount: number; thumbnail: string }>;
-        message?: string;
-    }> => {
+    getTopLikedBlogs: async (limit?: number): Promise<ApiResponse<TopBlogData[]>> => {
         const response = await apiClient.get(`/blog/admin/top-liked${limit ? `?limit=${limit}` : ''}`);
         return response.data;
     },
 
-    getAllBlogsAdmin: async (params?: {
-        page?: number;
-        limit?: number;
-        search?: string;
-        category?: string;
-        isPublished?: string;
-    }): Promise<BlogsResponse> => {
+    getAllBlogsAdmin: async (params?: GetBlogsAdminParams): Promise<BlogsResponse> => {
         const queryParams = new URLSearchParams();
         if (params?.page) queryParams.append('page', params.page.toString());
         if (params?.limit) queryParams.append('limit', params.limit.toString());
@@ -166,42 +116,24 @@ export const blogApi = {
         return response.data;
     },
 
-    createBlog: async (data: {
-        title: string;
-        thumbnail?: string;
-        excerpt?: string;
-        content: string;
-        category?: string;
-        tags?: string[];
-        isPublished?: boolean;
-    }): Promise<BlogResponse> => {
+    createBlog: async (data: CreateBlogData): Promise<BlogResponse> => {
         const response = await apiClient.post('/blog/admin', data);
         return response.data;
     },
 
     // User tạo blog (chờ admin duyệt)
-    createBlogUser: async (data: {
-        title: string;
-        thumbnail?: string;
-        excerpt?: string;
-        content: string;
-        category?: string;
-        tags?: string[];
-        isPublished?: boolean;
-    }): Promise<BlogResponse> => {
+    createBlogUser: async (data: CreateBlogData): Promise<BlogResponse> => {
         const response = await apiClient.post('/blog/my/create', data);
         return response.data;
     },
 
-    updateBlog: async (id: string, data: {
-        title?: string;
-        thumbnail?: string;
-        excerpt?: string;
-        content?: string;
-        category?: string;
-        tags?: string[];
-        isPublished?: boolean;
-    }): Promise<BlogResponse> => {
+    // User update blog của mình
+    updateBlogUser: async (id: string, data: UpdateBlogData): Promise<BlogResponse> => {
+        const response = await apiClient.put(`/blog/my/${id}`, data);
+        return response.data;
+    },
+
+    updateBlog: async (id: string, data: UpdateBlogData): Promise<BlogResponse> => {
         const response = await apiClient.put(`/blog/admin/${id}`, data);
         return response.data;
     },
@@ -251,3 +183,6 @@ export const blogApi = {
         return response.data;
     }
 };
+
+// Re-export Blog type for backward compatibility
+export type { Blog };

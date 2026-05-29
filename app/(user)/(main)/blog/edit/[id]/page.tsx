@@ -4,16 +4,19 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { blogApi, Blog } from '@/lib/api/blog.api';
 import { toast } from 'sonner';
-import { ArrowLeft, Loader2, Trash2 } from 'lucide-react';
+import { ArrowLeft, Loader2, Trash2, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import CustomEditor, { CustomEditorRef } from '@/components/custom/CustomEditor';
+import { CustomInput } from '@/components/custom/CustomInput';
+import { CustomSelect } from '@/components/custom/CustomSelect';
+import { CustomButton } from '@/components/custom/CustomButton';
 import { useAuthStore } from '@/store/auth.store';
 
 const CATEGORIES = [
     { value: 'technology', label: 'Công nghệ' },
     { value: 'education', label: 'Giáo dục' },
-    { value: 'tutorial', label: 'Hướng dẫn' },
     { value: 'news', label: 'Tin tức' },
+    { value: 'contest', label: 'Cuộc thi' },
     { value: 'other', label: 'Khác' }
 ];
 
@@ -25,15 +28,9 @@ export default function EditBlogPage() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [blog, setBlog] = useState<Blog | null>(null);
-    const [formData, setFormData] = useState({
-        title: '',
-        thumbnail: '',
-        excerpt: '',
-        category: 'other',
-        tags: [] as string[],
-        isPublished: false
-    });
-    const [tagInput, setTagInput] = useState('');
+    const [title, setTitle] = useState('');
+    const [category, setCategory] = useState('other');
+    const [tags, setTags] = useState<string[]>([]);
 
     useEffect(() => {
         if (!token) {
@@ -50,14 +47,9 @@ export default function EditBlogPage() {
             const res = await blogApi.getBlogById(params.id as string);
             if (res.success) {
                 setBlog(res.data);
-                setFormData({
-                    title: res.data.title,
-                    thumbnail: res.data.thumbnail || '',
-                    excerpt: res.data.excerpt || '',
-                    category: res.data.category,
-                    tags: res.data.tags || [],
-                    isPublished: res.data.isPublished
-                });
+                setTitle(res.data.title);
+                setCategory(res.data.category);
+                setTags(res.data.tags || []);
                 // Set editor content after a small delay to ensure editor is mounted
                 setTimeout(() => {
                     editorRef.current?.setContent(res.data.content);
@@ -79,29 +71,48 @@ export default function EditBlogPage() {
 
         if (!token || !blog) return;
 
-        if (!formData.title.trim()) {
+        if (!title.trim()) {
             toast.error('Vui lòng nhập tiêu đề');
             return;
         }
 
         const content = editorRef.current?.getContent() || '';
-        if (!content.trim()) {
+        if (!content.trim() || content === '<p><br></p>') {
             toast.error('Vui lòng nhập nội dung');
             return;
         }
 
         setSaving(true);
         try {
-            const res = await blogApi.updateBlog(blog._id, {
-                ...formData,
-                title: formData.title.trim(),
-                excerpt: formData.excerpt.trim() || undefined,
-                content: content.trim()
-            });
+            // Tự động lấy ảnh đầu tiên từ content làm thumbnail
+            const imgMatch = content.match(/<img[^>]+src="([^">]+)"/);
+            const thumbnail = imgMatch ? imgMatch[1] : '/images/blog.png';
+
+            const updateData: Record<string, unknown> = {
+                title: title.trim(),
+                thumbnail,
+                content: content.trim(),
+                category,
+                tags
+            };
+
+            // If post was rejected and user is resubmitting, set needsReview=true
+            if (blog.rejectionReason) {
+                updateData.needsReview = true;
+                updateData.rejectionReason = ''; // Clear rejection reason
+            }
+
+            const res = await blogApi.updateBlogUser(blog._id, updateData);
 
             if (res.success) {
                 toast.success('Cập nhật bài viết thành công!');
-                router.push(`/blog/${res.data.slug}`);
+
+                // If needs review, redirect to my blogs list
+                if (blog.rejectionReason) {
+                    toast.success('Bài viết đã được gửi để duyệt lại!');
+                }
+
+                router.push('/me/blog');
             } else {
                 toast.error(res.message || 'Cập nhật thất bại');
             }
@@ -128,21 +139,6 @@ export default function EditBlogPage() {
         } catch (error) {
             toast.error('Có lỗi xảy ra');
         }
-    };
-
-    const handleAddTag = () => {
-        const tag = tagInput.trim();
-        if (tag && !formData.tags.includes(tag)) {
-            setFormData(prev => ({ ...prev, tags: [...prev.tags, tag] }));
-            setTagInput('');
-        }
-    };
-
-    const handleRemoveTag = (tagToRemove: string) => {
-        setFormData(prev => ({
-            ...prev,
-            tags: prev.tags.filter(tag => tag !== tagToRemove)
-        }));
     };
 
     if (loading) {
@@ -175,159 +171,84 @@ export default function EditBlogPage() {
                         </button>
                     </div>
 
-                    <form onSubmit={handleSubmit} className="space-y-6">
-                        {/* Title */}
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Tiêu đề <span className="text-red-500">*</span>
-                            </label>
-                            <input
-                                type="text"
-                                value={formData.title}
-                                onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                placeholder="Nhập tiêu đề bài viết..."
-                                maxLength={200}
-                            />
-                        </div>
-
-                        {/* Thumbnail */}
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Ảnh đại diện
-                            </label>
-                            <div className="flex gap-3">
-                                <input
-                                    type="url"
-                                    value={formData.thumbnail}
-                                    onChange={(e) => setFormData(prev => ({ ...prev, thumbnail: e.target.value }))}
-                                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    placeholder="URL ảnh đại diện..."
-                                />
-                                {formData.thumbnail && (
-                                    <div className="w-20 h-20 rounded-lg border border-gray-200 overflow-hidden">
-                                        <img src={formData.thumbnail} alt="Preview" className="w-full h-full object-cover" />
-                                    </div>
-                                )}
+                    {/* Rejection Reason Alert */}
+                    {blog.rejectionReason && (
+                        <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                            <div className="flex items-start gap-3">
+                                <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+                                <div className="flex-1">
+                                    <h3 className="text-sm font-semibold text-red-800 dark:text-red-300 mb-1">
+                                        Bài viết bị từ chối
+                                    </h3>
+                                    <p className="text-sm text-red-700 dark:text-red-400 mb-2">
+                                        {blog.rejectionReason}
+                                    </p>
+                                    <p className="text-xs text-red-600 dark:text-red-500">
+                                        Vui lòng chỉnh sửa theo yêu cầu và lưu lại để gửi duyệt lại.
+                                    </p>
+                                </div>
                             </div>
                         </div>
+                    )}
+
+                    <form onSubmit={handleSubmit} className="space-y-6">
+                        {/* Title */}
+                        <CustomInput
+                            label="Tiêu đề"
+                            placeholder="Nhập tiêu đề bài viết..."
+                            value={title}
+                            onChange={(e) => setTitle(e.target.value)}
+                            maxLength={200}
+                            required
+                        />
 
                         {/* Category */}
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Danh mục
-                            </label>
-                            <select
-                                value={formData.category}
-                                onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            >
-                                {CATEGORIES.map(cat => (
-                                    <option key={cat.value} value={cat.value}>{cat.label}</option>
-                                ))}
-                            </select>
-                        </div>
+                        <CustomSelect
+                            label="Danh mục"
+                            value={category}
+                            onChange={(value) => setCategory(value)}
+                            options={CATEGORIES}
+                        />
 
                         {/* Tags */}
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Tags
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Tags (phân cách bằng dấu phẩy)
                             </label>
-                            <div className="flex gap-2 mb-2">
-                                <input
-                                    type="text"
-                                    value={tagInput}
-                                    onChange={(e) => setTagInput(e.target.value)}
-                                    onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddTag())}
-                                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    placeholder="Nhập tag và nhấn Enter..."
-                                />
-                                <button
-                                    type="button"
-                                    onClick={handleAddTag}
-                                    className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition"
-                                >
-                                    Thêm
-                                </button>
-                            </div>
-                            {formData.tags.length > 0 && (
-                                <div className="flex flex-wrap gap-2">
-                                    {formData.tags.map((tag, index) => (
-                                        <span
-                                            key={index}
-                                            className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-sm flex items-center gap-2"
-                                        >
-                                            #{tag}
-                                            <button
-                                                type="button"
-                                                onClick={() => handleRemoveTag(tag)}
-                                                className="hover:text-blue-800"
-                                            >
-                                                ×
-                                            </button>
-                                        </span>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Excerpt */}
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Mô tả ngắn (tùy chọn)
-                            </label>
-                            <textarea
-                                value={formData.excerpt}
-                                onChange={(e) => setFormData(prev => ({ ...prev, excerpt: e.target.value }))}
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                rows={3}
-                                placeholder="Mô tả ngắn về bài viết..."
-                                maxLength={500}
+                            <CustomInput
+                                placeholder="react, javascript, tutorial"
+                                value={tags.join(', ')}
+                                onChange={(e) => setTags(e.target.value.split(',').map(t => t.trim()).filter(Boolean))}
                             />
-                            <p className="text-xs text-gray-500 mt-1">
-                                {formData.excerpt.length}/500 ký tự
-                            </p>
                         </div>
 
                         {/* Content */}
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                 Nội dung <span className="text-red-500">*</span>
                             </label>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                                Ảnh đầu tiên trong nội dung sẽ được dùng làm thumbnail.
+                            </p>
                             <CustomEditor ref={editorRef} initialValue={blog.content} />
                         </div>
 
-                        {/* Publish */}
-                        <div className="flex items-center gap-2">
-                            <input
-                                type="checkbox"
-                                id="isPublished"
-                                checked={formData.isPublished}
-                                onChange={(e) => setFormData(prev => ({ ...prev, isPublished: e.target.checked }))}
-                                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                            />
-                            <label htmlFor="isPublished" className="text-sm text-gray-700">
-                                Xuất bản
-                            </label>
-                        </div>
-
                         {/* Actions */}
-                        <div className="flex gap-3 pt-4 border-t border-gray-200">
-                            <button
+                        <div className="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                            <CustomButton
                                 type="submit"
-                                disabled={saving}
-                                className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition disabled:opacity-50"
+                                loading={saving}
+                                className="flex-1"
                             >
-                                {saving && <Loader2 className="w-4 h-4 animate-spin" />}
                                 Lưu thay đổi
-                            </button>
-                            <button
+                            </CustomButton>
+                            <CustomButton
                                 type="button"
+                                variant="secondary"
                                 onClick={() => router.back()}
-                                className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition"
                             >
                                 Hủy
-                            </button>
+                            </CustomButton>
                         </div>
                     </form>
                 </div>

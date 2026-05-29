@@ -5,7 +5,7 @@ import { blogApi, Blog } from '@/lib/api/blog.api';
 import { commentApi } from '@/lib/api/comment.api';
 import { toast } from 'sonner';
 import { Plus, Edit2, Trash2, Eye, EyeOff, Loader2, FileText, TrendingUp, X, BarChart3, LineChart, Heart, MessageSquare, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
-import { ScatterChart, Scatter, BarChart as RechartsBarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, Legend } from 'recharts';
+import { LineChart as RechartsLineChart, Line, BarChart as RechartsBarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, Legend } from 'recharts';
 import { CustomButton } from '@/components/custom/CustomButton';
 import { CustomInput } from '@/components/custom/CustomInput';
 import { CustomInputSearch } from '@/components/custom/CustomInputSearch';
@@ -19,8 +19,8 @@ import CommentSection from '@/components/comment/CommentSection';
 const CATEGORIES = [
     { value: 'technology', label: 'Công nghệ' },
     { value: 'education', label: 'Giáo dục' },
-    { value: 'tutorial', label: 'Hướng dẫn' },
     { value: 'news', label: 'Tin tức' },
+    { value: 'contest', label: 'Cuộc thi' },
     { value: 'other', label: 'Khác' }
 ];
 
@@ -35,10 +35,23 @@ const STATUS_OPTIONS = [
     { value: 'draft', label: 'Bản nháp' }
 ];
 
+// Helper function - normalize text for search
+const normalizeText = (text: string) => {
+    if (!text) return '';
+    return text
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '') // remove diacritics
+        .replace(/đ/g, 'd')
+        .replace(/Đ/g, 'D')
+        .toLowerCase()
+        .trim();
+};
+
 export default function AdminBlogPage() {
     const editorRef = useRef<CustomEditorRef>(null);
 
     const [blogs, setBlogs] = useState<Blog[]>([]);
+    const [filteredBlogs, setFilteredBlogs] = useState<Blog[]>([]);
     const [loading, setLoading] = useState(true);
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
@@ -62,6 +75,8 @@ export default function AdminBlogPage() {
     const [highlightedContent, setHighlightedContent] = useState('');
     const [approveConfirm, setApproveConfirm] = useState<Blog | null>(null);
     const [rejectConfirm, setRejectConfirm] = useState<Blog | null>(null);
+    const [rejectReason, setRejectReason] = useState('');
+    const [rejectModal, setRejectModal] = useState<Blog | null>(null);
 
     // Stats
     const [stats, setStats] = useState({
@@ -73,18 +88,53 @@ export default function AdminBlogPage() {
 
     // Charts
     const [growthData, setGrowthData] = useState<Array<{ date: string; count: number }>>([]);
-    const [topViewedData, setTopViewedData] = useState<Array<{ _id: string; title: string; viewCount: number }>>([]);
-    const [topLikedData, setTopLikedData] = useState<Array<{ _id: string; title: string; likeCount: number }>>([]);
+    const [topViewedData, setTopViewedData] = useState<Array<{ _id: string; title: string; viewCount?: number }>>([]);
+    const [topLikedData, setTopLikedData] = useState<Array<{ _id: string; title: string; likeCount?: number }>>([]);
     const [publishedAt, setPublishedAt] = useState('');
 
     useEffect(() => {
         fetchBlogs();
-    }, [page, filterPublished, searchInput]);
+    }, [page]);
 
     useEffect(() => {
         fetchStats();
         fetchCharts();
     }, []);
+
+    // Client-side filtering with normalized search
+    useEffect(() => {
+        let filtered = [...blogs];
+
+        // Filter by search - normalize both search and data
+        if (searchInput.trim()) {
+            const search = normalizeText(searchInput);
+            filtered = filtered.filter(blog =>
+                normalizeText(blog.title).includes(search) ||
+                normalizeText(blog.author.fullName).includes(search)
+            );
+        }
+
+        // Filter by published status
+        if (filterPublished !== 'all') {
+            const isPublished = filterPublished === 'true';
+            filtered = filtered.filter(blog => blog.isPublished === isPublished);
+        }
+
+        setFilteredBlogs(filtered);
+    }, [blogs, searchInput, filterPublished]);
+
+    // Helper functions to update state without full reload
+    const updateBlogInList = (updatedBlog: Blog) => {
+        setBlogs(prev => prev.map(b => b._id === updatedBlog._id ? updatedBlog : b));
+    };
+
+    const removeBlogFromList = (blogId: string) => {
+        setBlogs(prev => prev.filter(b => b._id !== blogId));
+    };
+
+    const addBlogToList = (newBlog: Blog) => {
+        setBlogs(prev => [newBlog, ...prev]);
+    };
 
     const fetchStats = async () => {
         try {
@@ -216,9 +266,15 @@ export default function AdminBlogPage() {
 
             if (res.success) {
                 toast.success(editingBlog ? 'Cập nhật thành công' : 'Tạo bài viết thành công');
-                handleCloseModal();
-                fetchBlogs();
+
+                if (editingBlog) {
+                    updateBlogInList(res.data);
+                } else {
+                    addBlogToList(res.data);
+                }
+
                 fetchStats();
+                handleCloseModal();
             } else {
                 toast.error(res.message || 'Có lỗi xảy ra');
             }
@@ -231,10 +287,14 @@ export default function AdminBlogPage() {
 
     const handleApprove = async (blog: Blog) => {
         try {
-            const res = await blogApi.updateBlog(blog._id, { isPublished: true });
+            const res = await blogApi.updateBlog(blog._id, {
+                isPublished: true,
+                needsReview: false,
+                rejectionReason: ''
+            });
             if (res.success) {
                 toast.success('Đã duyệt bài viết');
-                fetchBlogs();
+                updateBlogInList(res.data);
                 fetchStats();
             }
         } catch {
@@ -243,11 +303,24 @@ export default function AdminBlogPage() {
     };
 
     const handleReject = async (blog: Blog) => {
+        // Mở modal nhập lý do từ chối thay vì xóa ngay
+        setRejectModal(blog);
+        setRejectReason('');
+    };
+
+    const handleConfirmReject = async () => {
+        if (!rejectModal) return;
         try {
-            const res = await blogApi.deleteBlog(blog._id);
+            const res = await blogApi.updateBlog(rejectModal._id, {
+                isPublished: false,
+                rejectionReason: rejectReason.trim(),
+                needsReview: true
+            });
             if (res.success) {
-                toast.success('Đã từ chối và xóa bài viết');
-                fetchBlogs();
+                toast.success('Đã từ chối bài viết và lưu lý do');
+                updateBlogInList(res.data);
+                setRejectModal(null);
+                setRejectReason('');
                 fetchStats();
             }
         } catch {
@@ -262,8 +335,8 @@ export default function AdminBlogPage() {
             const res = await blogApi.updateBlog(statusModal._id, { isPublished });
             if (res.success) {
                 toast.success('Đã thay đổi trạng thái');
+                updateBlogInList(res.data);
                 setStatusModal(null);
-                fetchBlogs();
                 fetchStats();
             }
         } catch {
@@ -277,8 +350,8 @@ export default function AdminBlogPage() {
             const res = await blogApi.deleteBlog(deleteConfirm._id);
             if (res.success) {
                 toast.success('Xóa thành công');
+                removeBlogFromList(deleteConfirm._id);
                 setDeleteConfirm(null);
-                fetchBlogs();
                 fetchStats();
             }
         } catch {
@@ -434,7 +507,7 @@ export default function AdminBlogPage() {
 
             {/* Charts */}
             <div className="space-y-4 sm:space-y-6">
-                {/* Growth Chart - Scatter Plot */}
+                {/* Growth Chart - Line Chart */}
                 <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 sm:p-6 w-full">
                     <div className="flex items-center gap-2 mb-3 sm:mb-4">
                         <LineChart className="w-4 h-4 sm:w-5 sm:h-5 text-blue-500 flex-shrink-0" />
@@ -442,33 +515,49 @@ export default function AdminBlogPage() {
                             Bài viết mới (10 ngày gần nhất)
                         </h3>
                     </div>
-                    <ResponsiveContainer width="100%" height={250}>
-                        <ScatterChart>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.1} />
-                            <XAxis
-                                dataKey="date"
-                                stroke="#9CA3AF"
-                                tick={{ fill: '#9CA3AF', fontSize: 11 }}
-                                tickFormatter={(value) => new Date(value).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })}
-                            />
-                            <YAxis stroke="#9CA3AF" tick={{ fill: '#9CA3AF', fontSize: 11 }} />
-                            <Tooltip
-                                contentStyle={{
-                                    backgroundColor: '#1F2937',
-                                    border: 'none',
-                                    borderRadius: '8px',
-                                    color: '#F9FAFB'
-                                }}
-                                labelFormatter={(value) => new Date(value).toLocaleDateString('vi-VN')}
-                                formatter={(value) => [value, 'Số bài viết']}
-                            />
-                            <Scatter
-                                data={growthData}
-                                fill="#3B82F6"
-                                shape="circle"
-                            />
-                        </ScatterChart>
-                    </ResponsiveContainer>
+                    {growthData.length > 0 ? (
+                        <ResponsiveContainer width="100%" height={250}>
+                            <RechartsLineChart data={growthData}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.1} />
+                                <XAxis
+                                    dataKey="date"
+                                    stroke="#9CA3AF"
+                                    tick={{ fill: '#9CA3AF', fontSize: 11 }}
+                                    tickFormatter={(value) => new Date(value).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })}
+                                />
+                                <YAxis
+                                    stroke="#9CA3AF"
+                                    tick={{ fill: '#9CA3AF', fontSize: 11 }}
+                                    allowDecimals={false}
+                                />
+                                <Tooltip
+                                    contentStyle={{
+                                        backgroundColor: '#1F2937',
+                                        border: 'none',
+                                        borderRadius: '8px',
+                                        color: '#F9FAFB'
+                                    }}
+                                    labelFormatter={(value) => new Date(value).toLocaleDateString('vi-VN')}
+                                    formatter={(value) => [value, 'Số bài viết']}
+                                />
+                                <Line
+                                    type="monotone"
+                                    dataKey="count"
+                                    stroke="#3B82F6"
+                                    strokeWidth={2}
+                                    dot={{ fill: '#3B82F6', r: 4 }}
+                                    activeDot={{ r: 6 }}
+                                />
+                            </RechartsLineChart>
+                        </ResponsiveContainer>
+                    ) : (
+                        <div className="flex items-center justify-center h-[250px] text-gray-400 dark:text-gray-500">
+                            <div className="text-center">
+                                <BarChart3 className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                                <p className="text-sm">Chưa có dữ liệu</p>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* Top Viewed Chart - Vertical Bar */}
@@ -507,7 +596,7 @@ export default function AdminBlogPage() {
                 {/* Top Liked Chart - Vertical Bar */}
                 <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 sm:p-6 w-full">
                     <div className="flex items-center gap-2 mb-3 sm:mb-4">
-                        <Heart className="w-4 h-4 sm:w-5 sm:h-5 text-pink-500 flex-shrink-0" />
+                        <Heart data-filled={true} fill="#EC4899" className="w-4 h-4 sm:w-5 sm:h-5 text-pink-500 flex-shrink-0" />
                         <h3 className="text-base sm:text-lg font-semibold text-gray-800 dark:text-gray-100">Top 5 yêu thích</h3>
                     </div>
                     <ResponsiveContainer width="100%" height={300}>
@@ -579,66 +668,85 @@ export default function AdminBlogPage() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                                {blogs.map((blog) => (
-                                    <tr key={blog._id} className="hover:bg-gray-50 dark:hover:bg-gray-900/50">
-                                        <td className="px-4 py-3">
-                                            {blog.thumbnail && (
-                                                <img src={blog.thumbnail} alt="" className="w-16 h-16 rounded object-cover" />
-                                            )}
-                                        </td>
-                                        <td className="px-4 py-3">
-                                            <div className="font-medium text-gray-800 dark:text-gray-200 text-sm">{blog.title}</div>
-                                            <div className="text-xs text-gray-500 dark:text-gray-400">{blog.author.fullName}</div>
-                                        </td>
-                                        <td className="px-4 py-3 text-center">
-                                            <button
-                                                onClick={() => {
-                                                    setStatusModal(blog);
-                                                    setNewStatus(blog.isPublished ? 'published' : 'draft');
-                                                }}
-                                                className="inline-block"
-                                            >
-                                                {blog.isPublished ? (
-                                                    <span className="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded text-xs">Đã xuất bản</span>
-                                                ) : (
-                                                    <span className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded text-xs">Bản nháp</span>
-                                                )}
-                                            </button>
-                                        </td>
-                                        <td className="px-4 py-3 text-center text-sm text-gray-600 dark:text-gray-300">{blog.viewCount}</td>
-                                        <td className="px-4 py-3 text-center">
-                                            <div className="flex items-center justify-center gap-1">
-                                                <Heart className="w-4 h-4 text-pink-500" />
-                                                <span className="text-sm text-gray-600 dark:text-gray-300">{blog.likeCount}</span>
-                                            </div>
-                                        </td>
-                                        <td className="px-4 py-3">
-                                            <div className="flex items-center justify-end gap-1">
-                                                <button
-                                                    onClick={() => setViewBlog(blog)}
-                                                    className="p-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg transition"
-                                                    title="Xem chi tiết"
-                                                >
-                                                    <Eye className="w-4 h-4" />
-                                                </button>
-                                                <button
-                                                    onClick={() => handleOpenModal(blog)}
-                                                    className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
-                                                    title="Chỉnh sửa"
-                                                >
-                                                    <Edit2 className="w-4 h-4" />
-                                                </button>
-                                                <button
-                                                    onClick={() => setDeleteConfirm(blog)}
-                                                    className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg transition"
-                                                    title="Xóa"
-                                                >
-                                                    <Trash2 className="w-4 h-4" />
-                                                </button>
-                                            </div>
+                                {filteredBlogs.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={6} className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
+                                            Không tìm thấy bài viết nào
                                         </td>
                                     </tr>
-                                ))}
+                                ) : (
+                                    filteredBlogs.map((blog) => (
+                                        <tr key={blog._id} className="hover:bg-gray-50 dark:hover:bg-gray-900/50">
+                                            <td className="px-4 py-3">
+                                                <div className="relative">
+                                                    {blog.thumbnail && (
+                                                        <img src={blog.thumbnail} alt="" className="w-16 h-16 rounded object-cover" />
+                                                    )}
+                                                    {blog.needsReview && (
+                                                        <div className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full border-2 border-white dark:border-gray-800" title="Cần duyệt lại" />
+                                                    )}
+                                                </div>
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                <div className="font-medium text-gray-800 dark:text-gray-200 text-sm">{blog.title}</div>
+                                                <div className="text-xs text-gray-500 dark:text-gray-400">{blog.author.fullName}</div>
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                <div className="flex justify-center">
+                                                    <button
+                                                        onClick={() => {
+                                                            setStatusModal(blog);
+                                                            setNewStatus(blog.isPublished ? 'published' : 'draft');
+                                                        }}
+                                                        className="inline-flex items-center"
+                                                    >
+                                                        {blog.isPublished ? (
+                                                            <span className="px-3 py-1.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-full text-xs font-medium whitespace-nowrap">
+                                                                Đã xuất bản
+                                                            </span>
+                                                        ) : (
+                                                            <span className="px-3 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full text-xs font-medium whitespace-nowrap">
+                                                                Bản nháp
+                                                            </span>
+                                                        )}
+                                                    </button>
+                                                </div>
+                                            </td>
+                                            <td className="px-4 py-3 text-center text-sm text-gray-600 dark:text-gray-300">{blog.viewCount}</td>
+                                            <td className="px-4 py-3 text-center">
+                                                <div className="flex items-center justify-center gap-1">
+                                                    <Heart className="w-4 h-4 text-red-500" data-filled={true} />
+                                                    <span className="text-sm text-gray-600 dark:text-gray-300">{blog.likeCount}</span>
+                                                </div>
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                <div className="flex items-center justify-end gap-1">
+                                                    <button
+                                                        onClick={() => setViewBlog(blog)}
+                                                        className="p-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg transition"
+                                                        title="Xem chi tiết"
+                                                    >
+                                                        <Eye className="w-4 h-4" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleOpenModal(blog)}
+                                                        className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
+                                                        title="Chỉnh sửa"
+                                                    >
+                                                        <Edit2 className="w-4 h-4" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => setDeleteConfirm(blog)}
+                                                        className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg transition"
+                                                        title="Xóa"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
                             </tbody>
                         </table>
                     </div>
@@ -755,21 +863,21 @@ export default function AdminBlogPage() {
                                     <span>{viewBlog.viewCount} lượt xem</span>
                                     <span>•</span>
                                     <span className="flex items-center gap-1">
-                                        <Heart className="w-4 h-4 text-pink-500" />
+                                        <Heart className="w-4 h-4 text-red-500" data-filled={true} />
                                         {viewBlog.likeCount}
                                     </span>
                                 </div>
                             </div>
-                            {viewBlog.thumbnail && (
-                                <img src={viewBlog.thumbnail} alt={viewBlog.title} className="w-full rounded-lg" />
-                            )}
                             <div className="prose dark:prose-invert max-w-none">
                                 <StaticContent content={highlightedContent || viewBlog.content} />
                             </div>
                             {!viewBlog.isPublished && (
                                 <div className="flex gap-3 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700">
                                     <CustomButton
-                                        onClick={() => setApproveConfirm(viewBlog)}
+                                        onClick={() => {
+                                            setApproveConfirm(viewBlog);
+                                            setViewBlog(null);
+                                        }}
                                         className="flex-1"
                                     >
                                         <CheckCircle className="w-4 h-4 mr-2" />
@@ -777,7 +885,10 @@ export default function AdminBlogPage() {
                                     </CustomButton>
                                     <CustomButton
                                         variant="secondary"
-                                        onClick={() => setRejectConfirm(viewBlog)}
+                                        onClick={() => {
+                                            setRejectConfirm(viewBlog);
+                                            setViewBlog(null);
+                                        }}
                                         className="flex-1"
                                     >
                                         <XCircle className="w-4 h-4 mr-2" />
@@ -899,6 +1010,49 @@ export default function AdminBlogPage() {
                                 Xác nhận từ chối
                             </CustomButton>
                             <CustomButton variant="secondary" onClick={() => setRejectConfirm(null)}>
+                                Hủy
+                            </CustomButton>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Reject Modal - Input Reason */}
+            {rejectModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setRejectModal(null)}>
+                    <div className="bg-white dark:bg-gray-800 rounded-xl w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+                        <div className="p-5 border-b border-gray-200 dark:border-gray-700">
+                            <h2 className="text-lg font-semibold text-red-600 dark:text-red-400">Từ chối bài viết</h2>
+                        </div>
+                        <div className="p-5 space-y-4">
+                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                                Bài viết: <span className="font-medium text-gray-800 dark:text-gray-200">&ldquo;{rejectModal.title}&rdquo;</span>
+                            </p>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Lý do từ chối <span className="text-red-500">*</span>
+                                </label>
+                                <textarea
+                                    value={rejectReason}
+                                    onChange={(e) => setRejectReason(e.target.value)}
+                                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none"
+                                    rows={4}
+                                    placeholder="Nhập lý do từ chối bài viết..."
+                                />
+                            </div>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                                Tác giả sẽ nhận được lý do này và có thể chỉnh sửa bài viết để gửi duyệt lại.
+                            </p>
+                        </div>
+                        <div className="flex gap-3 p-5 border-t border-gray-200 dark:border-gray-700">
+                            <CustomButton
+                                onClick={handleConfirmReject}
+                                disabled={!rejectReason.trim()}
+                                className="flex-1 bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                Xác nhận từ chối
+                            </CustomButton>
+                            <CustomButton variant="secondary" onClick={() => setRejectModal(null)}>
                                 Hủy
                             </CustomButton>
                         </div>

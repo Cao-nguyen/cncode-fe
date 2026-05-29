@@ -15,8 +15,8 @@ const CATEGORIES = [
     { value: 'all', label: 'Tất cả' },
     { value: 'technology', label: 'Công nghệ' },
     { value: 'education', label: 'Giáo dục' },
-    { value: 'tutorial', label: 'Hướng dẫn' },
     { value: 'news', label: 'Tin tức' },
+    { value: 'contest', label: 'Cuộc thi' },
     { value: 'other', label: 'Khác' }
 ];
 
@@ -145,13 +145,23 @@ export default function BlogPage() {
                                     onMouseLeave={(e) => e.currentTarget.style.boxShadow = 'var(--cn-shadow-sm)'}
                                 >
                                     {blog.thumbnail && (
-                                        <div className="w-full h-[200px] overflow-hidden" style={{ backgroundColor: 'var(--cn-bg-section)' }}>
+                                        <div className="w-full h-[200px] overflow-hidden relative" style={{ backgroundColor: 'var(--cn-bg-section)' }}>
                                             <img
                                                 src={blog.thumbnail}
                                                 alt={blog.title}
                                                 className="w-full h-full object-cover group-hover:scale-105 transition"
                                                 style={{ aspectRatio: '1500/1000' }}
                                             />
+                                            <div className="absolute top-3 right-3">
+                                                <span className="px-3 py-1.5 rounded-full text-xs font-medium backdrop-blur-sm"
+                                                    style={{
+                                                        backgroundColor: 'rgba(59, 130, 246, 0.9)',
+                                                        color: 'white'
+                                                    }}
+                                                >
+                                                    {CATEGORIES.find(c => c.value === blog.category)?.label || 'Khác'}
+                                                </span>
+                                            </div>
                                         </div>
                                     )}
                                     <div className="p-5 flex flex-col flex-1">

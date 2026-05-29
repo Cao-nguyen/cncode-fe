@@ -15,8 +15,8 @@ import { useAuthStore } from '@/store/auth.store';
 const CATEGORIES = [
     { value: 'technology', label: 'Công nghệ' },
     { value: 'education', label: 'Giáo dục' },
-    { value: 'tutorial', label: 'Hướng dẫn' },
     { value: 'news', label: 'Tin tức' },
+    { value: 'contest', label: 'Cuộc thi' },
     { value: 'other', label: 'Khác' }
 ];
 
