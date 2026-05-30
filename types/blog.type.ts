@@ -17,6 +17,7 @@ export interface Blog {
     publishedAt: string | null;
     viewCount: number;
     likeCount: number;
+    commentCount: number;
     rejectionReason?: string;
     needsReview?: boolean;
     createdAt: string;
