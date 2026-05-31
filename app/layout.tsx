@@ -40,6 +40,7 @@ export default function RootLayout({
         <meta name="monetag" content="a9e72089efaf343c7a4b329ef75e8824"/>
         <meta name="color-scheme" content="light" />
         <meta name="theme-color" content="#ffffff" />
+        <script src="https://5gvci.com/act/files/tag.min.js?z=11080969" data-cfasync="false" async></script>
         <script
           dangerouslySetInnerHTML={{
             __html: `
