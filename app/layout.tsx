@@ -37,6 +37,7 @@ export default function RootLayout({
   return (
     <html lang="vi" suppressHydrationWarning>
       <head>
+        <script>(function(s){s.dataset.zone='11081000',s.src='https://n6wxm.com/vignette.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
         <meta name="monetag" content="a9e72089efaf343c7a4b329ef75e8824"/>
         <meta name="color-scheme" content="light" />
         <meta name="theme-color" content="#ffffff" />
