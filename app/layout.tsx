@@ -37,7 +37,7 @@ export default function RootLayout({
   return (
     <html lang="vi" suppressHydrationWarning>
       <head>
-        <meta name="monetag" content="a9e72089efaf343c7a4b329ef75e8824">
+        <meta name="monetag" content="a9e72089efaf343c7a4b329ef75e8824"/>
         <meta name="color-scheme" content="light" />
         <meta name="theme-color" content="#ffffff" />
         <script
