@@ -40,7 +40,6 @@ export default function RootLayout({
         <meta name="monetag" content="a9e72089efaf343c7a4b329ef75e8824"/>
         <meta name="color-scheme" content="light" />
         <meta name="theme-color" content="#ffffff" />
-        <script src="https://5gvci.com/act/files/tag.min.js?z=11080969" data-cfasync="false" async></script>
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -51,7 +50,6 @@ export default function RootLayout({
           }}
         />
       </head>
-      <script>(function(s){s.dataset.zone='11080992',s.src='https://al5sm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
       <body className={`${inter.className} antialiased`}>
         <AuthProvider>
           <SocketProvider>
