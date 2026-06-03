@@ -13,6 +13,7 @@ import { helpCenterApi } from '@/lib/api/helpcenter.api';
 import type { HelpCenterFAQ, HelpCenterStats } from '@/types/helpcenter.type';
 import type { CustomEditorRef } from '@/components/custom/CustomEditor';
 import { CustomInput } from '@/components/custom/CustomInput';
+import { CustomInputSearch } from '@/components/custom/CustomInputSearch';
 import { CustomButton } from '@/components/custom/CustomButton';
 import { CustomSelect } from '@/components/custom/CustomSelect';
 import { CustomToggle } from '@/components/custom/CustomToggle';
@@ -279,16 +280,12 @@ export default function AdminHelpCenterPage() {
             <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
                 <div className="flex flex-wrap gap-3 items-center">
                     <div className="flex-1 min-w-[200px]">
-                        <div className="relative">
-                            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                            <input
-                                type="text"
-                                value={searchInput}
-                                onChange={(e) => handleSearchChange(e.target.value)}
-                                placeholder="Tìm kiếm câu hỏi..."
-                                className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20 outline-none text-sm transition-all text-gray-700 placeholder:text-gray-400"
-                            />
-                        </div>
+                        <CustomInputSearch
+                            placeholder="Tìm kiếm câu hỏi..."
+                            value={searchInput}
+                            onChange={handleSearchChange}
+                            size="medium"
+                        />
                     </div>
                     <div className="w-48">
                         <CustomSelect

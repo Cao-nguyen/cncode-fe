@@ -137,7 +137,8 @@ export async function subscribeToPushNotifications(): Promise<PushSubscription> 
         // 1. Request permission
         const permission = await requestNotificationPermission();
         if (permission !== 'granted') {
-            throw new Error('Notification permission denied');
+            // User declined permission - return null
+            return null as unknown as PushSubscription;
         }
 
         // 2. Register service worker
