@@ -13,6 +13,11 @@ import Link from 'next/link';
 import { notificationApi } from '@/lib/api/notification.api';
 import type { INotification } from '@/types/notification.type';
 import { CustomButton } from '../custom/CustomButton';
+import {
+    subscribeToPushNotifications,
+    isPushSubscribed,
+    isPushNotificationSupported
+} from '@/lib/push-notification';
 
 const REACTION_NAMES: Record<string, string> = {
     like: '👍 thích',
@@ -555,6 +560,22 @@ export default function NotificationBell() {
     useEffect(() => {
         if (token && user?._id) {
             fetchNotifications(1);
+
+            // Auto-subscribe to push notifications nếu chưa subscribe
+            if (isPushNotificationSupported()) {
+                isPushSubscribed().then(isSubscribed => {
+                    if (!isSubscribed) {
+                        // Đợi 3 giây rồi hỏi user
+                        setTimeout(() => {
+                            subscribeToPushNotifications().catch(err => {
+                                console.log('[Push] User declined or error:', err);
+                            });
+                        }, 3000);
+                    }
+                }).catch(err => {
+                    console.error('[Push] Check subscription error:', err);
+                });
+            }
         }
     }, [token, user?._id]);
 
