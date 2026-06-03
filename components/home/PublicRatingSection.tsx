@@ -381,7 +381,7 @@ function RatingSlideshow({ ratings, loading, onEdit, onDelete, currentUserId, on
                 )}
             </div>
 
-            {}
+            { }
             <DeleteConfirmModal
                 isOpen={deleteModalOpen}
                 onClose={handleCloseDeleteModal}
@@ -580,7 +580,7 @@ export default function PublicRatingSection() {
 
     return (
         <>
-            <div className="max-w-6xl mx-auto px-4 py-12">
+            <div className="py-12">
                 <div className="text-center mb-8">
                     <h2 className="text-2xl sm:text-3xl font-bold text-[var(--cn-text-main)]">
                         Học viên nói gì về CNcode?

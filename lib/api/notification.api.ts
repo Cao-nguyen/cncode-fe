@@ -7,10 +7,10 @@ const getToken = () => {
     if (typeof window === 'undefined') return null;
     try {
         const raw = localStorage.getItem('auth-storage');
-        console.log('🔑 raw auth-storage:', raw); 
+        console.log('🔑 raw auth-storage:', raw);
         if (!raw) return null;
         const parsed = JSON.parse(raw);
-        console.log('🔑 token:', parsed?.state?.token); 
+        console.log('🔑 token:', parsed?.state?.token);
         return parsed?.state?.token ?? null;
     } catch {
         return null;
@@ -24,7 +24,7 @@ async function handleResponse<T>(response: Response): Promise<{ success: boolean
             const errorData = await response.json();
             errorMessage = errorData.message || errorMessage;
         } catch {
-            
+
         }
         return {
             success: false,
@@ -93,7 +93,7 @@ export const notificationApi = {
         return result.success ? result.data.count : 0;
     },
 
-    markAsRead: async (notificationId: string): Promise<void> => {
+    markAsRead: async (notificationId: string, isBroadcast: boolean = false): Promise<void> => {
         const token = getToken();
         if (!token) return;
 
@@ -102,7 +102,8 @@ export const notificationApi = {
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
-            }
+            },
+            body: JSON.stringify({ isBroadcast })
         });
     },
 

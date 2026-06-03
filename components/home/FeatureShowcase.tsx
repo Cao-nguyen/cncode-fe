@@ -130,7 +130,7 @@ function ServiceItem({ svc }: { svc: Service }) {
                 onMouseEnter={() => setHovered(true)}
                 onMouseLeave={() => setHovered(false)}
             >
-                {}
+                { }
                 <div
                     className="absolute left-1/2 pointer-events-none z-10 whitespace-nowrap hidden sm:block"
                     style={{
@@ -154,7 +154,7 @@ function ServiceItem({ svc }: { svc: Service }) {
                     />
                 </div>
 
-                {}
+                { }
                 <div
                     className="mb-3 sm:mb-5 flex items-center justify-center"
                     style={{
@@ -165,12 +165,12 @@ function ServiceItem({ svc }: { svc: Service }) {
                     {svc.icon}
                 </div>
 
-                {}
+                { }
                 <p className="text-xs sm:text-sm font-bold text-slate-800 mb-0.5 sm:mb-1 leading-tight">
                     {svc.label}
                 </p>
 
-                {}
+                { }
                 <p className="hidden sm:block text-xs text-slate-400 leading-snug">
                     {svc.sublabel}
                 </p>
@@ -181,17 +181,25 @@ function ServiceItem({ svc }: { svc: Service }) {
 
 export default function CNServicesGrid() {
     return (
-        
-        <div className="mt-5 sm:mt-5 bg-white rounded-2xl md:rounded-3xl p-2 sm:p-3 w-[95%] max-w-6xl mx-auto" style={{ boxShadow: "0 -8px 24px -4px rgba(0,0,0,0.18), 0 4px 8px -4px rgba(0,0,0,0.04)" }}>
+        <div className="pb-8">
+            <div className="text-center mb-8">
+                <h2 className="text-2xl sm:text-3xl font-bold text-slate-800">
+                    Tính năng nổi bật
+                </h2>
+                <p className="text-sm text-slate-500 mt-2">Khám phá các tính năng nổi bật của CNcode</p>
+            </div>
 
-            {}
-            <div className="border border-slate-200 rounded-2xl md:rounded-3xl">
-                <div className="grid grid-cols-2 sm:grid-cols-3">
-                    {SERVICES.map((svc) => (
-                        <ServiceItem key={svc.label} svc={svc} />
-                    ))}
+            <div className="bg-white rounded-2xl md:rounded-3xl p-2 sm:p-3 w-full" style={{ boxShadow: "0 -8px 24px -4px rgba(0,0,0,0.18), 0 4px 8px -4px rgba(0,0,0,0.04)" }}>
+
+                { }
+                <div className="border border-slate-200 rounded-2xl md:rounded-3xl">
+                    <div className="grid grid-cols-2 sm:grid-cols-3">
+                        {SERVICES.map((svc) => (
+                            <ServiceItem key={svc.label} svc={svc} />
+                        ))}
+                    </div>
+
                 </div>
-
             </div>
         </div>
     );

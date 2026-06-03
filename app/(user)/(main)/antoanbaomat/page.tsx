@@ -23,8 +23,22 @@ export default function SecurityPolicyPage() {
 
     if (loading) {
         return (
-            <div className="flex justify-center py-20">
-                <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+            <div className="min-h-screen bg-gray-50 py-8">
+                <div className="max-w-7xl mx-auto px-3 lg:px-6">
+                    <div className="bg-white rounded-2xl shadow-sm p-3 lg:p-6">
+                        <div className="h-10 w-64 bg-gray-200 rounded animate-pulse mb-6" />
+                        <div className="space-y-4">
+                            <div className="h-4 w-full bg-gray-200 rounded animate-pulse" />
+                            <div className="h-4 w-full bg-gray-200 rounded animate-pulse" />
+                            <div className="h-4 w-3/4 bg-gray-200 rounded animate-pulse" />
+                            <div className="h-4 w-full bg-gray-200 rounded animate-pulse" />
+                            <div className="h-4 w-full bg-gray-200 rounded animate-pulse" />
+                            <div className="h-4 w-5/6 bg-gray-200 rounded animate-pulse" />
+                            <div className="h-4 w-full bg-gray-200 rounded animate-pulse" />
+                            <div className="h-4 w-2/3 bg-gray-200 rounded animate-pulse" />
+                        </div>
+                    </div>
+                </div>
             </div>
         );
     }

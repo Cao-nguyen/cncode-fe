@@ -4,7 +4,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
     Bell, MessageCircle, Heart, ThumbsUp, Bookmark,
-    CheckCheck, Coins, Flame, Info, XCircle, Loader2, X
+    CheckCheck, Coins, Flame, Info, XCircle, Loader2, X, FileText,
+    PartyPopper, CheckCircle2, AlertCircle
 } from 'lucide-react';
 import { useSocket } from '@/providers/socket.provider';
 import { useAuthStore } from '@/store/auth.store';
@@ -70,6 +71,8 @@ function NotificationIcon({ type }: { type: INotification['type'] }) {
             return <CheckCheck className={`${iconClass} text-green-500`} />;
         case 'role_request_rejected':
             return <XCircle className={`${iconClass} text-red-500`} />;
+        case 'policy_update':
+            return <FileText className={`${iconClass} text-blue-600`} />;
         default:
             return <Info className={`${iconClass} text-gray-500`} />;
     }
@@ -77,33 +80,40 @@ function NotificationIcon({ type }: { type: INotification['type'] }) {
 
 function SystemAvatar({ type }: { type: INotification['type'] }) {
     const sizeClass = "w-8 h-8 sm:w-10 sm:h-10";
-    const textClass = "text-base sm:text-lg";
+    const iconClass = "w-4 h-4 sm:w-5 sm:h-5";
 
     if (type === 'first_login_bonus') {
         return (
-            <div className={`${sizeClass} rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center flex-shrink-0 ${textClass}`}>
-                🎉
+            <div className={`${sizeClass} rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center flex-shrink-0`}>
+                <PartyPopper className={`${iconClass} text-white`} />
             </div>
         );
     }
     if (type === 'streak_bonus') {
         return (
-            <div className={`${sizeClass} rounded-full bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center flex-shrink-0 ${textClass}`}>
-                🔥
+            <div className={`${sizeClass} rounded-full bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center flex-shrink-0`}>
+                <Flame className={`${iconClass} text-white`} />
             </div>
         );
     }
     if (type === 'role_request_approved') {
         return (
-            <div className={`${sizeClass} rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center flex-shrink-0 ${textClass}`}>
-                ✅
+            <div className={`${sizeClass} rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center flex-shrink-0`}>
+                <CheckCircle2 className={`${iconClass} text-white`} />
             </div>
         );
     }
     if (type === 'role_request_rejected') {
         return (
-            <div className={`${sizeClass} rounded-full bg-gradient-to-br from-red-400 to-rose-500 flex items-center justify-center flex-shrink-0 ${textClass}`}>
-                ❌
+            <div className={`${sizeClass} rounded-full bg-gradient-to-br from-red-400 to-rose-500 flex items-center justify-center flex-shrink-0`}>
+                <AlertCircle className={`${iconClass} text-white`} />
+            </div>
+        );
+    }
+    if (type === 'policy_update') {
+        return (
+            <div className={`${sizeClass} rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center flex-shrink-0`}>
+                <FileText className={`${iconClass} text-white`} />
             </div>
         );
     }
@@ -145,6 +155,8 @@ function getNotificationMessage(notification: INotification): string {
             return notification.content || `Chào mừng ${senderName}! Bạn nhận được ${notification.meta?.coins ?? 100} xu khi đăng nhập lần đầu.`;
         case 'streak_bonus':
             return notification.content || `🔥 Bạn nhận được ${notification.meta?.coins} xu thưởng streak!`;
+        case 'policy_update':
+            return notification.content;
         case 'comment':
             return `${senderName} đã bình luận về bài viết "${notification.postTitle}"`;
         case 'reply_comment':
@@ -163,20 +175,21 @@ function getNotificationMessage(notification: INotification): string {
 }
 
 const isSystemType = (type: INotification['type']) =>
-    ['first_login_bonus', 'streak_bonus', 'system', 'role_request_approved', 'role_request_rejected'].includes(type);
+    ['first_login_bonus', 'streak_bonus', 'system', 'role_request_approved', 'role_request_rejected', 'policy_update'].includes(type);
 
 const isRoleRequestType = (type: INotification['type']) =>
     type === 'role_request_approved' || type === 'role_request_rejected';
 
 interface NotificationItemProps {
     notification: INotification;
-    onMarkAsRead: (id: string) => void;
+    onMarkAsRead: (id: string, isBroadcast?: boolean) => void;
     onClose: () => void;
 }
 
 function NotificationItem({ notification, onMarkAsRead, onClose }: NotificationItemProps) {
     const isSystem = isSystemType(notification.type);
     const isRead = notification.read;
+    const isBroadcast = 'isBroadcast' in notification ? (notification as { isBroadcast?: boolean }).isBroadcast : false;
     const linkHref = notification.postSlug || notification.postId
         ? `/blog/${notification.postSlug || notification.postId}`
         : null;
@@ -185,7 +198,7 @@ function NotificationItem({ notification, onMarkAsRead, onClose }: NotificationI
         <div
             className={`flex gap-2 sm:gap-3 p-3 sm:p-4 transition-colors cursor-pointer ${!isRead ? 'bg-blue-50/50 dark:bg-blue-950/20' : ''
                 } hover:bg-gray-50 dark:hover:bg-gray-800/50`}
-            onClick={() => !isRead && onMarkAsRead(notification._id)}
+            onClick={() => !isRead && onMarkAsRead(notification._id, isBroadcast)}
         >
             {isSystem ? (
                 <SystemAvatar type={notification.type} />
@@ -198,7 +211,7 @@ function NotificationItem({ notification, onMarkAsRead, onClose }: NotificationI
 
             <div className="flex-1 min-w-0">
                 <p className="text-xs sm:text-sm text-gray-800 dark:text-gray-200 break-words">
-                    {isRoleRequestType(notification.type) ? notification.content : getNotificationMessage(notification)}
+                    {isRoleRequestType(notification.type) || notification.type === 'policy_update' ? notification.content : getNotificationMessage(notification)}
                 </p>
 
                 {!isRoleRequestType(notification.type) && (notification.meta?.coins ?? 0) > 0 && (
@@ -211,7 +224,7 @@ function NotificationItem({ notification, onMarkAsRead, onClose }: NotificationI
                     <button
                         onClick={(e) => {
                             e.stopPropagation();
-                            onMarkAsRead(notification._id);
+                            onMarkAsRead(notification._id, isBroadcast);
                         }}
                         className="text-[10px] sm:text-xs text-blue-500 hover:text-blue-600 mt-1"
                     >
@@ -236,7 +249,7 @@ function NotificationItem({ notification, onMarkAsRead, onClose }: NotificationI
 
     return (
         <Link href={linkHref} onClick={() => {
-            if (!isRead) onMarkAsRead(notification._id);
+            if (!isRead) onMarkAsRead(notification._id, isBroadcast);
             onClose();
         }} className="block">
             {content}
@@ -252,7 +265,7 @@ interface MobileNotificationSheetProps {
     isLoading: boolean;
     page: number;
     totalPages: number;
-    onMarkAsRead: (id: string) => void;
+    onMarkAsRead: (id: string, isBroadcast?: boolean) => void;
     onMarkAllAsRead: () => void;
     onLoadMore: () => void;
 }
@@ -377,12 +390,12 @@ function MobileNotificationSheet({
                     maxHeight: "90dvh",
                 }}
             >
-                {}
+                { }
                 <div className="flex justify-center pt-3 pb-2 flex-shrink-0">
                     <div className="w-10 h-1 bg-[var(--cn-border)] rounded-full" />
                 </div>
 
-                {}
+                { }
                 <div className="flex items-center justify-between px-4 pb-3 flex-shrink-0">
                     <h3 className="text-lg font-semibold text-[var(--cn-text-main)]">
                         Thông báo
@@ -412,7 +425,7 @@ function MobileNotificationSheet({
 
                 <div className="w-full h-px bg-[var(--cn-border)] flex-shrink-0" />
 
-                {}
+                { }
                 <div
                     ref={contentRef}
                     className="flex-1 overflow-y-auto pb-6"
@@ -469,6 +482,7 @@ export default function NotificationBell() {
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [isMobile, setIsMobile] = useState(false);
+    const [bellAnimation, setBellAnimation] = useState(false);
 
     const isFetchingRef = useRef(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
@@ -556,17 +570,36 @@ export default function NotificationBell() {
                 setUnreadCount(updated.filter(n => !n.read).length);
                 return updated;
             });
+
+            // Trigger bell animation
+            setBellAnimation(true);
+            setTimeout(() => setBellAnimation(false), 1000);
+        };
+
+        // Handler cho broadcast notifications
+        const broadcastHandler = () => {
+            if (user.role === 'admin') return; // Admin không nhận broadcast
+
+            // Refetch notifications để lấy broadcasts mới
+            fetchNotifications(1);
+
+            // Trigger bell animation
+            setBellAnimation(true);
+            setTimeout(() => setBellAnimation(false), 1000);
         };
 
         socket.on('new_notification', handler);
+        socket.on('new_broadcast_notification', broadcastHandler);
+
         return () => {
             socket.off('new_notification', handler);
+            socket.off('new_broadcast_notification', broadcastHandler);
         };
-    }, [socket, isConnected, user?._id, user?.role]);
+    }, [socket, isConnected, user?._id, user?.role, fetchNotifications]);
 
-    const markAsRead = useCallback(async (notificationId: string) => {
+    const markAsRead = useCallback(async (notificationId: string, isBroadcast: boolean = false) => {
         try {
-            await notificationApi.markAsRead(notificationId);
+            await notificationApi.markAsRead(notificationId, isBroadcast);
             setNotifications(prev => {
                 const updated = prev.map(n =>
                     n._id === notificationId ? { ...n, read: true } : n
@@ -607,44 +640,50 @@ export default function NotificationBell() {
 
     return (
         <>
-            {}
+            { }
             {!isMobile && (
                 <div className="relative inline-block" ref={dropdownRef}>
                     <button
                         type="button"
                         onClick={handleButtonClick}
-                        className="relative p-1.5 sm:p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                        className="relative p-2 rounded-xl hover:bg-gradient-to-br hover:from-blue-50 hover:to-indigo-50 dark:hover:from-blue-950/30 dark:hover:to-indigo-950/30 transition-all duration-200 group"
                         aria-label="Thông báo"
                     >
-                        <Bell className="w-4 h-4 sm:w-5 sm:h-5 text-[var(--cn-text-sub)]" />
+                        <Bell
+                            className={`w-5 h-5 text-[var(--cn-text-sub)] group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors ${bellAnimation ? 'animate-[wiggle_0.5s_ease-in-out]' : ''}`}
+                        />
                         {unreadCount > 0 && (
-                            <span className="absolute -top-1 -right-1 min-w-[16px] h-[16px] sm:min-w-[18px] sm:h-[18px] bg-red-500 text-white text-[9px] sm:text-[10px] font-bold rounded-full flex items-center justify-center px-[3px] sm:px-1 whitespace-nowrap">
+                            <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-gradient-to-br from-red-500 to-rose-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 shadow-lg animate-[bounce_1s_ease-in-out_3]">
                                 {unreadCount > 99 ? '99+' : unreadCount}
                             </span>
                         )}
                     </button>
 
                     {open && (
-                        <div className="absolute right-0 mt-2 
-                            w-80 max-w-[calc(100vw-32px)] sm:w-[380px] lg:w-[420px]
-                            bg-[var(--cn-bg-card)] border border-[var(--cn-border)] rounded-[var(--cn-radius-md)] shadow-[var(--cn-shadow-lg)] z-20 overflow-hidden animate-slideDown">
-                            <div className="sticky top-0 z-10 flex items-center justify-between p-3 sm:p-4 border-b border-[var(--cn-border)] bg-[var(--cn-bg-card)]">
-                                <h3 className="text-sm sm:text-base font-semibold text-[var(--cn-text-main)]">
-                                    Thông báo
-                                    {unreadCount > 0 && (
-                                        <span className="ml-2 text-xs text-[var(--cn-text-muted)]">
-                                            ({unreadCount})
-                                        </span>
-                                    )}
-                                </h3>
+                        <div className="absolute right-0 mt-3 
+                            w-80 max-w-[calc(100vw-32px)] sm:w-[400px] lg:w-[440px]
+                            bg-[var(--cn-bg-card)] border border-[var(--cn-border)] rounded-2xl shadow-2xl shadow-black/10 dark:shadow-black/40 z-20 overflow-hidden animate-[slideDown_0.2s_ease-out]">
+                            <div className="sticky top-0 z-10 flex items-center justify-between p-4 border-b border-[var(--cn-border)] bg-gradient-to-r from-blue-50/50 to-indigo-50/50 dark:from-blue-950/20 dark:to-indigo-950/20 backdrop-blur-sm">
+                                <div className="flex items-center gap-2">
+                                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
+                                        <Bell className="w-4 h-4 text-white" />
+                                    </div>
+                                    <h3 className="text-base font-bold text-[var(--cn-text-main)]">
+                                        Thông báo
+                                        {unreadCount > 0 && (
+                                            <span className="ml-2 text-xs font-medium px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400">
+                                                {unreadCount}
+                                            </span>
+                                        )}
+                                    </h3>
+                                </div>
                                 {unreadCount > 0 && (
                                     <button
                                         onClick={markAllAsRead}
-                                        className="flex items-center gap-1 text-xs text-[var(--cn-primary)] hover:text-[var(--cn-primary-hover)] transition-colors"
+                                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-lg transition-all duration-200"
                                     >
-                                        <CheckCheck className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                                        <span className="hidden sm:inline">Đọc tất cả</span>
-                                        <span className="sm:hidden">Đọc hết</span>
+                                        <CheckCheck className="w-3.5 h-3.5" />
+                                        <span>Đọc tất cả</span>
                                     </button>
                                 )}
                             </div>
@@ -693,24 +732,24 @@ export default function NotificationBell() {
                 </div>
             )}
 
-            {}
+            { }
             {isMobile && (
                 <button
                     type="button"
                     onClick={handleButtonClick}
-                    className="relative p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                    className="relative p-2 rounded-xl hover:bg-gradient-to-br hover:from-blue-50 hover:to-indigo-50 dark:hover:from-blue-950/30 dark:hover:to-indigo-950/30 transition-all duration-200"
                     aria-label="Thông báo"
                 >
-                    <Bell className="w-5 h-5 text-[var(--cn-text-sub)]" />
+                    <Bell className={`w-5 h-5 text-[var(--cn-text-sub)] ${bellAnimation ? 'animate-[wiggle_0.5s_ease-in-out]' : ''}`} />
                     {unreadCount > 0 && (
-                        <span className="absolute -top-1 -right-1 min-w-[16px] h-[16px] bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-1">
+                        <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-gradient-to-br from-red-500 to-rose-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 shadow-lg">
                             {unreadCount > 99 ? '99+' : unreadCount}
                         </span>
                     )}
                 </button>
             )}
 
-            {}
+            { }
             <MobileNotificationSheet
                 open={isMobileSheetOpen}
                 onClose={() => setIsMobileSheetOpen(false)}

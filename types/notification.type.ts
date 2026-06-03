@@ -1,4 +1,3 @@
-
 export interface CoinsUpdatedPayload {
     coins: number;
     userId: string;
@@ -37,7 +36,7 @@ export interface INotification {
         fullName: string;
         avatar?: string;
     };
-    type: 'comment' | 'reply_comment' | 'like_post' | 'reaction_comment' | 'bookmark' | 'first_login_bonus' | 'streak_bonus' | 'role_request_approved' | 'role_request_rejected' | 'system';
+    type: 'comment' | 'reply_comment' | 'like_post' | 'reaction_comment' | 'bookmark' | 'first_login_bonus' | 'streak_bonus' | 'role_request_approved' | 'role_request_rejected' | 'system' | 'policy_update';
     content: string;
     postId?: string;
     postSlug?: string;
@@ -48,6 +47,10 @@ export interface INotification {
         oldRole?: string;
         newRole?: string;
         approved?: boolean;
+        policy_key?: string;
+        policy_name?: string;
+        updated_by?: string;
+        updated_at?: Date;
     };
     read: boolean;
     createdAt: string;

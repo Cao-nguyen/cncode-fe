@@ -24,7 +24,7 @@ interface OnlineUser {
     userId: string;
     fullName: string;
     avatar?: string;
-    role?: string;      
+    role?: string;
     device?: string;
 }
 
@@ -104,7 +104,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
             if (socketRef.current?.connected) {
                 socketRef.current.emit('heartbeat', { timestamp: Date.now() });
             }
-        }, 25000); 
+        }, 25000);
     }, []);
 
     const startActivityTracking = useCallback(() => {
@@ -116,7 +116,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
 
         window.addEventListener('click', handle);
         window.addEventListener('keypress', handle);
-        
+
         activityCleanupRef.current = () => {
             window.removeEventListener('click', handle);
             window.removeEventListener('keypress', handle);
@@ -139,7 +139,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
         console.log('🔌 Connecting to socket at:', BASE_URL);
 
         const instance = io(BASE_URL, {
-            
+            auth: token ? { token } : undefined,
             transports: ['polling', 'websocket'],
             upgrade: true,
             autoConnect: true,
@@ -147,7 +147,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
             reconnectionAttempts: 15,
             reconnectionDelay: 2000,
             reconnectionDelayMax: 15000,
-            
+
             timeout: 60000,
             withCredentials: true,
         });
@@ -228,7 +228,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
             setSocketId(undefined);
             registeredRef.current = false;
         };
-        
+
     }, [user?._id, token]);
 
     useEffect(() => {
@@ -405,7 +405,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
                     console.log('📱 Tab visible, reconnecting...');
                     reconnect();
                 } else if (socketRef.current?.connected) {
-                    
+
                     socketRef.current.emit('request_online_users');
                 }
             }
