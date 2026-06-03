@@ -24,6 +24,12 @@ export interface IUser {
     isMuted?: boolean;
     teacherName?: string;
     teacherWorkUnit?: string;
+    socialLinks?: Array<{
+        _id?: string;
+        label: string;
+        url: string;
+        createdAt?: string;
+    }>;
     violations?: Array<{
         _id: string;
         reason: string;
@@ -81,7 +87,7 @@ async function handleResponse<T>(response: Response): Promise<IApiResponse<T>> {
             const errorData = await response.json();
             errorMessage = errorData.message || errorMessage;
         } catch {
-            
+
         }
         return {
             success: false,
@@ -95,7 +101,7 @@ async function handleResponse<T>(response: Response): Promise<IApiResponse<T>> {
 }
 
 export const userApi = {
-    
+
     getProfile: async (token: string): Promise<IApiResponse<IUser>> => {
         const response = await fetch(`${API_URL}/api/users/profile`, {
             headers: {

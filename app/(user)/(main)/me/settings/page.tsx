@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -18,13 +17,22 @@ import {
     Coins,
     Flame,
     CheckCircle,
+    Upload,
+    Plus,
+    Link as LinkIcon,
 } from 'lucide-react';
-import Image from 'next/image';
 import { CustomInput } from '@/components/custom/CustomInput';
 import { CustomSelect } from '@/components/custom/CustomSelect';
 import { CustomTextarea } from '@/components/custom/CustomTextarea';
 import { CustomButton } from '@/components/custom/CustomButton';
 import { toast } from 'sonner';
+import { uploadApi } from '@/lib/upload';
+
+interface SocialLink {
+    _id?: string;
+    label: string;
+    url: string;
+}
 
 interface FormData {
     fullName: string;
@@ -34,6 +42,7 @@ interface FormData {
     school: string;
     birthday: string;
     bio: string;
+    socialLinks: SocialLink[];
 }
 
 const PROVINCES: string[] = [
@@ -116,7 +125,20 @@ const userToFormData = (u: IUser): FormData => ({
     school: u.school ?? '',
     birthday: isoToDateInput(u.birthday),
     bio: u.bio ?? '',
+    socialLinks: u.socialLinks ?? [],
 });
+
+const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => {
+            const result = reader.result as string;
+            resolve(result.split(',')[1]);
+        };
+        reader.onerror = error => reject(error);
+    });
+};
 
 const SettingsPage = () => {
     const router = useRouter();
@@ -128,10 +150,12 @@ const SettingsPage = () => {
     const [user, setUserState] = useState<IUser | null>(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [uploading, setUploading] = useState(false);
     const [deleting, setDeleting] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [requestingRole, setRequestingRole] = useState(false);
     const hasFetched = useRef(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const [showTeacherRequestModal, setShowTeacherRequestModal] = useState(false);
     const [teacherName, setTeacherName] = useState('');
@@ -145,6 +169,7 @@ const SettingsPage = () => {
         school: '',
         birthday: '',
         bio: '',
+        socialLinks: [],
     });
 
     const fetchUserProfile = useCallback(async () => {
@@ -250,18 +275,100 @@ const SettingsPage = () => {
         return () => { socket.off('streak_updated', handleStreakUpdated); };
     }, [socket, isConnected, user, updateStreak]);
 
-    const handleInputChange = (field: keyof FormData, value: string) => {
+    const handleInputChange = (field: keyof Omit<FormData, 'socialLinks'>, value: string) => {
         setFormData(prev => ({ ...prev, [field]: value }));
+    };
+
+    const handleAddSocialLink = () => {
+        setFormData(prev => ({
+            ...prev,
+            socialLinks: [...prev.socialLinks, { label: '', url: '' }]
+        }));
+    };
+
+    const handleRemoveSocialLink = (index: number) => {
+        setFormData(prev => ({
+            ...prev,
+            socialLinks: prev.socialLinks.filter((_, i) => i !== index)
+        }));
+    };
+
+    const handleSocialLinkChange = (index: number, field: 'label' | 'url', value: string) => {
+        setFormData(prev => ({
+            ...prev,
+            socialLinks: prev.socialLinks.map((link, i) =>
+                i === index ? { ...link, [field]: value } : link
+            )
+        }));
+    };
+
+    const handleAvatarUpload = async (file: File) => {
+        if (!token) return;
+
+        if (!file.type.startsWith('image/')) {
+            toast.error('Vui lòng chọn file ảnh');
+            return;
+        }
+
+        if (file.size > 5 * 1024 * 1024) {
+            toast.error('Kích thước ảnh không được vượt quá 5MB');
+            return;
+        }
+
+        setUploading(true);
+        try {
+            const base64 = await fileToBase64(file);
+            const fullBase64 = `data:${file.type};base64,${base64}`;
+
+            const result = await uploadApi.uploadImage(fullBase64, 'avatars');
+
+            if (result.success && result.url) {
+                console.log('Upload result:', result);
+                console.log('Avatar URL:', result.url);
+
+                const updateResult = await userApi.updateProfile({ avatar: result.url }, token);
+                console.log('Update result:', updateResult);
+
+                if (updateResult.success && updateResult.data) {
+                    setUserState(updateResult.data);
+                    setFormData(prev => ({ ...prev }));
+                    if (rawStoreUser) {
+                        setUser({
+                            ...rawStoreUser,
+                            avatar: result.url,
+                        });
+                    }
+                    toast.success('Cập nhật avatar thành công');
+                } else {
+                    toast.error(updateResult.message || 'Không thể cập nhật avatar');
+                }
+            } else {
+                toast.error(result.message || 'Upload avatar thất bại');
+            }
+        } catch (error) {
+            console.error('Upload avatar error:', error);
+            toast.error('Có lỗi xảy ra khi upload avatar');
+        } finally {
+            setUploading(false);
+        }
     };
 
     const handleUpdateProfile = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!token) return;
+
+        // Validate social links
+        const validLinks = formData.socialLinks.filter(link => link.label.trim() && link.url.trim());
+
         try {
             setSaving(true);
-            const response = await userApi.updateProfile(formData, token);
+            const response = await userApi.updateProfile({
+                ...formData,
+                socialLinks: validLinks
+            }, token);
             if (response.success && response.data) {
                 setUserState(response.data);
+                setFormData(userToFormData(response.data));
                 if (rawStoreUser) {
                     setUser({
                         ...rawStoreUser,
@@ -269,9 +376,11 @@ const SettingsPage = () => {
                         username: response.data.username,
                     });
                 }
+                toast.success('Cập nhật thông tin thành công');
             }
         } catch (error) {
             console.error('Update profile error:', error);
+            toast.error('Cập nhật thất bại');
         } finally {
             setSaving(false);
         }
@@ -279,7 +388,6 @@ const SettingsPage = () => {
 
     const handleRequestRole = async () => {
         if (!token) return;
-
         setShowTeacherRequestModal(true);
     };
 
@@ -312,11 +420,9 @@ const SettingsPage = () => {
 
             if (response.success) {
                 toast.success('Đã gửi yêu cầu lên admin');
-
                 setShowTeacherRequestModal(false);
                 setTeacherName('');
                 setTeacherWorkUnit('');
-
                 await fetchUserProfile();
             } else {
                 toast.error(response.message || 'Không thể gửi yêu cầu');
@@ -376,26 +482,48 @@ const SettingsPage = () => {
         <div className="max-w-5xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
             <div className="bg-[var(--cn-bg-card)] rounded-[var(--cn-radius-md)] border border-[var(--cn-border)] shadow-[var(--cn-shadow-sm)] overflow-hidden">
 
-                {}
+                { }
                 <div className="border-b border-[var(--cn-border)] p-4 sm:p-6">
                     <h1 className="text-xl sm:text-2xl font-bold text-[var(--cn-primary)]">Cài đặt tài khoản</h1>
                     <p className="text-xs sm:text-sm text-[var(--cn-text-muted)] mt-1">Quản lý thông tin cá nhân</p>
                 </div>
 
-                {}
+                { }
                 <div className="flex flex-col items-center py-6 sm:py-8 border-b border-[var(--cn-border)] bg-[var(--cn-bg-section)]">
-                    <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden bg-[var(--cn-bg-card)] ring-4 ring-[var(--cn-border)] flex items-center justify-center">
-                        {currentUser.avatar ? (
-                            <Image
-                                src={currentUser.avatar}
-                                alt={currentUser.fullName}
-                                width={96}
-                                height={96}
-                                className="w-full h-full object-cover"
-                            />
-                        ) : (
-                            <User className="w-10 h-10 sm:w-12 sm:h-12 text-[var(--cn-text-muted)]" />
-                        )}
+                    <div className="relative">
+                        <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden bg-[var(--cn-bg-card)] ring-4 ring-[var(--cn-border)] flex items-center justify-center">
+                            {currentUser.avatar ? (
+                                <img
+                                    src={currentUser.avatar}
+                                    alt={currentUser.fullName}
+                                    className="w-full h-full object-cover"
+                                />
+                            ) : (
+                                <User className="w-10 h-10 sm:w-12 sm:h-12 text-[var(--cn-text-muted)]" />
+                            )}
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => fileInputRef.current?.click()}
+                            disabled={uploading}
+                            className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-[var(--cn-primary)] text-white flex items-center justify-center hover:bg-[var(--cn-primary-hover)] transition-colors shadow-lg disabled:opacity-50"
+                        >
+                            {uploading ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                                <Upload className="w-4 h-4" />
+                            )}
+                        </button>
+                        <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) handleAvatarUpload(file);
+                            }}
+                        />
                     </div>
                     <div className="mt-3 text-center">
                         <h2 className="font-semibold text-[var(--cn-text-main)] text-base sm:text-lg">
@@ -412,7 +540,7 @@ const SettingsPage = () => {
                     </div>
                 </div>
 
-                {}
+                { }
                 <div className="p-4 sm:p-6">
                     <form onSubmit={handleUpdateProfile} className="space-y-4 sm:space-y-6">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
@@ -466,6 +594,58 @@ const SettingsPage = () => {
                                 />
                             </div>
                         </div>
+
+                        { }
+                        <div className="border-t border-[var(--cn-border)] pt-6">
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-sm font-medium text-[var(--cn-text-main)] flex items-center gap-2">
+                                    <LinkIcon className="w-4 h-4 text-[var(--cn-primary)]" />
+                                    Liên kết tùy chỉnh
+                                </h3>
+                                <button
+                                    type="button"
+                                    onClick={handleAddSocialLink}
+                                    className="text-xs flex items-center gap-1 px-2 py-1 rounded-lg bg-[var(--cn-primary)] text-white hover:bg-[var(--cn-primary-hover)] transition-colors"
+                                >
+                                    <Plus className="w-3 h-3" />
+                                    Thêm link
+                                </button>
+                            </div>
+                            {formData.socialLinks.length === 0 ? (
+                                <div className="text-center py-8 text-sm text-[var(--cn-text-muted)]">
+                                    <LinkIcon className="w-12 h-12 mx-auto mb-2 opacity-30" />
+                                    <p>Chưa có liên kết nào</p>
+                                    <p className="text-xs mt-1">Nhấn {`"Thêm link"`} để thêm mạng xã hội, website hoặc liên kết khác</p>
+                                </div>
+                            ) : (
+                                <div className="space-y-3">
+                                    {formData.socialLinks.map((link, index) => (
+                                        <div key={index} className="flex gap-2 items-start">
+                                            <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                                <CustomInput
+                                                    placeholder="Tên (VD: Facebook, GitHub...)"
+                                                    value={link.label}
+                                                    onChange={(e) => handleSocialLinkChange(index, 'label', e.target.value)}
+                                                />
+                                                <CustomInput
+                                                    placeholder="https://..."
+                                                    value={link.url}
+                                                    onChange={(e) => handleSocialLinkChange(index, 'url', e.target.value)}
+                                                />
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => handleRemoveSocialLink(index)}
+                                                className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-lg transition-colors mt-1"
+                                            >
+                                                <X className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
                         <div className="flex justify-end gap-3 pt-4 border-t border-[var(--cn-border)]">
                             <CustomButton
                                 type="submit"
@@ -478,7 +658,7 @@ const SettingsPage = () => {
                         </div>
                     </form>
 
-                    {}
+                    { }
                     {currentUser.role !== 'teacher' && currentUser.role !== 'admin' && (
                         <div className="mt-6 bg-[var(--cn-bg-section)] rounded-[var(--cn-radius-md)] p-4 sm:p-6 border border-[var(--cn-border)]">
                             <h3 className="text-base sm:text-lg font-semibold text-[var(--cn-text-main)] mb-3 sm:mb-4 flex items-center gap-2">
@@ -509,7 +689,7 @@ const SettingsPage = () => {
                         </div>
                     )}
 
-                    {}
+                    { }
                     <div className="mt-6 bg-[var(--cn-bg-section)] rounded-[var(--cn-radius-md)] p-4 sm:p-6 border border-[var(--cn-border)]">
                         <h3 className="text-base sm:text-lg font-semibold text-[var(--cn-text-main)] mb-3 sm:mb-4 flex items-center gap-2">
                             <Coins className="w-5 h-5 text-[var(--cn-primary)]" />
@@ -537,7 +717,7 @@ const SettingsPage = () => {
                         </div>
                     </div>
 
-                    {}
+                    { }
                     <div className="mt-6 bg-red-50 dark:bg-red-950/20 rounded-[var(--cn-radius-md)] p-4 sm:p-6 border border-red-200 dark:border-red-800">
                         <h3 className="text-base sm:text-lg font-semibold text-red-600 dark:text-red-400 mb-3 sm:mb-4 flex items-center gap-2">
                             <Trash2 className="w-5 h-5" />
@@ -555,7 +735,7 @@ const SettingsPage = () => {
                         </CustomButton>
                     </div>
 
-                    {}
+                    { }
                     <div className="mt-6 pt-4 border-t border-[var(--cn-border)]">
                         <CustomButton
                             onClick={handleLogout}
@@ -568,7 +748,7 @@ const SettingsPage = () => {
                 </div>
             </div>
 
-            {}
+            { }
             {showDeleteConfirm && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
                     <div className="bg-[var(--cn-bg-card)] rounded-[var(--cn-radius-md)] w-full max-w-md border border-red-200 dark:border-red-800 shadow-[var(--cn-shadow-lg)]">

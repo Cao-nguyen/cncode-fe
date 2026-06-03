@@ -18,6 +18,12 @@ export interface IUser {
     lastActiveAt: string;
     createdAt: string;
     updatedAt: string;
+    socialLinks?: Array<{
+        _id?: string;
+        label: string;
+        url: string;
+        createdAt?: string;
+    }>;
 }
 
 export interface IUserStats {
