@@ -18,6 +18,9 @@ import {
     Settings,
     Mail,
     HelpCircle,
+    Shield,
+    UserPlus,
+    Image as ImageIcon,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -68,6 +71,22 @@ const menuItems = [
                 title: "Quản lý Blog",
                 link: "/admin/blog",
                 icon: <Document size={18} variant="Outline" />,
+            },
+            {
+                title: "Slideshow",
+                link: "/admin/slideshow",
+                icon: <ImageIcon size={18} />,
+            },
+        ],
+    },
+    {
+        category: "Diễn đàn",
+        categoryId: "forum",
+        listLink: [
+            {
+                title: "Quản lý Chat",
+                link: "/admin/congdong",
+                icon: <Message size={18} variant="Outline" />,
             },
         ],
     },

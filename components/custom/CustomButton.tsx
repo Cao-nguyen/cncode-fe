@@ -52,8 +52,11 @@ export const CustomButton: React.FC<CustomButtonProps> = ({
             disabled={disabled || loading}
             className={`${baseClasses} ${variants[variant]} ${sizes[size]} ${fullWidth ? 'w-full' : ''} ${className}`}
         >
-            {loading && <Loader2 className="w-3.5 h-3.5 lg:w-4 lg:h-4 animate-spin" />}
-            {children}
+            {loading ? (
+                <Loader2 className="w-3.5 h-3.5 lg:w-4 lg:h-4 animate-spin" />
+            ) : (
+                children
+            )}
         </button>
     );
 };
