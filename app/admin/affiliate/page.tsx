@@ -178,7 +178,7 @@ export default function AdminAffiliatePage() {
 
     return (
         <div className="space-y-6 pb-8 px-3 sm:px-4">
-            {}
+            { }
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
                     <h1 className="text-2xl sm:text-3xl font-bold text-[var(--cn-text-main)]">Tiếp thị liên kết</h1>
@@ -189,7 +189,7 @@ export default function AdminAffiliatePage() {
                 </div>
             </div>
 
-            {}
+            { }
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
                 {cardConfigs.map((card) => (
                     <DashboardCard
@@ -205,7 +205,7 @@ export default function AdminAffiliatePage() {
                 ))}
             </div>
 
-            {}
+            { }
             <div className="bg-[var(--cn-bg-card)] rounded-xl shadow-sm border border-[var(--cn-border)] overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full min-w-[900px]">
@@ -223,12 +223,46 @@ export default function AdminAffiliatePage() {
                         </thead>
                         <tbody className="divide-y divide-[var(--cn-border)]">
                             {loading ? (
-                                <tr>
-                                    <td colSpan={8} className="text-center py-16">
-                                        <Loader2 className="w-8 h-8 animate-spin text-[var(--cn-primary)] mx-auto" />
-                                        <p className="text-sm text-[var(--cn-text-muted)] mt-3">Đang tải dữ liệu...</p>
-                                    </td>
-                                </tr>
+                                [...Array(5)].map((_, i) => (
+                                    <tr key={i}>
+                                        <td className="px-5 py-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-9 h-9 rounded-full bg-gray-200 dark:bg-gray-700 animate-pulse" />
+                                                <div className="space-y-2">
+                                                    <div className="h-4 w-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                                                    <div className="h-3 w-24 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="px-5 py-4">
+                                            <div className="space-y-2">
+                                                <div className="h-4 w-20 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                                                <div className="h-3 w-40 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                                            </div>
+                                        </td>
+                                        <td className="px-5 py-4 text-center">
+                                            <div className="h-4 w-12 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mx-auto" />
+                                        </td>
+                                        <td className="px-5 py-4 text-center">
+                                            <div className="h-4 w-12 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mx-auto" />
+                                        </td>
+                                        <td className="px-5 py-4 text-center">
+                                            <div className="h-4 w-12 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mx-auto" />
+                                        </td>
+                                        <td className="px-5 py-4 text-center">
+                                            <div className="h-4 w-12 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mx-auto" />
+                                        </td>
+                                        <td className="px-5 py-4 text-center">
+                                            <div className="h-4 w-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mx-auto" />
+                                        </td>
+                                        <td className="px-5 py-4">
+                                            <div className="flex items-center justify-center gap-2">
+                                                <div className="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse" />
+                                                <div className="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse" />
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))
                             ) : stats.length === 0 ? (
                                 <tr>
                                     <td colSpan={8} className="text-center py-16">
@@ -301,7 +335,7 @@ export default function AdminAffiliatePage() {
                     </table>
                 </div>
 
-                {}
+                { }
                 {totalPages > 1 && (
                     <div className="border-t border-[var(--cn-border)] px-5 py-4 flex items-center justify-between">
                         <div className="text-sm text-[var(--cn-text-muted)]">
@@ -335,7 +369,7 @@ export default function AdminAffiliatePage() {
                 )}
             </div>
 
-            {}
+            { }
             {showDetailModal && selectedStat && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowDetailModal(false)}>
                     <div className="bg-[var(--cn-bg-card)] rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>
@@ -344,7 +378,7 @@ export default function AdminAffiliatePage() {
                             <button onClick={() => setShowDetailModal(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-[var(--cn-bg-section)] hover:bg-[var(--cn-hover)] transition"><X size={18} className="text-[var(--cn-text-muted)]" /></button>
                         </div>
                         <div className="p-6 space-y-5">
-                            {}
+                            { }
                             <div className="flex items-center gap-4 p-4 bg-[var(--cn-bg-section)] rounded-xl">
                                 <Avatar className="w-18 h-18">
                                     <AvatarImage
@@ -362,7 +396,7 @@ export default function AdminAffiliatePage() {
                                 </div>
                             </div>
 
-                            {}
+                            { }
                             <div className="flex flex-wrap gap-3">
                                 <div className="flex items-center gap-2 px-3 py-1.5 bg-[var(--cn-bg-section)] rounded-full">
                                     <Tag size={14} className="text-[var(--cn-primary)]" />
@@ -374,7 +408,7 @@ export default function AdminAffiliatePage() {
                                 </div>
                             </div>
 
-                            {}
+                            { }
                             <div>
                                 <label className="block text-xs font-semibold uppercase text-[var(--cn-text-muted)] mb-2">LINK GIỚI THIỆU</label>
                                 <div className="p-3 bg-[var(--cn-bg-section)] rounded-xl flex items-center justify-between gap-2">
@@ -385,7 +419,7 @@ export default function AdminAffiliatePage() {
                                 </div>
                             </div>
 
-                            {}
+                            { }
                             <div>
                                 <label className="block text-xs font-semibold uppercase text-[var(--cn-text-muted)] mb-2">THỐNG KÊ</label>
                                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

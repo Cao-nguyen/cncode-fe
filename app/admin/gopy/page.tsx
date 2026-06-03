@@ -200,7 +200,7 @@ export default function AdminFeedbackPage() {
 
     return (
         <div className="space-y-6 pb-8 px-4">
-            {}
+            { }
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
                     <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">Quản lý góp ý</h1>
@@ -211,7 +211,7 @@ export default function AdminFeedbackPage() {
                 </div>
             </div>
 
-            {}
+            { }
             <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
                 {statusOrder.map((status) => (
                     <div key={status} className={`rounded-xl p-3 text-center border ${statusColors[status].replace('text', 'border').replace('bg', '')} ${statusColors[status].split(' ')[0]}`}>
@@ -221,7 +221,7 @@ export default function AdminFeedbackPage() {
                 ))}
             </div>
 
-            {}
+            { }
             <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
                 <div className="flex flex-wrap gap-3 items-center">
                     <div className="flex-1 min-w-[200px]">
@@ -252,9 +252,9 @@ export default function AdminFeedbackPage() {
                 </div>
             </div>
 
-            {}
+            { }
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden relative">
-                {}
+                { }
                 {loading && (
                     <div className="absolute top-0 left-0 w-full h-[2px] bg-blue-100 overflow-hidden z-20">
                         <div className="h-full bg-blue-500 animate-[loading_1.5s_infinite_linear]" style={{ width: '30%', position: 'absolute' }}></div>
@@ -319,12 +319,38 @@ export default function AdminFeedbackPage() {
                                     );
                                 })
                             ) : loading ? (
-                                <tr>
-                                    <td colSpan={6} className="text-center py-16">
-                                        <Loader2 className="w-8 h-8 animate-spin text-blue-500 mx-auto" />
-                                        <p className="text-sm text-gray-500 mt-3">Đang tải dữ liệu...</p>
-                                    </td>
-                                </tr>
+                                [...Array(5)].map((_, i) => (
+                                    <tr key={i}>
+                                        <td className="px-5 py-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-9 h-9 rounded-full bg-gray-200 dark:bg-gray-700 animate-pulse" />
+                                                <div className="space-y-2">
+                                                    <div className="h-4 w-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                                                    <div className="h-3 w-24 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="px-5 py-4">
+                                            <div className="h-4 w-48 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                                        </td>
+                                        <td className="px-5 py-4">
+                                            <div className="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                                        </td>
+                                        <td className="px-5 py-4">
+                                            <div className="h-6 w-20 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse" />
+                                        </td>
+                                        <td className="px-5 py-4">
+                                            <div className="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                                        </td>
+                                        <td className="px-5 py-4">
+                                            <div className="flex items-center justify-center gap-2">
+                                                <div className="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse" />
+                                                <div className="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse" />
+                                                <div className="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse" />
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))
                             ) : (
                                 <tr>
                                     <td colSpan={6} className="text-center py-16">
@@ -349,7 +375,7 @@ export default function AdminFeedbackPage() {
                 )}
             </div>
 
-            {}
+            { }
             {showDetailModal && selectedFeedback && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowDetailModal(false)}>
                     <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>

@@ -19,6 +19,7 @@ import { CustomInputSearch } from '@/components/custom/CustomInputSearch';
 import { CustomButton } from '@/components/custom/CustomButton';
 import { CustomSelect } from '@/components/custom/CustomSelect';
 import { ConfirmModalDelete } from '@/components/custom/ConfirmationModal';
+import { DashboardCard } from '@/components/custom/DashboardCard';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
@@ -44,18 +45,6 @@ const STATUS_OPTIONS = [
 
 interface GradeStat { _id: string; count: number; }
 interface MonthlyStat { _id: number; count: number; }
-
-const StatCard = ({ icon, label, value, color }: { icon: React.ReactNode; label: string; value: number; color: string }) => (
-    <div className="bg-[var(--cn-bg-card)] rounded-xl p-4 border border-[var(--cn-border)] hover:shadow-md transition-all">
-        <div className="flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-xl ${color} flex items-center justify-center`}>{icon}</div>
-            <div>
-                <p className="text-2xl font-bold text-[var(--cn-text-main)]">{value.toLocaleString()}</p>
-                <p className="text-[10px] uppercase font-bold text-[var(--cn-text-muted)] tracking-wider">{label}</p>
-            </div>
-        </div>
-    </div>
-);
 
 const ViewQuestionModal = ({ isOpen, onClose, question }: { isOpen: boolean; onClose: () => void; question: Question | null }) => {
     const [answers, setAnswers] = useState<Answer[]>([]);
@@ -122,7 +111,20 @@ const ViewQuestionModal = ({ isOpen, onClose, question }: { isOpen: boolean; onC
                         <h4 className="font-bold text-[var(--cn-text-main)] mb-4 flex items-center gap-2"><MessageCircle className="w-4 h-4 text-blue-500" />Câu trả lời ({answers.length})</h4>
                         <div className="space-y-4">
                             {loading ? (
-                                <div className="py-12 text-center"><div className="w-8 h-8 border-4 border-[var(--cn-primary)] border-t-transparent rounded-full animate-spin mx-auto" /></div>
+                                <div className="space-y-3">
+                                    {[...Array(3)].map((_, i) => (
+                                        <div key={i} className="p-5 rounded-2xl border border-[var(--cn-border)] bg-white">
+                                            <div className="flex items-center gap-2 mb-3">
+                                                <div className="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                                                <div className="h-4 w-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <div className="h-3 w-full bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                                                <div className="h-3 w-5/6 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
                             ) : answers.length === 0 ? (
                                 <p className="text-center text-[var(--cn-text-muted)] py-10 bg-[var(--cn-bg-section)] rounded-xl italic">Chưa có câu trả lời nào</p>
                             ) : (
@@ -333,111 +335,108 @@ export default function AdminFAQPage() {
     })) || [];
 
     return (
-        <div className="min-h-screen p-6 space-y-6 bg-[var(--cn-bg-main)]">
-            <div className="max-w-7xl mx-auto space-y-6">
-                <div className="flex items-center gap-3">
-                    <ShieldCheck className="w-8 h-8 text-[var(--cn-primary)]" />
-                    <h1 className="text-3xl font-extrabold text-[var(--cn-text-main)] tracking-tight">Quản lý hỏi đáp</h1>
+        <div className="space-y-6 pb-8 px-3 sm:px-4">
+            <div>
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">Quản lý hỏi đáp</h1>
+                <p className="text-sm text-gray-500 mt-1">Quản lý câu hỏi và câu trả lời</p>
+            </div>
+
+            {statistics && (
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                    <DashboardCard title="Tổng câu hỏi" value={statistics.totalQuestions} icon={<FileQuestion size={18} />} iconBgColor="#EFF6FF" iconColor="#3B82F6" />
+                    <DashboardCard title="Đã trả lời" value={statistics.answeredQuestions} icon={<CheckCircle size={18} />} iconBgColor="#F0FDF4" iconColor="#22C55E" />
+                    <DashboardCard title="Chờ xử lý" value={statistics.pendingQuestions} icon={<Clock size={18} />} iconBgColor="#FFF7ED" iconColor="#F97316" />
+                    <DashboardCard title="Câu trả lời" value={statistics.totalAnswers} icon={<MessageCircle size={18} />} iconBgColor="#F5F3FF" iconColor="#8B5CF6" />
+                    <DashboardCard title="Tương tác" value={statistics.totalLikes} icon={<Heart size={18} />} iconBgColor="#FDF2F8" iconColor="#EC4899" />
                 </div>
+            )}
 
-                {statistics && (
-                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                        <StatCard icon={<FileQuestion size={20} className="text-blue-600" />} label="Tổng câu hỏi" value={statistics.totalQuestions} color="bg-blue-50 border border-blue-100" />
-                        <StatCard icon={<CheckCircle size={20} className="text-green-600" />} label="Đã trả lời" value={statistics.answeredQuestions} color="bg-green-50 border border-green-100" />
-                        <StatCard icon={<Clock size={20} className="text-amber-600" />} label="Chờ xử lý" value={statistics.pendingQuestions} color="bg-amber-50 border border-amber-100" />
-                        <StatCard icon={<MessageCircle size={20} className="text-purple-600" />} label="Câu trả lời" value={statistics.totalAnswers} color="bg-purple-50 border border-purple-100" />
-                        <StatCard icon={<Heart size={20} className="text-red-600" />} label="Tương tác" value={statistics.totalLikes} color="bg-red-50 border border-red-100" />
-                    </div>
-                )}
-
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div className="bg-[var(--cn-bg-card)] rounded-2xl border border-[var(--cn-border)] p-6 shadow-sm">
-                        <h3 className="font-bold text-[var(--cn-text-main)] mb-6 flex items-center gap-2"><BarChart3 className="w-5 h-5 text-blue-500" /> Xu hướng tháng</h3>
-                        <div className="h-[200px] w-full">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={monthlyChartData}>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8' }} />
-                                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8' }} />
-                                    <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '12px', border: 'none' }} />
-                                    <Bar dataKey="câu hỏi" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={32} />
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </div>
-                    <div className="bg-[var(--cn-bg-card)] rounded-2xl border border-[var(--cn-border)] p-6 shadow-sm">
-                        <h3 className="font-bold text-[var(--cn-text-main)] mb-6 flex items-center gap-2"><ShieldCheck className="w-5 h-5 text-emerald-500" /> Khối lớp</h3>
-                        <div className="h-[200px] w-full">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <PieChart>
-                                    <Pie data={gradeChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={70} stroke="none">
-                                        {gradeChartData.map((_entry, index) => <Cell key={`cell-${index}`} fill={GRADE_COLORS[index % GRADE_COLORS.length]} />)}
-                                    </Pie>
-                                    <Tooltip />
-                                </PieChart>
-                            </ResponsiveContainer>
-                        </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="bg-[var(--cn-bg-card)] rounded-2xl border border-[var(--cn-border)] p-6 shadow-sm">
+                    <h3 className="font-bold text-[var(--cn-text-main)] mb-6 flex items-center gap-2"><BarChart3 className="w-5 h-5 text-blue-500" /> Xu hướng tháng</h3>
+                    <div className="h-[200px] w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={monthlyChartData}>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8' }} />
+                                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8' }} />
+                                <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '12px', border: 'none' }} />
+                                <Bar dataKey="câu hỏi" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={32} />
+                            </BarChart>
+                        </ResponsiveContainer>
                     </div>
                 </div>
-
-                <div className="bg-white rounded-2xl p-4 shadow-sm border border-[var(--cn-border)] flex flex-wrap gap-4 items-center">
-                    <div className="flex-1 min-w-[280px]">
-                        <CustomInputSearch placeholder="Tìm câu hỏi..." value={searchInput} onChange={setSearchInput} size="medium" />
+                <div className="bg-[var(--cn-bg-card)] rounded-2xl border border-[var(--cn-border)] p-6 shadow-sm">
+                    <h3 className="font-bold text-[var(--cn-text-main)] mb-6 flex items-center gap-2"><ShieldCheck className="w-5 h-5 text-emerald-500" /> Khối lớp</h3>
+                    <div className="h-[200px] w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                                <Pie data={gradeChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={70} stroke="none">
+                                    {gradeChartData.map((_entry, index) => <Cell key={`cell-${index}`} fill={GRADE_COLORS[index % GRADE_COLORS.length]} />)}
+                                </Pie>
+                                <Tooltip />
+                            </PieChart>
+                        </ResponsiveContainer>
                     </div>
-                    <div className="w-48">
-                        <CustomSelect options={STATUS_OPTIONS} value={status} onChange={setStatus} placeholder="Trạng thái" />
-                    </div>
-                </div>
-
-                <div className="bg-white rounded-2xl shadow-sm border border-[var(--cn-border)] overflow-hidden relative">
-                    {loading && (
-                        <div className="absolute top-0 left-0 w-full h-[2px] bg-blue-50 overflow-hidden z-20">
-                            <div className="h-full bg-blue-500 animate-[loading_1s_infinite_linear]" style={{ width: '40%' }} />
-                        </div>
-                    )}
-                    <div className="overflow-x-auto">
-                        <table className={`w-full transition-opacity duration-200 ${loading ? 'opacity-50' : 'opacity-100'}`}>
-                            <thead className="bg-[var(--cn-bg-section)] border-b border-[var(--cn-border)]">
-                                <tr className="text-[11px] font-bold text-[var(--cn-text-muted)] uppercase tracking-wider">
-                                    <th className="px-5 py-4 text-left">Nội dung câu hỏi</th>
-                                    <th className="px-5 py-4 text-left">Tác giả</th>
-                                    <th className="px-5 py-4 text-center w-[120px]">Trạng thái</th>
-                                    <th className="px-5 py-4 text-center w-[80px]">Xem</th>
-                                    <th className="px-5 py-4 text-center w-[80px]">Trả lời</th>
-                                    <th className="px-5 py-4 text-center w-[140px]">Hành động</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-[var(--cn-border)]">
-                                {questions.length === 0 && !loading ? (
-                                    <tr><td colSpan={6} className="py-20 text-center text-slate-400 italic font-medium">Không tìm thấy câu hỏi nào</td></tr>
-                                ) : (
-                                    questions.map((q) => (
-                                        <AdminQuestionRow
-                                            key={q._id}
-                                            question={q}
-                                            onView={(question: Question) => setViewModal({ open: true, question })}
-                                            onAnswer={(question: Question) => setAnswerModal({ open: true, question })}
-                                            onToggleLock={handleToggleLock}
-                                            onDelete={(question: Question) => setDeleteModal({ open: true, question })}
-                                        />
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-
-                    {totalPages > 1 && (
-                        <div className="flex justify-between items-center px-6 py-4 border-t border-[var(--cn-border)] bg-slate-50/50">
-                            <span className="text-xs font-bold text-slate-400 uppercase">Trang {page} / {totalPages}</span>
-                            <div className="flex gap-2">
-                                <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="p-2 border rounded-xl bg-white disabled:opacity-30"><ChevronLeft size={16} /></button>
-                                <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} className="p-2 border rounded-xl bg-white disabled:opacity-30"><ChevronRight size={16} /></button>
-                            </div>
-                        </div>
-                    )}
                 </div>
             </div>
 
+            <div className="bg-white rounded-2xl p-4 shadow-sm border border-[var(--cn-border)] flex flex-wrap gap-4 items-center">
+                <div className="flex-1 min-w-[280px]">
+                    <CustomInputSearch placeholder="Tìm câu hỏi..." value={searchInput} onChange={setSearchInput} size="medium" />
+                </div>
+                <div className="w-48">
+                    <CustomSelect options={STATUS_OPTIONS} value={status} onChange={setStatus} placeholder="Trạng thái" />
+                </div>
+            </div>
+
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden relative">
+                {loading && (
+                    <div className="absolute top-0 left-0 w-full h-[2px] bg-blue-50 overflow-hidden z-20">
+                        <div className="h-full bg-blue-500 animate-[loading_1s_infinite_linear]" style={{ width: '40%' }} />
+                    </div>
+                )}
+                <div className="overflow-x-auto">
+                    <table className={`w-full transition-opacity duration-200 ${loading ? 'opacity-50' : 'opacity-100'}`}>
+                        <thead className="bg-[var(--cn-bg-section)] border-b border-[var(--cn-border)]">
+                            <tr className="text-[11px] font-bold text-[var(--cn-text-muted)] uppercase tracking-wider">
+                                <th className="px-5 py-4 text-left">Nội dung câu hỏi</th>
+                                <th className="px-5 py-4 text-left">Tác giả</th>
+                                <th className="px-5 py-4 text-center w-[120px]">Trạng thái</th>
+                                <th className="px-5 py-4 text-center w-[80px]">Xem</th>
+                                <th className="px-5 py-4 text-center w-[80px]">Trả lời</th>
+                                <th className="px-5 py-4 text-center w-[140px]">Hành động</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[var(--cn-border)]">
+                            {questions.length === 0 && !loading ? (
+                                <tr><td colSpan={6} className="py-20 text-center text-slate-400 italic font-medium">Không tìm thấy câu hỏi nào</td></tr>
+                            ) : (
+                                questions.map((q) => (
+                                    <AdminQuestionRow
+                                        key={q._id}
+                                        question={q}
+                                        onView={(question: Question) => setViewModal({ open: true, question })}
+                                        onAnswer={(question: Question) => setAnswerModal({ open: true, question })}
+                                        onToggleLock={handleToggleLock}
+                                        onDelete={(question: Question) => setDeleteModal({ open: true, question })}
+                                    />
+                                ))
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+
+                {totalPages > 1 && (
+                    <div className="flex justify-between items-center px-6 py-4 border-t border-[var(--cn-border)] bg-slate-50/50">
+                        <span className="text-xs font-bold text-slate-400 uppercase">Trang {page} / {totalPages}</span>
+                        <div className="flex gap-2">
+                            <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="p-2 border rounded-xl bg-white disabled:opacity-30"><ChevronLeft size={16} /></button>
+                            <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} className="p-2 border rounded-xl bg-white disabled:opacity-30"><ChevronRight size={16} /></button>
+                        </div>
+                    </div>
+                )}
+            </div>
             <ViewQuestionModal
                 key={`v-${viewModal.question?._id}`}
                 isOpen={viewModal.open}

@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 import { Eye, MessageCircle, CheckCircle, Clock, ChevronLeft, ChevronRight, Search, ShieldCheck, Send, FileText, Trash2, X } from 'lucide-react';
 import StaticContent from '@/components/common/StaticContent';
 import CustomEditor from '@/components/custom/CustomEditor';
+import { DashboardCard } from '@/components/custom/DashboardCard';
 
 const STATUS_OPTIONS = [
     { value: 'all', label: 'Tất cả' },
@@ -36,15 +37,6 @@ interface StatisticsData {
     pending: number;
     answered: number;
 }
-
-const StatCard = ({ icon, label, value, color }: { icon: React.ReactNode; label: string; value: number; color: string }) => (
-    <div className="bg-white rounded-xl p-4 border border-gray-200">
-        <div className="flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-xl ${color} flex items-center justify-center`}>{icon}</div>
-            <div><p className="text-2xl font-bold text-gray-800">{value}</p><p className="text-xs text-gray-500">{label}</p></div>
-        </div>
-    </div>
-);
 
 const ViewProjectModal = ({ isOpen, onClose, project }: { isOpen: boolean; onClose: () => void; project: HelpProject | null }) => {
     if (!isOpen || !project) return null;
@@ -462,78 +454,107 @@ export default function AdminHelpProjectPage() {
     };
 
     return (
-        <div className="min-h-screen p-6">
-            <div className="max-w-7xl mx-auto">
-                <div className="flex items-center gap-2 mb-6">
-                    <ShieldCheck className="w-8 h-8 text-blue-500" />
-                    <h1 className="text-2xl font-bold text-gray-800">Quản lý hỗ trợ dự án</h1>
-                </div>
+        <div className="space-y-6 pb-8 px-3 sm:px-4">
+            <div>
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">Quản lý hỗ trợ dự án</h1>
+                <p className="text-sm text-gray-500 mt-1">Quản lý yêu cầu hỗ trợ dự án từ người dùng</p>
+            </div>
 
-                {statistics && (
-                    <div className="grid grid-cols-3 gap-4 mb-6">
-                        <StatCard icon={<FileText className="w-5 h-5 text-blue-600" />} label="Tổng dự án" value={statistics.total} color="bg-blue-100" />
-                        <StatCard icon={<Clock className="w-5 h-5 text-yellow-600" />} label="Chờ trả lời" value={statistics.pending} color="bg-yellow-100" />
-                        <StatCard icon={<CheckCircle className="w-5 h-5 text-green-600" />} label="Đã trả lời" value={statistics.answered} color="bg-green-100" />
+            {statistics && (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    <DashboardCard title="Tổng dự án" value={statistics.total} icon={<FileText size={18} />} iconBgColor="#EFF6FF" iconColor="#3B82F6" />
+                    <DashboardCard title="Chờ trả lời" value={statistics.pending} icon={<Clock size={18} />} iconBgColor="#FFF7ED" iconColor="#F97316" />
+                    <DashboardCard title="Đã trả lời" value={statistics.answered} icon={<CheckCircle size={18} />} iconBgColor="#F0FDF4" iconColor="#22C55E" />
+                </div>
+            )}
+
+            <div className="bg-white rounded-xl p-4 border border-gray-200">
+                <div className="flex flex-wrap gap-4">
+                    <div className="flex-1">
+                        <CustomInput
+                            placeholder="Tìm kiếm dự án..."
+                            value={searchInput}
+                            onChange={(e) => setSearchInput(e.target.value)}
+                            icon={<Search className="w-4 h-4" />}
+                        />
+                    </div>
+                    <div className="w-48">
+                        <CustomSelect options={STATUS_OPTIONS} value={statusFilter} onChange={setStatusFilter} placeholder="Trạng thái" />
+                    </div>
+                </div>
+            </div>
+
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                <div className="overflow-x-auto">
+                    <table className="w-full">
+                        <thead className="bg-gray-50 border-b border-gray-200">
+                            <tr className="text-left">
+                                <th className="px-4 py-3 text-xs font-semibold text-gray-500">Dự án</th>
+                                <th className="px-4 py-3 text-xs font-semibold text-gray-500">Người gửi</th>
+                                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500">Trạng thái</th>
+                                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500">Phản hồi</th>
+                                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                            {loading ? (
+                                [...Array(5)].map((_, i) => (
+                                    <tr key={i}>
+                                        <td className="px-4 py-3">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 animate-pulse" />
+                                                <div className="space-y-2">
+                                                    <div className="h-4 w-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                                                    <div className="h-3 w-24 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            <div className="space-y-2">
+                                                <div className="h-4 w-48 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                                                <div className="h-3 w-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                                            </div>
+                                        </td>
+                                        <td className="px-4 py-3 text-center">
+                                            <div className="h-6 w-20 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse mx-auto" />
+                                        </td>
+                                        <td className="px-4 py-3 text-center">
+                                            <div className="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mx-auto" />
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            <div className="flex items-center justify-center gap-2">
+                                                <div className="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse" />
+                                                <div className="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse" />
+                                                <div className="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse" />
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))
+                            ) : projects.length === 0 ? (
+                                <tr><td colSpan={5} className="px-4 py-12 text-center text-gray-400">Không có dự án nào</td></tr>
+                            ) : (
+                                projects.map((project) => (
+                                    <AdminProjectRow
+                                        key={project._id}
+                                        project={project}
+                                        onView={(p) => { setSelectedProject(p); setShowViewModal(true); }}
+                                        onViewReplies={(p) => { setSelectedProject(p); setShowViewRepliesModal(true); }}
+                                        onReply={(p) => { setSelectedProject(p); setShowReplyModal(true); }}
+                                        onStatus={(p) => { setSelectedProject(p); setShowStatusModal(true); }}
+                                        onDelete={(p) => setDeleteTarget(p)}
+                                    />
+                                ))
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+                {totalPages > 1 && (
+                    <div className="flex justify-center gap-2 px-4 py-4 border-t border-gray-200">
+                        <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="p-2 border border-gray-200 rounded-lg disabled:opacity-50"><ChevronLeft className="w-4 h-4" /></button>
+                        <span className="px-4 py-2 text-sm text-gray-600">Trang {page} / {totalPages}</span>
+                        <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} className="p-2 border border-gray-200 rounded-lg disabled:opacity-50"><ChevronRight className="w-4 h-4" /></button>
                     </div>
                 )}
-
-                <div className="bg-white rounded-xl p-4 border border-gray-200 mb-6">
-                    <div className="flex flex-wrap gap-4">
-                        <div className="flex-1">
-                            <CustomInput
-                                placeholder="Tìm kiếm dự án..."
-                                value={searchInput}
-                                onChange={(e) => setSearchInput(e.target.value)}
-                                icon={<Search className="w-4 h-4" />}
-                            />
-                        </div>
-                        <div className="w-48">
-                            <CustomSelect options={STATUS_OPTIONS} value={statusFilter} onChange={setStatusFilter} placeholder="Trạng thái" />
-                        </div>
-                    </div>
-                </div>
-
-                <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                    <div className="overflow-x-auto">
-                        <table className="w-full">
-                            <thead className="bg-gray-50 border-b border-gray-200">
-                                <tr className="text-left">
-                                    <th className="px-4 py-3 text-xs font-semibold text-gray-500">Dự án</th>
-                                    <th className="px-4 py-3 text-xs font-semibold text-gray-500">Người gửi</th>
-                                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500">Trạng thái</th>
-                                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500">Phản hồi</th>
-                                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500">Thao tác</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-100">
-                                {loading ? (
-                                    <tr><td colSpan={5} className="px-4 py-12 text-center"><div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto" /></td></tr>
-                                ) : projects.length === 0 ? (
-                                    <tr><td colSpan={5} className="px-4 py-12 text-center text-gray-400">Không có dự án nào</td></tr>
-                                ) : (
-                                    projects.map((project) => (
-                                        <AdminProjectRow
-                                            key={project._id}
-                                            project={project}
-                                            onView={(p) => { setSelectedProject(p); setShowViewModal(true); }}
-                                            onViewReplies={(p) => { setSelectedProject(p); setShowViewRepliesModal(true); }}
-                                            onReply={(p) => { setSelectedProject(p); setShowReplyModal(true); }}
-                                            onStatus={(p) => { setSelectedProject(p); setShowStatusModal(true); }}
-                                            onDelete={(p) => setDeleteTarget(p)}
-                                        />
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-                    {totalPages > 1 && (
-                        <div className="flex justify-center gap-2 px-4 py-4 border-t border-gray-200">
-                            <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="p-2 border border-gray-200 rounded-lg disabled:opacity-50"><ChevronLeft className="w-4 h-4" /></button>
-                            <span className="px-4 py-2 text-sm text-gray-600">Trang {page} / {totalPages}</span>
-                            <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} className="p-2 border border-gray-200 rounded-lg disabled:opacity-50"><ChevronRight className="w-4 h-4" /></button>
-                        </div>
-                    )}
-                </div>
             </div>
 
             <ViewProjectModal isOpen={showViewModal} onClose={() => setShowViewModal(false)} project={selectedProject} />

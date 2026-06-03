@@ -82,7 +82,7 @@ const getRoleBadge = (role: string) => {
     }
 };
 
-export default function AdminUsersPage() {
+function AdminUsersPageContent() {
     const { token } = useAuthStore();
     const { socket, isConnected } = useSocket();
 
@@ -475,8 +475,15 @@ export default function AdminUsersPage() {
                 </div>
 
                 {loadingProvince ? (
-                    <div className="flex justify-center items-center h-48">
-                        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+                    <div className="h-[450px] flex items-center justify-center">
+                        <div className="w-full space-y-4 px-4">
+                            {[...Array(8)].map((_, i) => (
+                                <div key={i} className="flex items-center gap-3">
+                                    <div className="w-24 h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                                    <div className="flex-1 h-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" style={{ width: `${Math.random() * 60 + 40}%` }} />
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 ) : provinceStats.length === 0 ? (
                     <div className="text-center py-8 text-gray-400">
@@ -1092,4 +1099,8 @@ export default function AdminUsersPage() {
             />
         </div>
     );
+}
+
+export default function AdminUsersPage() {
+    return <AdminUsersPageContent />;
 }

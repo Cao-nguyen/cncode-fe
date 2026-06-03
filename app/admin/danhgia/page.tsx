@@ -185,17 +185,13 @@ export default function AdminRatingsPage() {
     return (
         <>
             <div className="space-y-4 sm:space-y-6 pb-8 px-3 sm:px-4">
-                {}
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                    <div>
-                        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">Quản lý đánh giá</h1>
-                        <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1">
-                            Quản lý tất cả đánh giá của người dùng
-                        </p>
-                    </div>
+                { }
+                <div>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">Quản lý đánh giá</h1>
+                    <p className="text-sm text-gray-500 mt-1">Quản lý tất cả đánh giá của người dùng</p>
                 </div>
 
-                {}
+                { }
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="rounded-xl p-4 sm:p-5 shadow-sm border border-main/20 bg-white dark:bg-gray-900">
                         <div className="flex items-center gap-2 mb-2">
@@ -232,10 +228,28 @@ export default function AdminRatingsPage() {
                     </div>
                 </div>
 
-                {}
+                { }
                 {loading && ratings.length === 0 ? (
-                    <div className="flex justify-center py-12">
-                        <Loader2 className="w-8 h-8 animate-spin text-main" data-filled={true} />
+                    <div className="space-y-4">
+                        {[...Array(5)].map((_, i) => (
+                            <div key={i} className="bg-white dark:bg-gray-900 border border-main/20 rounded-xl p-4">
+                                <div className="flex items-start gap-3">
+                                    <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 animate-pulse" />
+                                    <div className="flex-1 space-y-3">
+                                        <div className="flex items-center justify-between">
+                                            <div className="h-4 w-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                                            <div className="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                                        </div>
+                                        <div className="h-3 w-full bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                                        <div className="h-3 w-3/4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                                        <div className="flex gap-2">
+                                            <div className="h-8 w-20 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                                            <div className="h-8 w-20 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 ) : ratings.length === 0 ? (
                     <div className="text-center py-12 text-gray-500 border border-main/20 rounded-xl bg-white dark:bg-gray-900">
@@ -243,7 +257,7 @@ export default function AdminRatingsPage() {
                     </div>
                 ) : (
                     <>
-                        {}
+                        { }
                         <div className="block md:hidden space-y-3">
                             {ratings.map((rating) => (
                                 <div
@@ -304,7 +318,7 @@ export default function AdminRatingsPage() {
                             ))}
                         </div>
 
-                        {}
+                        { }
                         <div className="hidden md:block rounded-xl shadow-sm border border-main/20 overflow-hidden bg-white dark:bg-gray-900">
                             <div className="overflow-x-auto">
                                 <table className="w-full">
@@ -381,7 +395,7 @@ export default function AdminRatingsPage() {
                             </div>
                         </div>
 
-                        {}
+                        { }
                         {totalPages > 1 && (
                             <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4">
                                 <div className="text-xs sm:text-sm text-gray-500 order-2 sm:order-1">
@@ -412,7 +426,7 @@ export default function AdminRatingsPage() {
                 )}
             </div>
 
-            {}
+            { }
             {showDetailModal && selectedRating && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowDetailModal(false)}>
                     <div className="bg-white dark:bg-gray-900 rounded-xl w-full max-w-md max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>

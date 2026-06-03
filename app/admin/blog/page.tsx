@@ -15,6 +15,7 @@ import { ConfirmModalDelete } from '@/components/custom/ConfirmationModal';
 import { DashboardCard } from '@/components/custom/DashboardCard';
 import StaticContent from '@/components/common/StaticContent';
 import CommentSection from '@/components/comment/CommentSection';
+import { TableSkeleton } from '@/components/ui/skeleton';
 
 const CATEGORIES = [
     { value: 'technology', label: 'Công nghệ' },
@@ -47,7 +48,7 @@ const normalizeText = (text: string) => {
         .trim();
 };
 
-export default function AdminBlogPage() {
+function AdminBlogPageContent() {
     const editorRef = useRef<CustomEditorRef>(null);
 
     const [blogs, setBlogs] = useState<Blog[]>([]);
@@ -204,7 +205,16 @@ export default function AdminBlogPage() {
             setCategory(blog.category);
             setTags(blog.tags.join(', '));
             setIsPublished(blog.isPublished);
-            setPublishedAt(blog.publishedAt ? new Date(blog.publishedAt).toISOString().slice(0, 10) : '');
+            // Only set publishedAt if it exists, otherwise leave empty
+            if (blog.publishedAt) {
+                const date = new Date(blog.publishedAt);
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                setPublishedAt(`${year}-${month}-${day}`);
+            } else {
+                setPublishedAt('');
+            }
             setTimeout(() => editorRef.current?.setContent(blog.content), 100);
         } else {
             setEditingBlog(null);
@@ -650,8 +660,8 @@ export default function AdminBlogPage() {
 
             {/* Table */}
             {loading ? (
-                <div className="flex items-center justify-center py-20">
-                    <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+                    <TableSkeleton rows={10} cols={6} />
                 </div>
             ) : (
                 <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
@@ -1061,4 +1071,8 @@ export default function AdminBlogPage() {
             )}
         </div>
     );
+}
+
+export default function AdminBlogPage() {
+    return <AdminBlogPageContent />;
 }
