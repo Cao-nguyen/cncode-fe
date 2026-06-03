@@ -567,13 +567,13 @@ export default function NotificationBell() {
                     if (!isSubscribed) {
                         // Đợi 3 giây rồi hỏi user
                         setTimeout(() => {
-                            subscribeToPushNotifications().catch(err => {
-                                console.log('[Push] User declined or error:', err);
+                            subscribeToPushNotifications().catch(() => {
+                                // User declined - không cần log error
                             });
                         }, 3000);
                     }
-                }).catch(err => {
-                    console.error('[Push] Check subscription error:', err);
+                }).catch(() => {
+                    // Silent fail - không cần log
                 });
             }
         }

@@ -106,8 +106,29 @@ export default function MyBlogsPage() {
                 </div>
 
                 {loading ? (
-                    <div className="flex items-center justify-center py-20">
-                        <Loader2 className="w-8 h-8 animate-spin" style={{ color: 'var(--cn-primary)' }} />
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {[...Array(6)].map((_, i) => (
+                            <div key={i} className="rounded-xl overflow-hidden" style={{ backgroundColor: 'var(--cn-bg-card)', border: '1px solid var(--cn-border)' }}>
+                                <div className="w-full h-[200px] bg-gray-200 dark:bg-gray-700 animate-pulse" />
+                                <div className="p-5 space-y-3">
+                                    <div className="flex justify-between">
+                                        <div className="h-3 w-24 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                                        <div className="h-3 w-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                                    </div>
+                                    <div className="h-5 w-full bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                                    <div className="h-5 w-3/4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                                    <div className="space-y-2">
+                                        <div className="h-3 w-full bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                                        <div className="h-3 w-full bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                                        <div className="h-3 w-2/3 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                                    </div>
+                                    <div className="flex gap-2 pt-2">
+                                        <div className="h-8 w-20 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                                        <div className="h-8 w-20 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 ) : blogs.length === 0 ? (
                     <div className="text-center py-20 rounded-xl" style={{ backgroundColor: 'var(--cn-bg-card)', border: '1px solid var(--cn-border)' }}>
