@@ -29,7 +29,7 @@ api.interceptors.request.use((config) => {
 });
 
 export const faqApi = {
-    
+
     getQuestions: async (params?: { page?: number; limit?: number; grade?: string; status?: string; search?: string }) => {
         const response = await api.get<{ success: boolean; questions: Question[]; total: number; totalPages: number }>('/', { params });
         return response.data;
@@ -37,6 +37,11 @@ export const faqApi = {
 
     getQuestionBySlug: async (slug: string) => {
         const response = await api.get<{ success: boolean; data: { question: Question; answers: Answer[]; isLiked: boolean } }>(`/${slug}`);
+        return response.data;
+    },
+
+    incrementViewCount: async (slug: string) => {
+        const response = await api.post<{ success: boolean; viewCount: number }>(`/increment-view/${slug}`);
         return response.data;
     },
 

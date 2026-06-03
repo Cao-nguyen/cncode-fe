@@ -233,6 +233,30 @@ export default function QuestionDetailPage() {
 
     useEffect(() => { setCurrentUserId(getUserId()); }, []);
 
+    // Increment view count when user leaves the page (like blog)
+    useEffect(() => {
+        const slug = params.slug as string;
+        const sessionKey = `faq_viewed_${slug}`;
+        const viewCountedRef = { current: false };
+
+        // Cleanup: Tăng viewCount khi user rời khỏi trang
+        return () => {
+            // Kiểm tra đã count trong session chưa
+            if (!sessionStorage.getItem(sessionKey) && !viewCountedRef.current) {
+                viewCountedRef.current = true;
+                sessionStorage.setItem(sessionKey, 'true');
+
+                // Gọi API tăng viewCount
+                fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/faq/increment-view/${slug}`, {
+                    method: 'POST',
+                    keepalive: true,
+                }).catch(() => {
+                    // Ignore errors
+                });
+            }
+        };
+    }, [params.slug]);
+
     const fetchData = useCallback(async (isSilent = false) => {
         if (!isSilent) setLoading(true);
         try {
