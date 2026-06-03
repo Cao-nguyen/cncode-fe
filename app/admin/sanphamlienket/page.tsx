@@ -211,36 +211,36 @@ export default function AdminSanPhamLienKetPage() {
                                         </div>
                                     </div>
                                 )}
+                            </div>
 
-                                {/* Info */}
-                                <div className="p-3">
-                                    <h3 className="min-h-[40px] text-center text-sm font-semibold text-[var(--cn-text-main)] line-clamp-2">
-                                        {product.name}
-                                    </h3>
+                            {/* Info */}
+                            <div className="p-3">
+                                <h3 className="text-center text-sm font-semibold text-[var(--cn-text-main)] break-words">
+                                    {product.name}
+                                </h3>
 
-                                    <div className="mt-3 flex gap-2">
-                                        <a
-                                            href={product.productUrl}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="flex flex-1 items-center justify-center gap-1 rounded-[var(--cn-radius-sm)] bg-[var(--cn-primary)] px-2 py-1.5 text-xs font-medium text-white transition-colors hover:bg-[var(--cn-primary-hover)]"
-                                        >
-                                            <ExternalLink className="h-3 w-3" />
-                                            <span>Truy cập</span>
-                                        </a>
-                                        <button
-                                            onClick={() => openEditModal(product)}
-                                            className="rounded-[var(--cn-radius-sm)] border border-[var(--cn-border)] px-2 py-1.5 text-[var(--cn-text-muted)] transition-colors hover:border-blue-500 hover:text-blue-500"
-                                        >
-                                            <Edit className="h-3 w-3" />
-                                        </button>
-                                        <button
-                                            onClick={() => setDeleteConfirm(product)}
-                                            className="rounded-[var(--cn-radius-sm)] border border-[var(--cn-border)] px-2 py-1.5 text-[var(--cn-text-muted)] transition-colors hover:border-red-500 hover:text-red-500"
-                                        >
-                                            <Trash2 className="h-3 w-3" />
-                                        </button>
-                                    </div>
+                                <div className="mt-3 flex gap-2">
+                                    <a
+                                        href={product.productUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex flex-1 items-center justify-center gap-1 rounded-[var(--cn-radius-sm)] bg-[var(--cn-primary)] px-2 py-1.5 text-xs font-medium text-white transition-colors hover:bg-[var(--cn-primary-hover)]"
+                                    >
+                                        <ExternalLink className="h-3 w-3" />
+                                        <span>Truy cập</span>
+                                    </a>
+                                    <button
+                                        onClick={() => openEditModal(product)}
+                                        className="rounded-[var(--cn-radius-sm)] border border-[var(--cn-border)] px-2 py-1.5 text-[var(--cn-text-muted)] transition-colors hover:border-blue-500 hover:text-blue-500"
+                                    >
+                                        <Edit className="h-3 w-3" />
+                                    </button>
+                                    <button
+                                        onClick={() => setDeleteConfirm(product)}
+                                        className="rounded-[var(--cn-radius-sm)] border border-[var(--cn-border)] px-2 py-1.5 text-[var(--cn-text-muted)] transition-colors hover:border-red-500 hover:text-red-500"
+                                    >
+                                        <Trash2 className="h-3 w-3" />
+                                    </button>
                                 </div>
                             </div>
                         </div>
