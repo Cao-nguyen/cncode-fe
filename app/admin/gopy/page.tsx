@@ -15,6 +15,7 @@ import { toast } from 'sonner';
 import { CustomSelect } from '@/components/custom/CustomSelect';
 import { CustomTextarea } from '@/components/custom/CustomTextarea';
 import { CustomInputSearch } from '@/components/custom/CustomInputSearch';
+import { CustomButton } from '@/components/custom/CustomButton';
 import { ConfirmModalDelete } from '@/components/custom/ConfirmationModal';
 
 const PAGE_SIZE = 10;
@@ -430,9 +431,14 @@ export default function AdminFeedbackPage() {
                                         {getStatusStyle(selectedFeedback.status).label}
                                     </span>
                                 </div>
-                                <button onClick={() => { setShowDetailModal(false); openStatusModal(selectedFeedback); }} className="px-5 py-2 bg-blue-500 text-white rounded-lg text-sm font-medium hover:bg-blue-600 transition flex items-center gap-2">
-                                    <Settings size={14} /> Cập nhật
-                                </button>
+                                <CustomButton
+                                    onClick={() => { setShowDetailModal(false); openStatusModal(selectedFeedback); }}
+                                    variant="primary"
+                                    size="small"
+                                >
+                                    <Settings size={14} />
+                                    Cập nhật
+                                </CustomButton>
                             </div>
                         </div>
                     </div>
@@ -462,11 +468,24 @@ export default function AdminFeedbackPage() {
                                 <CustomTextarea value={adminResponse} onChange={setAdminResponse} placeholder="Nhập phản hồi..." rows={3} maxLength={500} />
                             </div>
                             <div className="flex gap-3">
-                                <button onClick={() => setShowStatusModal(false)} className="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg text-gray-600 font-medium hover:bg-gray-50 transition">Hủy</button>
-                                <button onClick={handleUpdateStatus} disabled={updating} className="flex-1 px-4 py-2.5 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition disabled:opacity-50 flex items-center justify-center gap-2">
-                                    {updating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check size={16} />}
+                                <CustomButton
+                                    onClick={() => setShowStatusModal(false)}
+                                    variant="outline"
+                                    size="medium"
+                                    fullWidth
+                                >
+                                    Hủy
+                                </CustomButton>
+                                <CustomButton
+                                    onClick={handleUpdateStatus}
+                                    variant="primary"
+                                    size="medium"
+                                    fullWidth
+                                    loading={updating}
+                                >
+                                    {!updating && <Check size={16} />}
                                     {updating ? 'Đang cập nhật...' : 'Cập nhật'}
-                                </button>
+                                </CustomButton>
                             </div>
                         </div>
                     </div>

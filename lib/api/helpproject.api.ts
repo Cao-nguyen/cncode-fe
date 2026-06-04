@@ -41,7 +41,7 @@ export const helpProjectApi = {
         if (params.page) query.append('page', params.page.toString());
         if (params.limit) query.append('limit', params.limit.toString());
         if (params.status) query.append('status', params.status);
-        if (params.search) query.append('search', params.search); 
+        if (params.search) query.append('search', params.search);
 
         const url = `${API_URL}/api/help-project/my-projects${query.toString() ? `?${query}` : ''}`;
 
@@ -93,6 +93,15 @@ export const helpProjectApi = {
     },
 
     addReply: async (id: string, content: string) => {
+        const response = await fetch(`${API_URL}/api/help-project/${id}/reply`, {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ content })
+        });
+        return response.json();
+    },
+
+    adminAddReply: async (id: string, content: string) => {
         const response = await fetch(`${API_URL}/api/help-project/admin/${id}/reply`, {
             method: 'POST',
             headers: getAuthHeaders(),

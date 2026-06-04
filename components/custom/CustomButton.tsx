@@ -4,7 +4,7 @@
 import React from 'react';
 import { Loader2 } from 'lucide-react';
 
-type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'outline-primary';
+type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'outline-primary' | 'outline';
 type ButtonSize = 'small' | 'medium' | 'large';
 
 interface CustomButtonProps {
@@ -37,6 +37,7 @@ export const CustomButton: React.FC<CustomButtonProps> = ({
         secondary: 'bg-[var(--cn-bg-section)] text-[var(--cn-text-sub)] hover:bg-[var(--cn-hover)]',
         danger: 'bg-[var(--cn-error)] text-white hover:bg-[var(--cn-error)]/80',
         'outline-primary': 'border border-[var(--cn-primary)] text-[var(--cn-primary)] bg-transparent hover:bg-[var(--cn-primary)]/10',
+        outline: 'border border-gray-300 text-gray-700 bg-white hover:bg-gray-50',
     };
 
     const sizes: Record<ButtonSize, string> = {

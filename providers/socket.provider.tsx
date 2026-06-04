@@ -163,6 +163,11 @@ export function SocketProvider({ children }: { children: ReactNode }) {
             reconnectAttempts.current = 0;
             lastPongRef.current = Date.now();
 
+            // Debug: Expose socket globally
+            if (typeof window !== 'undefined') {
+                (window as Window & { socket?: Socket }).socket = instance;
+            }
+
             startHeartbeat();
             startActivityTracking();
 
@@ -170,6 +175,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
             if (token && user?._id) {
                 instance.emit('register', { userId: user._id, sessionId });
                 console.log('📡 Registered user:', user._id);
+                console.log('📍 User should be in room:', user._id);
             } else if (sessionId) {
                 instance.emit('register', { sessionId });
                 console.log('📡 Registered guest:', sessionId);

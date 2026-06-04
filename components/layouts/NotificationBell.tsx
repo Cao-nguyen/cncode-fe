@@ -448,9 +448,9 @@ function MobileNotificationSheet({
                     ) : (
                         <>
                             <div className="divide-y divide-[var(--cn-border)]">
-                                {notifications.map(notification => (
+                                {notifications.map((notification, index) => (
                                     <NotificationItem
-                                        key={notification._id}
+                                        key={notification._id || `notification-${index}-${notification.createdAt}`}
                                         notification={notification}
                                         onMarkAsRead={onMarkAsRead}
                                         onClose={onClose}
@@ -583,12 +583,20 @@ export default function NotificationBell() {
         if (!socket || !isConnected || !user?._id) return;
 
         const handler = (data: INotification) => {
-            if (isAdminOnlyType(data.type) && user.role !== 'admin') return;
+            console.log('🔔 Frontend received new_notification:', data);
+            if (isAdminOnlyType(data.type) && user.role !== 'admin') {
+                console.log('⚠️ Admin-only notification for non-admin user, skipping');
+                return;
+            }
 
             setNotifications(prev => {
-                if (prev.some(n => n._id === data._id)) return prev;
+                if (prev.some(n => n._id === data._id)) {
+                    console.log('⚠️ Duplicate notification, skipping');
+                    return prev;
+                }
                 const updated = [data, ...prev];
                 setUnreadCount(updated.filter(n => !n.read).length);
+                console.log('✅ Notification added to list. Total unread:', updated.filter(n => !n.read).length);
                 return updated;
             });
 
@@ -721,9 +729,9 @@ export default function NotificationBell() {
                                     </div>
                                 ) : (
                                     <div className="divide-y divide-[var(--cn-border)]">
-                                        {notifications.map(notification => (
+                                        {notifications.map((notification, index) => (
                                             <NotificationItem
-                                                key={notification._id}
+                                                key={notification._id || `notification-${index}-${notification.createdAt}`}
                                                 notification={notification}
                                                 onMarkAsRead={markAsRead}
                                                 onClose={() => setOpen(false)}

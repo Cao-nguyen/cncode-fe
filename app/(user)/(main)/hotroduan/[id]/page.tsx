@@ -82,10 +82,11 @@ export default function HelpProjectDetailPage() {
         setSubmitting(true);
         try {
             const res = await helpProjectApi.addReply(project!._id, content);
-            if (res.success) {
+            if (res.success && res.data) {
                 toast.success('Đã gửi phản hồi');
                 editorRef.current?.setContent('');
-                fetchData();
+                // Update project state without full reload
+                setProject(res.data);
             }
         } catch {
             toast.error('Có lỗi xảy ra');

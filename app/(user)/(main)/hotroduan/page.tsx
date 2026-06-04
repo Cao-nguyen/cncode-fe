@@ -12,7 +12,7 @@ import { CustomInput } from '@/components/custom/CustomInput';
 import { CustomBadge } from '@/components/custom/CustomBadge';
 import { ConfirmModalDelete } from '@/components/custom/ConfirmationModal';
 import { toast } from 'sonner';
-import { Plus, Search, ChevronLeft, ChevronRight, Edit2, Trash2, FolderOpen, MessageCircle } from 'lucide-react';
+import { Plus, Search, ChevronLeft, ChevronRight, Edit2, Trash2, MessageCircle, Folder } from 'lucide-react';
 
 type BadgeVariant = 'pending' | 'solved' | 'admin' | 'expert' | 'grade10' | 'grade11' | 'grade12' | 'other';
 
@@ -59,8 +59,8 @@ const ProjectCard = ({ project, onDelete }: ProjectCardProps) => {
                             className="object-cover group-hover:scale-105 transition-transform duration-500"
                         />
                     ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-gray-50">
-                            <FolderOpen className="w-8 h-8 text-gray-300" />
+                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
+                            <Folder className="w-12 h-12 text-gray-400" />
                         </div>
                     )}
                     <div className="absolute top-3 right-3">
@@ -137,7 +137,7 @@ export default function HelpProjectPage() {
             const res = await helpProjectApi.getUserProjects({
                 page,
                 limit: 9,
-                search: debouncedSearch 
+                search: debouncedSearch
             });
 
             if (res.success) {
@@ -168,7 +168,7 @@ export default function HelpProjectPage() {
             <div className="container mx-auto px-4 max-w-6xl">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
                     <div>
-                        <h1 className="text-2xl font-bold text-gray-800">📁 Dự án của tôi</h1>
+                        <h1 className="text-2xl font-bold text-gray-800">Dự án của tôi</h1>
                         <p className="text-sm text-gray-500 mt-1">Quản lý các dự án bạn đã gửi</p>
                     </div>
                     <Link href="/hotroduan/create">
@@ -193,7 +193,7 @@ export default function HelpProjectPage() {
                     </div>
                 ) : projects.length === 0 ? (
                     <div className="text-center py-16 bg-white rounded-xl border border-gray-200">
-                        <FolderOpen className="w-10 h-10 text-gray-400 mx-auto mb-4" />
+                        <Folder className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                         <p className="text-gray-500 mb-4">
                             {debouncedSearch ? `Không tìm thấy kết quả cho "${debouncedSearch}"` : 'Bạn chưa có dự án nào'}
                         </p>

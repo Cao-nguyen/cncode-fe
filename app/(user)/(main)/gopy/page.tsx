@@ -124,7 +124,7 @@ export default function FeedbackPage() {
 
     const handleDeleteFeedback = async (feedbackId: string) => {
         if (!token) return;
-        
+
         const result = await feedbackApi.deleteFeedback(token, feedbackId);
         if (result.success) {
             toast.success('Xóa góp ý thành công');
@@ -135,9 +135,23 @@ export default function FeedbackPage() {
     };
 
     useEffect(() => {
-        if (!socket || !isConnected) return;
+        if (!socket) {
+            console.log('⚠️ [Socket] Socket is null, waiting...');
+            return;
+        }
+        if (!isConnected) {
+            console.log('⚠️ [Socket] Socket not connected yet, waiting...');
+            return;
+        }
+
+        console.log('🔌 [Socket] Setting up feedback listeners', {
+            socketId: socket.id,
+            isConnected,
+            userId: user?._id
+        });
 
         const handleFeedbackCreated = (newFeedback: IFeedback) => {
+            console.log('📝 [Socket] Received feedback_created:', newFeedback._id);
             if (page === 1) {
                 setFeedbacks(prev => [newFeedback, ...prev]);
             }
@@ -145,14 +159,17 @@ export default function FeedbackPage() {
         };
 
         const handleFeedbackUpdated = (updatedFeedback: IFeedback) => {
+            console.log('📝 [Socket] Received feedback_updated:', updatedFeedback._id);
             setFeedbacks(prev => prev.map(f => f._id === updatedFeedback._id ? updatedFeedback : f));
         };
 
         const handleFeedbackDeleted = (feedbackId: string) => {
+            console.log('📝 [Socket] Received feedback_deleted:', feedbackId);
             setFeedbacks(prev => prev.filter(f => f._id !== feedbackId));
         };
 
         const handleFeedbackReacted = (data: { feedbackId: string; reactCount: number; userId: string }) => {
+            console.log('💗 [Socket] Received feedback_reacted:', data);
             if (data.userId !== user?._id) {
                 setFeedbacks(prev => prev.map(f =>
                     f._id === data.feedbackId
@@ -162,16 +179,31 @@ export default function FeedbackPage() {
             }
         };
 
+        const handleFeedbackStatusChanged = (data: { feedbackId: string; oldStatus: string; newStatus: string; adminResponse: string }) => {
+            console.log('🔔 [Frontend] Received feedback_status_changed:', data);
+            setFeedbacks(prev => prev.map(f =>
+                f._id === data.feedbackId
+                    ? { ...f, status: data.newStatus as IFeedback['status'], adminResponse: data.adminResponse }
+                    : f
+            ));
+            toast.success('Góp ý của bạn đã được cập nhật!', { duration: 3000 });
+        };
+
         socket.on('feedback_created', handleFeedbackCreated);
         socket.on('feedback_updated', handleFeedbackUpdated);
         socket.on('feedback_deleted', handleFeedbackDeleted);
         socket.on('feedback_reacted', handleFeedbackReacted);
+        socket.on('feedback_status_changed', handleFeedbackStatusChanged);
+
+        console.log('✅ [Socket] All 5 feedback listeners registered successfully');
 
         return () => {
+            console.log('🧹 [Socket] Cleaning up feedback listeners');
             socket.off('feedback_created', handleFeedbackCreated);
             socket.off('feedback_updated', handleFeedbackUpdated);
             socket.off('feedback_deleted', handleFeedbackDeleted);
             socket.off('feedback_reacted', handleFeedbackReacted);
+            socket.off('feedback_status_changed', handleFeedbackStatusChanged);
         };
     }, [socket, isConnected, page, user?._id]);
 
@@ -223,7 +255,7 @@ export default function FeedbackPage() {
 
     return (
         <div className="max-w-6xl mx-auto px-4 py-6 sm:py-8">
-            {}
+            { }
             <div className="text-center mb-8">
                 <h1 className="text-3xl font-bold text-gray-800">Góp ý & Phản hồi</h1>
                 <p className="text-sm text-gray-500 mt-2">
@@ -231,7 +263,7 @@ export default function FeedbackPage() {
                 </p>
             </div>
 
-            {}
+            { }
             {Object.keys(stats.byStatus || {}).length > 0 && (
                 <div className="grid grid-cols-3 sm:grid-cols-6 gap-3 mb-6">
                     {statusOrder.map((status) => (
@@ -246,7 +278,7 @@ export default function FeedbackPage() {
                 </div>
             )}
 
-            {}
+            { }
             <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center justify-between gap-3 mb-6">
                 <div className="flex flex-wrap gap-2">
                     <div className="flex flex-wrap gap-1 bg-gray-100 rounded-lg p-1">
@@ -287,7 +319,7 @@ export default function FeedbackPage() {
                 </button>
             </div>
 
-            {}
+            { }
             {loading && page === 1 ? (
                 <div className="flex justify-center py-12">
                     <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
@@ -312,7 +344,7 @@ export default function FeedbackPage() {
                 </div>
             )}
 
-            {}
+            { }
             {page < totalPages && (
                 <div className="text-center mt-6">
                     <button
@@ -326,7 +358,7 @@ export default function FeedbackPage() {
                 </div>
             )}
 
-            {}
+            { }
             {showCreateModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowCreateModal(false)}>
                     <div className="bg-white rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>
