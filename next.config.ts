@@ -1,7 +1,10 @@
+const isDev = process.env.NODE_ENV === 'development';
 
 const nextConfig = {
   images: {
+    unoptimized: isDev,
     remotePatterns: [
+      { protocol: "https", hostname: "api.telegram.org" },
       { protocol: "https", hostname: "**" },
       { protocol: "http", hostname: "localhost" },
     ],
