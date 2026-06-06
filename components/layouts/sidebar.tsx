@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { ArchiveBox, Document, Link1, Link2, Message, ShoppingBag, Star, StarSlash } from "iconsax-react";
 import { usePathname, useRouter } from "next/navigation";
@@ -31,6 +31,8 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAuthStore } from "@/store/auth.store";
+import { useChatStore } from "@/store/chat.store";
+import { adminChatApi } from "@/lib/api/adminchat.api";
 
 const getInitials = (name: string) =>
     name
@@ -174,6 +176,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
     const { user, logout } = useAuthStore();
     const path = usePathname();
     const router = useRouter();
+    const { unreadAdminChatCount } = useChatStore();
 
     const handleLinkClick = () => {
         if (window.innerWidth < 1024) onClose();
@@ -191,6 +194,14 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
         router.push("/");
         if (window.innerWidth < 1024) onClose();
     };
+
+    useEffect(() => {
+        const handleResize = () => {
+            if (window.innerWidth < 1024) onClose();
+        };
+        window.addEventListener("resize", handleResize);
+        return () => window.removeEventListener("resize", handleResize);
+    }, [onClose]);
 
     return (
         <>
@@ -266,6 +277,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
                                 <div className="mt-0.5 flex flex-col gap-0.5 pb-2">
                                     {section.listLink.map((item) => {
                                         const active = path === item.link;
+                                        const hasUnread = item.title === "Chat với người dùng" && unreadAdminChatCount > 0;
                                         return (
                                             <Link
                                                 key={item.link}
@@ -284,6 +296,9 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
                                                 <span className="flex-1">{item.title}</span>
                                                 {active && (
                                                     <span className="h-[6px] w-[6px] rounded-full bg-blue-500" />
+                                                )}
+                                                {hasUnread && (
+                                                    <span className="h-2 w-2 rounded-full bg-red-500" />
                                                 )}
                                             </Link>
                                         );

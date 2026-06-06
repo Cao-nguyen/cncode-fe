@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react';
 import { useAuthStore } from '@/store/auth.store';
+import { useChatStore } from '@/store/chat.store';
 import { adminChatApi } from '@/lib/api/adminchat.api';
 import { Send, Loader2, MessageCircle, Image as ImageIcon, X, Settings, Clock } from 'lucide-react';
 import io, { Socket } from 'socket.io-client';
@@ -113,12 +114,20 @@ export default function AdminChatPage() {
         };
 
         // Immediately clear unread count in UI
-        setConversations(prev => prev.map(conv => {
-            if (conv._id === selectedConv || conv.userId?._id === selectedConv) {
-                return { ...conv, unreadCount: 0 };
-            }
-            return conv;
-        }));
+        setConversations(prev => {
+            const updated = prev.map(conv => {
+                if (conv._id === selectedConv || conv.userId?._id === selectedConv) {
+                    return { ...conv, unreadCount: 0 };
+                }
+                return conv;
+            });
+            // Update chat store after state update completes
+            queueMicrotask(() => {
+                const totalUnread = updated.reduce((sum, c) => sum + (c.unreadCount || 0), 0);
+                useChatStore.getState().setUnreadAdminChatCount(totalUnread);
+            });
+            return updated;
+        });
 
         fetchMessages();
     }, [selectedConv, token]);
@@ -154,6 +163,10 @@ export default function AdminChatPage() {
         });
 
         socket.on('new_message', (msg: AdminChatMessage & { conversationUserId?: string; unreadCount?: number }) => {
+            // Check if this message was sent by the current admin (to avoid duplicates from REST + socket)
+            const msgSenderId = typeof msg.senderId === 'object' ? msg.senderId._id : msg.senderId;
+            const isOwnMessage = msgSenderId === user?._id;
+
             // Update conversations list state directly for real-time feel
             setConversations(prev => {
                 const conversationId = msg.conversationId;
@@ -172,18 +185,26 @@ export default function AdminChatPage() {
                     const isCurrent = (conv._id && String(currentConv) === String(conv._id)) ||
                         (conv.userId?._id && String(currentConv) === String(conv.userId._id));
 
+                    // For own messages, don't increment unread count
                     updatedConversations[index] = {
                         ...conv,
                         lastMessage: {
                             content: msg.type === 'image' ? '📷 Hình ảnh' : msg.content,
-                            senderId: typeof msg.senderId === 'object' ? msg.senderId._id : msg.senderId,
+                            senderId: msgSenderId,
                             createdAt: msg.createdAt
                         },
-                        unreadCount: isCurrent ? 0 : (msg.unreadCount !== undefined ? msg.unreadCount : (conv.unreadCount || 0) + 1)
+                        unreadCount: isOwnMessage || isCurrent ? 0 : (msg.unreadCount !== undefined ? msg.unreadCount : (conv.unreadCount || 0) + 1)
                     };
 
                     // Move to top
                     const [movedConv] = updatedConversations.splice(index, 1);
+
+                    // Update chat store with total unread count after state update
+                    queueMicrotask(() => {
+                        const totalUnread = [movedConv, ...updatedConversations].reduce((sum, c) => sum + (c.unreadCount || 0), 0);
+                        useChatStore.getState().setUnreadAdminChatCount(totalUnread);
+                    });
+
                     return [movedConv, ...updatedConversations];
                 } else {
                     // If conversation not in list (new user), fetch to refresh
@@ -191,6 +212,9 @@ export default function AdminChatPage() {
                     return prev;
                 }
             });
+
+            // Skip adding own messages to chat - REST response already handles that
+            if (isOwnMessage) return;
 
             const currentConv = selectedConvRef.current;
             const isSelectedConversation =
@@ -203,7 +227,8 @@ export default function AdminChatPage() {
                     if (!exists) return [...prev, msg];
                     return prev;
                 });
-                // If we are in the conversation, mark as read
+
+                // Message is from user, mark as read
                 socket.emit('mark_read', { conversationId: currentConv });
             }
         });
@@ -307,7 +332,11 @@ export default function AdminChatPage() {
                 file: selectedImage
             });
             if (res.success) {
-                setMessages(prev => [...prev, res.data]);
+                setMessages(prev => {
+                    const exists = prev.some(m => String(m._id) === String(res.data._id));
+                    if (exists) return prev;
+                    return [...prev, res.data];
+                });
                 clearImage();
 
                 setConversations(prev => {
@@ -335,13 +364,6 @@ export default function AdminChatPage() {
 
                 if (res.data.conversationId && res.data.conversationId !== selectedConv) {
                     setSelectedConv(res.data.conversationId);
-                }
-
-                if (socketRef.current?.connected) {
-                    socketRef.current.emit('admin_send_message', {
-                        conversationId: res.data.conversationId,
-                        content: '📷 Image'
-                    });
                 }
             }
         } catch (error) {
@@ -382,7 +404,11 @@ export default function AdminChatPage() {
                     },
                     isDelivered: true
                 };
-                setMessages(prev => [...prev, messageWithSender]);
+                setMessages(prev => {
+                    const exists = prev.some(m => String(m._id) === String(messageWithSender._id));
+                    if (exists) return prev;
+                    return [...prev, messageWithSender];
+                });
 
                 setConversations(prev => {
                     const updated = prev.map(conv => {
@@ -409,13 +435,6 @@ export default function AdminChatPage() {
 
                 if (res.data.conversationId && res.data.conversationId !== selectedConv) {
                     setSelectedConv(res.data.conversationId);
-                }
-
-                if (socketRef.current?.connected) {
-                    socketRef.current.emit('admin_send_message', {
-                        conversationId: res.data.conversationId,
-                        content: text
-                    });
                 }
             }
         } catch (error) {

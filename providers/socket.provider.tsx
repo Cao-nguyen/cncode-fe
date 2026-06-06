@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -14,6 +13,7 @@ import {
 import { io, type Socket } from 'socket.io-client';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/store/auth.store';
+import { useChatStore } from '@/store/chat.store';
 import type {
     CoinsUpdatedPayload,
     StreakUpdatedPayload,
@@ -35,6 +35,30 @@ interface SocketContextType {
     onlineUsers: OnlineUser[];
     joinPostRoom: (postSlug: string) => void;
     leavePostRoom: (postSlug: string) => void;
+}
+
+interface NewMessagePayload {
+    conversationUserId?: string;
+    unreadCount?: number;
+    senderId?: string | { _id: string };
+}
+
+interface ForceLogoutPayload {
+    code?: string;
+    message: string;
+}
+
+interface RoleRequestResolvedPayload {
+    approved: boolean;
+    newRole: string;
+}
+
+interface ProfileUpdatedPayload {
+    user: ReturnType<typeof useAuthStore.getState>['user'];
+}
+
+interface AvatarUpdatedPayload {
+    avatar: string;
 }
 
 const SocketContext = createContext<SocketContextType>({
@@ -72,6 +96,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     const { user, token, updateCoins, updateStreak, setUser } = useAuthStore();
 
     const socketRef = useRef<Socket | null>(null);
+    const adminChatSocketRef = useRef<Socket | null>(null);
     const [socketState, setSocketState] = useState<Socket | null>(null);
     const [isConnected, setIsConnected] = useState(false);
     const [socketId, setSocketId] = useState<string | undefined>(undefined);
@@ -147,7 +172,6 @@ export function SocketProvider({ children }: { children: ReactNode }) {
             reconnectionAttempts: 15,
             reconnectionDelay: 2000,
             reconnectionDelayMax: 15000,
-
             timeout: 60000,
             withCredentials: true,
         });
@@ -163,7 +187,6 @@ export function SocketProvider({ children }: { children: ReactNode }) {
             reconnectAttempts.current = 0;
             lastPongRef.current = Date.now();
 
-            // Debug: Expose socket globally
             if (typeof window !== 'undefined') {
                 (window as Window & { socket?: Socket }).socket = instance;
             }
@@ -234,7 +257,6 @@ export function SocketProvider({ children }: { children: ReactNode }) {
             setSocketId(undefined);
             registeredRef.current = false;
         };
-
     }, [user?._id, token]);
 
     useEffect(() => {
@@ -276,7 +298,6 @@ export function SocketProvider({ children }: { children: ReactNode }) {
         };
 
         socketState.on('online_users', handleOnlineUsers);
-
         socketState.emit('request_online_users');
 
         return () => {
@@ -310,7 +331,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     useEffect(() => {
         if (!socketState || !isConnected) return;
 
-        const handler = (data: { code?: string; message: string }) => {
+        const handler = (data: ForceLogoutPayload) => {
             const isBanned = data.code === 'USER_BANNED';
             toast.error(isBanned ? '🔴 Tài khoản bị khóa' : '⛔ Tài khoản bị xóa', {
                 description: data.message || 'Vui lòng liên hệ quản trị viên',
@@ -340,10 +361,51 @@ export function SocketProvider({ children }: { children: ReactNode }) {
         return () => { socketState.off('role_changed', handler); };
     }, [socketState, isConnected, setUser]);
 
+    // Persistent admin-chat namespace socket for real-time red dot
+    useEffect(() => {
+        if (!socketState?.connected || !token || !user) return;
+
+        console.log('🔌 Connecting admin-chat socket for red dot');
+        const adminSocket = io(`${BASE_URL}/admin-chat`, {
+            auth: { token },
+            transports: ['polling', 'websocket'],
+            upgrade: true,
+        });
+
+        adminChatSocketRef.current = adminSocket;
+
+        adminSocket.on('new_message', (msg: NewMessagePayload) => {
+            console.log('🔴 Admin chat new_message received (global)');
+
+            const senderId = typeof msg.senderId === 'object' ? msg.senderId?._id : msg.senderId;
+            if (senderId === user._id) return;
+
+            const isChatPage = window.location.pathname.includes('/chatwithadmin');
+
+            if (user.role === 'admin') {
+                if (msg.unreadCount !== undefined) {
+                    useChatStore.getState().setUnreadAdminChatCount(msg.unreadCount);
+                } else if (!isChatPage) {
+                    useChatStore.getState().incrementUnreadAdminChat();
+                }
+            } else {
+                if (!isChatPage) {
+                    useChatStore.getState().incrementUnreadAdminChat();
+                }
+            }
+        });
+
+        return () => {
+            console.log('🔌 Disconnecting admin-chat socket');
+            adminSocket.disconnect();
+            adminChatSocketRef.current = null;
+        };
+    }, [socketState?.connected, token, user]);
+
     useEffect(() => {
         if (!socketState || !isConnected) return;
 
-        const handler = (data: { approved: boolean; newRole: string }) => {
+        const handler = (data: RoleRequestResolvedPayload) => {
             const currentUser = useAuthStore.getState().user;
             if (currentUser) {
                 setUser({ ...currentUser, role: data.newRole as typeof currentUser.role, requestedRole: null });
@@ -384,7 +446,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     useEffect(() => {
         if (!socketState || !isConnected) return;
 
-        const handler = (data: { user: typeof user }) => {
+        const handler = (data: ProfileUpdatedPayload) => {
             if (data.user) setUser(data.user);
         };
 
@@ -395,7 +457,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     useEffect(() => {
         if (!socketState || !isConnected) return;
 
-        const handler = (data: { avatar: string }) => {
+        const handler = (data: AvatarUpdatedPayload) => {
             const currentUser = useAuthStore.getState().user;
             if (currentUser) setUser({ ...currentUser, avatar: data.avatar });
         };
@@ -411,7 +473,6 @@ export function SocketProvider({ children }: { children: ReactNode }) {
                     console.log('📱 Tab visible, reconnecting...');
                     reconnect();
                 } else if (socketRef.current?.connected) {
-
                     socketRef.current.emit('request_online_users');
                 }
             }

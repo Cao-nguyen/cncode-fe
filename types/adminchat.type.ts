@@ -3,6 +3,7 @@ export interface AdminChatConversation {
     userId: { _id: string; fullName: string; avatar?: string; phoneNumber?: string; role?: string };
     assignedAdmin?: { _id: string; fullName: string; avatar?: string };
     lastMessage?: { content: string; senderId?: string; sentAt?: string; createdAt?: string };
+    unreadCount?: number;
     createdAt: string;
     updatedAt: string;
 }

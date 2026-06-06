@@ -77,6 +77,11 @@ export default function ChatWithAdminPage() {
                     const msgRes = await adminChatApi.getMyMessages(token);
                     if (msgRes.success) {
                         setMessages(msgRes.data || []);
+
+                        // Mark messages as read when first loading
+                        if (conv._id && socketRef.current?.connected) {
+                            socketRef.current.emit('mark_read', { conversationId: conv._id });
+                        }
                     }
                 }
             } catch (error) {
@@ -88,6 +93,18 @@ export default function ChatWithAdminPage() {
 
         loadData();
     }, [token]);
+
+    // Mark messages as read when page becomes visible again
+    useEffect(() => {
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible' && conversationId && socketRef.current?.connected) {
+                socketRef.current.emit('mark_read', { conversationId });
+            }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+    }, [conversationId]);
 
     // Socket connection
     useEffect(() => {
@@ -117,8 +134,8 @@ export default function ChatWithAdminPage() {
                 return [...prev, msg];
             });
 
-            // Auto mark as read when receiving message from admin
-            if (conversationIdRef.current && msg.senderId._id !== user._id) {
+            // Only mark as read if user is actively viewing the page (not in background tab)
+            if (conversationIdRef.current && msg.senderId._id !== user._id && document.visibilityState === 'visible') {
                 socket.emit('mark_read', { conversationId: conversationIdRef.current });
             }
         });
