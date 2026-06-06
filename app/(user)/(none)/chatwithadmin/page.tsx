@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/auth.store';
 import { adminChatApi } from '@/lib/api/adminchat.api';
 import { ArrowLeft, Send, Loader2, MessageCircle, Image as ImageIcon, X } from 'lucide-react';
@@ -12,7 +13,10 @@ import { ImagePreviewModal } from '@/components/custom/ImagePreviewModal';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
 export default function ChatWithAdminPage() {
+    const router = useRouter();
     const { token, user } = useAuthStore();
+    const [isRedirecting, setIsRedirecting] = useState(false);
+
     const [messages, setMessages] = useState<AdminChatMessage[]>([]);
     const [inputText, setInputText] = useState('');
     const [initialLoading, setInitialLoading] = useState(true);
@@ -33,6 +37,14 @@ export default function ChatWithAdminPage() {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const conversationIdRef = useRef(conversationId);
+
+    // Redirect admin users away from this page
+    useEffect(() => {
+        if (user && user.role === 'admin') {
+            setIsRedirecting(true);
+            router.replace('/admin/chatwithadmin');
+        }
+    }, [user, router]);
 
     // Keep ref updated to avoid socket effect dependency
     useEffect(() => {
@@ -313,15 +325,24 @@ export default function ChatWithAdminPage() {
         }
     };
 
-    if (!user || !token) {
+    if (isRedirecting || !user || !token || user.role === 'admin') {
         return (
             <div className="h-[100dvh] bg-slate-50 flex items-center justify-center">
                 <div className="text-center">
-                    <MessageCircle className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-                    <p className="text-slate-500 mb-4">Vui lòng đăng nhập để chat với admin</p>
-                    <Link href="/login" className="px-6 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition">
-                        Đăng nhập
-                    </Link>
+                    {isRedirecting || user?.role === 'admin' ? (
+                        <>
+                            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mb-4"></div>
+                            <p className="text-slate-500">Đang tải...</p>
+                        </>
+                    ) : (
+                        <>
+                            <MessageCircle className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+                            <p className="text-slate-500 mb-4">Vui lòng đăng nhập để chat với admin</p>
+                            <Link href="/login" className="px-6 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition">
+                                Đăng nhập
+                            </Link>
+                        </>
+                    )}
                 </div>
             </div>
         );

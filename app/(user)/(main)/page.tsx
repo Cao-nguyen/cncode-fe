@@ -102,18 +102,20 @@ export default function Home() {
                 <Analytics />
             </div>
 
-            {/* Floating chat icon */}
-            <Link
-                href="/chatwithadmin"
-                className="flex fixed bottom-20 lg:bottom-10 right-3 lg:right-5 z-50 w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-full shadow-lg hover:shadow-xl hover:scale-110 transition-all duration-300 items-center justify-center"
-            >
-                <MessageCircleMore className="w-6 h-6" />
-                {unreadAdminMessages > 0 && (
-                    <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-0.5 shadow-lg">
-                        {unreadAdminMessages > 99 ? '99+' : unreadAdminMessages}
-                    </span>
-                )}
-            </Link>
+            {/* Floating chat icon - only show for non-admin users */}
+            {user?.role !== 'admin' && (
+                <Link
+                    href="/chatwithadmin"
+                    className="flex fixed bottom-20 lg:bottom-10 right-3 lg:right-5 z-50 w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-full shadow-lg hover:shadow-xl hover:scale-110 transition-all duration-300 items-center justify-center"
+                >
+                    <MessageCircleMore className="w-6 h-6" />
+                    {unreadAdminMessages > 0 && (
+                        <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-0.5 shadow-lg">
+                            {unreadAdminMessages > 99 ? '99+' : unreadAdminMessages}
+                        </span>
+                    )}
+                </Link>
+            )}
         </div>
     )
 }
