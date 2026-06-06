@@ -59,6 +59,8 @@ function NotificationIcon({ type }: { type: INotification['type'] }) {
     const iconClass = "w-3.5 h-3.5 sm:w-4 sm:h-4";
 
     switch (type) {
+        case 'admin_chat_message':
+            return <MessageCircle className={`${iconClass} text-indigo-500`} />;
         case 'comment':
         case 'reply_comment':
             return <MessageCircle className={`${iconClass} text-blue-500`} />;
@@ -156,6 +158,8 @@ function getNotificationMessage(notification: INotification): string {
     const senderName = notification.senderId?.fullName || 'Ai đó';
 
     switch (notification.type) {
+        case 'admin_chat_message':
+            return notification.content || `${senderName} đã gửi tin nhắn hỗ trợ`;
         case 'first_login_bonus':
             return notification.content || `Chào mừng ${senderName}! Bạn nhận được ${notification.meta?.coins ?? 100} xu khi đăng nhập lần đầu.`;
         case 'streak_bonus':
@@ -195,9 +199,11 @@ function NotificationItem({ notification, onMarkAsRead, onClose }: NotificationI
     const isSystem = isSystemType(notification.type);
     const isRead = notification.read;
     const isBroadcast = 'isBroadcast' in notification ? (notification as { isBroadcast?: boolean }).isBroadcast : false;
-    const linkHref = notification.postSlug || notification.postId
-        ? `/blog/${notification.postSlug || notification.postId}`
-        : null;
+    const linkHref = notification.type === 'admin_chat_message'
+        ? '/admin/chatwithadmin'
+        : notification.postSlug || notification.postId
+            ? `/blog/${notification.postSlug || notification.postId}`
+            : null;
 
     const content = (
         <div

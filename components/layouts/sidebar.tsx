@@ -88,6 +88,11 @@ const menuItems = [
                 link: "/admin/congdong",
                 icon: <Message size={18} variant="Outline" />,
             },
+            {
+                title: "Chat với người dùng",
+                link: "/admin/chatwithadmin",
+                icon: <Message size={18} variant="Outline" />,
+            },
         ],
     },
     {

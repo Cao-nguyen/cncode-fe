@@ -36,7 +36,7 @@ export interface INotification {
         fullName: string;
         avatar?: string;
     };
-    type: 'comment' | 'reply_comment' | 'like_post' | 'reaction_comment' | 'bookmark' | 'first_login_bonus' | 'streak_bonus' | 'role_request_approved' | 'role_request_rejected' | 'system' | 'policy_update';
+    type: 'comment' | 'reply_comment' | 'like_post' | 'reaction_comment' | 'bookmark' | 'first_login_bonus' | 'streak_bonus' | 'role_request_approved' | 'role_request_rejected' | 'system' | 'policy_update' | 'admin_chat_message';
     content: string;
     postId?: string;
     postSlug?: string;
