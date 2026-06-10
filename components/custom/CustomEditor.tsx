@@ -39,8 +39,7 @@ import {
     Trash2,
     Loader2,
     Sigma,
-    FileText,
-    Video
+    FileText
 } from "lucide-react";
 import { createRoot } from "react-dom/client";
 import { toast } from "sonner";
@@ -48,7 +47,7 @@ import { toast } from "sonner";
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type HeadingLevel = "p" | "h1" | "h2" | "h3";
-type ModalMode = "image" | "code" | "math" | "file" | "video" | null;
+type ModalMode = "image" | "code" | "math" | "file" | null;
 type ImgAlign = "left" | "center" | "right";
 
 interface ActiveStates {
@@ -74,6 +73,7 @@ interface CustomEditorProps {
     initialValue?: string;
     onImageUpload?: (base64Image: string) => Promise<string>;
     uploading?: boolean;
+    compact?: boolean;
 }
 
 export interface CustomEditorRef {
@@ -843,115 +843,6 @@ const UploadFileModal: React.FC<UploadFileModalProps> = ({ onClose, onConfirm })
     );
 };
 
-// ─── Upload Video Modal ───────────────────────────────────────────────────────
-
-interface UploadVideoModalProps {
-    onClose: () => void;
-    onConfirm: (url: string, filename: string) => void;
-}
-
-const UploadVideoModal: React.FC<UploadVideoModalProps> = ({ onClose, onConfirm }) => {
-    const [video, setVideo] = useState<File | null>(null);
-    const [preview, setPreview] = useState<string | null>(null);
-    const [dragging, setDragging] = useState(false);
-    const [isUploading, setIsUploading] = useState(false);
-    const fileInputRef = useRef<HTMLInputElement>(null);
-
-    const handleFile = (selectedFile: File) => {
-        if (!selectedFile.type.startsWith("video/")) return;
-        setVideo(selectedFile);
-        const objectUrl = URL.createObjectURL(selectedFile);
-        setPreview(objectUrl);
-    };
-
-    const handleDrop = (e: React.DragEvent) => {
-        e.preventDefault();
-        setDragging(false);
-        const droppedFile = e.dataTransfer.files[0];
-        if (droppedFile) handleFile(droppedFile);
-    };
-
-    const handleConfirm = async () => {
-        if (!video) return;
-
-        setIsUploading(true);
-
-        try {
-            const base64 = await new Promise<string>((resolve) => {
-                const reader = new FileReader();
-                reader.onloadend = () => resolve(reader.result as string);
-                reader.readAsDataURL(video);
-            });
-
-            const result = await uploadApi.uploadVideo(base64, 'editor');
-
-            if (!result?.success || !result.url) {
-                toast.error(result?.message || "Upload thất bại");
-                return;
-            }
-
-            onConfirm(result.url, video.name);
-            toast.success("Upload video thành công");
-            onClose();
-
-        } catch (error) {
-            console.error(error);
-            toast.error("Có lỗi xảy ra khi upload");
-        } finally {
-            setIsUploading(false);
-        }
-    };
-
-    return (
-        <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
-            <div className="modal-box" style={{ width: 420 }}>
-                <div className="modal-header">
-                    <span className="modal-title">Chèn video</span>
-                    <button onClick={onClose} className="modal-close-btn"><X size={20} /></button>
-                </div>
-
-                <div
-                    onDragOver={e => { e.preventDefault(); setDragging(true); }}
-                    onDragLeave={() => setDragging(false)}
-                    onDrop={handleDrop}
-                    onClick={() => fileInputRef.current?.click()}
-                    style={{
-                        border: `1.5px dashed ${dragging ? "#6366f1" : "#d1d5db"}`,
-                        borderRadius: 8, padding: "28px 16px", textAlign: "center",
-                        cursor: "pointer", background: dragging ? "#f5f5ff" : "#fafafa",
-                        transition: "all 0.15s", marginBottom: 10,
-                    }}>
-                    <input ref={fileInputRef} type="file" accept="video/*" style={{ display: "none" }}
-                        onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
-                    {preview ? (
-                        <div>
-                            <video src={preview} controls
-                                style={{ maxHeight: 120, maxWidth: "100%", borderRadius: 6, marginBottom: 6 }} />
-                            <div style={{ fontSize: 11, color: "#6b7280", fontFamily: "system-ui,sans-serif" }}>
-                                {video?.name} • {video ? (video.size / 1024 / 1024).toFixed(2) : 0} MB
-                            </div>
-                        </div>
-                    ) : (
-                        <div style={{ fontFamily: "system-ui,sans-serif" }}>
-                            <Video size={28} style={{ margin: "0 auto", display: "block", color: "#9ca3af" }} />
-                            <div style={{ fontSize: 13, color: "#6b7280", marginTop: 8 }}>Kéo thả video vào đây</div>
-                            <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 4 }}>hoặc click để chọn file</div>
-                        </div>
-                    )}
-                </div>
-
-                <div className="modal-actions" style={{ marginTop: 12 }}>
-                    <button onClick={onClose} className="btn-cancel" disabled={isUploading}>Hủy</button>
-                    <button onClick={handleConfirm} className="btn-ok" disabled={!video || isUploading}>
-                        {isUploading ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
-                        {isUploading ? "Đang upload..." : "Chèn video"}
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
-};
-
 // ─── Image Widget ─────────────────────────────────────────────────────────────
 
 const ImageWidget: React.FC<{
@@ -1277,7 +1168,7 @@ const mountedRoots = new Map<string, ReturnType<typeof createRoot>>();
 
 // ─── Main Editor ──────────────────────────────────────────────────────────────
 
-const CustomEditor = forwardRef<CustomEditorRef, CustomEditorProps>(({ initialValue = '', onImageUpload, uploading = false }, ref) => {
+const CustomEditor = forwardRef<CustomEditorRef, CustomEditorProps>(({ initialValue = '', onImageUpload, uploading = false, compact = false }, ref) => {
     const editorRef = useRef<HTMLDivElement>(null);
     const savedRangeRef = useRef<Range | null>(null);
     const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -2090,20 +1981,6 @@ const CustomEditor = forwardRef<CustomEditorRef, CustomEditorProps>(({ initialVa
                         }}
                     />
                 )}
-                {modal === "video" && (
-                    <UploadVideoModal
-                        onClose={() => setModal(null)}
-                        onConfirm={(url, filename) => {
-                            editorRef.current?.focus();
-                            restoreRange();
-                            // Thêm crossorigin và preload cho video
-                            const html = `<div contenteditable="false" style="margin:1em 0;"><video src="${url}" controls crossorigin="anonymous" preload="metadata" style="max-width:100%;border-radius:8px;"></video></div><p><br></p>`;
-                            document.execCommand("insertHTML", false, html);
-                            scheduleAutosave();
-                            setModal(null);
-                        }}
-                    />
-                )}
             </div>
         </>
     );
@@ -2125,6 +2002,7 @@ const editorStyles = `
     height: 560px;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     position: relative;
+    isolation: isolate;
   }
   .ed-header {
     background: #fafafa;
@@ -2284,7 +2162,7 @@ const editorStyles = `
   #editor ::selection { background: rgba(99,102,241,0.15); }
 
   .highlight-picker {
-    position: absolute; top: 34px; left: 0; z-index: 100;
+    position: absolute; top: 34px; left: 0;
     background: #fff; border: 0.5px solid #e5e7eb; border-radius: 8px;
     padding: 6px; display: grid; grid-template-columns: repeat(4, 1fr);
     gap: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.12);

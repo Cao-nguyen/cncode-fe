@@ -122,7 +122,8 @@ const AdminUsersDashboard = memo(function AdminUsersDashboard({
                                 cy="50%"
                                 labelLine={false}
                                 label={false}
-                                outerRadius={isMobile ? 70 : 90}
+                                outerRadius={isMobile ? 60 : isTablet ? 80 : 90}
+                                innerRadius={isMobile ? 30 : isTablet ? 40 : 50}
                                 fill="#8884d8"
                                 dataKey="value"
                             >
@@ -177,7 +178,7 @@ const AdminUsersDashboard = memo(function AdminUsersDashboard({
                                 tick={{ fontSize: isMobile ? 9 : 11, fill: '#6b7280' }}
                                 angle={-45}
                                 textAnchor="end"
-                                height={60}
+                                height={isMobile ? 80 : 60}
                             />
                             <YAxis tick={{ fontSize: isMobile ? 10 : 12, fill: '#6b7280' }} />
                             <Tooltip
@@ -234,7 +235,7 @@ const AdminUsersDashboard = memo(function AdminUsersDashboard({
                                 tick={{ fontSize: isMobile ? 9 : 11, fill: '#6b7280' }}
                                 angle={-45}
                                 textAnchor="end"
-                                height={60}
+                                height={isMobile ? 80 : 60}
                             />
                             <YAxis tick={{ fontSize: isMobile ? 10 : 12, fill: '#6b7280' }} />
                             <Tooltip
@@ -338,7 +339,7 @@ const AdminUsersDashboard = memo(function AdminUsersDashboard({
                                 <YAxis
                                     dataKey="_id"
                                     type="category"
-                                    width={isMobile ? 80 : 120}
+                                    width={isMobile ? 100 : 120}
                                     tick={{ fontSize: isMobile ? 9 : 11, fill: '#6b7280' }}
                                 />
                                 <Tooltip
