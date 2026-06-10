@@ -392,6 +392,30 @@ function AdminUsersPageContent() {
         }
     };
 
+    const handleExportExcel = async () => {
+        try {
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+            const response = await fetch(`${apiUrl}/api/users/admin/users/export`, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+            if (!response.ok) throw new Error('Export failed');
+            const blob = await response.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'danh_sach_nguoi_dung.xlsx';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error('Export error:', error);
+            toast.error('Xuất Excel thất bại');
+        }
+    };
+
     const handleViewTeacherDetail = (user: IUser) => {
         setSelectedPendingTeacher(user);
         setShowTeacherDetailModal(true);
@@ -494,13 +518,13 @@ function AdminUsersPageContent() {
                         <div className="overflow-x-auto">
                             <div className="min-w-[600px]">
                                 <ResponsiveContainer width="100%" height={isMobile ? 350 : 450}>
-                                    <BarChart data={provinceStats} margin={{ top: 20, right: 30, left: 20, bottom: 80 }}>
+                                    <BarChart data={provinceStats} margin={{ top: 20, right: 30, left: 20, bottom: isMobile ? 100 : 80 }}>
                                         <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                                         <XAxis
                                             dataKey="_id"
                                             angle={-45}
                                             textAnchor="end"
-                                            height={80}
+                                            height={isMobile ? 100 : 80}
                                             interval={0}
                                             tick={{ fontSize: isMobile ? 9 : 11, fill: '#6b7280' }}
                                         />
@@ -613,6 +637,12 @@ function AdminUsersPageContent() {
                             placeholder="Chọn vai trò"
                         />
                     </div>
+                    <CustomButton
+                        onClick={handleExportExcel}
+                        className="bg-green-500 hover:bg-green-600 text-white"
+                    >
+                        Xuất Excel
+                    </CustomButton>
                 </div>
             </div>
 
