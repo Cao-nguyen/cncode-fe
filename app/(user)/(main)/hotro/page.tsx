@@ -192,7 +192,7 @@ export default function HelpCenterPage() {
                     )}
                 </div>
 
-                <imgPreviewModal
+                <ImagePreviewModal
                     src={previewSrc}
                     isOpen={isPreviewOpen}
                     onClose={() => setIsPreviewOpen(false)}
