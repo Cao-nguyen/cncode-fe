@@ -68,11 +68,11 @@ export default function FeedbackPage() {
     const [formData, setFormData] = useState<{
         title: string;
         content: string;
-        category: FeedbackCategory;: string;
+        category: FeedbackCategory;
     }>({
         title: '',
         content: '',
-        category: 'other',: 'medium'
+        category: 'other'
     });
     const [submitting, setSubmitting] = useState(false);
 
@@ -231,7 +231,7 @@ export default function FeedbackPage() {
             if (result.success) {
                 toast.success(result.message);
                 setShowCreateModal(false);
-                setFormData({ title: '', content: '', category: 'other',: 'medium' });
+                setFormData({ title: '', content: '', category: 'other' });
                 fetchFeedbacks();
             } else {
                 toast.error(result.message || 'Gửi góp ý thất bại');
