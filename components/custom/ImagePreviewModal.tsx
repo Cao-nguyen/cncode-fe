@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, ReactNode, MouseEvent, useMemo } from 'react';
 import { X, ZoomIn, ZoomOut, RotateCw, RefreshCcw, Minimize2, Move } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import Image from 'next/image';
 
 
 interface ImagePreviewModalProps {
@@ -150,7 +151,7 @@ export const ImagePreviewModal = ({ src, isOpen, onClose }: ImagePreviewModalPro
                             onClick={(e) => e.stopPropagation()}
                         >
                             <div className="relative w-[90vw] h-[80vh]">
-                                <img
+                                <Image
                                     src={src}
                                     alt="Preview"
                                     fill

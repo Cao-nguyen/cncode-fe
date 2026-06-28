@@ -61,7 +61,7 @@ export default function CodeIDE({ language, value, onChange, testCases = [], rea
                                 ))}
                             </select>
                         )}
-                        <CustomButton size="sm" variant="secondary" onClick={runCode} disabled={running} className="!py-1 !px-2 !text-xs">
+                        <CustomButton size="small" variant="secondary" onClick={runCode} disabled={running} className="!py-1 !px-2 !text-xs">
                             {running ? <Loader2 className="w-3 h-3 animate-spin" /> : <Play className="w-3 h-3" />}
                             Chạy thử
                         </CustomButton>

@@ -56,7 +56,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                     <img
                         src={image}
                         alt={name}
-                        fill
                         className="object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                 ) : (

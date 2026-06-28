@@ -77,7 +77,6 @@ export const CourseCard: React.FC<CourseCardProps> = ({
                     <img
                         src={thumbnail}
                         alt={title}
-                        fill
                         className="object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                 ) : (
