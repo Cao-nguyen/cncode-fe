@@ -52,7 +52,8 @@ const compressImage = (base64: string, maxWidth: number = 1200, quality: number 
             const ctx = canvas.getContext('2d');
             ctx?.drawImage(img, 0, 0, width, height);
 
-            const compressed = canvas.toDataURL('image/jpeg', quality);
+            // Use PNG to preserve transparency
+            const compressed = canvas.toDataURL('image/png');
             resolve(compressed);
         };
         img.src = base64;
@@ -191,42 +192,6 @@ export const uploadApi = {
                 success: true,
                 url: data.data?.url,
                 messageId: data.data?.messageId,
-                message: data.message
-            };
-        } catch (error) {
-            console.error('Upload error:', error);
-            return { success: false, message: 'Lỗi kết nối' };
-        }
-    },
-
-    uploadVideo: async (base64Video: string, folder: string = 'general'): Promise<UploadResponse> => {
-        const token = getToken();
-        if (!token) {
-            return { success: false, message: 'Chưa đăng nhập' };
-        }
-
-        try {
-            const response = await fetch(`${API_URL}/api/upload/video`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ video: base64Video, folder })
-            });
-
-            const data = await response.json();
-
-            if (!response.ok || !data.success) {
-                return {
-                    success: false,
-                    message: data.message || 'Upload thất bại'
-                };
-            }
-
-            return {
-                success: true,
-                url: data.data?.url,
                 message: data.message
             };
         } catch (error) {

@@ -1049,13 +1049,70 @@ const ImageWidget: React.FC<{
 
 // ─── Table Widget ─────────────────────────────────────────────────────────────
 
-const TableWidget: React.FC<{ initialRows: number; initialCols: number; onDelete?: () => void }> = ({ initialRows, initialCols, onDelete }) => {
-    const [data, setData] = useState<string[][]>(() =>
-        Array.from({ length: initialRows + 1 }, (_, r) =>
+type TableSnapshot = { data: string[][]; colWidths: number[] };
+
+const tableDataRegistry = new Map<string, () => TableSnapshot>();
+
+function parseTableSnapshot(el: Element | null, initialRows: number, initialCols: number): TableSnapshot {
+    const raw = el?.getAttribute("data-table-data");
+    if (raw) {
+        try {
+            const parsed = JSON.parse(decodeURIComponent(raw)) as Partial<TableSnapshot>;
+            if (parsed.data?.length && parsed.data[0]?.length) {
+                const colCount = parsed.data[0].length;
+                return {
+                    data: parsed.data,
+                    colWidths: parsed.colWidths?.length === colCount
+                        ? parsed.colWidths
+                        : Array(colCount).fill(110),
+                };
+            }
+        } catch { /* fall through to defaults */ }
+    }
+    return {
+        data: Array.from({ length: initialRows + 1 }, (_, r) =>
             Array.from({ length: initialCols }, (_, c) => r === 0 ? `Header ${c + 1}` : "")
-        )
-    );
-    const [colWidths, setColWidths] = useState<number[]>(() => Array(initialCols).fill(110));
+        ),
+        colWidths: Array(initialCols).fill(110),
+    };
+}
+
+function syncTableSnapshotToDom(id: string, snapshot: TableSnapshot) {
+    const el = document.querySelector(`[data-table-id="${id}"]`);
+    if (!el) return;
+    el.setAttribute("data-table-data", encodeURIComponent(JSON.stringify(snapshot)));
+    el.setAttribute("data-table-rows", String(Math.max(0, snapshot.data.length - 1)));
+    el.setAttribute("data-table-cols", String(snapshot.data[0]?.length ?? 0));
+}
+
+function syncAllTableWidgetsToDom(editor: HTMLElement) {
+    editor.querySelectorAll("[data-table-id]").forEach(el => {
+        const id = el.getAttribute("data-table-id");
+        if (!id) return;
+        const getter = tableDataRegistry.get(id);
+        if (getter) syncTableSnapshotToDom(id, getter());
+    });
+}
+
+const TableWidget: React.FC<{
+    initialRows: number;
+    initialCols: number;
+    initialSnapshot?: TableSnapshot;
+    widgetId?: string;
+    placeholderEl?: Element | null;
+    onDelete?: () => void;
+    onDataChange?: () => void;
+}> = ({ initialRows, initialCols, initialSnapshot, widgetId, placeholderEl, onDelete, onDataChange }) => {
+    const [data, setData] = useState<string[][]>(() => {
+        if (initialSnapshot?.data.length) return initialSnapshot.data;
+        const el = placeholderEl ?? (widgetId ? document.querySelector(`[data-table-id="${widgetId}"]`) : null);
+        return parseTableSnapshot(el, initialRows, initialCols).data;
+    });
+    const [colWidths, setColWidths] = useState<number[]>(() => {
+        if (initialSnapshot?.colWidths.length) return initialSnapshot.colWidths;
+        const el = placeholderEl ?? (widgetId ? document.querySelector(`[data-table-id="${widgetId}"]`) : null);
+        return parseTableSnapshot(el, initialRows, initialCols).colWidths;
+    });
     const [selected, setSelected] = useState(false);
     const wrapRef = useRef<HTMLDivElement>(null);
     const resizingCol = useRef<number | null>(null);
@@ -1069,6 +1126,15 @@ const TableWidget: React.FC<{ initialRows: number; initialCols: number; onDelete
         document.addEventListener("mousedown", onOut);
         return () => document.removeEventListener("mousedown", onOut);
     }, []);
+
+    useEffect(() => {
+        if (!widgetId) return;
+        const snapshot = () => ({ data, colWidths });
+        tableDataRegistry.set(widgetId, snapshot);
+        syncTableSnapshotToDom(widgetId, snapshot());
+        onDataChange?.();
+        return () => { tableDataRegistry.delete(widgetId); };
+    }, [widgetId, data, colWidths, onDataChange]);
 
     const addRow = () => setData(d => [...d, Array(d[0].length).fill("")]);
     const addCol = () => {
@@ -1313,15 +1379,21 @@ const CustomEditor = forwardRef<CustomEditorRef, CustomEditorProps>(({ initialVa
             if (mountedRoots.has(id)) return;
             const rows = parseInt(el.getAttribute('data-table-rows') || '3');
             const cols = parseInt(el.getAttribute('data-table-cols') || '3');
+            const snapshot = parseTableSnapshot(el, rows, cols);
+            el.innerHTML = '';
             const root = createRoot(el);
             mountedRoots.set(id, root);
             root.render(<TableWidget
                 initialRows={rows}
                 initialCols={cols}
+                initialSnapshot={snapshot}
+                widgetId={id}
+                placeholderEl={el}
                 onDelete={() => deleteTable(id)}
+                onDataChange={scheduleAutosave}
             />);
         });
-    }, [deleteTable]);
+    }, [deleteTable, scheduleAutosave]);
 
     // Set initial content only once on mount - use ref to prevent re-initialization
     useEffect(() => {
@@ -1350,7 +1422,10 @@ const CustomEditor = forwardRef<CustomEditorRef, CustomEditorProps>(({ initialVa
     }, [mountImageWidgets, mountTableWidgets]);
 
     useImperativeHandle(ref, () => ({
-        getContent: () => editorRef.current?.innerHTML || '',
+        getContent: () => {
+            if (editorRef.current) syncAllTableWidgetsToDom(editorRef.current);
+            return editorRef.current?.innerHTML || '';
+        },
         setContent: (content: string) => {
             if (editorRef.current) {
                 editorRef.current.innerHTML = content;
@@ -1487,12 +1562,18 @@ const CustomEditor = forwardRef<CustomEditorRef, CustomEditorProps>(({ initialVa
         setTimeout(() => {
             const el = editorRef.current?.querySelector(`[data-table-id="${id}"]`);
             if (el && !mountedRoots.has(id)) {
+                const snapshot = parseTableSnapshot(el, 3, 3);
+                el.innerHTML = '';
                 const root = createRoot(el);
                 mountedRoots.set(id, root);
                 root.render(<TableWidget
                     initialRows={3}
                     initialCols={3}
+                    initialSnapshot={snapshot}
+                    widgetId={id}
+                    placeholderEl={el}
                     onDelete={() => deleteTable(id)}
+                    onDataChange={scheduleAutosave}
                 />);
             }
         }, 0);

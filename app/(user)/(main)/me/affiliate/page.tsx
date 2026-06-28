@@ -7,7 +7,7 @@ import { useAuthStore } from '@/store/auth.store';
 import { useSocket } from '@/providers/socket.provider';
 import { affiliateApi } from '@/lib/api/affiliate.api';
 import { toast } from 'sonner';
-import Image from 'next/image';
+
 import type { IMyAffiliateInfo, ILeaderboardUser } from '@/types/affiliate.type';
 import { DashboardCard } from '@/components/custom/DashboardCard';
 
@@ -245,7 +245,7 @@ export default function AffiliatePage() {
                                                     <div className={`w-16 h-16 sm:w-24 sm:h-24 rounded-full bg-gradient-to-br ${rankColors[rank]} p-1 ring-2 ${rankColors[rank].split(' ')[2]} mx-auto`}>
                                                         <div className="w-full h-full rounded-full bg-white overflow-hidden">
                                                             {item.user.avatar ? (
-                                                                <Image src={item.user.avatar} alt={item.user.fullName} width={94} height={94} className="w-full h-full object-cover" />
+                                                                <img src={item.user.avatar} alt={item.user.fullName} width={94} height={94} className="w-full h-full object-cover" />
                                                             ) : (
                                                                 <div className="w-full h-full flex items-center justify-center text-lg sm:text-2xl font-bold text-[var(--cn-primary)]">
                                                                     {item.user.fullName?.charAt(0) || '?'}
@@ -276,7 +276,7 @@ export default function AffiliatePage() {
                                                     <span className="w-5 sm:w-7 text-[10px] sm:text-sm font-bold text-[var(--cn-text-muted)]">#{idx + 4}</span>
                                                     <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[var(--cn-primary)]/10 overflow-hidden">
                                                         {item.user.avatar ? (
-                                                            <Image src={item.user.avatar} alt={item.user.fullName} width={40} height={40} className="w-full h-full object-cover" />
+                                                            <img src={item.user.avatar} alt={item.user.fullName} width={40} height={40} className="w-full h-full object-cover" />
                                                         ) : (
                                                             <div className="w-full h-full flex items-center justify-center text-xs sm:text-sm font-semibold text-[var(--cn-primary)]">
                                                                 {item.user.fullName?.charAt(0) || '?'}

@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
+
 import { helpProjectApi } from '@/lib/api/helpproject.api';
 import { HelpProject, Reply } from '@/types/helpproject.type';
 import { CustomButton } from '@/components/custom/CustomButton';
@@ -157,7 +157,7 @@ export default function HelpProjectDetailPage() {
                 <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
                     {project.thumbnail && (
                         <div className="relative h-80 w-full bg-gray-100">
-                            <Image src={project.thumbnail} alt={project.title} fill className="object-cover" />
+                            \
                         </div>
                     )}
 

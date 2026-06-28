@@ -39,7 +39,7 @@ export function ReminderDisplay({ title, scheduledTime, isTriggered, triggeredAt
                     <div className="flex items-center gap-2 mb-2">
                         <Clock className="w-4 h-4 text-[var(--cn-text-sub)]" />
                         <span className="text-xs font-medium text-[var(--cn-text-sub)] uppercase">
-                            {isTriggered ? 'Đã nhắc' : isPast ? 'Quá hạn' : 'Nhắc hẹn'}
+                            {isTriggered ? 'Đã diễn ra' : isPast ? 'Đã qua' : 'Sự kiện sắp diễn ra'}
                         </span>
                     </div>
 

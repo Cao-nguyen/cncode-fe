@@ -17,7 +17,7 @@ export interface IFeedback {
     priority: 'low' | 'medium' | 'high';
     adminResponse: string;
     reactCount: number;
-    likedBy: string[];  
+    likedBy: string[];
     viewCount: number;
     commentCount: number;
     isPinned: boolean;
@@ -58,7 +58,7 @@ export const feedbackApi = {
         }
     },
 
-    createFeedback: async (token: string, data: { title: string; content: string; category: string; priority?: string }) => {
+    createFeedback: async (token: string, data: { title: string; content: string; category?: string }) => {
         try {
             const response = await fetch(`${API_URL}/api/feedback`, {
                 method: 'POST',
@@ -88,7 +88,7 @@ export const feedbackApi = {
             return {
                 success: data.success,
                 message: data.message,
-                data: data.data 
+                data: data.data
             };
         } catch (error) {
             console.error('React feedback error:', error);
@@ -170,11 +170,11 @@ export const feedbackApi = {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify({ priority })
+                body: JSON.stringify({})
             });
             return await response.json();
         } catch (error) {
-            console.error('Update feedback priority error:', error);
+            console.error('Update feedback error:', error);
             return { success: false, message: 'Không thể cập nhật độ ưu tiên' };
         }
     },

@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+
 import Link from "next/link";
 
 const SOCIALS = [
@@ -57,13 +57,12 @@ export default function Footer() {
     return (
         <footer className="w-full px-5 py-5 mb-5 md:mb-12.5 lg:mb-0 md:px-7.5 lg:px-10 lg:py-10 pb-15 bg-[#242938] text-white text-[clamp(13px,1.4vw,16px)]">
             <div className="flex flex-col items-center md:flex-row md:items-center">
-                <Image
+                <img
                     src="/images/logo.png"
                     alt="Logo CNcode"
                     width={120}
                     height={60}
                     className="md:w-37.5 md:h-20 brightness-0 invert"
-                    priority
                 />
                 <h1 className="hidden md:block font-bold md:ml-5 text-[clamp(12px,2.2vw,20px)] whitespace-nowrap text-white">
                     CNcode - Nền tảng học công nghệ và đổi mới sáng tạo
@@ -124,7 +123,7 @@ export default function Footer() {
                             target="_blank"
                             className="flex items-center justify-center transition-all hover:scale-110 active:scale-95"
                         >
-                            <Image
+                            <img
                                 src={item.icon}
                                 alt="icon"
                                 width={item.size}

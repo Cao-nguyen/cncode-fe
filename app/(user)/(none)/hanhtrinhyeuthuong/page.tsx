@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, animate } from 'framer-motion';
-import Image from 'next/image';
+
 import Link from 'next/link';
 import { Heart, ArrowRight, ShieldCheck, Gift, Sparkles, ArrowLeft, Users } from 'lucide-react';
 
@@ -155,7 +155,7 @@ const JourneyPage = () => {
                         className="relative px-4"
                     >
                         <div className="aspect-square rounded-[2rem] md:rounded-[3rem] overflow-hidden relative shadow-2xl border-[8px] md:border-[12px] border-bg-section">
-                            <Image
+                            <img
                                 src="https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?auto=format&fit=crop&q=80"
                                 alt="Trẻ em"
                                 fill

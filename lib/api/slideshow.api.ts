@@ -10,6 +10,8 @@ export interface SlideshowItem {
     cta: string;
     href: string;
     imageUrl: string;
+    imageWidth: number;
+    imageHeight: number;
     gradient: string;
     order: number;
     isActive: boolean;
@@ -85,6 +87,8 @@ export const slideshowApi = {
         cta?: string;
         href?: string;
         imageUrl?: string;
+        imageWidth?: number;
+        imageHeight?: number;
         gradient?: string;
         order?: number;
         isActive?: boolean;
@@ -101,6 +105,8 @@ export const slideshowApi = {
         cta: string;
         href: string;
         imageUrl: string;
+        imageWidth: number;
+        imageHeight: number;
         gradient: string;
         order: number;
         isActive: boolean;

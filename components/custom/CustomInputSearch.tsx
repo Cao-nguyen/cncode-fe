@@ -94,6 +94,7 @@ export const CustomInputSearch: React.FC<CustomInputSearchProps> = ({
 
     const handleClear = () => {
         setInputValue('');
+        setDebouncedValue('');
         onChange?.('');
         onSearch?.('');
         onClear?.();
@@ -166,8 +167,8 @@ export const CustomInputSearch: React.FC<CustomInputSearchProps> = ({
     const hasRecent = recentSearches.length > 0;
 
     return (
-        <div ref={containerRef} className={`relative ${className}`}>
-            <form onSubmit={handleSubmit} className="relative">
+        <div ref={containerRef} className={`relative w-full ${className}`}>
+            <form onSubmit={handleSubmit} className="relative w-full">
                 <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
                     {isLoading ? (
                         <Loader2 className="w-3.5 h-3.5 lg:w-4 lg:h-4 text-[var(--cn-primary)] animate-spin" />

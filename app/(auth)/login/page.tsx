@@ -1,7 +1,7 @@
 
 'use client'
 
-import Image from 'next/image'
+
 import Link from 'next/link'
 import { GoogleLogin } from '@react-oauth/google'
 import { Shield } from 'lucide-react'
@@ -24,13 +24,12 @@ export default function LoginPage() {
 
         {}
         <div className="mb-8 sm:mb-10 lg:mb-12">
-          <Image
+          <img
             src="/images/logo.png"
             alt="CNcode"
             width={80}
             height={48}
             className="w-auto h-auto sm:w-[100px] lg:w-[120px]"
-            priority
           />
         </div>
 

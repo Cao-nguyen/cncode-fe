@@ -1,7 +1,7 @@
 
 'use client'
 
-import Image from 'next/image'
+
 import { AlertCircle } from 'lucide-react'
 import { useOnboarding } from '@/hooks/auth/useOnboarding.hook'
 import { CustomInput } from '@/components/custom/CustomInput'
@@ -32,13 +32,12 @@ export default function OnboardingPage() {
 
         {}
         <div className="text-center mb-8 sm:mb-10 lg:mb-12">
-          <Image
+          <img
             src="/images/logo.png"
             alt="CNcode"
             width={80}
             height={48}
             className="mx-auto w-auto h-auto sm:w-[100px] lg:w-[120px]"
-            priority
           />
           <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-[var(--cn-text-main)] mt-4 sm:mt-5 lg:mt-6">
             Hoàn thiện hồ sơ

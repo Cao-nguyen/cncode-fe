@@ -3,7 +3,7 @@
 
 import React from 'react';
 import { Star, Shield, Truck, RefreshCw, Eye, Heart, ShoppingCart } from 'lucide-react';
-import Image from 'next/image';
+
 import Link from 'next/link';
 import { CustomButton } from './CustomButton';
 
@@ -53,7 +53,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             {}
             <div className="relative h-48 overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900">
                 {image ? (
-                    <Image
+                    <img
                         src={image}
                         alt={name}
                         fill

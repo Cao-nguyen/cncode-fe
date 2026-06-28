@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
+
 import { useRouter } from 'next/navigation';
 import { helpProjectApi } from '@/lib/api/helpproject.api';
 import { HelpProject } from '@/types/helpproject.type';
@@ -52,7 +52,7 @@ const ProjectCard = ({ project, onDelete }: ProjectCardProps) => {
             <Link href={`/hotroduan/${project._id}`}>
                 <div className="relative aspect-[3/2] bg-gray-100 overflow-hidden">
                     {project.thumbnail ? (
-                        <Image
+                        <img
                             src={project.thumbnail}
                             alt={project.title}
                             fill

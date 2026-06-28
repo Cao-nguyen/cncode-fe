@@ -3,7 +3,7 @@
 
 import React from 'react';
 import { Calendar, User, Clock, ArrowRight, Eye } from 'lucide-react';
-import Image from 'next/image';
+
 import Link from 'next/link';
 
 interface BlogCardProps {
@@ -49,7 +49,7 @@ export const BlogCard: React.FC<BlogCardProps> = ({
             {}
             <div className="relative h-48 overflow-hidden bg-gradient-to-br from-[var(--cn-primary)]/20 to-[var(--cn-primary)]/5">
                 {image ? (
-                    <Image
+                    <img
                         src={image}
                         alt={title}
                         fill
@@ -75,7 +75,7 @@ export const BlogCard: React.FC<BlogCardProps> = ({
                 <div className="flex items-center gap-2 mb-3">
                     <div className="w-6 h-6 rounded-full bg-[var(--cn-primary)]/10 overflow-hidden flex-shrink-0">
                         {authorAvatar ? (
-                            <Image
+                            <img
                                 src={authorAvatar}
                                 alt={author}
                                 width={24}

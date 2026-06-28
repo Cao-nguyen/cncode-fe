@@ -229,7 +229,10 @@ export function SocketProvider({ children }: { children: ReactNode }) {
         });
 
         instance.on('connect_error', (error) => {
-            console.error('Socket connect error:', error.message);
+            // Don't log authentication errors for guests (expected behavior)
+            if (error.message !== 'Authentication error' || token) {
+                console.error('Socket connect error:', error.message);
+            }
             setIsConnected(false);
             reconnectAttempts.current++;
 

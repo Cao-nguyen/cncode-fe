@@ -3,7 +3,7 @@
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { ChevronDown, Check, Search } from 'lucide-react';
-import Image from 'next/image';
+
 
 interface SelectOption {
     value: string;
@@ -115,7 +115,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
                     <div className="flex items-center gap-2 flex-1 min-w-0">
                         {showAvatar && selected?.avatar && (
                             <div className="w-6 h-6 rounded-full overflow-hidden flex-shrink-0 bg-[var(--cn-bg-section)]">
-                                <Image
+                                <img
                                     src={selected.avatar}
                                     alt={selected.label}
                                     width={24}
@@ -172,7 +172,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
                                         <div className="flex items-center gap-2 flex-1 min-w-0">
                                             {showAvatar && option.avatar && (
                                                 <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 bg-[var(--cn-bg-section)]">
-                                                    <Image
+                                                    <img
                                                         src={option.avatar}
                                                         alt={option.label}
                                                         width={32}

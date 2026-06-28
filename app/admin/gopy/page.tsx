@@ -8,7 +8,7 @@ import {
     Loader2, ChevronLeft, ChevronRight, Search, Settings,
     Check, X, Trash2, Eye, Calendar, Tag, MessageCircle, Clock, TrendingUp, AlertCircle
 } from 'lucide-react';
-import Image from 'next/image';
+
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { toast } from 'sonner';
@@ -284,7 +284,7 @@ export default function AdminFeedbackPage() {
                                                 <div className="flex items-center gap-3">
                                                     <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center">
                                                         {getUserAvatar(feedback) ? (
-                                                            <Image src={getUserAvatar(feedback)!} alt={getUserName(feedback)} width={36} height={36} className="w-full h-full rounded-full object-cover" />
+                                                            <img src={getUserAvatar(feedback)!} alt={getUserName(feedback)} width={36} height={36} className="w-full h-full rounded-full object-cover" />
                                                         ) : (
                                                             <span className="text-sm font-semibold text-blue-600">{getUserInitial(feedback)}</span>
                                                         )}

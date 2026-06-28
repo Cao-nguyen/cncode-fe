@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import Image from 'next/image';
+
 import {
     MoreHorizontal,
     Flag,
@@ -415,7 +415,7 @@ export default function CommentItem({
                         "
                     >
                         {getUserAvatar() ? (
-                            <Image
+                            <img
                                 src={getUserAvatar()!}
                                 alt={getUserName()}
                                 width={32}
@@ -1046,7 +1046,7 @@ export default function CommentItem({
                                             <div key={index} className="flex items-center gap-3 px-5 py-3 hover:bg-gray-50 transition">
                                                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center overflow-hidden flex-shrink-0">
                                                     {item.userId.avatar ? (
-                                                        <Image
+                                                        <img
                                                             src={item.userId.avatar}
                                                             alt={item.userId.fullName || 'User'}
                                                             width={40}

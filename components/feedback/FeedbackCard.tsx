@@ -11,7 +11,7 @@ import { CustomTextarea } from '@/components/custom/CustomTextarea';
 import { CustomSelect } from '@/components/custom/CustomSelect';
 import { toast } from 'sonner';
 import { feedbackApi } from '@/lib/api/feedback.api';
-import Image from 'next/image';
+
 import { DeleteConfirmModal } from '@/components/custom/DeleteConfirmModal';
 
 type FeedbackCategory = 'bug' | 'ui_ux' | 'feature_request' | 'performance' | 'security' | 'other';
@@ -229,7 +229,7 @@ export default function FeedbackCard({
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center overflow-hidden flex-shrink-0">
                                 {getUserAvatar() ? (
-                                    <Image
+                                    <img
                                         src={getUserAvatar()!}
                                         alt={getUserName()}
                                         width={40}

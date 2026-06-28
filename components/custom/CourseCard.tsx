@@ -3,7 +3,7 @@
 
 import React from 'react';
 import { Clock, Users, Star, Eye, Heart, BookOpen, Award, TrendingUp } from 'lucide-react';
-import Image from 'next/image';
+
 import Link from 'next/link';
 
 interface CourseCardProps {
@@ -74,7 +74,7 @@ export const CourseCard: React.FC<CourseCardProps> = ({
             {}
             <div className="relative h-44 overflow-hidden bg-gradient-to-br from-[var(--cn-primary)]/20 to-[var(--cn-primary)]/5">
                 {thumbnail ? (
-                    <Image
+                    <img
                         src={thumbnail}
                         alt={title}
                         fill
@@ -125,7 +125,7 @@ export const CourseCard: React.FC<CourseCardProps> = ({
                 <div className="flex items-center gap-2 mb-3">
                     <div className="w-5 h-5 rounded-full bg-[var(--cn-primary)]/10 overflow-hidden flex-shrink-0">
                         {instructorAvatar ? (
-                            <Image
+                            <img
                                 src={instructorAvatar}
                                 alt={instructor}
                                 width={20}

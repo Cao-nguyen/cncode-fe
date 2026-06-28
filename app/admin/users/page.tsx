@@ -32,7 +32,7 @@ import {
     Settings,
     Flame,
 } from 'lucide-react';
-import Image from 'next/image';
+
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import {
@@ -682,7 +682,7 @@ function AdminUsersPageContent() {
                                         <div className="flex items-center gap-3">
                                             <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center">
                                                 {user.avatar ? (
-                                                    <Image src={user.avatar} alt={user.fullName} width={36} height={36} className="w-full h-full rounded-full object-cover" />
+                                                    <img src={user.avatar} alt={user.fullName} width={36} height={36} className="w-full h-full rounded-full object-cover" />
                                                 ) : (
                                                     <span className="text-sm font-semibold text-blue-600">{getUserInitial(user)}</span>
                                                 )}

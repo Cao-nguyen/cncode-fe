@@ -6,7 +6,7 @@ import { useSocket } from '@/providers/socket.provider';
 import { ratingApi, IRating, IRatingStats } from '@/lib/api/rating.api';
 import StarRating from '@/components/common/StarRating';
 import { Loader2, ChevronLeft, ChevronRight, Trash2, Star, Search, User, X } from 'lucide-react';
-import Image from 'next/image';
+
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { toast } from 'sonner';
@@ -268,11 +268,9 @@ export default function AdminRatingsPage() {
                                         <div className="flex items-center gap-2 flex-1 min-w-0">
                                             <div className="w-8 h-8 rounded-full bg-main/10 overflow-hidden flex-shrink-0">
                                                 {rating.userId?.avatar ? (
-                                                    <Image
+                                                    <img
                                                         src={rating.userId.avatar}
                                                         alt={rating.userId.fullName || 'User'}
-                                                        width={32}
-                                                        height={32}
                                                         className="w-full h-full object-cover"
                                                     />
                                                 ) : (
@@ -338,11 +336,9 @@ export default function AdminRatingsPage() {
                                                     <div className="flex items-center gap-2">
                                                         <div className="w-8 h-8 rounded-full bg-main/10 overflow-hidden flex-shrink-0">
                                                             {rating.userId?.avatar ? (
-                                                                <Image
+                                                                <img
                                                                     src={rating.userId.avatar}
                                                                     alt={rating.userId.fullName}
-                                                                    width={32}
-                                                                    height={32}
                                                                     className="w-full h-full object-cover"
                                                                 />
                                                             ) : (
@@ -440,11 +436,9 @@ export default function AdminRatingsPage() {
                             <div className="flex items-center gap-3">
                                 <div className="w-10 h-10 rounded-full bg-main/10 overflow-hidden">
                                     {selectedRating.userId?.avatar ? (
-                                        <Image
+                                        <img
                                             src={selectedRating.userId.avatar}
                                             alt={selectedRating.userId.fullName || 'User'}
-                                            width={40}
-                                            height={40}
                                             className="w-full h-full object-cover"
                                         />
                                     ) : (

@@ -602,7 +602,7 @@ export default function AdminChat() {
                         className="w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 hover:text-indigo-600 transition flex-shrink-0"
                         disabled={sending}
                     >
-                        <ImagePlus className="w-5 h-5" />
+                        <imgPlus className="w-5 h-5" />
                     </button>
                     <input
                         ref={fileInputRef}

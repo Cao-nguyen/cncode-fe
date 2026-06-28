@@ -2,7 +2,7 @@
 'use client';
 
 import Link from "next/link";
-import Image from "next/image";
+
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 import {
@@ -615,7 +615,7 @@ export default function Header() {
             <header className="hidden lg:block bg-[var(--cn-bg-card)] w-full h-[60px] fixed top-0 z-50 shadow-[var(--cn-shadow-sm)]">
                 <div className="flex h-full justify-between items-center px-4">
                     <Link href="/" className="flex-shrink-0">
-                        <Image src="/images/logo.png" alt="Logo CNcode" width={100} height={55} priority />
+                        <img src="/images/logo.png" alt="Logo CNcode" width={100} height={55} />
                     </Link>
                     <nav className="flex h-full items-center gap-1">
                         {menu.map((item) => {
@@ -640,13 +640,13 @@ export default function Header() {
                                     <div className="border border-[var(--cn-border)] rounded-2xl pl-2 pr-4 py-0.5">
                                         <p className="text-[var(--cn-primary)] text-xs font-medium">{formatNumber(displayCoins)}</p>
                                     </div>
-                                    <Image src="/icons/coins.svg" alt="Coins" width={25} height={25} className="absolute -right-3" />
+                                    <img src="/icons/coins.svg" alt="Coins" width={25} height={25} className="absolute -right-3" />
                                 </div>
                                 <div className="relative flex items-center">
                                     <div className="border border-[var(--cn-border)] rounded-2xl pl-2 pr-5 py-0.5">
                                         <p className="text-[var(--cn-primary)] text-xs font-medium">{formatNumber(displayStreak)}</p>
                                     </div>
-                                    <Image src="/icons/streak.svg" alt="Streak" width={27} height={27} className="absolute -right-3" />
+                                    <img src="/icons/streak.svg" alt="Streak" width={27} height={27} className="absolute -right-3" />
                                 </div>
                             </div>
                         )}
@@ -671,7 +671,7 @@ export default function Header() {
             <div className="lg:hidden fixed top-0 w-full h-10 bg-[var(--cn-bg-card)] z-50 border-b border-[var(--cn-border)]">
                 <div className="flex h-full justify-between items-center px-2">
                     <Link href="/">
-                        <Image src="/images/logo.png" alt="Logo" width={60} height={30} className="object-contain" priority />
+                        <img src="/images/logo.png" alt="Logo" width={60} height={30} className="object-contain" />
                     </Link>
                     <div className="flex items-center gap-3">
                         {displayUser && (
@@ -680,13 +680,13 @@ export default function Header() {
                                     <div className="border border-[var(--cn-border)] rounded-2xl pl-1.5 pr-3 py-0.5">
                                         <p className="text-[var(--cn-primary)] text-[10px] font-medium">{formatNumber(displayCoins)}</p>
                                     </div>
-                                    <Image src="/icons/coins.svg" alt="Coins" width={18} height={18} className="absolute -right-2" />
+                                    <img src="/icons/coins.svg" alt="Coins" width={18} height={18} className="absolute -right-2" />
                                 </div>
                                 <div className="relative flex items-center">
                                     <div className="border border-[var(--cn-border)] rounded-2xl pl-1.5 pr-4 py-0.5">
                                         <p className="text-[var(--cn-primary)] text-[10px] font-medium">{formatNumber(displayStreak)}</p>
                                     </div>
-                                    <Image src="/icons/streak.svg" alt="Streak" width={20} height={20} className="absolute -right-2" />
+                                    <img src="/icons/streak.svg" alt="Streak" width={20} height={20} className="absolute -right-2" />
                                 </div>
                             </div>
                         )}

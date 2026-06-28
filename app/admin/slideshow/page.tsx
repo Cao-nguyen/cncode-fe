@@ -69,6 +69,8 @@ export default function AdminSlideshowPage() {
         setHref('/');
         setImageUrl('');
         setGradient(GRADIENT_PRESETS[0]);
+        setImageWidth(0);
+        setImageHeight(0);
         setEditingSlide(null);
     };
 
@@ -86,8 +88,13 @@ export default function AdminSlideshowPage() {
         setHref(slide.href || '/');
         setImageUrl(slide.imageUrl || '');
         setGradient(slide.gradient || GRADIENT_PRESETS[0]);
+        setImageWidth(slide.imageWidth || 0);
+        setImageHeight(slide.imageHeight || 0);
         setShowModal(true);
     };
+
+    const [imageWidth, setImageWidth] = useState(0);
+    const [imageHeight, setImageHeight] = useState(0);
 
     const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -104,6 +111,22 @@ export default function AdminSlideshowPage() {
                 reader.onloadend = () => resolve(reader.result as string);
                 reader.readAsDataURL(file);
             });
+
+            // Get image dimensions
+            const dimensions = await new Promise<{ width: number; height: number }>((resolve) => {
+                const img = new Image();
+                img.onload = () => {
+                    resolve({ width: img.width, height: img.height });
+                };
+                img.onerror = () => {
+                    resolve({ width: 0, height: 0 });
+                };
+                img.src = base64;
+            });
+
+            setImageWidth(dimensions.width);
+            setImageHeight(dimensions.height);
+
             const result = await uploadApi.uploadImage(base64, 'slideshow');
             if (!result?.success || !result.url) {
                 toast.error(result?.message || 'Upload thất bại');
@@ -137,6 +160,8 @@ export default function AdminSlideshowPage() {
                 cta: cta.trim() || 'Khám phá ngay',
                 href: href.trim() || '/',
                 imageUrl,
+                imageWidth,
+                imageHeight,
                 gradient,
                 isActive: true,
                 order: editingSlide ? editingSlide.order : slides.length,
@@ -251,13 +276,24 @@ export default function AdminSlideshowPage() {
                                                 <p className="text-[10px] font-bold text-white leading-tight line-clamp-1">{slide.title}</p>
                                                 <p className="text-[8px] text-white/80 mt-0.5 line-clamp-2">{slide.description}</p>
                                             </div>
-                                            <div className="w-1/2 relative">
-                                                {slide.imageUrl && (
+                                            <div className="w-1/2 relative h-full flex items-center justify-center p-1">
+                                                {slide.imageUrl ? (
                                                     <img
                                                         src={slide.imageUrl}
                                                         alt=""
-                                                        className="absolute inset-0 h-full w-full object-contain object-right-bottom"
+                                                        style={{
+                                                            maxWidth: '100%',
+                                                            maxHeight: '100%',
+                                                            width: slide.imageWidth && slide.imageHeight ? 'auto' : '100%',
+                                                            height: slide.imageWidth && slide.imageHeight ? 'auto' : '100%',
+                                                            objectFit: 'contain',
+                                                        }}
+                                                        onError={(e) => console.error('List image load error:', e, slide.imageUrl)}
                                                     />
+                                                ) : (
+                                                    <div className="flex h-full items-center justify-center text-white/40 text-[8px]">
+                                                        No img
+                                                    </div>
                                                 )}
                                             </div>
                                         </div>
@@ -339,8 +375,8 @@ export default function AdminSlideshowPage() {
 
                         <div className="px-6 py-5">
                             {/* LIVE PREVIEW */}
-                            <div className={`relative mb-6 overflow-hidden rounded-xl ${gradientClass} min-h-[200px] flex`}>
-                                <div className="flex-1 p-5 sm:p-6 flex flex-col justify-center">
+                            <div className={`relative mb-6 overflow-hidden rounded-xl ${gradientClass} flex`}>
+                                <div className="flex-1 p-5 sm:p-6 flex flex-col justify-center min-w-[200px]">
                                     <h3 className="text-lg sm:text-xl font-bold text-white leading-snug">{title || 'Tiêu đề'}</h3>
                                     <p className="text-sm text-white/80 mt-1">{subtitle || 'Subtitle'}</p>
                                     <p className="text-xs sm:text-sm text-white/90 mt-2 line-clamp-3">{description || 'Mô tả...'}</p>
@@ -348,12 +384,19 @@ export default function AdminSlideshowPage() {
                                         {cta || 'Button'} <ArrowRight size={12} />
                                     </span>
                                 </div>
-                                <div className="w-1/2 sm:w-2/5 relative">
+                                <div className="w-1/2 sm:w-2/5 relative flex items-center justify-center p-4">
                                     {imageUrl ? (
                                         <img
                                             src={imageUrl}
                                             alt=""
-                                            className="absolute inset-0 h-full w-full object-contain object-right-bottom"
+                                            style={{
+                                                maxWidth: '100%',
+                                                maxHeight: '200px',
+                                                width: imageWidth && imageHeight ? 'auto' : '100%',
+                                                height: imageWidth && imageHeight ? 'auto' : '100%',
+                                                objectFit: 'contain',
+                                            }}
+                                            onError={(e) => console.error('Image load error:', e)}
                                         />
                                     ) : (
                                         <div className="flex h-full items-center justify-center text-white/40 text-sm">

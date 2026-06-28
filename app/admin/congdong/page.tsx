@@ -22,6 +22,7 @@ import { PollCreator } from '@/components/custom/PollCreator';
 import { PollDisplay } from '@/components/custom/PollDisplay';
 import { ReminderCreator } from '@/components/custom/ReminderCreator';
 import { ReminderDisplay } from '@/components/custom/ReminderDisplay';
+import { FileDisplay } from '@/components/custom/FileDisplay';
 import { io, Socket } from 'socket.io-client';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
@@ -123,10 +124,14 @@ export default function AdminCommunityPage() {
     const [previewIndex, setPreviewIndex] = useState(0);
     const [showPollCreator, setShowPollCreator] = useState(false);
     const [showReminderCreator, setShowReminderCreator] = useState(false);
+    const [showChatSidebar, setShowChatSidebar] = useState(true);
+    const [uploadingFile, setUploadingFile] = useState(false);
+    const [filesPreview, setFilesPreview] = useState<{ name: string; size: number; url: string }[]>([]);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const socketRef = useRef<Socket | null>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const imageInputRef = useRef<HTMLInputElement>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
     const selectedConvRef = useRef<Conversation | null>(null);
 
     // Keep ref in sync with state
@@ -526,6 +531,85 @@ export default function AdminCommunityPage() {
         }
     };
 
+    const uploadFileToServer = async (file: File): Promise<{ url: string; name: string; size: number } | null> => {
+        try {
+            const base64 = await new Promise<string>((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result as string);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+
+            const res = await fetch(`${API_URL}/api/upload/file`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    file: base64,
+                    fileName: file.name,
+                    folder: 'chat-files'
+                })
+            });
+
+            const data = await res.json();
+            if (data.success && data.data?.url) {
+                return { url: data.data.url, name: file.name, size: file.size };
+            }
+            return null;
+        } catch (error) {
+            console.error('Error uploading file:', error);
+            return null;
+        }
+    };
+
+    const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = Array.from(e.target.files || []);
+        if (files.length === 0 || !selectedConv) return;
+
+        if (files.length > 5) {
+            alert('Chỉ được chọn tối đa 5 file');
+            return;
+        }
+
+        for (const file of files) {
+            if (file.size > 500 * 1024 * 1024) {
+                alert(`File ${file.name} vượt quá 500MB`);
+                return;
+            }
+        }
+
+        setUploadingFile(true);
+        try {
+            const uploadPromises = files.map(file => uploadFileToServer(file));
+            const results = await Promise.all(uploadPromises);
+
+            const successResults = results.filter(r => r !== null) as { url: string; name: string; size: number }[];
+
+            if (successResults.length === 0) {
+                alert('Upload file thất bại');
+                return;
+            }
+
+            // Send files as JSON array
+            const fileContent = JSON.stringify(successResults);
+            await sendMessage(fileContent, 'file');
+
+            if (successResults.length < files.length) {
+                alert(`Đã upload ${successResults.length}/${files.length} file thành công`);
+            }
+        } catch (error) {
+            console.error('Error uploading files:', error);
+            alert('Có lỗi xảy ra khi upload file');
+        } finally {
+            setUploadingFile(false);
+            if (fileInputRef.current) {
+                fileInputRef.current.value = '';
+            }
+        }
+    };
+
     const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(e.target.files || []);
         if (files.length === 0 || !selectedConv) return;
@@ -674,8 +758,8 @@ export default function AdminCommunityPage() {
                 </div>
             </div>
 
-            {/* Groups Table */}
-            <div className="bg-white dark:bg-gray-900 rounded-xl border border-main/20 shadow-sm overflow-hidden">
+            {/* Groups Table - Desktop */}
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-main/20 shadow-sm overflow-hidden hidden md:block">
                 <div className="overflow-x-auto">
                     <table className="w-full">
                         <thead className="bg-main/5 border-b border-main/20">
@@ -713,13 +797,13 @@ export default function AdminCommunityPage() {
                                             </div>
                                         </td>
                                         <td className="px-4 py-3">
-                                            <p className="text-sm text-gray-600 dark:text-gray-400 truncate max-w-xs">
+                                            <p className="text-sm text-gray-600 dark:text-gray-400 truncate max-w-[160px]">
                                                 {conv.description || '-'}
                                             </p>
                                         </td>
                                         <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{conv.participants.length}</td>
                                         <td className="px-4 py-3">
-                                            <p className="text-sm text-gray-600 dark:text-gray-400 truncate max-w-xs">
+                                            <p className="text-sm text-gray-600 dark:text-gray-400 truncate max-w-[160px]">
                                                 {conv.lastMessage?.content || 'Chưa có tin nhắn'}
                                             </p>
                                         </td>
@@ -769,30 +853,103 @@ export default function AdminCommunityPage() {
                         </tbody>
                     </table>
                 </div>
+            </div>
 
-                {/* Pagination */}
-                {totalPages > 1 && (
-                    <div className="flex justify-center gap-2 mt-6">
-                        <Button
-                            variant="outline"
-                            onClick={() => setPage(p => Math.max(1, p - 1))}
-                            disabled={page === 1}
-                        >
-                            Trước
-                        </Button>
-                        <span className="flex items-center px-4 text-sm text-[var(--cn-text-sub)]">
-                            Trang {page} / {totalPages}
-                        </span>
-                        <Button
-                            variant="outline"
-                            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                            disabled={page === totalPages}
-                        >
-                            Sau
-                        </Button>
+            {/* Groups Cards - Mobile */}
+            <div className="md:hidden space-y-3">
+                {filteredConversations.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500 bg-white dark:bg-gray-900 rounded-xl border border-main/20 shadow-sm">
+                        Chưa có nhóm chat nào
                     </div>
+                ) : (
+                    filteredConversations.map((conv) => (
+                        <div
+                            key={conv._id}
+                            className="bg-white dark:bg-gray-900 rounded-xl border border-main/20 shadow-sm p-4 cursor-pointer hover:bg-main/5 transition"
+                            onClick={() => {
+                                setSelectedConv(conv);
+                                setShowChatSidebar(false);
+                            }}
+                        >
+                            <div className="flex items-start justify-between mb-3">
+                                <div className="flex items-center gap-3 min-w-0">
+                                    <Avatar className="w-12 h-12 flex-shrink-0">
+                                        <AvatarImage src={conv.avatar} />
+                                        <AvatarFallback className="bg-[var(--cn-primary-light)] text-[var(--cn-primary)]">
+                                            <Users className="w-5 h-5" />
+                                        </AvatarFallback>
+                                    </Avatar>
+                                    <div className="min-w-0">
+                                        <p className="font-medium text-gray-700 dark:text-gray-300 truncate">{conv.name || 'Nhóm'}</p>
+                                        <p className="text-sm text-gray-500">{conv.participants.length} thành viên</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-1 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => openEditModal(conv)}
+                                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-950/20 h-8 w-8"
+                                    >
+                                        <Edit className="w-4 h-4" />
+                                    </Button>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => setDeleteId(conv._id)}
+                                        className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20 h-8 w-8"
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                    </Button>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2 text-sm">
+                                <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-2">
+                                    <p className="text-xs text-gray-500">Mô tả</p>
+                                    <p className="text-gray-700 dark:text-gray-300 truncate">{conv.description || '-'}</p>
+                                </div>
+                                <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-2">
+                                    <p className="text-xs text-gray-500">Người tạo</p>
+                                    <p className="text-gray-700 dark:text-gray-300 truncate">{conv.createdBy.fullName}</p>
+                                </div>
+                                <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-2">
+                                    <p className="text-xs text-gray-500">Tin nhắn cuối</p>
+                                    <p className="text-gray-700 dark:text-gray-300 truncate">{conv.lastMessage?.content || 'Chưa có tin nhắn'}</p>
+                                </div>
+                                <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-2">
+                                    <p className="text-xs text-gray-500">Cập nhật</p>
+                                    <p className="text-gray-700 dark:text-gray-300">{new Date(conv.updatedAt).toLocaleDateString('vi-VN')}</p>
+                                </div>
+                            </div>
+                        </div>
+                    ))
                 )}
             </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+                <div className="flex justify-center gap-2 mt-6">
+                    <Button
+                        variant="outline"
+                        onClick={() => setPage(p => Math.max(1, p - 1))}
+                        disabled={page === 1}
+                        className="text-sm"
+                    >
+                        Trước
+                    </Button>
+                    <span className="flex items-center px-4 text-sm text-[var(--cn-text-sub)]">
+                        Trang {page} / {totalPages}
+                    </span>
+                    <Button
+                        variant="outline"
+                        onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                        disabled={page === totalPages}
+                        className="text-sm"
+                    >
+                        Sau
+                    </Button>
+                </div>
+            )}
 
             {/* Create/Edit Group Modal */}
             {showModal && (
@@ -906,7 +1063,10 @@ export default function AdminCommunityPage() {
             {/* Chat Overlay */}
             {selectedConv && (
                 <div className="fixed inset-0 bg-[var(--cn-bg-main)] z-50 flex">
-                    <div className="w-full md:w-72 lg:w-80 bg-[var(--cn-bg-card)] md:border-r border-[var(--cn-border)] flex-col flex">
+                    {/* Sidebar - visible by default on mobile, always on desktop */}
+                    <div className={`${showChatSidebar ? 'flex' : 'hidden'} md:flex w-full md:w-72 lg:w-80 bg-[var(--cn-bg-card)] md:border-r border-[var(--cn-border)] flex-col absolute md:relative inset-0 z-10 md:z-auto`}>
+                        {/* Overlay backdrop for mobile */}
+                        <div className="md:hidden fixed inset-0 bg-black/30 -z-10" onClick={() => setShowChatSidebar(false)} />
                         <div className="border-b border-[var(--cn-border)]">
                             <div className="flex items-center justify-between px-3 py-2 border-b border-[var(--cn-border)]">
                                 <Button variant="ghost" size="icon" onClick={() => setSelectedConv(null)}>
@@ -973,117 +1133,171 @@ export default function AdminCommunityPage() {
                     </div>
 
                     <div className="flex-1 flex flex-col">
-                        <div className="bg-[var(--cn-bg-card)] border-b border-[var(--cn-border)] p-4">
+                        <div className="bg-[var(--cn-bg-card)] border-b border-[var(--cn-border)] p-3 md:p-4">
                             <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                    <Avatar className="w-10 h-10">
+                                <div className="flex items-center gap-3 min-w-0">
+                                    {/* Mobile sidebar toggle */}
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => setShowChatSidebar(true)}
+                                        className="md:hidden h-8 w-8 flex-shrink-0"
+                                        title="Danh sách nhóm"
+                                    >
+                                        <ArrowLeft className="w-4 h-4" />
+                                    </Button>
+                                    <Avatar className="w-10 h-10 flex-shrink-0">
                                         <AvatarImage src={selectedConv.avatar} />
                                         <AvatarFallback className="bg-[var(--cn-primary-light)] text-[var(--cn-primary)]">
                                             <Users className="w-5 h-5" />
                                         </AvatarFallback>
                                     </Avatar>
-                                    <div>
-                                        <h2 className="font-semibold text-[var(--cn-text-main)]">{getConversationName(selectedConv)}</h2>
-                                        <p className="text-sm text-[var(--cn-text-sub)]">{selectedConv.participants.length} thành viên</p>
+                                    <div className="min-w-0">
+                                        <h2 className="font-semibold text-[var(--cn-text-main)] text-sm md:text-base truncate">{getConversationName(selectedConv)}</h2>
+                                        <p className="text-xs md:text-sm text-[var(--cn-text-sub)] truncate">{selectedConv.participants.length} thành viên</p>
                                     </div>
                                 </div>
-                                <Button variant="ghost" size="icon">
+                                <Button variant="ghost" size="icon" className="flex-shrink-0">
                                     <MoreVertical className="w-5 h-5" />
                                 </Button>
                             </div>
                         </div>
 
                         <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                            {messages.map((msg) => {
-                                const isOwn = msg.senderId._id === user?._id;
-                                return (
-                                    <div key={msg._id} className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}>
-                                        <div className={`flex gap-2 max-w-[70%] ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}>
-                                            {!isOwn && (
-                                                <Avatar className="w-8 h-8">
-                                                    <AvatarImage src={msg.senderId.avatar} />
-                                                    <AvatarFallback className="bg-gray-200 text-xs dark:bg-gray-700">
-                                                        {msg.senderId.fullName.charAt(0)}
-                                                    </AvatarFallback>
-                                                </Avatar>
-                                            )}
-                                            <div>
-                                                {!isOwn && <p className="text-xs text-[var(--cn-text-sub)] mb-1">{msg.senderId.fullName}</p>}
-                                                {msg.type === 'sticker' ? (
-                                                    <div className="max-w-[150px]">
-                                                        <img src={msg.content} alt="Sticker" className="w-full h-auto rounded-lg" />
-                                                    </div>
-                                                ) : msg.type === 'poll' ? (
-                                                    <PollDisplay
-                                                        poll={JSON.parse(msg.content)}
-                                                        currentUserId={user?._id || ''}
-                                                        allParticipants={selectedConv?.participants.map(p => p.userId) || []}
-                                                        onVote={(optionIndices) => handleVote(msg._id, optionIndices)}
-                                                    />
-                                                ) : msg.type === 'reminder' ? (
-                                                    <ReminderDisplay
-                                                        title={msg.content}
-                                                        scheduledTime={msg.reminder?.scheduledTime || ''}
-                                                        isTriggered={msg.reminder?.isTriggered || false}
-                                                        triggeredAt={msg.reminder?.triggeredAt}
-                                                    />
-                                                ) : msg.type === 'image' ? (
-                                                    (() => {
-                                                        const imageUrls = msg.content.split('\n').filter(url => url.trim());
-                                                        const imageCount = imageUrls.length;
+                            {(() => {
+                                // Group messages by date and show date separators
+                                const getDateLabel = (dateStr: string): string => {
+                                    const msgDate = new Date(dateStr);
+                                    const today = new Date();
+                                    const yesterday = new Date(today);
+                                    yesterday.setDate(yesterday.getDate() - 1);
 
-                                                        if (imageCount === 1) {
+                                    const msgDateStr = msgDate.toDateString();
+                                    const todayStr = today.toDateString();
+                                    const yesterdayStr = yesterday.toDateString();
+
+                                    if (msgDateStr === todayStr) return 'Hôm nay';
+                                    if (msgDateStr === yesterdayStr) return 'Hôm qua';
+
+                                    return msgDate.toLocaleDateString('vi-VN', {
+                                        weekday: 'long',
+                                        day: 'numeric',
+                                        month: 'numeric',
+                                        year: 'numeric'
+                                    });
+                                };
+
+                                const elements: React.ReactNode[] = [];
+                                let lastDateStr = '';
+
+                                messages.forEach((msg, index) => {
+                                    const currentDateStr = new Date(msg.createdAt).toDateString();
+
+                                    // Show date separator if different from previous message
+                                    if (currentDateStr !== lastDateStr) {
+                                        elements.push(
+                                            <div key={`sep-${index}`} className="flex justify-center">
+                                                <div className="bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-xs px-3 py-1 rounded-full">
+                                                    {getDateLabel(msg.createdAt)}
+                                                </div>
+                                            </div>
+                                        );
+                                        lastDateStr = currentDateStr;
+                                    }
+
+                                    const isOwn = msg.senderId._id === user?._id;
+                                    elements.push(
+                                        <div key={msg._id} className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}>
+                                            <div className={`flex gap-2 max-w-[70%] ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}>
+                                                {!isOwn && (
+                                                    <Avatar className="w-8 h-8">
+                                                        <AvatarImage src={msg.senderId.avatar} />
+                                                        <AvatarFallback className="bg-gray-200 text-xs dark:bg-gray-700">
+                                                            {msg.senderId.fullName.charAt(0)}
+                                                        </AvatarFallback>
+                                                    </Avatar>
+                                                )}
+                                                <div>
+                                                    {!isOwn && <p className="text-xs text-[var(--cn-text-sub)] mb-1">{msg.senderId.fullName}</p>}
+                                                    {msg.type === 'sticker' ? (
+                                                        <div className="max-w-[150px]">
+                                                            <img src={msg.content} alt="Sticker" className="w-full h-auto rounded-lg" />
+                                                        </div>
+                                                    ) : msg.type === 'poll' ? (
+                                                        <PollDisplay
+                                                            poll={JSON.parse(msg.content)}
+                                                            currentUserId={user?._id || ''}
+                                                            allParticipants={selectedConv?.participants.map(p => p.userId) || []}
+                                                            onVote={(optionIndices) => handleVote(msg._id, optionIndices)}
+                                                        />
+                                                    ) : msg.type === 'reminder' ? (
+                                                        <ReminderDisplay
+                                                            title={msg.content}
+                                                            scheduledTime={msg.reminder?.scheduledTime || ''}
+                                                            isTriggered={msg.reminder?.isTriggered || false}
+                                                            triggeredAt={msg.reminder?.triggeredAt}
+                                                        />
+                                                    ) : msg.type === 'image' ? (
+                                                        (() => {
+                                                            const imageUrls = msg.content.split('\n').filter(url => url.trim());
+                                                            const imageCount = imageUrls.length;
+
+                                                            if (imageCount === 1) {
+                                                                return (
+                                                                    <div className="max-w-[300px]">
+                                                                        <img
+                                                                            src={imageUrls[0]}
+                                                                            alt="Image"
+                                                                            className="w-full h-auto rounded-lg cursor-pointer hover:opacity-90 transition"
+                                                                            onLoad={() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })}
+                                                                            onClick={() => {
+                                                                                setPreviewImages(imageUrls);
+                                                                                setPreviewIndex(0);
+                                                                            }}
+                                                                        />
+                                                                    </div>
+                                                                );
+                                                            }
+
                                                             return (
-                                                                <div className="max-w-[300px]">
-                                                                    <img
-                                                                        src={imageUrls[0]}
-                                                                        alt="Image"
-                                                                        className="w-full h-auto rounded-lg cursor-pointer hover:opacity-90 transition"
-                                                                        onLoad={() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })}
-                                                                        onClick={() => {
-                                                                            setPreviewImages(imageUrls);
-                                                                            setPreviewIndex(0);
-                                                                        }}
-                                                                    />
+                                                                <div className={`grid gap-1 max-w-[400px] ${imageCount === 2 ? 'grid-cols-2' :
+                                                                    imageCount === 3 ? 'grid-cols-3' :
+                                                                        imageCount === 4 ? 'grid-cols-2' :
+                                                                            'grid-cols-3'
+                                                                    }`}>
+                                                                    {imageUrls.map((url, idx) => (
+                                                                        <img
+                                                                            key={idx}
+                                                                            src={url}
+                                                                            alt={`Image ${idx + 1}`}
+                                                                            className="w-full h-full object-cover rounded-lg cursor-pointer hover:opacity-90 transition aspect-square"
+                                                                            onLoad={() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })}
+                                                                            onClick={() => {
+                                                                                setPreviewImages(imageUrls);
+                                                                                setPreviewIndex(idx);
+                                                                            }}
+                                                                        />
+                                                                    ))}
                                                                 </div>
                                                             );
-                                                        }
-
-                                                        return (
-                                                            <div className={`grid gap-1 max-w-[400px] ${imageCount === 2 ? 'grid-cols-2' :
-                                                                imageCount === 3 ? 'grid-cols-3' :
-                                                                    imageCount === 4 ? 'grid-cols-2' :
-                                                                        'grid-cols-3'
-                                                                }`}>
-                                                                {imageUrls.map((url, idx) => (
-                                                                    <img
-                                                                        key={idx}
-                                                                        src={url}
-                                                                        alt={`Image ${idx + 1}`}
-                                                                        className="w-full h-full object-cover rounded-lg cursor-pointer hover:opacity-90 transition aspect-square"
-                                                                        onLoad={() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })}
-                                                                        onClick={() => {
-                                                                            setPreviewImages(imageUrls);
-                                                                            setPreviewIndex(idx);
-                                                                        }}
-                                                                    />
-                                                                ))}
-                                                            </div>
-                                                        );
-                                                    })()
-                                                ) : (
-                                                    <div className={`rounded-2xl px-4 py-2 ${isOwn ? 'bg-[var(--cn-primary)] text-white' : 'bg-[var(--cn-bg-card)] text-[var(--cn-text-main)] border border-[var(--cn-border)]'}`}>
-                                                        <p className="text-sm whitespace-pre-wrap break-words">{msg.content}</p>
-                                                    </div>
-                                                )}
-                                                <p className="text-xs text-[var(--cn-text-sub)] mt-1">
-                                                    {new Date(msg.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
-                                                </p>
+                                                        })()
+                                                    ) : msg.type === 'file' ? (
+                                                        <FileDisplay filesJson={msg.content} />
+                                                    ) : (
+                                                        <div className={`rounded-2xl px-4 py-2 ${isOwn ? 'bg-[var(--cn-primary)] text-white' : 'bg-[var(--cn-bg-card)] text-[var(--cn-text-main)] border border-[var(--cn-border)]'}`}>
+                                                            <p className="text-sm whitespace-pre-wrap break-words">{msg.content}</p>
+                                                        </div>
+                                                    )}
+                                                    <p className="text-xs text-[var(--cn-text-sub)] mt-1">
+                                                        {new Date(msg.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                                                    </p>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                );
-                            })}
+                                    );
+                                });
+                                return elements;
+                            })()}
                             <div ref={messagesEndRef} />
                         </div>
 
@@ -1091,6 +1305,13 @@ export default function AdminCommunityPage() {
                             <div className="space-y-3">
                                 {/* Toolbar */}
                                 <div className="flex items-center gap-1 pb-2 border-b border-[var(--cn-border)]">
+                                    <input
+                                        ref={fileInputRef}
+                                        type="file"
+                                        multiple
+                                        onChange={handleFileSelect}
+                                        className="hidden"
+                                    />
                                     <input
                                         ref={imageInputRef}
                                         type="file"
@@ -1102,8 +1323,10 @@ export default function AdminCommunityPage() {
                                     <Button
                                         variant="ghost"
                                         size="icon"
+                                        onClick={() => fileInputRef.current?.click()}
+                                        disabled={uploadingFile}
                                         className="h-8 w-8 text-[var(--cn-text-sub)] hover:text-[var(--cn-text-main)] hover:bg-[var(--cn-bg-hover)]"
-                                        title="Gửi file"
+                                        title={uploadingFile ? "Đang tải file..." : "Gửi file"}
                                     >
                                         <Paperclip className="w-4 h-4" />
                                     </Button>
@@ -1134,7 +1357,7 @@ export default function AdminCommunityPage() {
                                         size="icon"
                                         onClick={() => setShowReminderCreator(true)}
                                         className="h-8 w-8 text-[var(--cn-text-sub)] hover:text-[var(--cn-text-main)] hover:bg-[var(--cn-bg-hover)]"
-                                        title="Nhắc hẹn"
+                                        title="Tạo sự kiện"
                                     >
                                         <Bell className="w-4 h-4" />
                                     </Button>

@@ -21,6 +21,7 @@ import {
     Shield,
     UserPlus,
     Image as ImageIcon,
+    BookOpen,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -66,6 +67,17 @@ const menuItems = [
         ],
     },
     {
+        category: "Quản lí khoá học",
+        categoryId: "course",
+        listLink: [
+            {
+                title: "Khoá học",
+                link: "/admin/khoahoc",
+                icon: <BookOpen size={18} />,
+            },
+        ]
+    },
+    {
         category: "Quản lí nội dung",
         categoryId: "content",
         listLink: [
@@ -73,6 +85,11 @@ const menuItems = [
                 title: "Quản lý Blog",
                 link: "/admin/blog",
                 icon: <Document size={18} variant="Outline" />,
+            },
+            {
+                title: "Luyện tập",
+                link: "/admin/luyentap",
+                icon: <BookOpen size={18} />,
             },
             {
                 title: "Slideshow",

@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import {
     Bell, MessageCircle, Heart, ThumbsUp, Bookmark,
     CheckCheck, Coins, Flame, Info, XCircle, Loader2, X, FileText,
-    PartyPopper, CheckCircle2, AlertCircle
+    PartyPopper, CheckCircle2, AlertCircle, Share2, Handshake
 } from 'lucide-react';
 import { useSocket } from '@/providers/socket.provider';
 import { useAuthStore } from '@/store/auth.store';
@@ -34,6 +34,7 @@ const ADMIN_ONLY_TYPES: INotification['type'][] = [
     'new_user_registered' as INotification['type'],
     'post_reported' as INotification['type'],
     'comment_reported' as INotification['type'],
+    'cross_promotion_new',
 ];
 
 function formatTime(dateString: string): string {
@@ -61,6 +62,10 @@ function NotificationIcon({ type }: { type: INotification['type'] }) {
     switch (type) {
         case 'admin_chat_message':
             return <MessageCircle className={`${iconClass} text-indigo-500`} />;
+        case 'cross_promotion_new':
+            return <Handshake className={`${iconClass} text-blue-500`} />;
+        case 'cross_promotion_status_updated':
+            return <Share2 className={`${iconClass} text-emerald-500`} />;
         case 'comment':
         case 'reply_comment':
             return <MessageCircle className={`${iconClass} text-blue-500`} />;
@@ -160,6 +165,10 @@ function getNotificationMessage(notification: INotification): string {
     switch (notification.type) {
         case 'admin_chat_message':
             return notification.content || `${senderName} đã gửi tin nhắn hỗ trợ`;
+        case 'cross_promotion_new':
+            return notification.content || `${senderName} vừa gửi yêu cầu truyền thông chéo mới`;
+        case 'cross_promotion_status_updated':
+            return notification.content || 'Yêu cầu truyền thông chéo của bạn đã được cập nhật';
         case 'first_login_bonus':
             return notification.content || `Chào mừng ${senderName}! Bạn nhận được ${notification.meta?.coins ?? 100} xu khi đăng nhập lần đầu.`;
         case 'streak_bonus':
@@ -201,9 +210,15 @@ function NotificationItem({ notification, onMarkAsRead, onClose }: NotificationI
     const isBroadcast = 'isBroadcast' in notification ? (notification as { isBroadcast?: boolean }).isBroadcast : false;
     const linkHref = notification.type === 'admin_chat_message'
         ? '/admin/chatwithadmin'
-        : notification.postSlug || notification.postId
-            ? `/blog/${notification.postSlug || notification.postId}`
-            : null;
+        : notification.type === 'cross_promotion_new'
+            ? '/admin/truyenthongcheo'
+            : notification.type === 'cross_promotion_status_updated'
+                ? '/truyenthongcheo'
+                : notification.meta?.url
+                    ? notification.meta.url
+                    : notification.postSlug || notification.postId
+                        ? `/blog/${notification.postSlug || notification.postId}`
+                        : null;
 
     const content = (
         <div

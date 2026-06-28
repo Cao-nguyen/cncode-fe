@@ -7,7 +7,7 @@ import { useSocket } from '@/providers/socket.provider';
 import { ratingApi, IRating, IRatingStats } from '@/lib/api/rating.api';
 import StarRating from '@/components/common/StarRating';
 import { Send, Loader2, Star, MessageCircle, X, ChevronLeft, ChevronRight, CheckCircle, Pencil, Trash2 } from 'lucide-react';
-import Image from 'next/image';
+
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { toast } from 'sonner';
@@ -315,7 +315,7 @@ function RatingSlideshow({ ratings, loading, onEdit, onDelete, currentUserId, on
                     <div className="flex flex-col items-center text-center">
                         <div className="w-16 h-16 rounded-full bg-[var(--cn-primary)]/10 overflow-hidden mb-4">
                             {currentRating.userId?.avatar ? (
-                                <Image
+                                <img
                                     src={currentRating.userId.avatar}
                                     alt={currentRating.userId.fullName || 'User'}
                                     width={64}

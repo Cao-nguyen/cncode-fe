@@ -5,7 +5,7 @@ import { User, UserCheck, TrendingUp, Eye, Shield, X, Monitor, Smartphone, Lapto
 import { useSocket } from "@/providers/socket.provider";
 import { useAuthStore } from "@/store/auth.store";
 import { statisticApi } from "@/lib/api/statistic.api";
-import Image from "next/image";
+
 
 interface OnlineStatsData {
     users: number;
@@ -287,7 +287,7 @@ export default function Analytics() {
                                                 <div className="relative flex-shrink-0">
                                                     <div className="w-10 h-10 rounded-full overflow-hidden bg-gradient-to-br from-blue-100 to-blue-50 flex items-center justify-center">
                                                         {userItem.avatar ? (
-                                                            <Image
+                                                            <img
                                                                 src={userItem.avatar}
                                                                 alt={userItem.fullName}
                                                                 width={40}
