@@ -52,7 +52,6 @@ export const BlogCard: React.FC<BlogCardProps> = ({
                     <img
                         src={image}
                         alt={title}
-                        fill
                         className="object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                 ) : (
