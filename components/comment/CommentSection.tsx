@@ -6,7 +6,7 @@ import { useSocket } from '@/providers/socket.provider';
 import { commentApi, CommentType } from '@/lib/api/comment.api';
 import CommentItem from './CommentItem';
 import { CustomTextarea } from '@/components/custom/CustomTextarea';
-import { DeleteConfirmModal } from '@/components/custom/DeleteConfirmModal';
+import { DeleteConfirmModal } from '@/components/common/DeleteConfirmModal';
 import { Loader2, Send } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -355,7 +355,6 @@ export default function CommentSection({ targetType, targetId }: CommentSectionP
                 onConfirm={confirmDelete}
                 title="Xóa bình luận"
                 message="Bạn có chắc chắn muốn xóa bình luận này không?"
-                warning="Bình luận đã xóa sẽ không thể khôi phục."
                 isDeleting={isDeleting}
             />
         </div>

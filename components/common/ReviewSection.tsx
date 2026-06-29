@@ -7,7 +7,7 @@ import { Star, Loader2, Trash2, Edit3 } from 'lucide-react';
 import { toast } from 'sonner';
 import { CustomButton } from '@/components/custom/CustomButton';
 import { CustomTextarea } from '@/components/custom/CustomTextarea';
-import { DeleteConfirmModal } from '@/components/custom/DeleteConfirmModal';
+import { DeleteConfirmModal } from '@/components/common/DeleteConfirmModal';
 import { useAuthStore } from '@/store/auth.store';
 
 interface Props {

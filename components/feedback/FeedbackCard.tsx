@@ -12,7 +12,7 @@ import { CustomSelect } from '@/components/custom/CustomSelect';
 import { toast } from 'sonner';
 import { feedbackApi } from '@/lib/api/feedback.api';
 
-import { DeleteConfirmModal } from '@/components/custom/DeleteConfirmModal';
+import { DeleteConfirmModal } from '@/components/common/DeleteConfirmModal';
 
 type FeedbackCategory = 'bug' | 'ui_ux' | 'feature_request' | 'performance' | 'security' | 'other';
 
@@ -332,7 +332,7 @@ export default function FeedbackCard({
                 onConfirm={handleConfirmDelete}
                 title="Xóa góp ý"
                 message="Bạn có chắc chắn muốn xóa góp ý này không?"
-                warning="Hành động này không thể hoàn tác."
+                isDeleting={false}
             />
         </>
     );

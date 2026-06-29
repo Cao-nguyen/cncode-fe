@@ -15,7 +15,7 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { DeleteConfirmModal } from '@/components/custom/DeleteConfirmModal';
+import { DeleteConfirmModal } from '@/components/common/DeleteConfirmModal';
 import { StickerPicker } from '@/components/custom/StickerPicker';
 import { ImagePreview } from '@/components/custom/ImagePreview';
 import { PollCreator } from '@/components/custom/PollCreator';
@@ -1056,7 +1056,6 @@ export default function AdminCommunityPage() {
                 onConfirm={handleDelete}
                 title="Xác nhận xóa nhóm chat"
                 message="Bạn có chắc chắn muốn xóa nhóm chat này không?"
-                warning="Tất cả tin nhắn trong nhóm cũng sẽ bị xóa vĩnh viễn."
                 isDeleting={deleting}
             />
 
