@@ -65,21 +65,11 @@ export default function RatingSlideshow({
     };
 
     if (loading && ratings.length === 0) {
-        return (
-            <div className="flex justify-center py-12">
-                <Loader2 className="w-8 h-8 animate-spin text-[var(--cn-primary)]" />
-            </div>
-        );
+        return null;
     }
 
     if (ratings.length === 0) {
-        return (
-            <div className="text-center py-12 bg-[var(--cn-bg-card)] rounded-[var(--cn-radius-md)] border border-[var(--cn-border)]">
-                <Star className="w-12 h-12 text-[var(--cn-text-muted)] mx-auto mb-3" />
-                <p className="text-[var(--cn-text-sub)]">Chưa có đánh giá nào</p>
-                <p className="text-sm text-[var(--cn-text-muted)] mt-1">Hãy là người đầu tiên đánh giá!</p>
-            </div>
-        );
+        return null;
     }
 
     const currentRating = ratings[carousel.current];

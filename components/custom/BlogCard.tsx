@@ -50,7 +50,20 @@ export const BlogCard: React.FC<BlogCardProps> = ({
             <div className="relative h-48 overflow-hidden bg-gradient-to-br from-[var(--cn-primary)]/20 to-[var(--cn-primary)]/5">
                 {image ? (
                     <img
-                        src={image}
+                        src={(() => {
+                            if (!image) return '';
+                            // Extract messageId from URL if it's a proxy URL
+                            const messageIdMatch = image.match(/\/proxy\/file\/(\d+)/);
+                            if (messageIdMatch) {
+                                return `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/upload/proxy/file/${messageIdMatch[1]}`;
+                            }
+                            // If it's already a full URL, replace backend URL with NEXT_PUBLIC_API_URL
+                            if (image.startsWith('http')) {
+                                return image.replace(/https?:\/\/[^\/]+/, process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000');
+                            }
+                            // Otherwise, use as-is
+                            return image;
+                        })()}
                         alt={title}
                         className="object-cover group-hover:scale-105 transition-transform duration-500"
                     />

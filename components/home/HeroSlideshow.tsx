@@ -169,27 +169,11 @@ export default function HeroSlideshow() {
     }, [len]);
 
     if (loading) {
-        return (
-            <div
-                className="relative w-full overflow-hidden rounded-3xl bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800 h-[250px] md:h-[400px]"
-            >
-                <div className="flex h-full items-center justify-center p-2.5">
-                    <div className="h-8 w-8 animate-spin rounded-full border-2 border-gray-400 border-t-transparent" />
-                </div>
-            </div>
-        );
+        return null;
     }
 
     if (len === 0) {
-        return (
-            <div
-                className="relative w-full overflow-hidden rounded-3xl bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 flex items-center justify-center h-[250px] md:h-[400px]"
-            >
-                <div className="p-2.5">
-                    <p className="text-sm text-gray-400 dark:text-gray-500">Chưa có slide nào</p>
-                </div>
-            </div>
-        );
+        return null;
     }
 
     const slide = slides[current];

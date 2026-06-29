@@ -23,11 +23,15 @@ function BlogCard({
     className,
     style,
     onDragClick,
+    hasImageError,
+    onImageError,
 }: {
     blog: Blog;
     className?: string;
     style?: React.CSSProperties;
     onDragClick?: (e: React.MouseEvent) => void;
+    hasImageError?: boolean;
+    onImageError?: () => void;
 }) {
     const formatDate = (date: string) =>
         new Date(date).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -59,14 +63,28 @@ function BlogCard({
             onMouseLeave={(e) => { e.currentTarget.style.boxShadow = 'var(--cn-shadow-sm)'; }}
             draggable={false}
         >
-            {blog.thumbnail && (
+            {blog.thumbnail && !hasImageError ? (
                 <div className="w-full h-[200px] overflow-hidden relative" style={{ backgroundColor: 'var(--cn-bg-section)' }}>
                     <img
-                        src={blog.thumbnail}
+                        src={(() => {
+                            if (!blog.thumbnail) return '';
+                            // Extract messageId from URL if it's a proxy URL
+                            const messageIdMatch = blog.thumbnail.match(/\/proxy\/file\/(\d+)/);
+                            if (messageIdMatch) {
+                                return `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/upload/proxy/file/${messageIdMatch[1]}`;
+                            }
+                            // If it's already a full URL, replace backend URL with NEXT_PUBLIC_API_URL
+                            if (blog.thumbnail.startsWith('http')) {
+                                return blog.thumbnail.replace(/https?:\/\/[^\/]+/, process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000');
+                            }
+                            // Otherwise, assume it's a messageId
+                            return `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/upload/proxy/file/${blog.thumbnail}`;
+                        })()}
                         alt={blog.title}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 pointer-events-none"
                         style={{ aspectRatio: '1500/1000' }}
                         draggable={false}
+                        onError={onImageError}
                     />
                     <div className="absolute top-3 right-3">
                         <span
@@ -77,7 +95,22 @@ function BlogCard({
                         </span>
                     </div>
                 </div>
-            )}
+            ) : blog.thumbnail && hasImageError ? (
+                <div className="w-full h-[200px] overflow-hidden relative flex items-center justify-center" style={{ backgroundColor: 'var(--cn-bg-section)' }}>
+                    <div className="text-center">
+                        <BookOpen className="w-12 h-12 mx-auto mb-2" style={{ color: 'var(--cn-text-muted)' }} />
+                        <p className="text-xs" style={{ color: 'var(--cn-text-muted)' }}>Không thể tải ảnh</p>
+                    </div>
+                    <div className="absolute top-3 right-3">
+                        <span
+                            className="px-3 py-1.5 rounded-full text-xs font-medium backdrop-blur-sm"
+                            style={{ backgroundColor: 'rgba(59, 130, 246, 0.9)', color: 'white' }}
+                        >
+                            {CATEGORIES.find(c => c.value === blog.category)?.label || 'Khác'}
+                        </span>
+                    </div>
+                </div>
+            ) : null}
             <div className="p-5 flex flex-col flex-1">
                 <div className="flex items-center justify-between text-xs mb-3" style={{ color: 'var(--cn-text-sub)' }}>
                     <div className="flex items-center gap-1.5">
@@ -128,6 +161,7 @@ export default function LatestPosts() {
     const [loading, setLoading] = useState(true);
     const [isDesktop, setIsDesktop] = useState(false);
     const [page, setPage] = useState(0);
+    const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
 
     const itemsPerView = 3;
     const gap = GAP;
@@ -180,6 +214,10 @@ export default function LatestPosts() {
 
     const handlePrev = () => setPage(p => Math.max(0, p - 1));
     const handleNext = () => setPage(p => Math.min(totalPages - 1, p + 1));
+
+    const handleImageError = (blogId: string) => {
+        setImageErrors(prev => ({ ...prev, [blogId]: true }));
+    };
 
     const preventClickIfDragged = useCallback((e: React.MouseEvent) => {
         if (dragMovedRef.current) {
@@ -258,6 +296,8 @@ export default function LatestPosts() {
                                 <BlogCard
                                     key={blog._id}
                                     blog={blog}
+                                    hasImageError={imageErrors[blog._id]}
+                                    onImageError={() => handleImageError(blog._id)}
                                     style={{
                                         width: `calc((100% - ${(itemsPerView - 1) * gap}px) / ${itemsPerView})`,
                                     }}
@@ -288,6 +328,8 @@ export default function LatestPosts() {
                             <BlogCard
                                 key={`${blog._id}-${index}`}
                                 blog={blog}
+                                hasImageError={imageErrors[blog._id]}
+                                onImageError={() => handleImageError(blog._id)}
                                 className="w-[300px] sm:w-[320px] md:w-[360px] shrink-0"
                                 onDragClick={preventClickIfDragged}
                             />

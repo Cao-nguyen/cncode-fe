@@ -168,7 +168,20 @@ export default function BlogPage() {
                                     {blog.thumbnail && (
                                         <div className="w-full h-[200px] overflow-hidden relative" style={{ backgroundColor: 'var(--cn-bg-section)' }}>
                                             <img
-                                                src={blog.thumbnail}
+                                                src={(() => {
+                                                    if (!blog.thumbnail) return '';
+                                                    // Extract messageId from URL if it's a proxy URL
+                                                    const messageIdMatch = blog.thumbnail.match(/\/proxy\/file\/(\d+)/);
+                                                    if (messageIdMatch) {
+                                                        return `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/upload/proxy/file/${messageIdMatch[1]}`;
+                                                    }
+                                                    // If it's already a full URL, replace backend URL with NEXT_PUBLIC_API_URL
+                                                    if (blog.thumbnail.startsWith('http')) {
+                                                        return blog.thumbnail.replace(/https?:\/\/[^\/]+/, process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000');
+                                                    }
+                                                    // Otherwise, assume it's a messageId
+                                                    return `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/upload/proxy/file/${blog.thumbnail}`;
+                                                })()}
                                                 alt={blog.title}
                                                 className="w-full h-full object-cover group-hover:scale-105 transition"
                                                 style={{ aspectRatio: '1500/1000' }}

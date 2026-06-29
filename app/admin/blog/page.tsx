@@ -690,7 +690,24 @@ function AdminBlogPageContent() {
                                             <td className="px-4 py-3">
                                                 <div className="relative">
                                                     {blog.thumbnail && (
-                                                        <img src={blog.thumbnail} alt="" className="w-16 h-16 rounded object-cover" />
+                                                        <img
+                                                            src={(() => {
+                                                                if (!blog.thumbnail) return '';
+                                                                // Extract messageId from URL if it's a proxy URL
+                                                                const messageIdMatch = blog.thumbnail.match(/\/proxy\/file\/(\d+)/);
+                                                                if (messageIdMatch) {
+                                                                    return `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/upload/proxy/file/${messageIdMatch[1]}`;
+                                                                }
+                                                                // If it's already a full URL, replace backend URL with NEXT_PUBLIC_API_URL
+                                                                if (blog.thumbnail.startsWith('http')) {
+                                                                    return blog.thumbnail.replace(/https?:\/\/[^\/]+/, process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000');
+                                                                }
+                                                                // Otherwise, assume it's a messageId
+                                                                return `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/upload/proxy/file/${blog.thumbnail}`;
+                                                            })()}
+                                                            alt=""
+                                                            className="w-16 h-16 rounded object-cover"
+                                                        />
                                                     )}
                                                     {blog.needsReview && (
                                                         <div className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full border-2 border-white dark:border-gray-800" title="Cần duyệt lại" />
