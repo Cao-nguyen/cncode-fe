@@ -1,5 +1,3 @@
-// Utility functions cho formatting
-
 export function formatNumber(n: number): string {
     return new Intl.NumberFormat('vi-VN').format(n);
 }

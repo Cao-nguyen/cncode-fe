@@ -134,42 +134,30 @@ export async function subscribeToPushNotifications(): Promise<PushSubscription> 
     }
 
     try {
-        // 1. Request permission
         const permission = await requestNotificationPermission();
         if (permission !== 'granted') {
-            // User declined permission - return null
             return null as unknown as PushSubscription;
         }
 
-        // 2. Register service worker
         const registration = await registerServiceWorker();
 
-        // 3. Wait for service worker to be ready
         await navigator.serviceWorker.ready;
 
-        // 4. Get VAPID public key
         const vapidPublicKey = await getVapidPublicKey();
 
-        // 5. Subscribe to push manager
         const applicationServerKey = urlBase64ToUint8Array(vapidPublicKey);
         const subscription = await registration.pushManager.subscribe({
             userVisibleOnly: true,
             applicationServerKey: applicationServerKey.buffer as ArrayBuffer
         });
 
-        console.log('[Push] Subscribed:', subscription);
-
-        // 6. Send subscription to backend
         await apiRequest('/api/push/subscribe', {
             method: 'POST',
             body: JSON.stringify({ subscription: subscription.toJSON() })
         });
 
-        console.log('[Push] Subscription saved to backend');
-
         return subscription;
     } catch (error) {
-        console.error('[Push] Subscribe error:', error);
         throw error;
     }
 }
@@ -193,11 +181,9 @@ export async function unsubscribeFromPushNotifications(): Promise<boolean> {
             return false;
         }
 
-        // Unsubscribe from browser
         const success = await subscription.unsubscribe();
 
         if (success) {
-            // Remove from backend
             await apiRequest('/api/push/unsubscribe', {
                 method: 'POST',
                 body: JSON.stringify({ endpoint: subscription.endpoint })
@@ -206,7 +192,6 @@ export async function unsubscribeFromPushNotifications(): Promise<boolean> {
 
         return success;
     } catch (error) {
-        console.error('[Push] Unsubscribe error:', error);
         return false;
     }
 }

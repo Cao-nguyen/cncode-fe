@@ -1,4 +1,3 @@
-
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
 interface UploadResponse {
@@ -88,7 +87,6 @@ export const uploadApi = {
                 };
             }
 
-            // Convert relative URL to absolute URL if needed
             let imageUrl = data.data?.url;
             if (imageUrl && imageUrl.startsWith('/')) {
                 imageUrl = `${API_URL}${imageUrl}`;

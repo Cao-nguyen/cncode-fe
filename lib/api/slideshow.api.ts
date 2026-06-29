@@ -64,13 +64,11 @@ apiClient.interceptors.request.use((config) => {
 });
 
 export const slideshowApi = {
-    // Public: lấy slide đang active
     getActiveSlides: async (): Promise<ApiResponse<SlideshowItem[]>> => {
         const response = await axios.get(`${API_URL}/api/slideshow/active`);
         return response.data;
     },
 
-    // Admin: lấy tất cả slide
     getAllSlides: async (params?: {
         page?: number;
         limit?: number;
@@ -79,7 +77,6 @@ export const slideshowApi = {
         return response.data;
     },
 
-    // Admin: tạo slide mới
     createSlide: async (data: {
         title: string;
         subtitle?: string;
@@ -97,7 +94,6 @@ export const slideshowApi = {
         return response.data;
     },
 
-    // Admin: cập nhật slide
     updateSlide: async (id: string, data: Partial<{
         title: string;
         subtitle: string;
@@ -115,7 +111,6 @@ export const slideshowApi = {
         return response.data;
     },
 
-    // Admin: xoá slide
     deleteSlide: async (id: string): Promise<ApiResponse<void>> => {
         const response = await apiClient.delete(`/${id}`);
         return response.data;

@@ -1,5 +1,3 @@
-// Utility functions cho device detection
-
 export type DeviceType = 'mobile' | 'desktop' | 'laptop' | 'unknown';
 
 export function getDeviceType(device?: string): DeviceType {

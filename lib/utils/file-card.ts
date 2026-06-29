@@ -1,5 +1,3 @@
-// Utility functions cho file card trong editor
-
 interface FileCardConfig {
     svg: string;
     color: string;

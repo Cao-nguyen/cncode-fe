@@ -1,7 +1,3 @@
-// ===== LƯU VỊ TRÍ BÀI HỌC CUỐI CÙNG (localStorage) =====
-// Mỗi user chỉ có 1 bản ghi: array { courseId, lessonId }
-// Key: 'course-last-lessons'
-
 export interface CourseLastLesson {
     courseId: string;
     lessonId: string;
@@ -33,6 +29,5 @@ export function setCourseLastLesson(courseId: string, lessonId: string): void {
         }
         localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
     } catch {
-        // ignore
     }
 }

@@ -1,5 +1,3 @@
-// Utility functions cho editor
-
 export const HIGHLIGHT_COLORS = [
     "#fef08a",
     "#bbf7d0",

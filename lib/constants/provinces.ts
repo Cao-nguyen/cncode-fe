@@ -1,12 +1,10 @@
 export const VIETNAM_PROVINCES = [
-    // 6 thành phố trực thuộc Trung ương
     'Hà Nội',
     'Hải Phòng',
     'Huế',
     'Đà Nẵng',
     'Cần Thơ',
     'TP. Hồ Chí Minh',
-    // 28 tỉnh
     'Cao Bằng',
     'Lai Châu',
     'Điện Biên',

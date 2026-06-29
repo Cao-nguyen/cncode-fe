@@ -1,5 +1,3 @@
-// Utility functions cho session management
-
 export function getSessionId(): string | null {
     if (typeof window === 'undefined') return null;
     let sessionId = localStorage.getItem('guestSessionId');

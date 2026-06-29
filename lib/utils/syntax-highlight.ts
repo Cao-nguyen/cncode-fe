@@ -1,5 +1,3 @@
-// Utility functions cho syntax highlighting trong editor
-
 const TOKEN_COLORS: Record<string, string> = {
     keyword: "#c792ea",
     string: "#c3e88d",
