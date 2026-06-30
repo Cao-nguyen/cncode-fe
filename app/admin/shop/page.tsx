@@ -364,7 +364,7 @@ function AdminShopPageContent() {
                                 value={order}
                                 onChange={(e) => setOrder(String(e.target.value))}
                                 placeholder="0"
-                                min="0"
+                                min={0}
                             />
 
                             <div className="flex gap-3 pt-4">
