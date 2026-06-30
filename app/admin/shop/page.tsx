@@ -334,7 +334,7 @@ function AdminShopPageContent() {
                                 value={priceInXu}
                                 onChange={(e) => setPriceInXu(String(e.target.value))}
                                 placeholder="Nhập giá xu"
-                                min="0"
+                                min={0}
                                 required
                             />
 
