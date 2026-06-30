@@ -61,6 +61,7 @@ function buildSections(
             label: "Tài khoản",
             items: [
                 { icon: <User variant="Bold" style={iconSize} />, title: "Trang cá nhân", subtitle: "Xem hồ sơ của bạn", href: `/p/${user.username}` },
+                { icon: <NhaHang variant="Bold" style={iconSize} />, title: "Kho quà của tôi", subtitle: "Quản lý quà tặng", href: "/me/shop" },
                 ...(user.role === "admin" ? [{ icon: <Settings variant="Bold" style={iconSize} />, title: "Trang quản trị", subtitle: "Quản lý hệ thống", href: "/admin/dashboard" }] : []),
                 ...(user.role === "teacher" ? [{ icon: <Settings variant="Bold" style={iconSize} />, title: "Trang quản lý", subtitle: "Quản lý lớp học", href: "/quanly" }] : []),
                 { icon: <Clock variant="Bold" style={iconSize} />, title: "Lịch sử giao dịch", subtitle: "Xem các giao dịch của bạn", href: "/me/lichsugiaodich" },

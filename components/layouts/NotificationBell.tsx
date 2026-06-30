@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import {
     Bell, MessageCircle, Heart, ThumbsUp, Bookmark,
     CheckCheck, Coins, Flame, Info, XCircle, Loader2, X, FileText,
-    PartyPopper, CheckCircle2, AlertCircle, Share2, Handshake
+    PartyPopper, CheckCircle2, AlertCircle, Share2, Handshake, Gift
 } from 'lucide-react';
 import { useSocket } from '@/providers/socket.provider';
 import { useAuthStore } from '@/store/auth.store';
@@ -85,6 +85,8 @@ function NotificationIcon({ type }: { type: INotification['type'] }) {
             return <XCircle className={`${iconClass} text-red-500`} />;
         case 'policy_update':
             return <FileText className={`${iconClass} text-blue-600`} />;
+        case 'gift_received':
+            return <Gift className={`${iconClass} text-pink-500`} />;
         default:
             return <Info className={`${iconClass} text-gray-500`} />;
     }
@@ -187,6 +189,8 @@ function getNotificationMessage(notification: INotification): string {
         }
         case 'bookmark':
             return `${senderName} đã lưu bài viết "${notification.postTitle}"`;
+        case 'gift_received':
+            return notification.content || `${senderName} đã tặng bạn ${notification.meta?.giftName || 'một món quà'}`;
         default:
             return notification.content || `${senderName} đã có hoạt động mới`;
     }

@@ -119,6 +119,11 @@ const menuItems = [
         categoryId: "community",
         listLink: [
             {
+                title: "Cửa hàng quà tặng",
+                link: "/admin/shop",
+                icon: <ShoppingBag size={18} variant="Outline" />,
+            },
+            {
                 title: "Tiếp thị liên kết",
                 link: "/admin/affiliate",
                 icon: <ShoppingBag size={18} variant="Outline" />,
