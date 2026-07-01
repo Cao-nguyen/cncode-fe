@@ -5,6 +5,7 @@ import Link from "next/link";
 
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
+import { Search } from "lucide-react";
 import {
     User,
     Setting2 as Settings,
@@ -501,10 +502,30 @@ export default function Header() {
     const { socket, isConnected } = useSocket();
     const [sheetOpen, setSheetOpen] = useState(false);
     const [drawerOpen, setDrawerOpen] = useState(false);
+    const [showBetaTooltip, setShowBetaTooltip] = useState(false);
+    const [showSearchInput, setShowSearchInput] = useState(false);
+    const betaBadgeRef = useRef<HTMLDivElement>(null);
+    const searchRef = useRef<HTMLDivElement>(null);
 
     const displayCoins = user && token ? (coins ?? 0) : 0;
     const displayStreak = user && token ? (user?.streak ?? 0) : 0;
     const displayRole = user?.role || "user";
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (betaBadgeRef.current && !betaBadgeRef.current.contains(event.target as Node)) {
+                setShowBetaTooltip(false);
+            }
+            if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+                setShowSearchInput(false);
+            }
+        };
+
+        if (showBetaTooltip || showSearchInput) {
+            document.addEventListener('mousedown', handleClickOutside);
+            return () => document.removeEventListener('mousedown', handleClickOutside);
+        }
+    }, [showBetaTooltip, showSearchInput]);
 
     useEffect(() => {
         const checkTokenValidity = async () => {
@@ -615,9 +636,17 @@ export default function Header() {
         <>
             <header className="hidden lg:block bg-[var(--cn-bg-card)] w-full h-[60px] fixed top-0 z-50 shadow-[var(--cn-shadow-sm)]">
                 <div className="flex h-full justify-between items-center px-4">
-                    <Link href="/" className="flex-shrink-0">
-                        <img src="/images/logo.png" alt="Logo CNcode" width={100} height={55} />
-                    </Link>
+                    <div className="flex-shrink-0 relative group">
+                        <Link href="/">
+                            <img src="/images/logo.png" alt="Logo CNcode" width={100} height={55} />
+                        </Link>
+                        <span className="absolute -bottom-1 -right-2 bg-gray-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                            Beta
+                        </span>
+                        <div className="absolute -bottom-8 left-0 bg-gray-900 text-white text-xs px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-10 pointer-events-none">
+                            Website đang trong quá trình thử nghiệm
+                        </div>
+                    </div>
                     <nav className="flex h-full items-center gap-1">
                         {menu.map((item) => {
                             const isActive = pathname === item.link;
@@ -635,6 +664,28 @@ export default function Header() {
                         })}
                     </nav>
                     <div className="flex items-center gap-4">
+                        <div className="relative" ref={searchRef}>
+                            <button
+                                type="button"
+                                onClick={() => setShowSearchInput(!showSearchInput)}
+                                className="relative p-2 rounded-xl hover:bg-gradient-to-br hover:from-blue-50 hover:to-indigo-50 dark:hover:from-blue-950/30 dark:hover:to-indigo-950/30 transition-all duration-200 group"
+                                aria-label="Tìm kiếm"
+                            >
+                                <Search className="w-5 h-5 text-[var(--cn-text-sub)] group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors" />
+                            </button>
+                            {showSearchInput && (
+                                <div className="absolute right-0 mt-3 w-80 bg-[var(--cn-bg-card)] border border-[var(--cn-border)] rounded-2xl shadow-2xl shadow-black/10 dark:shadow-black/40 z-20 overflow-hidden animate-[slideDown_0.2s_ease-out]">
+                                    <div className="p-3">
+                                        <input
+                                            type="text"
+                                            placeholder="Tìm kiếm..."
+                                            className="w-full px-4 py-2 bg-[var(--cn-bg-section)] border border-[var(--cn-border)] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--cn-primary)]"
+                                            autoFocus
+                                        />
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                         {displayUser && (
                             <div className="flex items-center gap-4">
                                 <div className="relative flex items-center">
@@ -654,7 +705,7 @@ export default function Header() {
                         <NotificationBell />
                         {displayUser ? (
                             <button onClick={() => setDrawerOpen(true)} className="relative p-0.5 rounded-full focus:outline-none group">
-                                <Avatar className="w-8 h-8 ring-2 ring-transparent group-hover:ring-[var(--cn-primary)]/30 transition-all">
+                                <Avatar className="w-8 h-8 ring-2 ring-[var(--cn-border)] group-hover:ring-[var(--cn-primary)]/30 transition-all">
                                     <AvatarImage src={displayUser.avatar} />
                                     <AvatarFallback className="text-xs font-bold bg-[var(--cn-primary)] text-white">
                                         {displayUser.fullname?.charAt(0) || "U"}
@@ -671,10 +722,45 @@ export default function Header() {
 
             <div className="lg:hidden fixed top-0 w-full h-10 bg-[var(--cn-bg-card)] z-50 border-b border-[var(--cn-border)]">
                 <div className="flex h-full justify-between items-center px-2">
-                    <Link href="/">
-                        <img src="/images/logo.png" alt="Logo" width={60} height={30} className="object-contain" />
-                    </Link>
+                    <div className="relative" ref={betaBadgeRef}>
+                        <Link href="/">
+                            <img src="/images/logo.png" alt="Logo" width={60} height={30} className="object-contain" />
+                        </Link>
+                        <span 
+                            className="absolute -bottom-0.5 -right-1 bg-gray-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full"
+                            onClick={() => setShowBetaTooltip(!showBetaTooltip)}
+                        >
+                            Beta
+                        </span>
+                        {showBetaTooltip && (
+                            <div className="absolute -bottom-8 left-0 bg-gray-900 text-white text-[10px] px-2 py-1 rounded-lg whitespace-nowrap z-10">
+                                Website đang trong quá trình thử nghiệm
+                            </div>
+                        )}
+                    </div>
                     <div className="flex items-center gap-3">
+                        <div className="relative" ref={searchRef}>
+                            <button
+                                type="button"
+                                onClick={() => setShowSearchInput(!showSearchInput)}
+                                className="relative p-2 rounded-lg hover:bg-[var(--cn-bg-section)] transition-colors"
+                                aria-label="Tìm kiếm"
+                            >
+                                <Search className="w-4 h-4 text-[var(--cn-text-sub)]" />
+                            </button>
+                            {showSearchInput && (
+                                <div className="absolute right-0 mt-2 w-64 bg-[var(--cn-bg-card)] border border-[var(--cn-border)] rounded-xl shadow-xl z-20 overflow-hidden animate-[slideDown_0.2s_ease-out]">
+                                    <div className="p-2">
+                                        <input
+                                            type="text"
+                                            placeholder="Tìm kiếm..."
+                                            className="w-full px-3 py-2 bg-[var(--cn-bg-section)] border border-[var(--cn-border)] rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[var(--cn-primary)]"
+                                            autoFocus
+                                        />
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                         {displayUser && (
                             <div className="flex items-center gap-3">
                                 <div className="relative flex items-center">
@@ -694,7 +780,7 @@ export default function Header() {
                         <NotificationBell />
                         {displayUser ? (
                             <button onClick={() => setSheetOpen(true)} className="relative">
-                                <Avatar className="w-6 h-6">
+                                <Avatar className="w-6 h-6 ring-2 ring-[var(--cn-border)]">
                                     <AvatarImage src={displayUser.avatar} />
                                     <AvatarFallback className="text-[10px] font-bold bg-[var(--cn-primary)] text-white">
                                         {displayUser.fullname?.charAt(0) || "U"}

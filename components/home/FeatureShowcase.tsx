@@ -37,8 +37,15 @@ export default function CNServicesGrid() {
     } = useHorizontalMarquee();
 
     return (
-        <div className="py-8 sm:py-10 lg:py-12">
-            <div className="mb-8 text-center">
+        <div className="py-1 sm:py-2 lg:py-3">
+            <div className="mb-[18px] text-center">
+                <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                    <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
+                        Sản phẩm phục vụ mục đích hỗ trợ học tập công nghệ trong thời đại số và tham gia Cuộc thi Sáng tạo thanh thiếu niên nhi đồng năm 2026
+                    </span>
+                </div>
+            </div>
+            <div className="mb-2 text-center">
                 <h2 className="text-2xl sm:text-3xl font-bold mb-2" style={{ color: 'var(--cn-text-main)' }}>
                     Tính năng nổi bật
                 </h2>
