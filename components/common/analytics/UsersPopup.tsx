@@ -1,6 +1,7 @@
 import { X, Shield, UserCheck, Activity, Monitor, Smartphone, Laptop } from 'lucide-react';
 import { getDeviceType } from '@/lib/utils/device';
 import { getUserInitial } from '@/lib/utils/format';
+import { getImageUrl } from '@/lib/utils/imageUrl';
 
 interface OnlineUser {
     userId?: string;
@@ -82,7 +83,7 @@ export default function UsersPopup({ isOpen, onClose, users, isConnected }: User
                                         <div className="w-10 h-10 rounded-full overflow-hidden bg-gradient-to-br from-blue-100 to-blue-50 flex items-center justify-center">
                                             {userItem.avatar ? (
                                                 <img
-                                                    src={userItem.avatar}
+                                                    src={getImageUrl(userItem.avatar)}
                                                     alt={userItem.fullName}
                                                     width={40}
                                                     height={40}
