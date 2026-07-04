@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
-import { BookOpen, Briefcase, Bot, MessageSquare, MessageCircle, HelpCircle, Share2, Users, Link2, GraduationCap, CheckCircle } from 'lucide-react';
-import { useHorizontalMarquee } from '@/hooks/useHorizontalMarquee';
+import { useState, useRef, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { BookOpen, Briefcase, Bot, MessageSquare, MessageCircle, HelpCircle, Share2, Users, Link2, GraduationCap, CheckCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const topics = [
     { icon: BookOpen, title: 'Sách & tài liệu', color: '#ef4444', href: '/cnbooks' },
@@ -17,24 +17,63 @@ const topics = [
     { icon: Link2, title: 'Rút gọn link', color: '#ec4899', href: '/rutgonlink' },
     { icon: GraduationCap, title: 'Khoá học', color: '#7c3aed', href: '/khoahoc' },
     { icon: CheckCircle, title: 'Luyện tập', color: '#22c55e', href: '/luyentap' },
+    { icon: Briefcase, title: 'Hướng nghiệp', color: '#f43f5e', href: '/huongnghiep' },
 ];
 
 export default function CNServicesGrid() {
+    const router = useRouter();
     const [active, setActive] = useState<number | null>(null);
-    const loopItems = [...topics, ...topics];
+    const [canScrollLeft, setCanScrollLeft] = useState(false);
+    const [canScrollRight, setCanScrollRight] = useState(false);
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-    const {
-        containerRef,
-        isDragging,
-        onPointerDown,
-        onPointerMove,
-        onPointerUp,
-        onPointerCancel,
-        onMouseEnter,
-        onMouseLeave,
-        onTouchStart,
-        onTouchEnd,
-    } = useHorizontalMarquee();
+    const checkScroll = () => {
+        const container = scrollContainerRef.current;
+        if (container) {
+            const scrollWidth = container.scrollWidth;
+            const clientWidth = container.clientWidth;
+            const scrollLeft = container.scrollLeft;
+            const maxScroll = scrollWidth - clientWidth;
+            
+            const hasOverflow = scrollWidth > clientWidth;
+            const canScrollLeftVal = hasOverflow && scrollLeft > 0;
+            const canScrollRightVal = hasOverflow && scrollLeft < maxScroll;
+            
+            setCanScrollLeft(canScrollLeftVal);
+            setCanScrollRight(canScrollRightVal);
+        }
+    };
+
+    useEffect(() => {
+        const container = scrollContainerRef.current;
+        if (container) {
+            // Multiple delays to ensure content is fully rendered
+            const timeout1 = setTimeout(checkScroll, 100);
+            const timeout2 = setTimeout(checkScroll, 300);
+            const timeout3 = setTimeout(checkScroll, 500);
+            container.addEventListener('scroll', checkScroll);
+            window.addEventListener('resize', checkScroll);
+            return () => {
+                clearTimeout(timeout1);
+                clearTimeout(timeout2);
+                clearTimeout(timeout3);
+                container.removeEventListener('scroll', checkScroll);
+                window.removeEventListener('resize', checkScroll);
+            };
+        }
+    }, []);
+
+    const scrollLeft = () => {
+        if (scrollContainerRef.current) {
+            scrollContainerRef.current.scrollBy({ left: -200, behavior: 'smooth' });
+        }
+    };
+
+    const scrollRight = () => {
+        if (scrollContainerRef.current) {
+            scrollContainerRef.current.scrollBy({ left: 200, behavior: 'smooth' });
+        }
+    };
 
     return (
         <div className="py-1 sm:py-2 lg:py-3">
@@ -54,57 +93,64 @@ export default function CNServicesGrid() {
                 </p>
             </div>
 
-            <div
-                ref={containerRef}
-                className={`no-scrollbar overflow-x-auto select-none touch-pan-x ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
-                onMouseEnter={onMouseEnter}
-                onMouseLeave={onMouseLeave}
-                onTouchStart={onTouchStart}
-                onTouchEnd={onTouchEnd}
-                onPointerDown={onPointerDown}
-                onPointerMove={onPointerMove}
-                onPointerUp={onPointerUp}
-                onPointerCancel={onPointerCancel}
-            >
-                <div className="flex w-max gap-3 px-1">
-                    {loopItems.map((topic, index) => {
-                        const Icon = topic.icon;
-                        const isActive = active === index % topics.length;
+            <div className="flex items-center gap-2">
+                <button
+                    onClick={scrollLeft}
+                    disabled={!canScrollLeft}
+                    className="hidden lg:flex flex-shrink-0 bg-white dark:bg-gray-800 shadow-lg rounded-full p-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                    style={{ border: '1px solid var(--cn-border)' }}
+                >
+                    <ChevronLeft className="w-5 h-5 text-[var(--cn-text-main)]" />
+                </button>
+                <div ref={scrollContainerRef} className="no-scrollbar overflow-x-auto flex-1 touch-pan-x cursor-grab active:cursor-grabbing">
+                    <div className="flex gap-3 px-4">
+                        {topics.map((topic, index) => {
+                            const Icon = topic.icon;
+                            const isActive = active === index;
 
-                        return (
-                            <a
-                                key={`${topic.title}-${index}`}
-                                href={topic.href}
-                                className="flex shrink-0 items-center gap-3 rounded-xl px-4 py-3 transition-all duration-200 hover:shadow-md"
-                                style={{
-                                    backgroundColor: 'var(--cn-bg-card)',
-                                    border: `1.5px solid ${isActive ? topic.color : 'var(--cn-border)'}`,
-                                }}
-                                onMouseEnter={() => setActive(index % topics.length)}
-                                onMouseLeave={() => setActive(null)}
-                            >
+                            return (
                                 <div
-                                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
+                                    key={`${topic.title}-${index}`}
+                                    className="flex shrink-0 items-center gap-3 rounded-xl px-4 py-3 transition-all duration-200 hover:shadow-md cursor-pointer"
                                     style={{
-                                        backgroundColor: isActive ? topic.color : `${topic.color}15`,
+                                        backgroundColor: 'var(--cn-bg-card)',
+                                        border: `1.5px solid ${isActive ? topic.color : 'var(--cn-border)'}`,
                                     }}
+                                    onMouseEnter={() => setActive(index)}
+                                    onMouseLeave={() => setActive(null)}
+                                    onClick={() => router.push(topic.href)}
                                 >
-                                    <Icon
-                                        size={16}
-                                        strokeWidth={1.5}
-                                        style={{ color: isActive ? '#fff' : topic.color }}
-                                    />
+                                    <div
+                                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
+                                        style={{
+                                            backgroundColor: isActive ? topic.color : `${topic.color}15`,
+                                        }}
+                                    >
+                                        <Icon
+                                            size={16}
+                                            strokeWidth={1.5}
+                                            style={{ color: isActive ? '#fff' : topic.color }}
+                                        />
+                                    </div>
+                                    <span
+                                        className="whitespace-nowrap text-sm font-bold"
+                                        style={{ color: 'var(--cn-text-main)' }}
+                                    >
+                                        {topic.title}
+                                    </span>
                                 </div>
-                                <span
-                                    className="whitespace-nowrap text-sm font-bold"
-                                    style={{ color: 'var(--cn-text-main)' }}
-                                >
-                                    {topic.title}
-                                </span>
-                            </a>
-                        );
-                    })}
+                            );
+                        })}
+                    </div>
                 </div>
+                <button
+                    onClick={scrollRight}
+                    disabled={!canScrollRight}
+                    className="hidden lg:flex flex-shrink-0 bg-white dark:bg-gray-800 shadow-lg rounded-full p-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                    style={{ border: '1px solid var(--cn-border)' }}
+                >
+                    <ChevronRight className="w-5 h-5 text-[var(--cn-text-main)]" />
+                </button>
             </div>
         </div>
     );

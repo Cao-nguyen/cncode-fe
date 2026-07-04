@@ -38,6 +38,7 @@ import {
     DocumentText as Baiviet,
     Bag2 as Cuahangso,
     ShoppingBag as NhaHang,
+    Briefcase as Huongnghiep,
 } from "iconsax-react";
 import type { Icon } from "iconsax-react";
 import NotificationBell from "./NotificationBell";
@@ -95,6 +96,7 @@ function buildSections(
                 { icon: <ArchiveBook variant="Bold" style={iconSize} />, title: "CNbooks", subtitle: "Thư viện sách số", href: "/cnbooks" },
                 { icon: <BookOpen variant="Bold" style={iconSize} />, title: "Khoá học của tôi", subtitle: "Tiếp tục học tập", href: "/me/khoahoc" },
                 { icon: <FileText variant="Bold" style={iconSize} />, title: "Bài viết của tôi", subtitle: "Quản lý nội dung", href: "/me/blog" },
+                { icon: <Huongnghiep variant="Bold" style={iconSize} />, title: "Hướng nghiệp", subtitle: "Định hướng tương lai", href: "/huongnghiep" },
                 { icon: <Home variant="Bold" style={iconSize} />, title: "Khu vườn học tập", subtitle: "Không gian của bạn", href: "/khuvuonhoctap" },
             ],
         },
@@ -625,6 +627,16 @@ export default function Header() {
         { title: "Cửa hàng", link: "/cuahangso", icon: Cuahangso },
     ];
 
+    const mobileIconMap: Record<string, string> = {
+        "/": "/favicon/home.png",
+        "/forum": "/favicon/chat.png",
+        "/khoahoc": "/favicon/open-book.png",
+        "/luyentap": "/favicon/terminal.png",
+        "/sukien": "/favicon/appointment.png",
+        "/blog": "/favicon/computer.png",
+        "/cuahangso": "/favicon/shopping-bag.png",
+    };
+
     const displayUser = user && token ? {
         fullname: user.fullName || "Người dùng",
         username: user.username || "",
@@ -802,10 +814,19 @@ export default function Header() {
                 <div className="w-full h-14 bg-[var(--cn-bg-card)] border-t border-[var(--cn-border)] rounded-t-2xl shadow-[0_-4px_20px_rgba(0,0,0,0.15)] flex items-center px-2">
                     {menuMobile.map((item) => {
                         const isActive = pathname === item.link;
-                        const IconComp = item.icon;
+                        const iconSrc = mobileIconMap[item.link] || "/favicon/home.png";
                         return (
                             <Link key={item.link} href={item.link} className="flex-1 flex flex-col items-center justify-center gap-1 active:scale-95 transition-all">
-                                <IconComp variant="Bold" className={`w-5 h-5 ${isActive ? "text-[var(--cn-primary)]" : "text-[var(--cn-text-muted)]"}`} />
+                                <img 
+                                    src={iconSrc} 
+                                    alt={item.title}
+                                    className={`w-5 h-5 ${isActive ? "opacity-100" : "opacity-50"}`}
+                                    style={{ 
+                                        filter: isActive 
+                                            ? 'brightness(0) saturate(100%) invert(27%) sepia(87%) saturate(2000%) hue-rotate(200deg) brightness(95%) contrast(90%)' 
+                                            : 'grayscale(100%)' 
+                                    }}
+                                />
                                 <span className={`text-[10px] font-medium ${isActive ? "text-[var(--cn-primary)]" : "text-[var(--cn-text-muted)]"}`}>{item.title}</span>
                             </Link>
                         );

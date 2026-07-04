@@ -119,6 +119,11 @@ export function useHorizontalMarquee(options?: {
         if (!isHoveringRef.current) {
             pauseAutoScroll(isMobileRef.current ? 2500 : 800);
         }
+
+        // Reset drag moved flag after a short delay to allow click to work
+        setTimeout(() => {
+            dragMovedRef.current = false;
+        }, 50);
     }, [pauseAutoScroll]);
 
     const onMouseEnter = useCallback(() => {
