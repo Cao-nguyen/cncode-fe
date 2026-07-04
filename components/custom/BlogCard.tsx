@@ -5,6 +5,7 @@ import React from 'react';
 import { Calendar, User, Clock, ArrowRight, Eye } from 'lucide-react';
 
 import Link from 'next/link';
+import { getImageUrl } from '@/lib/utils/imageUrl';
 
 interface BlogCardProps {
     id: string;
@@ -46,24 +47,11 @@ export const BlogCard: React.FC<BlogCardProps> = ({
 
     return (
         <div className="group bg-[var(--cn-bg-card)] rounded-[var(--cn-radius-md)] overflow-hidden border border-[var(--cn-border)] shadow-[var(--cn-shadow-sm)] hover:shadow-[var(--cn-shadow-md)] transition-all duration-300">
-            {}
+            { }
             <div className="relative h-48 overflow-hidden bg-gradient-to-br from-[var(--cn-primary)]/20 to-[var(--cn-primary)]/5">
                 {image ? (
                     <img
-                        src={(() => {
-                            if (!image) return '';
-                            // Extract messageId from URL if it's a proxy URL
-                            const messageIdMatch = image.match(/\/proxy\/file\/(\d+)/);
-                            if (messageIdMatch) {
-                                return `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/upload/proxy/file/${messageIdMatch[1]}`;
-                            }
-                            // If it's already a full URL, replace backend URL with NEXT_PUBLIC_API_URL
-                            if (image.startsWith('http')) {
-                                return image.replace(/https?:\/\/[^\/]+/, process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000');
-                            }
-                            // Otherwise, use as-is
-                            return image;
-                        })()}
+                        src={getImageUrl(image)}
                         alt={title}
                         className="object-cover group-hover:scale-105 transition-transform duration-500"
                     />
@@ -81,9 +69,9 @@ export const BlogCard: React.FC<BlogCardProps> = ({
                 )}
             </div>
 
-            {}
+            { }
             <div className="p-4">
-                {}
+                { }
                 <div className="flex items-center gap-2 mb-3">
                     <div className="w-6 h-6 rounded-full bg-[var(--cn-primary)]/10 overflow-hidden flex-shrink-0">
                         {authorAvatar ? (
@@ -107,17 +95,17 @@ export const BlogCard: React.FC<BlogCardProps> = ({
                     </div>
                 </div>
 
-                {}
+                { }
                 <h3 className="text-sm lg:text-base font-bold text-[var(--cn-text-main)] mb-2 line-clamp-2 group-hover:text-[var(--cn-primary)] transition-colors">
                     {title}
                 </h3>
 
-                {}
+                { }
                 <p className="text-[12px] lg:text-[14px] text-[var(--cn-text-sub)] mb-3 line-clamp-3">
                     {description}
                 </p>
 
-                {}
+                { }
                 <div className="flex items-center justify-between pt-3 border-t border-[var(--cn-border)]">
                     <div className="flex items-center gap-3 text-[11px] lg:text-[13px] text-[var(--cn-text-muted)]">
                         <div className="flex items-center gap-1">

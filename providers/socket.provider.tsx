@@ -74,7 +74,7 @@ export const useSocket = () => useContext(SocketContext);
 
 const getBaseUrl = () => {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-    if (!apiUrl) return 'http://localhost:5000';
+    if (!apiUrl) return '';
     return apiUrl.replace(/\/api$/, '');
 };
 

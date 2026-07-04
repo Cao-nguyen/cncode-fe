@@ -252,6 +252,7 @@ function generateFileCardHTML(
     messageId: string,
     fileSize: string
 ): string {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
     const ext = filename.split(".").pop()?.toLowerCase() ?? "";
 
     const configs: Record<
@@ -329,7 +330,7 @@ function generateFileCardHTML(
                     <span>Vừa xong</span>
                 </div>
             </div>
-            <button onclick="(()=>{const a=document.createElement('a');a.href='http://localhost:5000/api/upload/proxy/file/${messageId}';a.download='${filename}';a.click();})()" style="width:36px;height:36px;border-radius:8px;border:none;background:#f8fafc;color:#64748b;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:0.2s;margin-left:12px;" onmouseover="this.style.background='#e2e8f0';this.style.color='#1e293b';" onmouseout="this.style.background='#f8fafc';this.style.color='#64748b';" title="Tải xuống">
+            <button onclick="(()=>{const a=document.createElement('a');a.href='${apiUrl}/api/upload/proxy/file/${messageId}';a.download='${filename}';a.click();})()" style="width:36px;height:36px;border-radius:8px;border:none;background:#f8fafc;color:#64748b;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:0.2s;margin-left:12px;" onmouseover="this.style.background='#e2e8f0';this.style.color='#1e293b';" onmouseout="this.style.background='#f8fafc';this.style.color='#64748b';" title="Tải xuống">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
             </button>
         </div>
