@@ -114,19 +114,19 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
                 >
                     <div className="flex items-center gap-2 flex-1 min-w-0">
                         {showAvatar && selected?.avatar && (
-                            <div className="w-6 h-6 rounded-full overflow-hidden flex-shrink-0 bg-[var(--cn-bg-section)]">
+                            <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 bg-[var(--cn-bg-section)]">
                                 <img
                                     src={selected.avatar}
                                     alt={selected.label}
-                                    width={24}
-                                    height={24}
+                                    width={40}
+                                    height={40}
                                     className="w-full h-full object-cover"
                                 />
                             </div>
                         )}
                         {showAvatar && selected && !selected.avatar && (
-                            <div className="w-6 h-6 rounded-full flex-shrink-0 bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                                <span className="text-[10px] font-semibold text-blue-600 dark:text-blue-400">
+                            <div className="w-10 h-10 rounded-lg flex-shrink-0 bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                                <span className="text-sm font-semibold text-blue-600 dark:text-blue-400">
                                     {getAvatarFallback(selected.label)}
                                 </span>
                             </div>
@@ -171,19 +171,19 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
                                     >
                                         <div className="flex items-center gap-2 flex-1 min-w-0">
                                             {showAvatar && option.avatar && (
-                                                <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 bg-[var(--cn-bg-section)]">
+                                                <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 bg-[var(--cn-bg-section)]">
                                                     <img
                                                         src={option.avatar}
                                                         alt={option.label}
-                                                        width={32}
-                                                        height={32}
+                                                        width={48}
+                                                        height={48}
                                                         className="w-full h-full object-cover"
                                                     />
                                                 </div>
                                             )}
                                             {showAvatar && !option.avatar && (
-                                                <div className="w-8 h-8 rounded-full flex-shrink-0 bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                                                    <span className="text-[12px] font-semibold text-blue-600 dark:text-blue-400">
+                                                <div className="w-12 h-12 rounded-lg flex-shrink-0 bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                                                    <span className="text-sm font-semibold text-blue-600 dark:text-blue-400">
                                                         {getAvatarFallback(option.label)}
                                                     </span>
                                                 </div>

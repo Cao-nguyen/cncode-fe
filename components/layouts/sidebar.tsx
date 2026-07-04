@@ -22,6 +22,7 @@ import {
     UserPlus,
     Image as ImageIcon,
     BookOpen,
+    Target,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -95,6 +96,11 @@ const menuItems = [
                 title: "Slideshow",
                 link: "/admin/slideshow",
                 icon: <ImageIcon size={18} />,
+            },
+            {
+                title: "Hướng nghiệp",
+                link: "/admin/huongnghiep",
+                icon: <Target size={18} />,
             },
         ],
     },
