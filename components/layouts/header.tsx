@@ -45,6 +45,7 @@ import NotificationBell from "./NotificationBell";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useAuthStore } from "@/store/auth.store";
 import { useSocket } from "@/providers/socket.provider";
+import { getImageUrl } from "@/lib/utils/imageUrl";
 
 const formatNumber = (num: number) =>
     new Intl.NumberFormat("en", { notation: "compact", maximumFractionDigits: 1 }).format(num);
@@ -172,7 +173,7 @@ function DesktopUserDrawer({ user, onLogout, onClose, open }: DrawerProps) {
                     <div className="flex items-center gap-3">
                         <div className="relative flex-shrink-0">
                             <Avatar className="w-12 h-12 border-2 border-[var(--cn-border)]">
-                                <AvatarImage src={user.avatar} />
+                                <AvatarImage src={getImageUrl(user.avatar)} />
                                 <AvatarFallback className="text-[15px] font-bold bg-[var(--cn-primary)] text-white">
                                     {user.fullname?.charAt(0) || "U"}
                                 </AvatarFallback>
@@ -290,7 +291,7 @@ function MobileUserSheet({ user, onLogout, onClose, open }: MobileSheetProps) {
 
         const handleTouchStart = (e: TouchEvent) => {
             const target = e.target as HTMLElement;
-            
+
             const isAtTop = contentRef.current?.scrollTop === 0;
 
             if (sheetRef.current?.contains(target) && isAtTop) {
@@ -367,11 +368,11 @@ function MobileUserSheet({ user, onLogout, onClose, open }: MobileSheetProps) {
                     maxHeight: "85dvh",
                 }}
             >
-                {}
+                { }
                 <div
                     className="flex justify-center pt-3 pb-1 flex-shrink-0"
                     onTouchStart={(e) => {
-                        
+
                         if (contentRef.current?.scrollTop === 0) {
                             const touch = e.touches[0];
                             setStartY(touch.clientY);
@@ -421,7 +422,7 @@ function MobileUserSheet({ user, onLogout, onClose, open }: MobileSheetProps) {
                 <div className="px-4 pt-2 pb-4 flex items-center gap-3 flex-shrink-0">
                     <div className="relative flex-shrink-0">
                         <Avatar className="w-12 h-12 border-2 border-[var(--cn-border)]">
-                            <AvatarImage src={user.avatar} />
+                            <AvatarImage src={getImageUrl(user.avatar)} />
                             <AvatarFallback className="text-base font-bold bg-[var(--cn-primary)] text-white">
                                 {user.fullname?.charAt(0) || "U"}
                             </AvatarFallback>
@@ -545,7 +546,7 @@ export default function Header() {
                     router.push('/login');
                 }
             } catch {
-                
+
             }
         };
 
@@ -718,7 +719,7 @@ export default function Header() {
                         {displayUser ? (
                             <button onClick={() => setDrawerOpen(true)} className="relative p-0.5 rounded-full focus:outline-none group">
                                 <Avatar className="w-8 h-8 ring-2 ring-[var(--cn-border)] group-hover:ring-[var(--cn-primary)]/30 transition-all">
-                                    <AvatarImage src={displayUser.avatar} />
+                                    <AvatarImage src={getImageUrl(displayUser.avatar)} />
                                     <AvatarFallback className="text-xs font-bold bg-[var(--cn-primary)] text-white">
                                         {displayUser.fullname?.charAt(0) || "U"}
                                     </AvatarFallback>
@@ -738,7 +739,7 @@ export default function Header() {
                         <Link href="/">
                             <img src="/images/logo.png" alt="Logo" width={60} height={30} className="object-contain" />
                         </Link>
-                        <span 
+                        <span
                             className="absolute -bottom-0.5 -right-1 bg-gray-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full"
                             onClick={() => setShowBetaTooltip(!showBetaTooltip)}
                         >
@@ -793,7 +794,7 @@ export default function Header() {
                         {displayUser ? (
                             <button onClick={() => setSheetOpen(true)} className="relative">
                                 <Avatar className="w-6 h-6 ring-2 ring-[var(--cn-border)]">
-                                    <AvatarImage src={displayUser.avatar} />
+                                    <AvatarImage src={getImageUrl(displayUser.avatar)} />
                                     <AvatarFallback className="text-[10px] font-bold bg-[var(--cn-primary)] text-white">
                                         {displayUser.fullname?.charAt(0) || "U"}
                                     </AvatarFallback>
@@ -817,14 +818,14 @@ export default function Header() {
                         const iconSrc = mobileIconMap[item.link] || "/favicon/home.png";
                         return (
                             <Link key={item.link} href={item.link} className="flex-1 flex flex-col items-center justify-center gap-1 active:scale-95 transition-all">
-                                <img 
-                                    src={iconSrc} 
+                                <img
+                                    src={iconSrc}
                                     alt={item.title}
                                     className={`w-5 h-5 ${isActive ? "opacity-100" : "opacity-50"}`}
-                                    style={{ 
-                                        filter: isActive 
-                                            ? 'brightness(0) saturate(100%) invert(27%) sepia(87%) saturate(2000%) hue-rotate(200deg) brightness(95%) contrast(90%)' 
-                                            : 'grayscale(100%)' 
+                                    style={{
+                                        filter: isActive
+                                            ? 'brightness(0) saturate(100%) invert(27%) sepia(87%) saturate(2000%) hue-rotate(200deg) brightness(95%) contrast(90%)'
+                                            : 'grayscale(100%)'
                                     }}
                                 />
                                 <span className={`text-[10px] font-medium ${isActive ? "text-[var(--cn-primary)]" : "text-[var(--cn-text-muted)]"}`}>{item.title}</span>

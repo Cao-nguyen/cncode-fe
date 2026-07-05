@@ -6,6 +6,7 @@ import { useSocket } from '@/providers/socket.provider';
 import { commentApi, CommentType } from '@/lib/api/comment.api';
 import CommentItem from './CommentItem';
 import { CustomTextarea } from '@/components/custom/CustomTextarea';
+import { getImageUrl } from '@/lib/utils/imageUrl';
 import { DeleteConfirmModal } from '@/components/common/DeleteConfirmModal';
 import { Loader2, Send } from 'lucide-react';
 import { toast } from 'sonner';
@@ -265,7 +266,7 @@ export default function CommentSection({ targetType, targetId }: CommentSectionP
                     <div className="flex-shrink-0">
                         {user.avatar ? (
                             <img
-                                src={user.avatar}
+                                src={getImageUrl(user.avatar)}
                                 alt={user.fullName || 'User'}
                                 className="w-10 h-10 rounded-full object-cover border-2 border-gray-200"
                                 onError={(e) => {

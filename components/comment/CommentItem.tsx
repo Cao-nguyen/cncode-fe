@@ -21,6 +21,7 @@ import { useAuthStore } from '@/store/auth.store';
 import { toast } from 'sonner';
 import { CustomTextarea } from '@/components/custom/CustomTextarea';
 import { commentApi } from '@/lib/api/comment.api';
+import { getImageUrl } from '@/lib/utils/imageUrl';
 
 interface CommentUser {
     _id: string;
@@ -416,7 +417,7 @@ export default function CommentItem({
                     >
                         {getUserAvatar() ? (
                             <img
-                                src={getUserAvatar()!}
+                                src={getImageUrl(getUserAvatar()!)}
                                 alt={getUserName()}
                                 width={32}
                                 height={32}
@@ -1047,7 +1048,7 @@ export default function CommentItem({
                                                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center overflow-hidden flex-shrink-0">
                                                     {item.userId.avatar ? (
                                                         <img
-                                                            src={item.userId.avatar}
+                                                            src={getImageUrl(item.userId.avatar)}
                                                             alt={item.userId.fullName || 'User'}
                                                             width={40}
                                                             height={40}

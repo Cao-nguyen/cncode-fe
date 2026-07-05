@@ -27,6 +27,7 @@ import { CustomTextarea } from '@/components/custom/CustomTextarea';
 import { CustomButton } from '@/components/custom/CustomButton';
 import { toast } from 'sonner';
 import { uploadApi } from '@/lib/upload';
+import { getImageUrl } from '@/lib/utils/imageUrl';
 
 interface SocialLink {
     _id?: string;
@@ -494,7 +495,7 @@ const SettingsPage = () => {
                         <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden bg-[var(--cn-bg-card)] ring-4 ring-[var(--cn-border)] flex items-center justify-center">
                             {currentUser.avatar ? (
                                 <img
-                                    src={currentUser.avatar}
+                                    src={getImageUrl(currentUser.avatar)}
                                     alt={currentUser.fullName}
                                     className="w-full h-full object-cover"
                                 />

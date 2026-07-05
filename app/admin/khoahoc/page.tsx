@@ -22,6 +22,7 @@ import { uploadApi } from '@/lib/upload';
 import { toast } from 'sonner';
 import * as khoahocApi from '@/lib/api/khoahoc.api';
 import CourseBuilderOverlay from '@/components/admin/CourseBuilderOverlay';
+import { getImageUrl } from '@/lib/utils/imageUrl';
 
 interface AdminCourse {
     _id: string;
@@ -537,7 +538,7 @@ export default function AdminCoursesPage() {
                                                     onClick={() => setBuilderOverlay({ courseId: course._id, courseName: course.title })}
                                                 >
                                                     {course.thumbnail
-                                                        ? <img src={course.thumbnail} alt="" className="w-full h-full object-cover" />
+                                                        ? <img src={getImageUrl(course.thumbnail)} alt="" className="w-full h-full object-cover" />
                                                         : <div className="w-full h-full flex items-center justify-center"><BookOpen className="w-4 h-4 text-gray-400" /></div>
                                                     }
                                                 </div>
@@ -552,7 +553,7 @@ export default function AdminCoursesPage() {
                                         <td className="px-4 py-3">
                                             <div className="flex items-center gap-2">
                                                 {typeof course.teacherId === 'object' && course.teacherId.avatar && (
-                                                    <img src={course.teacherId.avatar} alt="" className="w-6 h-6 rounded-full object-cover" />
+                                                    <img src={getImageUrl(course.teacherId.avatar)} alt="" className="w-6 h-6 rounded-full object-cover" />
                                                 )}
                                                 <span className="text-sm text-gray-600 dark:text-gray-300">
                                                     {typeof course.teacherId === 'object' ? (course.teacherId.fullName || course.teacherId.name || 'N/A') : 'N/A'}
@@ -626,7 +627,7 @@ export default function AdminCoursesPage() {
                                         onClick={() => setBuilderOverlay({ courseId: course._id, courseName: course.title })}
                                     >
                                         {course.thumbnail
-                                            ? <img src={course.thumbnail} alt="" className="w-full h-full object-cover" />
+                                            ? <img src={getImageUrl(course.thumbnail)} alt="" className="w-full h-full object-cover" />
                                             : <div className="w-full h-full flex items-center justify-center"><BookOpen className="w-4 h-4 text-gray-400" /></div>
                                         }
                                     </div>

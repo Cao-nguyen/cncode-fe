@@ -5,6 +5,7 @@ import { Plus, Edit, Trash2, X, Loader2, ExternalLink, Upload, ImageIcon } from 
 import { linkedProductApi } from '@/lib/api/linkedProduct.api';
 import { uploadApi } from '@/lib/upload';
 import { LinkedProduct, CreateLinkedProductDto } from '@/types/linkedProduct.type';
+import { getImageUrl } from '@/lib/utils/imageUrl';
 import { CustomButton } from '@/components/custom/CustomButton';
 import { CustomInput } from '@/components/custom/CustomInput';
 import { ConfirmModalDelete } from '@/components/custom/ConfirmationModal';
@@ -199,7 +200,7 @@ export default function AdminSanPhamLienKetPage() {
                             <div className="relative h-40 overflow-hidden bg-[var(--cn-bg-section)]">
                                 {product.thumbnailUrl && !imgErrors[product._id] ? (
                                     <img
-                                        src={product.thumbnailUrl}
+                                        src={getImageUrl(product.thumbnailUrl)}
                                         alt={product.name}
                                         className="absolute inset-0 w-full h-full object-cover"
                                         onError={() => setImgErrors(prev => ({ ...prev, [product._id]: true }))}
@@ -299,7 +300,7 @@ export default function AdminSanPhamLienKetPage() {
                                     ) : formData.thumbnailUrl ? (
                                         <div className="relative">
                                             <img
-                                                src={formData.thumbnailUrl}
+                                                src={getImageUrl(formData.thumbnailUrl)}
                                                 alt="preview"
                                                 className="mx-auto max-h-32 rounded-md object-contain"
                                             />
