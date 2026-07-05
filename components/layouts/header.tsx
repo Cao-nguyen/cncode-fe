@@ -645,6 +645,17 @@ export default function Header() {
         role: displayRole,
     } : null;
 
+    // Debug logging
+    useEffect(() => {
+        if (displayUser) {
+            console.log('🔍 Header displayUser:', {
+                avatar: displayUser.avatar,
+                avatarUrl: getImageUrl(displayUser.avatar),
+                fullUser: user
+            });
+        }
+    }, [displayUser, user]);
+
     return (
         <>
             <header className="hidden lg:block bg-[var(--cn-bg-card)] w-full h-[60px] fixed top-0 z-50 shadow-[var(--cn-shadow-sm)]">
