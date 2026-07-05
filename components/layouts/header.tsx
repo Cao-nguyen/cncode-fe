@@ -645,16 +645,15 @@ export default function Header() {
         role: displayRole,
     } : null;
 
-    // Debug logging
+    // Avatar error debugging
     useEffect(() => {
         if (displayUser) {
-            console.log('🔍 Header displayUser:', {
-                avatar: displayUser.avatar,
-                avatarUrl: getImageUrl(displayUser.avatar),
-                fullUser: user
-            });
+            const testImg = new Image();
+            testImg.onload = () => console.log('✅ Avatar loaded successfully');
+            testImg.onerror = (e) => console.error('❌ Avatar failed to load:', displayUser.avatar, e);
+            testImg.src = getImageUrl(displayUser.avatar);
         }
-    }, [displayUser, user]);
+    }, [displayUser]);
 
     return (
         <>
