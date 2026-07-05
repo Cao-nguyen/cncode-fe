@@ -101,16 +101,19 @@ function AdminShopPageContent() {
             };
 
             if (editingGift) {
-                await giftApi.updateGift(editingGift._id, giftData, token || '');
+                const updatedGift = await giftApi.updateGift(editingGift._id, giftData, token || '');
+                // Update state optimistically without reloading
+                setGifts(prev => prev.map(g => g._id === editingGift._id ? { ...g, ...giftData } : g));
                 toast.success('Cập nhật quà tặng thành công');
             } else {
-                await giftApi.createGift(giftData, token || '');
+                const newGift = await giftApi.createGift(giftData, token || '');
+                // Add new gift to state without reloading
+                setGifts(prev => [...prev, newGift]);
                 toast.success('Tạo quà tặng thành công');
             }
 
             setShowModal(false);
             resetForm();
-            fetchGifts();
         } catch (error: unknown) {
             const message = error instanceof Error ? error.message : 'Lỗi khi lưu quà tặng';
             toast.error(message);
@@ -134,9 +137,10 @@ function AdminShopPageContent() {
     const handleDelete = async (gift: IGift) => {
         try {
             await giftApi.deleteGift(gift._id, token || '');
+            // Remove gift from state without reloading
+            setGifts(prev => prev.filter(g => g._id !== gift._id));
             toast.success('Xóa quà tặng thành công');
             setDeleteConfirm(null);
-            fetchGifts();
         } catch (error: unknown) {
             const message = error instanceof Error ? error.message : 'Lỗi khi xóa quà tặng';
             toast.error(message);
