@@ -166,7 +166,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
         const instance = io(BASE_URL, {
             auth: token ? { token } : undefined,
             transports: ['polling', 'websocket'],
-            upgrade: true,
+            upgrade: false,
             autoConnect: true,
             reconnection: true,
             reconnectionAttempts: 15,
@@ -372,7 +372,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
         const adminSocket = io(`${BASE_URL}/admin-chat`, {
             auth: { token },
             transports: ['polling', 'websocket'],
-            upgrade: true,
+            upgrade: false,
         });
 
         adminChatSocketRef.current = adminSocket;
