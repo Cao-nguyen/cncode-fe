@@ -10,6 +10,7 @@ import { CustomButton } from '@/components/custom/CustomButton';
 import { CustomInputSearch } from '@/components/custom/CustomInputSearch';
 import { CustomSelect } from '@/components/custom/CustomSelect';
 import { useAuthStore } from '@/store/auth.store';
+import { getImageUrl } from '@/lib/utils/imageUrl';
 
 const CATEGORIES = [
     { value: 'all', label: 'Tất cả' },
@@ -168,20 +169,7 @@ export default function BlogPage() {
                                     {blog.thumbnail && (
                                         <div className="w-full h-[200px] overflow-hidden relative" style={{ backgroundColor: 'var(--cn-bg-section)' }}>
                                             <img
-                                                src={(() => {
-                                                    if (!blog.thumbnail) return '';
-                                                    // Extract messageId from URL if it's a proxy URL
-                                                    const messageIdMatch = blog.thumbnail.match(/\/proxy\/file\/(\d+)/);
-                                                    if (messageIdMatch) {
-                                                        return `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/upload/proxy/file/${messageIdMatch[1]}`;
-                                                    }
-                                                    // If it's already a full URL, replace backend URL with NEXT_PUBLIC_API_URL
-                                                    if (blog.thumbnail.startsWith('http')) {
-                                                        return blog.thumbnail.replace(/https?:\/\/[^\/]+/, process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000');
-                                                    }
-                                                    // Otherwise, assume it's a messageId
-                                                    return `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/upload/proxy/file/${blog.thumbnail}`;
-                                                })()}
+                                                src={getImageUrl(blog.thumbnail)}
                                                 alt={blog.title}
                                                 className="w-full h-full object-cover group-hover:scale-105 transition"
                                                 style={{ aspectRatio: '1500/1000' }}
@@ -228,7 +216,7 @@ export default function BlogPage() {
                                             <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--cn-text-main)' }}>
                                                 {blog.author.avatar && (
                                                     <img
-                                                        src={blog.author.avatar}
+                                                        src={getImageUrl(blog.author.avatar)}
                                                         alt={blog.author.fullName}
                                                         className="w-8 h-8 rounded-full object-cover"
                                                     />

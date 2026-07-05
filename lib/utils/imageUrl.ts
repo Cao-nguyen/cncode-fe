@@ -24,7 +24,20 @@ export const getImageUrl = (thumbnail: string | undefined): string => {
 
     // If it's already a full URL with http/https
     if (thumbnail.startsWith('http://') || thumbnail.startsWith('https://')) {
-        // Replace the domain with the current API URL
+        // Check if it's from external sources (Google, CDNs, etc.) - return as-is
+        const isExternalUrl = thumbnail.includes('googleusercontent.com') ||
+            thumbnail.includes('googleapis.com') ||
+            thumbnail.includes('cloudflare.com') ||
+            thumbnail.includes('cloudinary.com') ||
+            thumbnail.includes('imgur.com') ||
+            thumbnail.includes('cdn.') ||
+            thumbnail.includes('storage.googleapis.com');
+
+        if (isExternalUrl) {
+            return thumbnail; // Return Google/CDN URLs directly
+        }
+
+        // For backend URLs (localhost or backend domain), replace with current API URL
         return thumbnail.replace(/https?:\/\/[^\/]+/, apiUrl);
     }
 
