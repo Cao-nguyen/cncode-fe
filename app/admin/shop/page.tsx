@@ -10,6 +10,7 @@ import { CustomInput } from '@/components/custom/CustomInput';
 import { CustomSelect } from '@/components/custom/CustomSelect';
 import { ConfirmModalDelete } from '@/components/custom/ConfirmationModal';
 import { uploadApi } from '@/lib/upload';
+import { getImageUrl } from '@/lib/utils/imageUrl';
 
 const CATEGORIES = [
     { value: 'heart', label: 'Trái tim' },
@@ -46,8 +47,9 @@ function AdminShopPageContent() {
             setLoading(true);
             const data = await giftApi.getAllGifts(token || '');
             setGifts(data);
-        } catch (error: any) {
-            toast.error(error.message || 'Lỗi khi tải danh sách quà tặng');
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : 'Lỗi khi tải danh sách quà tặng';
+            toast.error(message);
         } finally {
             setLoading(false);
         }
@@ -72,8 +74,9 @@ function AdminShopPageContent() {
                 setUploading(false);
             };
             reader.readAsDataURL(file);
-        } catch (error: any) {
-            toast.error(error.message || 'Lỗi khi tải ảnh lên');
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : 'Lỗi khi tải ảnh lên';
+            toast.error(message);
             setUploading(false);
         }
     };
@@ -108,8 +111,9 @@ function AdminShopPageContent() {
             setShowModal(false);
             resetForm();
             fetchGifts();
-        } catch (error: any) {
-            toast.error(error.message || 'Lỗi khi lưu quà tặng');
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : 'Lỗi khi lưu quà tặng';
+            toast.error(message);
         } finally {
             setSubmitting(false);
         }
@@ -133,8 +137,9 @@ function AdminShopPageContent() {
             toast.success('Xóa quà tặng thành công');
             setDeleteConfirm(null);
             fetchGifts();
-        } catch (error: any) {
-            toast.error(error.message || 'Lỗi khi xóa quà tặng');
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : 'Lỗi khi xóa quà tặng';
+            toast.error(message);
         }
     };
 
@@ -196,7 +201,7 @@ function AdminShopPageContent() {
                                 <tr key={gift._id} className="border-b border-gray-100 dark:border-white/[0.03] hover:bg-gray-50 dark:hover:bg-white/[0.02]">
                                     <td className="px-6 py-4">
                                         <img
-                                            src={gift.image}
+                                            src={getImageUrl(gift.image)}
                                             alt={gift.name}
                                             className="h-12 w-12 rounded-lg object-cover"
                                         />
@@ -218,11 +223,10 @@ function AdminShopPageContent() {
                                         {gift.priceInXu.toLocaleString()} xu
                                     </td>
                                     <td className="px-6 py-4">
-                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                            gift.isActive 
-                                                ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
-                                                : 'bg-gray-100 dark:bg-gray-900/30 text-gray-800 dark:text-gray-300'
-                                        }`}>
+                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${gift.isActive
+                                            ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
+                                            : 'bg-gray-100 dark:bg-gray-900/30 text-gray-800 dark:text-gray-300'
+                                            }`}>
                                             {gift.isActive ? 'Hoạt động' : 'Không hoạt động'}
                                         </span>
                                     </td>
@@ -303,7 +307,7 @@ function AdminShopPageContent() {
                                 <div className="space-y-2">
                                     {image && (
                                         <img
-                                            src={image}
+                                            src={getImageUrl(image)}
                                             alt="Preview"
                                             className="h-32 w-32 rounded-lg object-cover"
                                         />

@@ -9,6 +9,7 @@ import Header from '@/components/layouts/header';
 import Footer from '@/components/layouts/footer';
 import { CustomButton } from '@/components/custom/CustomButton';
 import Image from 'next/image';
+import { getImageUrl } from '@/lib/utils/imageUrl';
 
 type TabType = 'received' | 'convert';
 
@@ -32,8 +33,9 @@ function MyShopPageContent() {
             const result = await giftApi.getReceivedGifts(token, 1, 50);
             console.log('Received gifts:', result.transactions);
             setReceivedGifts(result.transactions);
-        } catch (error: any) {
-            toast.error(error.message || 'Lỗi khi tải quà đã nhận');
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : 'Lỗi khi tải quà đã nhận';
+            toast.error(message);
         } finally {
             setLoading(false);
         }
@@ -58,7 +60,7 @@ function MyShopPageContent() {
             date: transaction.createdAt
         });
         return acc;
-    }, {} as Record<string, { gift: any; quantity: number; senders: Array<{ name: string; message?: string; date: string }>; totalXu: number }>);
+    }, {} as Record<string, { gift: IGiftTransaction['gift']; quantity: number; senders: Array<{ name: string; message?: string; date: string }>; totalXu: number }>);
 
     const handleConvert = async (giftId: string, quantity: number, priceInXu: number) => {
         if (!token) {
@@ -73,12 +75,13 @@ function MyShopPageContent() {
             if (result.success) {
                 useAuthStore.getState().updateCoins(result.xuReceived);
                 toast.success(result.message);
-                
+
                 // Refresh the gifts list
                 await fetchReceivedGifts();
             }
-        } catch (error: any) {
-            toast.error(error.message || 'Lỗi khi quy đổi quà tặng');
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : 'Lỗi khi quy đổi quà tặng';
+            toast.error(message);
         } finally {
             setConverting(null);
         }
@@ -87,7 +90,7 @@ function MyShopPageContent() {
     return (
         <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-[#0a0a0a]">
             <Header />
-            
+
             <main className="flex-1">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                     <div className="mb-8">
@@ -109,21 +112,19 @@ function MyShopPageContent() {
                     <div className="flex gap-2 mb-6 border-b border-gray-200 dark:border-white/[0.06]">
                         <button
                             onClick={() => setActiveTab('received')}
-                            className={`px-4 py-2 font-medium transition-colors ${
-                                activeTab === 'received'
-                                    ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
-                                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-                            }`}
+                            className={`px-4 py-2 font-medium transition-colors ${activeTab === 'received'
+                                ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
+                                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                                }`}
                         >
                             Quà đã nhận
                         </button>
                         <button
                             onClick={() => setActiveTab('convert')}
-                            className={`px-4 py-2 font-medium transition-colors ${
-                                activeTab === 'convert'
-                                    ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
-                                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-                            }`}
+                            className={`px-4 py-2 font-medium transition-colors ${activeTab === 'convert'
+                                ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
+                                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                                }`}
                         >
                             Quy đổi sang xu
                         </button>
@@ -149,7 +150,7 @@ function MyShopPageContent() {
                                     >
                                         {item.gift.image ? (
                                             <Image
-                                                src={item.gift.image}
+                                                src={getImageUrl(item.gift.image)}
                                                 alt={item.gift.name}
                                                 width={64}
                                                 height={64}
@@ -212,7 +213,7 @@ function MyShopPageContent() {
                                     >
                                         <div className="flex items-center gap-4 mb-4">
                                             <img
-                                                src={item.gift.image}
+                                                src={getImageUrl(item.gift.image)}
                                                 alt={item.gift.name}
                                                 className="w-20 h-20 rounded-lg object-cover"
                                             />
