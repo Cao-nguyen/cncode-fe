@@ -54,6 +54,7 @@ import { ConfirmModalDelete } from '@/components/custom/ConfirmationModal';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast } from 'sonner';
 import AdminUsersDashboard from '@/components/admin/AdminUsersDashboard';
+import { getImageUrl } from '@/lib/utils/imageUrl';
 
 const PAGE_SIZE = 10;
 const DEFAULT_PAGE_SIZE = 10;
@@ -682,7 +683,7 @@ function AdminUsersPageContent() {
                                         <div className="flex items-center gap-3">
                                             <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center">
                                                 {user.avatar ? (
-                                                    <img src={user.avatar} alt={user.fullName} width={36} height={36} className="w-full h-full rounded-full object-cover" />
+                                                    <img src={getImageUrl(user.avatar)} alt={user.fullName} width={36} height={36} className="w-full h-full rounded-full object-cover" />
                                                 ) : (
                                                     <span className="text-sm font-semibold text-blue-600">{getUserInitial(user)}</span>
                                                 )}
@@ -846,7 +847,7 @@ function AdminUsersPageContent() {
                             <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
                                 <Avatar className="w-12 h-12">
                                     {selectedPendingTeacher.avatar ? (
-                                        <AvatarImage src={selectedPendingTeacher.avatar} alt={selectedPendingTeacher.fullName} />
+                                        <AvatarImage src={getImageUrl(selectedPendingTeacher.avatar)} alt={selectedPendingTeacher.fullName} />
                                     ) : null}
                                     <AvatarFallback className="bg-blue-500 text-white text-lg font-bold">
                                         {getUserInitial(selectedPendingTeacher)}
@@ -919,7 +920,7 @@ function AdminUsersPageContent() {
                             <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl">
                                 <Avatar className="w-14 h-14">
                                     {selectedUser.avatar ? (
-                                        <AvatarImage src={selectedUser.avatar} alt={selectedUser.fullName} />
+                                        <AvatarImage src={getImageUrl(selectedUser.avatar)} alt={selectedUser.fullName} />
                                     ) : null}
                                     <AvatarFallback className="bg-blue-500 text-white text-xl font-bold">
                                         {getUserInitial(selectedUser)}
