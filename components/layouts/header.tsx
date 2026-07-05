@@ -649,11 +649,11 @@ export default function Header() {
     useEffect(() => {
         if (displayUser) {
             const testImg = new Image();
-            testImg.onload = () => console.log('✅ Avatar loaded successfully');
+            testImg.onload = () => console.log('✅ Avatar loaded successfully:', displayUser.avatar);
             testImg.onerror = (e) => console.error('❌ Avatar failed to load:', displayUser.avatar, e);
             testImg.src = getImageUrl(displayUser.avatar);
         }
-    }, [displayUser]);
+    }, [displayUser?.avatar]);
 
     return (
         <>
@@ -728,7 +728,7 @@ export default function Header() {
                         <NotificationBell />
                         {displayUser ? (
                             <button onClick={() => setDrawerOpen(true)} className="relative p-0.5 rounded-full focus:outline-none group">
-                                <Avatar className="w-8 h-8 ring-2 ring-[var(--cn-border)] group-hover:ring-[var(--cn-primary)]/30 transition-all">
+                                <Avatar key={displayUser.avatar} className="w-8 h-8 ring-2 ring-[var(--cn-border)] group-hover:ring-[var(--cn-primary)]/30 transition-all">
                                     <AvatarImage src={getImageUrl(displayUser.avatar)} />
                                     <AvatarFallback className="text-xs font-bold bg-[var(--cn-primary)] text-white">
                                         {displayUser.fullname?.charAt(0) || "U"}
