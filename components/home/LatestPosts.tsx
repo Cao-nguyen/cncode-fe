@@ -130,7 +130,7 @@ function BlogCard({
                     <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--cn-text-main)' }}>
                         {blog.author.avatar && (
                             <img
-                                src={blog.author.avatar}
+                                src={getImageUrl(blog.author.avatar)}
                                 alt={blog.author.fullName}
                                 className="w-8 h-8 rounded-full object-cover pointer-events-none"
                                 draggable={false}
