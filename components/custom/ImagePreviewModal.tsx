@@ -28,6 +28,8 @@ export const ImagePreviewModal = ({ src, isOpen, onClose }: ImagePreviewModalPro
     const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
 
     const containerRef = useRef<HTMLDivElement>(null);
+    const initialPinchDistance = useRef<number | null>(null);
+    const initialScale = useRef<number>(1);
 
     const dragConstraints = useMemo(() => {
         if (!naturalSize.width || !containerSize.width) return { left: 0, right: 0, top: 0, bottom: 0 };
@@ -94,6 +96,51 @@ export const ImagePreviewModal = ({ src, isOpen, onClose }: ImagePreviewModalPro
         window.addEventListener('keydown', handleEsc);
         return () => window.removeEventListener('keydown', handleEsc);
     }, [onClose]);
+
+    // Pinch to zoom for mobile
+    useEffect(() => {
+        const container = containerRef.current;
+        if (!container) return;
+
+        const getDistance = (touches: TouchList) => {
+            return Math.hypot(
+                touches[0].clientX - touches[1].clientX,
+                touches[0].clientY - touches[1].clientY
+            );
+        };
+
+        const handleTouchStart = (e: TouchEvent) => {
+            if (e.touches.length === 2) {
+                e.preventDefault();
+                initialPinchDistance.current = getDistance(e.touches);
+                initialScale.current = scale;
+            }
+        };
+
+        const handleTouchMove = (e: TouchEvent) => {
+            if (e.touches.length === 2 && initialPinchDistance.current !== null) {
+                e.preventDefault();
+                const currentDistance = getDistance(e.touches);
+                const scaleRatio = currentDistance / initialPinchDistance.current;
+                const newScale = Math.min(Math.max(initialScale.current * scaleRatio, 0.5), 10);
+                setScale(newScale);
+            }
+        };
+
+        const handleTouchEnd = () => {
+            initialPinchDistance.current = null;
+        };
+
+        container.addEventListener('touchstart', handleTouchStart, { passive: false });
+        container.addEventListener('touchmove', handleTouchMove, { passive: false });
+        container.addEventListener('touchend', handleTouchEnd);
+
+        return () => {
+            container.removeEventListener('touchstart', handleTouchStart);
+            container.removeEventListener('touchmove', handleTouchMove);
+            container.removeEventListener('touchend', handleTouchEnd);
+        };
+    }, [scale, isOpen]);
 
     if (!src) return null;
 
