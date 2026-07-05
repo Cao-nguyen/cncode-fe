@@ -35,6 +35,7 @@ import {
 import { useAuthStore } from "@/store/auth.store";
 import { useChatStore } from "@/store/chat.store";
 import { adminChatApi } from "@/lib/api/adminchat.api";
+import { getImageUrl } from "@/lib/utils/imageUrl";
 
 const getInitials = (name: string) =>
     name
@@ -342,7 +343,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
                         <DropdownMenuTrigger asChild>
                             <button className="flex w-full items-center gap-2.5 rounded-[10px] px-3 py-2.5 text-left transition hover:bg-gray-50 dark:hover:bg-white/[0.04]">
                                 <Avatar className="h-8 w-8 flex-shrink-0">
-                                    <AvatarImage src={user?.avatar ?? undefined} />
+                                    <AvatarImage src={user?.avatar ? getImageUrl(user.avatar) : undefined} />
                                     <AvatarFallback className="text-xs">
                                         {user ? getInitials(user.fullName) : "AD"}
                                     </AvatarFallback>
@@ -363,7 +364,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
                             <DropdownMenuLabel>
                                 <div className="flex items-center gap-2.5">
                                     <Avatar className="h-9 w-9">
-                                        <AvatarImage src={user?.avatar ?? undefined} />
+                                        <AvatarImage src={user?.avatar ? getImageUrl(user.avatar) : undefined} />
                                         <AvatarFallback className="text-xs">
                                             {user ? getInitials(user.fullName) : "AD"}
                                         </AvatarFallback>
