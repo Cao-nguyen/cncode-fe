@@ -323,11 +323,12 @@ const SettingsPage = () => {
 
             const result = await uploadApi.uploadImage(fullBase64, 'avatars');
 
-            if (result.success && result.url) {
+            if (result.success && result.messageId) {
                 console.log('Upload result:', result);
-                console.log('Avatar URL:', result.url);
+                console.log('Avatar messageId:', result.messageId);
 
-                const updateResult = await userApi.updateProfile({ avatar: result.url }, token);
+                // Chỉ lưu messageId vào database, không lưu full URL
+                const updateResult = await userApi.updateProfile({ avatar: result.messageId }, token);
                 console.log('Update result:', updateResult);
 
                 if (updateResult.success && updateResult.data) {
@@ -336,7 +337,7 @@ const SettingsPage = () => {
                     if (rawStoreUser) {
                         setUser({
                             ...rawStoreUser,
-                            avatar: result.url,
+                            avatar: result.messageId,
                         });
                     }
                     toast.success('Cập nhật avatar thành công');
