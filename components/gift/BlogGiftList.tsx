@@ -6,9 +6,17 @@ import { giftApi, IGiftTransaction } from '@/lib/api/gift.api';
 import { useSocket } from '@/providers/socket.provider';
 import { useAuthStore } from '@/store/auth.store';
 import Image from 'next/image';
+import { getImageUrl } from '@/lib/utils/imageUrl';
 
 interface BlogGiftListProps {
     blogId: string;
+}
+
+interface User {
+    _id: string;
+    fullName: string;
+    username?: string;
+    avatar?: string;
 }
 
 export function BlogGiftList({ blogId }: BlogGiftListProps) {
@@ -25,7 +33,7 @@ export function BlogGiftList({ blogId }: BlogGiftListProps) {
     useEffect(() => {
         if (!socket || !isConnected) return;
 
-        const handleNewGift = (data: { transaction: IGiftTransaction; sender: any }) => {
+        const handleNewGift = (data: { transaction: IGiftTransaction; sender: User }) => {
             // Only add if the gift is for this blog post and not from current user
             if (data.transaction.targetId === blogId && data.transaction.targetType === 'post') {
                 // Don't add if current user is the sender (they already see it from local event)
@@ -129,7 +137,7 @@ export function BlogGiftList({ blogId }: BlogGiftListProps) {
                     >
                         {transaction.gift.image ? (
                             <Image
-                                src={transaction.gift.image}
+                                src={getImageUrl(transaction.gift.image)}
                                 alt={transaction.gift.name}
                                 width={40}
                                 height={40}

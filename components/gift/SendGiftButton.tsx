@@ -8,6 +8,8 @@ import { giftApi, IGift } from '@/lib/api/gift.api';
 import { CustomButton } from '@/components/custom/CustomButton';
 import { CustomInput } from '@/components/custom/CustomInput';
 import { CustomTextarea } from '@/components/custom/CustomTextarea';
+import confetti from 'canvas-confetti';
+import { getImageUrl } from '@/lib/utils/imageUrl';
 
 interface SendGiftButtonProps {
     recipientId: string;
@@ -55,6 +57,42 @@ export function SendGiftButton({
         }
     };
 
+    const triggerConfetti = () => {
+        const duration = 3000;
+        const animationEnd = Date.now() + duration;
+        const defaults = {
+            startVelocity: 30,
+            spread: 360,
+            ticks: 60,
+            zIndex: 9999
+        };
+
+        const randomInRange = (min: number, max: number) => {
+            return Math.random() * (max - min) + min;
+        };
+
+        const interval = setInterval(() => {
+            const timeLeft = animationEnd - Date.now();
+
+            if (timeLeft <= 0) {
+                return clearInterval(interval);
+            }
+
+            const particleCount = 50 * (timeLeft / duration);
+            
+            confetti({
+                ...defaults,
+                particleCount,
+                origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 }
+            });
+            confetti({
+                ...defaults,
+                particleCount,
+                origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 }
+            });
+        }, 250);
+    };
+
     const handleSendGift = async () => {
         if (!selectedGift || !token) return;
 
@@ -86,6 +124,9 @@ export function SendGiftButton({
             
             // Update local coins
             useAuthStore.getState().updateCoins(-totalPrice);
+
+            // Trigger confetti effect
+            triggerConfetti();
 
             // Emit custom event for BlogGiftList to update
             window.dispatchEvent(new CustomEvent('gift-sent-local', {
@@ -151,7 +192,7 @@ export function SendGiftButton({
                                             className="p-4 border border-gray-200 dark:border-white/[0.1] rounded-lg hover:border-blue-500 dark:hover:border-blue-500 transition-colors text-left"
                                         >
                                             <img
-                                                src={gift.image}
+                                                src={getImageUrl(gift.image)}
                                                 alt={gift.name}
                                                 className="w-full aspect-square object-cover rounded-lg mb-2"
                                             />
@@ -166,7 +207,7 @@ export function SendGiftButton({
                                 <div className="space-y-4">
                                     <div className="flex items-center gap-4 p-4 bg-gray-50 dark:bg-white/[0.05] rounded-lg">
                                         <img
-                                            src={selectedGift.image}
+                                            src={getImageUrl(selectedGift.image)}
                                             alt={selectedGift.name}
                                             className="w-20 h-20 rounded-lg object-cover"
                                         />

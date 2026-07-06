@@ -65,8 +65,8 @@ function AdminShopPageContent() {
             reader.onload = async () => {
                 const base64 = reader.result as string;
                 const result = await uploadApi.uploadImage(base64, 'gifts');
-                if (result.success && result.url) {
-                    setImage(result.url);
+                if (result.success && result.messageId) {
+                    setImage(result.messageId);
                     toast.success('Tải ảnh lên thành công');
                 } else {
                     toast.error(result.message || 'Lỗi khi tải ảnh lên');

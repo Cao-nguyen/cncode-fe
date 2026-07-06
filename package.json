@@ -41,6 +41,7 @@
     "@wiris/mathtype-tinymce5": "^8.15.2",
     "aos": "^2.3.4",
     "axios": "^1.13.6",
+    "canvas-confetti": "^1.9.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
@@ -92,6 +93,7 @@
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/aos": "^3.0.7",
+    "@types/canvas-confetti": "^1.9.0",
     "@types/js-cookie": "^3.0.6",
     "@types/node": "^20",
     "@types/pdf-parse": "^1.1.5",
