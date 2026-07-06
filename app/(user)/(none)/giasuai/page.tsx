@@ -7,6 +7,8 @@ import { aitutorApi, AIChat, AIMessage, RateLimitInfo } from '@/lib/api/aitutor.
 import { toast } from 'sonner';
 import { Send, Plus, Trash2, Loader2, MessageSquare, Clock, Zap, ArrowLeft } from 'lucide-react';
 import { CustomButton } from '@/components/custom/CustomButton';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 export default function AITutorPage() {
   const router = useRouter();
@@ -164,9 +166,9 @@ export default function AITutorPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row">
+    <div className="h-screen bg-gray-50 flex flex-col md:flex-row overflow-hidden">
       {/* Mobile Header */}
-      <div className="md:hidden bg-white border-b border-gray-200 p-4 flex items-center justify-between">
+      <div className="md:hidden bg-white border-b border-gray-200 p-4 flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-3">
           <button
             onClick={() => router.back()}
@@ -340,9 +342,9 @@ export default function AITutorPage() {
       </div>
 
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col h-full min-h-0">
         {/* Desktop Header */}
-        <div className="hidden md:flex bg-white border-b border-gray-200 p-4 items-center justify-between">
+        <div className="hidden md:flex bg-white border-b border-gray-200 p-4 items-center justify-between flex-shrink-0">
           <div className="flex items-center gap-3">
             <button
               onClick={() => router.back()}
@@ -373,7 +375,7 @@ export default function AITutorPage() {
         </div>
 
         {/* Messages Area */}
-        <div className="flex-1 overflow-y-auto p-4">
+        <div className="flex-1 overflow-y-auto p-4 min-h-0">
           {!currentChat ? (
             <div className="flex flex-col items-center justify-center h-full text-center px-4">
               <MessageSquare className="w-16 h-16 md:w-20 md:h-20 text-gray-400 mb-4" />
@@ -398,8 +400,35 @@ export default function AITutorPage() {
                         : 'bg-white border border-gray-200 text-gray-900'
                     }`}
                   >
-                    <p className="whitespace-pre-wrap text-sm md:text-base">{msg.content}</p>
-                    <p className={`text-xs mt-2 ${msg.role === 'user' ? 'text-blue-200' : 'text-gray-500'}`}>
+                    {msg.role === 'assistant' ? (
+                      <div className="prose prose-sm max-w-none text-sm md:text-base text-justify">
+                        <ReactMarkdown
+                          remarkPlugins={[remarkGfm]}
+                          components={{
+                            pre: ({ node, ...props }) => (
+                              <pre className="bg-gray-100 p-4 rounded-lg border border-gray-300 text-gray-900 overflow-x-auto" {...props} />
+                            ),
+                            code: ({ node, className, children, ...props }: any) => {
+                              const isInline = !className;
+                              return isInline ? (
+                                <code className="bg-yellow-100 text-yellow-900 px-1.5 py-0.5 rounded text-sm font-medium" {...props}>
+                                  {children}
+                                </code>
+                              ) : (
+                                <code className="text-gray-900" {...props}>
+                                  {children}
+                                </code>
+                              );
+                            }
+                          }}
+                        >
+                          {msg.content}
+                        </ReactMarkdown>
+                      </div>
+                    ) : (
+                      <p className="whitespace-pre-wrap text-sm md:text-base text-left">{msg.content}</p>
+                    )}
+                    <p className={`text-xs mt-2 ${msg.role === 'user' ? 'text-blue-200' : 'text-gray-500'} text-left`}>
                       {new Date(msg.timestamp).toLocaleTimeString('vi-VN', {
                         hour: '2-digit',
                         minute: '2-digit'
@@ -421,7 +450,7 @@ export default function AITutorPage() {
         </div>
 
         {/* Input Area */}
-        <div className="bg-white border-t border-gray-200 p-3 md:p-4">
+        <div className="bg-white border-t border-gray-200 p-3 md:p-4 flex-shrink-0">
           <div className="max-w-3xl mx-auto">
             <div className="flex gap-2">
               <input
