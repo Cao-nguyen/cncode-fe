@@ -4,10 +4,11 @@ import { useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react
 import { useAuthStore } from '@/store/auth.store';
 import { useChatStore } from '@/store/chat.store';
 import { adminChatApi } from '@/lib/api/adminchat.api';
-import { Send, Loader2, MessageCircle, Image as ImageIcon, X, Settings, Clock } from 'lucide-react';
+import { Send, Loader2, MessageCircle, Image as ImageIcon, X, Settings, Clock, Heart } from 'lucide-react';
 import io, { Socket } from 'socket.io-client';
 import type { AdminChatMessage, AdminChatConversation, UserStatusEvent, OnlineUser, WorkingHours } from '@/types/adminchat.type';
 import { ImagePreviewModal } from '@/components/custom/ImagePreviewModal';
+import { getImageUrl } from '@/lib/utils/imageUrl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
@@ -153,7 +154,7 @@ export default function AdminChatPage() {
 
         const socket = io(`${API_URL}/admin-chat`, {
             auth: { token },
-            transports: ['websocket', 'polling']
+            transports: ['polling', 'websocket']
         });
 
         socketRef.current = socket;
@@ -282,6 +283,15 @@ export default function AdminChatPage() {
             }
         });
 
+        socket.on('message_hearted', (data: { messageId: string; isHearted: boolean; heartedBy?: string }) => {
+            setMessages(prev => prev.map(msg => {
+                if (String(msg._id) === String(data.messageId)) {
+                    return { ...msg, isHearted: data.isHearted, heartedBy: data.heartedBy };
+                }
+                return msg;
+            }));
+        });
+
         return () => {
             socket.disconnect();
         };
@@ -300,6 +310,22 @@ export default function AdminChatPage() {
             socketRef.current?.emit('typing', { conversationId: selectedConv, isTyping: false });
         }, 1000);
     }, [selectedConv]);
+
+    const handleHeartMessage = useCallback(async (messageId: string) => {
+        if (!socketRef.current?.connected) return;
+        
+        socketRef.current.emit('heart_message', { messageId }, (response: { success: boolean; data?: any }) => {
+            if (response.success && response.data) {
+                // Update local state immediately for optimistic UI
+                setMessages(prev => prev.map(msg => {
+                    if (String(msg._id) === String(messageId)) {
+                        return { ...msg, isHearted: response.data.isHearted, heartedBy: response.data.heartedBy };
+                    }
+                    return msg;
+                }));
+            }
+        });
+    }, []);
 
     const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -387,6 +413,53 @@ export default function AdminChatPage() {
         setInputText('');
         setSending(true);
 
+        // Optimistic UI: Add message immediately with temporary ID
+        const tempId = `temp_${Date.now()}`;
+        const optimisticMessage: AdminChatMessage = {
+            _id: tempId,
+            conversationId: selectedConv,
+            senderId: {
+                _id: user?._id || '',
+                fullName: user?.fullName || '',
+                avatar: user?.avatar,
+                role: user?.role || 'admin'
+            },
+            content: text,
+            type: 'text',
+            attachments: [],
+            isRead: false,
+            isDelivered: false,
+            isDeleted: false,
+            isHearted: false,
+            createdAt: new Date().toISOString()
+        };
+
+        // Add optimistic message to UI
+        setMessages(prev => [...prev, optimisticMessage]);
+
+        // Update conversations list optimistically
+        setConversations(prev => {
+            const updated = prev.map(conv => {
+                const convId = conv._id || conv.userId?._id;
+                if (convId === selectedConv) {
+                    return {
+                        ...conv,
+                        lastMessage: {
+                            content: text,
+                            senderId: user?._id,
+                            createdAt: new Date().toISOString()
+                        }
+                    };
+                }
+                return conv;
+            });
+            return updated.sort((a, b) => {
+                const timeA = a.lastMessage?.createdAt ? new Date(a.lastMessage.createdAt).getTime() : 0;
+                const timeB = b.lastMessage?.createdAt ? new Date(b.lastMessage.createdAt).getTime() : 0;
+                return timeB - timeA;
+            });
+        });
+
         try {
             const selectedData = conversations.find(c => c._id === selectedConv || c.userId?._id === selectedConv);
             const userId = selectedData?.userId?._id || selectedConv;
@@ -394,6 +467,7 @@ export default function AdminChatPage() {
 
             const res = await adminChatApi.adminSendMessage(token, payload);
             if (res.success) {
+                // Replace optimistic message with real message from server
                 const messageWithSender = {
                     ...res.data,
                     senderId: res.data.senderId?._id ? res.data.senderId : {
@@ -404,41 +478,28 @@ export default function AdminChatPage() {
                     },
                     isDelivered: true
                 };
+
                 setMessages(prev => {
-                    const exists = prev.some(m => String(m._id) === String(messageWithSender._id));
-                    if (exists) return prev;
-                    return [...prev, messageWithSender];
+                    // Replace temporary message with real one
+                    return prev.map(m => m._id === tempId ? messageWithSender : m);
                 });
 
-                setConversations(prev => {
-                    const updated = prev.map(conv => {
-                        const convId = conv._id || conv.userId?._id;
-                        if (convId === selectedConv || conv._id === res.data.conversationId) {
-                            return {
-                                ...conv,
-                                _id: res.data.conversationId,
-                                lastMessage: {
-                                    content: text,
-                                    senderId: user?._id,
-                                    createdAt: new Date().toISOString()
-                                }
-                            };
-                        }
-                        return conv;
-                    });
-                    return updated.sort((a, b) => {
-                        const timeA = a.lastMessage?.createdAt ? new Date(a.lastMessage.createdAt).getTime() : 0;
-                        const timeB = b.lastMessage?.createdAt ? new Date(b.lastMessage.createdAt).getTime() : 0;
-                        return timeB - timeA;
-                    });
-                });
-
+                // Update conversationId if it changed
                 if (res.data.conversationId && res.data.conversationId !== selectedConv) {
                     setSelectedConv(res.data.conversationId);
+                    setConversations(prev => prev.map(conv => {
+                        const convId = conv._id || conv.userId?._id;
+                        if (convId === selectedConv) {
+                            return { ...conv, _id: res.data.conversationId };
+                        }
+                        return conv;
+                    }));
                 }
             }
         } catch (error) {
             console.error('Error sending message:', error);
+            // Remove optimistic message on error
+            setMessages(prev => prev.filter(m => m._id !== tempId));
         } finally {
             setSending(false);
         }
@@ -477,9 +538,29 @@ export default function AdminChatPage() {
             return true;
         })
         .sort((a, b) => {
-            const timeA = a.lastMessage?.createdAt ? new Date(a.lastMessage.createdAt).getTime() : 0;
-            const timeB = b.lastMessage?.createdAt ? new Date(b.lastMessage.createdAt).getTime() : 0;
-            return timeB - timeA;
+            // Priority: unread > read > empty
+            const unreadA = (a.unreadCount || 0) > 0;
+            const unreadB = (b.unreadCount || 0) > 0;
+
+            const hasMessageA = a.lastMessage?.createdAt && a.lastMessage?.content && a.lastMessage.content.trim() !== '';
+            const hasMessageB = b.lastMessage?.createdAt && b.lastMessage?.content && b.lastMessage.content.trim() !== '';
+
+            // Empty conversations always come last
+            if (!hasMessageA && hasMessageB) return 1;
+            if (hasMessageA && !hasMessageB) return -1;
+
+            // Unread always comes first (among conversations with messages)
+            if (unreadA && !unreadB) return -1;
+            if (!unreadA && unreadB) return 1;
+
+            // If both unread or both read, sort by time
+            if (unreadA === unreadB && hasMessageA && hasMessageB && a.lastMessage && b.lastMessage) {
+                const timeA = new Date(a.lastMessage.createdAt || 0).getTime();
+                const timeB = new Date(b.lastMessage.createdAt || 0).getTime();
+                return timeB - timeA;
+            }
+
+            return 0;
         });
 
     const selectedConvData = conversations.find(c => c._id === selectedConv || c.userId?._id === selectedConv);
@@ -545,7 +626,7 @@ export default function AdminChatPage() {
                                         <div className="flex items-start gap-3">
                                             <div className="relative shrink-0">
                                                 {conv.userId?.avatar ? (
-                                                    <img src={conv.userId.avatar} alt="" className="w-12 h-12 rounded-full object-cover" />
+                                                    <img src={getImageUrl(conv.userId.avatar)} alt="" className="w-12 h-12 rounded-full object-cover" referrerPolicy="no-referrer" />
                                                 ) : (
                                                     <div className="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-semibold">
                                                         {conv.userId?.fullName?.charAt(0).toUpperCase()}
@@ -617,7 +698,7 @@ export default function AdminChatPage() {
                                         <X className="w-5 h-5 text-slate-600" />
                                     </button>
                                     {selectedConvData?.userId?.avatar ? (
-                                        <img src={selectedConvData.userId.avatar} alt="" className="w-10 h-10 rounded-full object-cover" />
+                                        <img src={getImageUrl(selectedConvData.userId.avatar)} alt="" className="w-10 h-10 rounded-full object-cover" referrerPolicy="no-referrer" />
                                     ) : (
                                         <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-semibold">
                                             {selectedConvData?.userId?.fullName?.charAt(0).toUpperCase() || '?'}
@@ -677,7 +758,7 @@ export default function AdminChatPage() {
                                                 <div className={`flex items-start gap-2 ${isMe ? 'justify-end' : 'justify-start'}`}>
                                                     {!isMe && (
                                                         msg.senderId.avatar ? (
-                                                            <img src={msg.senderId.avatar} alt="" className="w-8 h-8 rounded-full object-cover shrink-0" />
+                                                            <img src={getImageUrl(msg.senderId.avatar)} alt="" className="w-8 h-8 rounded-full object-cover shrink-0" referrerPolicy="no-referrer" />
                                                         ) : (
                                                             <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-slate-600 font-semibold text-sm shrink-0">
                                                                 {msg.senderId.fullName.charAt(0).toUpperCase()}
@@ -707,6 +788,16 @@ export default function AdminChatPage() {
                                                         </div>
                                                         <div className="flex items-center gap-1.5 text-[11px] text-slate-400 px-1">
                                                             <span>{new Date(msg.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</span>
+                                                            <button
+                                                                onClick={() => handleHeartMessage(msg._id)}
+                                                                className={`hover:scale-110 transition ${msg.isHearted ? 'text-red-500' : 'text-slate-400'}`}
+                                                                title={msg.isHearted ? 'Bỏ thả tim' : 'Thả tim'}
+                                                            >
+                                                                <Heart 
+                                                                    className={`w-4 h-4 ${msg.isHearted ? 'fill-red-500' : ''}`} 
+                                                                    data-filled={msg.isHearted}
+                                                                />
+                                                            </button>
                                                             {isMe && (
                                                                 <>
                                                                     {msg.isRead ? (

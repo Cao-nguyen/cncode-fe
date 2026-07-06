@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/auth.store';
 import { adminChatApi } from '@/lib/api/adminchat.api';
-import { ArrowLeft, Send, Loader2, MessageCircle, Image as ImageIcon, X } from 'lucide-react';
+import { ArrowLeft, Send, Loader2, MessageCircle, Image as ImageIcon, X, Heart } from 'lucide-react';
 import Link from 'next/link';
 import io, { Socket } from 'socket.io-client';
 import type { AdminChatMessage, UserStatusEvent, OnlineUser } from '@/types/adminchat.type';
@@ -124,7 +124,7 @@ export default function ChatWithAdminPage() {
 
         const socket = io(`${API_URL}/admin-chat`, {
             auth: { token },
-            transports: ['websocket', 'polling']
+            transports: ['polling', 'websocket']
         });
 
         socketRef.current = socket;
@@ -135,6 +135,9 @@ export default function ChatWithAdminPage() {
 
         socket.on('new_message', (msg: AdminChatMessage) => {
             console.log('📩 User received new_message:', msg);
+            console.log('📩 Current messages count:', messages.length);
+            console.log('📩 Message sender:', msg.senderId);
+            console.log('📩 Current user:', user);
 
             setMessages(prev => {
                 const exists = prev.some(m => m._id === msg._id);
@@ -143,11 +146,13 @@ export default function ChatWithAdminPage() {
                     return prev;
                 }
                 console.log('✅ Adding new message to state');
+                console.log('✅ Previous messages:', prev.length);
                 return [...prev, msg];
             });
 
             // Only mark as read if user is actively viewing the page (not in background tab)
             if (conversationIdRef.current && msg.senderId._id !== user._id && document.visibilityState === 'visible') {
+                console.log('📩 Marking as read, conversationId:', conversationIdRef.current);
                 socket.emit('mark_read', { conversationId: conversationIdRef.current });
             }
         });
@@ -172,8 +177,22 @@ export default function ChatWithAdminPage() {
             }
         });
 
-        socket.on('messages_read', () => {
-            setMessages(prev => prev.map(msg => ({ ...msg, isRead: true })));
+        socket.on('messages_read', (data: { conversationId?: string; readBy?: string }) => {
+            console.log('📖 User received messages_read event:', data);
+            // Only update messages if they belong to current conversation
+            if (data.conversationId === conversationIdRef.current) {
+                setMessages(prev => prev.map(msg => ({ ...msg, isRead: true })));
+            }
+        });
+
+        socket.on('message_hearted', (data: { messageId: string; isHearted: boolean; heartedBy?: string }) => {
+            console.log('❤️ User received message_hearted event:', data);
+            setMessages(prev => prev.map(msg => {
+                if (String(msg._id) === String(data.messageId)) {
+                    return { ...msg, isHearted: data.isHearted, heartedBy: data.heartedBy };
+                }
+                return msg;
+            }));
         });
 
         socket.on('disconnect', () => {
@@ -184,6 +203,22 @@ export default function ChatWithAdminPage() {
             socket.disconnect();
         };
     }, [token, user]);
+
+    const handleHeartMessage = useCallback(async (messageId: string) => {
+        if (!socketRef.current?.connected) return;
+        
+        socketRef.current.emit('heart_message', { messageId }, (response: { success: boolean; data?: any }) => {
+            if (response.success && response.data) {
+                // Update local state immediately for optimistic UI
+                setMessages(prev => prev.map(msg => {
+                    if (String(msg._id) === String(messageId)) {
+                        return { ...msg, isHearted: response.data.isHearted, heartedBy: response.data.heartedBy };
+                    }
+                    return msg;
+                }));
+            }
+        });
+    }, []);
 
     const handleTyping = useCallback(() => {
         if (!socketRef.current?.connected || !conversationIdRef.current) return;
@@ -471,6 +506,16 @@ export default function ChatWithAdminPage() {
                                                 </div>
                                                 <div className="flex items-center gap-1.5 text-[11px] text-slate-400 px-1">
                                                     <span>{new Date(msg.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</span>
+                                                    <button
+                                                        onClick={() => handleHeartMessage(msg._id)}
+                                                        className={`hover:scale-110 transition ${msg.isHearted ? 'text-red-500' : 'text-slate-400'}`}
+                                                        title={msg.isHearted ? 'Bỏ thả tim' : 'Thả tim'}
+                                                    >
+                                                        <Heart 
+                                                            className={`w-4 h-4 ${msg.isHearted ? 'fill-red-500' : ''}`} 
+                                                            data-filled={msg.isHearted}
+                                                        />
+                                                    </button>
                                                     {isMe && (
                                                         <>
                                                             {msg.isRead ? (
