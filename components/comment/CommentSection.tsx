@@ -14,9 +14,10 @@ import { toast } from 'sonner';
 interface CommentSectionProps {
     targetType: 'post' | 'lesson' | 'workspace' | 'task' | 'feedback' | 'feed' | 'short_video' | 'blog';
     targetId: string;
+    onCommentCountChange?: (count: number) => void;
 }
 
-export default function CommentSection({ targetType, targetId }: CommentSectionProps) {
+export default function CommentSection({ targetType, targetId, onCommentCountChange }: CommentSectionProps) {
     const { user, token } = useAuthStore();
     const { socket, isConnected } = useSocket();
     const [comments, setComments] = useState<CommentType[]>([]);
@@ -57,6 +58,11 @@ export default function CommentSection({ targetType, targetId }: CommentSectionP
                     setTotalPages(result.pagination.totalPages);
                     setHasMore(result.pagination.page < result.pagination.totalPages);
                 }
+
+                // Notify parent about comment count change
+                if (result.pagination?.total !== undefined) {
+                    onCommentCountChange?.(result.pagination.total);
+                }
             }
         } catch (error) {
             console.error('Fetch comments error:', error);
@@ -75,7 +81,11 @@ export default function CommentSection({ targetType, targetId }: CommentSectionP
 
         const handleNewComment = (newComment: CommentType) => {
             if (!newComment.parentId) {
-                setComments(prev => [newComment, ...prev]);
+                setComments(prev => {
+                    const updated = [newComment, ...prev];
+                    onCommentCountChange?.(updated.length);
+                    return updated;
+                });
             } else {
                 setComments(prev => prev.map(comment => {
                     if (comment._id === newComment.parentId) {
@@ -92,7 +102,11 @@ export default function CommentSection({ targetType, targetId }: CommentSectionP
         };
 
         const handleCommentDeleted = (commentId: string) => {
-            setComments(prev => prev.filter(c => c._id !== commentId));
+            setComments(prev => {
+                const updated = prev.filter(c => c._id !== commentId);
+                onCommentCountChange?.(updated.length);
+                return updated;
+            });
         };
 
         socket.on(`comment_created_${targetType}_${targetId}`, handleNewComment);
