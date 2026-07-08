@@ -1,27 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import CreatePostForm from '@/components/forum/CreatePostForm';
 import PostFeed from '@/components/forum/PostFeed';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
-import { forumApi, IForumPost } from '@/lib/api/forum.api';
-import { useAuthStore } from '@/store/auth.store';
 
 export default function ForumThongtinPage() {
-    const { user, token } = useAuthStore();
-    const [posts, setPosts] = useState<IForumPost[]>([]);
-
-    const handlePostCreated = (newPost: IForumPost) => {
-        // Add new post to the beginning of the list, avoid duplicates
-        setPosts((prev) => {
-            if (prev.some(p => p._id === newPost._id)) {
-                return prev;
-            }
-            return [newPost, ...prev];
-        });
-    };
-
     return (
         <div className="min-h-screen bg-[var(--cn-bg-section)] py-4 sm:py-6">
             <div className="container mx-auto px-3 sm:px-4 max-w-3xl">
@@ -37,10 +22,10 @@ export default function ForumThongtinPage() {
                 </div>
 
                 {/* Create Post Form */}
-                <CreatePostForm onPostCreated={handlePostCreated} />
+                <CreatePostForm />
 
                 {/* Post Feed */}
-                <PostFeed posts={posts.length > 0 ? posts : undefined} onPostsChange={setPosts} />
+                <PostFeed />
             </div>
         </div>
     );

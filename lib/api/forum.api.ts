@@ -43,6 +43,7 @@ export interface IForumPost {
     location: string | null;
     taggedUsers: any[];
     isPinned: boolean;
+    isDeleted: boolean;
     isEdited: boolean;
     editedAt: Date | null;
     originalPost: any;
@@ -162,7 +163,7 @@ export const forumApi = {
             privacy?: 'public' | 'friends' | 'private';
             feeling?: string;
             location?: string;
-            namedUsers?: string[];
+            taggedUsers?: string[];
         },
         token: string
     ): Promise<IForumPostResponse> => {

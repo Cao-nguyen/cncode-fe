@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import Image from 'next/image';
 import CommentSection from '@/components/comment/CommentSection';
 import ForumImagePreview from './ForumImagePreview';
+import EditPostModal from './EditPostModal';
 
 interface PostFeedProps {
     posts?: IForumPost[];
@@ -39,7 +40,6 @@ export default function PostFeed({ posts: initialPosts, onPostsChange }: PostFee
     const [showMenu, setShowMenu] = useState<Record<string, boolean>>({});
     const [showEditModal, setShowEditModal] = useState(false);
     const [editingPost, setEditingPost] = useState<IForumPost | null>(null);
-    const [editContent, setEditContent] = useState('');
     const [showReactionPicker, setShowReactionPicker] = useState<Record<string, boolean>>({});
     const [showReactionDetails, setShowReactionDetails] = useState<Record<string, boolean>>({});
     const [showImagePreview, setShowImagePreview] = useState<Record<string, boolean>>({});
@@ -112,6 +112,30 @@ export default function PostFeed({ posts: initialPosts, onPostsChange }: PostFee
                 );
             });
 
+            socket.on('forum:post-updated', (data) => {
+                setPosts((prev) => {
+                    // If the updated post is now private and current user is not the author, remove it
+                    if (data.post.privacy === 'private' && data.post.author._id !== user?._id) {
+                        return prev.filter((post) => post._id !== data.postId);
+                    }
+
+                    // If the post exists in the list, update it
+                    const postExists = prev.some(p => p._id === data.postId);
+                    if (postExists) {
+                        return prev.map((post) =>
+                            post._id === data.postId ? data.post : post
+                        );
+                    }
+
+                    // If the post doesn't exist and is now public, add it to the feed
+                    if (data.post.privacy === 'public') {
+                        return [data.post, ...prev];
+                    }
+
+                    return prev;
+                });
+            });
+
             socket.on('forum:post-deleted', (data) => {
                 setPosts((prev) => prev.filter((post) => post._id !== data.postId));
             });
@@ -134,6 +158,7 @@ export default function PostFeed({ posts: initialPosts, onPostsChange }: PostFee
             if (socket) {
                 socket.off('forum:post-created');
                 socket.off('forum:post-liked');
+                socket.off('forum:post-updated');
                 socket.off('forum:post-deleted');
                 socket.off('forum:post-comment-count-changed');
             }
@@ -290,26 +315,18 @@ export default function PostFeed({ posts: initialPosts, onPostsChange }: PostFee
 
     const handleEdit = (post: IForumPost) => {
         setEditingPost(post);
-        setEditContent(post.content);
         setShowEditModal(true);
         setShowMenu((prev) => ({ ...prev, [post._id]: false }));
     };
 
-    const handleSaveEdit = async () => {
-        if (!token || !editingPost) return;
-
-        try {
-            await forumApi.updatePost(editingPost._id, { content: editContent }, token);
-            toast.success('Cập nhật bài viết thành công');
-            setShowEditModal(false);
-            setEditingPost(null);
-            setEditContent('');
-            // Refresh posts
-            fetchPosts(1);
-        } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : 'Lỗi khi cập nhật bài viết';
-            toast.error(errorMessage);
-        }
+    const handlePostUpdated = (updatedPost: IForumPost) => {
+        setPosts((prev) =>
+            prev.map((post) =>
+                post._id === updatedPost._id ? updatedPost : post
+            )
+        );
+        setShowEditModal(false);
+        setEditingPost(null);
     };
 
     if (posts.length === 0 && !loading) {
@@ -368,22 +385,29 @@ export default function PostFeed({ posts: initialPosts, onPostsChange }: PostFee
                                         <MoreHorizontal className="w-5 h-5 text-gray-500" />
                                     </button>
                                     {showMenu[post._id] && (
-                                        <div className="absolute right-0 top-full mt-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-10 min-w-[150px]">
-                                            <button
-                                                onClick={() => handleEdit(post)}
-                                                className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
-                                            >
-                                                <Edit2 className="w-4 h-4" />
-                                                Chỉnh sửa
-                                            </button>
-                                            <button
-                                                onClick={() => handleDelete(post._id)}
-                                                className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 text-red-500"
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                                Xóa bài đăng
-                                            </button>
-                                        </div>
+                                        <>
+                                            {/* Backdrop to close menu when clicking outside */}
+                                            <div
+                                                className="fixed inset-0 z-[5]"
+                                                onClick={() => setShowMenu((prev) => ({ ...prev, [post._id]: false }))}
+                                            />
+                                            <div className="absolute right-0 top-full mt-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-10 min-w-[150px]">
+                                                <button
+                                                    onClick={() => handleEdit(post)}
+                                                    className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                                                >
+                                                    <Edit2 className="w-4 h-4" />
+                                                    Chỉnh sửa
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDelete(post._id)}
+                                                    className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 text-red-500"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                    Xóa bài đăng
+                                                </button>
+                                            </div>
+                                        </>
                                     )}
                                 </div>
                             )}
@@ -626,51 +650,16 @@ export default function PostFeed({ posts: initialPosts, onPostsChange }: PostFee
             </div>
 
             {/* Edit Post Modal */}
-            {showEditModal && editingPost && (
-                <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-lg">
-                        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-                            <h3 className="text-lg font-semibold">Chỉnh sửa bài viết</h3>
-                            <button
-                                onClick={() => {
-                                    setShowEditModal(false);
-                                    setEditingPost(null);
-                                    setEditContent('');
-                                }}
-                                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                            >
-                                <X className="w-5 h-5" />
-                            </button>
-                        </div>
-                        <div className="p-4">
-                            <textarea
-                                value={editContent}
-                                onChange={(e) => setEditContent(e.target.value)}
-                                placeholder="Nhập nội dung bài viết..."
-                                className="w-full min-h-[150px] p-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white resize-none"
-                            />
-                        </div>
-                        <div className="flex justify-end gap-3 p-4 border-t border-gray-200 dark:border-gray-700">
-                            <button
-                                onClick={() => {
-                                    setShowEditModal(false);
-                                    setEditingPost(null);
-                                    setEditContent('');
-                                }}
-                                className="px-4 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                            >
-                                Hủy
-                            </button>
-                            <button
-                                onClick={handleSaveEdit}
-                                disabled={!editContent.trim()}
-                                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                Lưu thay đổi
-                            </button>
-                        </div>
-                    </div>
-                </div>
+            {editingPost && (
+                <EditPostModal
+                    post={editingPost}
+                    isOpen={showEditModal}
+                    onClose={() => {
+                        setShowEditModal(false);
+                        setEditingPost(null);
+                    }}
+                    onPostUpdated={handlePostUpdated}
+                />
             )}
 
             {/* Reaction Details Modals */}
