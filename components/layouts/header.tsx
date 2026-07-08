@@ -39,6 +39,7 @@ import {
     Bag2 as Cuahangso,
     ShoppingBag as NhaHang,
     Briefcase as Huongnghiep,
+    Medal as Dautruong,
 } from "iconsax-react";
 import type { Icon } from "iconsax-react";
 import NotificationBell from "./NotificationBell";
@@ -99,6 +100,7 @@ function buildSections(
                 { icon: <FileText variant="Bold" style={iconSize} />, title: "Bài viết của tôi", subtitle: "Quản lý nội dung", href: "/me/blog" },
                 { icon: <Huongnghiep variant="Bold" style={iconSize} />, title: "Hướng nghiệp", subtitle: "Định hướng tương lai", href: "/huongnghiep" },
                 { icon: <Home variant="Bold" style={iconSize} />, title: "Khu vườn học tập", subtitle: "Không gian của bạn", href: "/khuvuonhoctap" },
+                { icon: <Dautruong variant="Bold" style={iconSize} />, title: "Đấu trường học tập", subtitle: "Thử thách và leo rank", href: "/dautruonghoctap" },
             ],
         },
         {

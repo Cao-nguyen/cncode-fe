@@ -47,30 +47,35 @@ export const notificationApi = {
             return { notifications: [], total: 0, page: 1, totalPages: 0, unreadCount: 0 };
         }
 
-        const response = await fetch(`${API_URL}/api/notifications/my?page=${page}&limit=${limit}`, {
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
+        try {
+            const response = await fetch(`${API_URL}/api/notifications/my?page=${page}&limit=${limit}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.status === 401) {
+                return { notifications: [], total: 0, page: 1, totalPages: 0, unreadCount: 0 };
             }
-        });
 
-        if (response.status === 401) {
+            const result = await response.json();
+
+            if (!result.success) {
+                return { notifications: [], total: 0, page: 1, totalPages: 0, unreadCount: 0 };
+            }
+
+            return {
+                notifications: result.notifications ?? [],
+                total: result.total ?? 0,
+                page: result.page ?? 1,
+                totalPages: result.totalPages ?? 0,
+                unreadCount: result.unreadCount ?? 0,
+            };
+        } catch (error) {
+            console.error('Failed to fetch notifications:', error);
             return { notifications: [], total: 0, page: 1, totalPages: 0, unreadCount: 0 };
         }
-
-        const result = await response.json();
-
-        if (!result.success) {
-            return { notifications: [], total: 0, page: 1, totalPages: 0, unreadCount: 0 };
-        }
-
-        return {
-            notifications: result.notifications ?? [],
-            total: result.total ?? 0,
-            page: result.page ?? 1,
-            totalPages: result.totalPages ?? 0,
-            unreadCount: result.unreadCount ?? 0,
-        };
     },
 
     getUnreadCount: async (): Promise<number> => {
