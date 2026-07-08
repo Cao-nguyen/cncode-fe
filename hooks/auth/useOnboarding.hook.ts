@@ -53,6 +53,7 @@ export const useOnboarding = () => {
   const [errors, setErrors] = useState<ErrorsType>({});
   const checkTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastCheckedUsernameRef = useRef<string>('');
+  const activeCheckRef = useRef<string>(''); // Tracks the most recent username being checked
 
   const handleChange = useCallback((field: keyof IOnboardingData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -60,6 +61,7 @@ export const useOnboarding = () => {
     if (field === 'username') {
       setIsUsernameAvailable(false);
       lastCheckedUsernameRef.current = '';
+      activeCheckRef.current = ''; // Invalidate any pending check responses
     }
 
     if (errors[field as keyof ErrorsType]) {
@@ -70,6 +72,7 @@ export const useOnboarding = () => {
   const checkUsername = useCallback(async (username: string) => {
     if (!username || username.length < 3) return;
 
+    activeCheckRef.current = username; // Mark this as the latest request
     setIsUsernameAvailable(false);
     setIsCheckingUsername(true);
 
@@ -86,7 +89,14 @@ export const useOnboarding = () => {
 
       const result = await response.json();
 
-      if (!result.available) {
+      // Only apply result if this username is still the current one being checked
+      if (activeCheckRef.current !== username) {
+        return; // Outdated response, ignore it
+      }
+
+      const isAvailable = result.data?.available;
+
+      if (!isAvailable) {
         setErrors(prev => ({ ...prev, username: result.message || 'Tên người dùng đã tồn tại' }));
         setIsUsernameAvailable(false);
       } else {
@@ -96,7 +106,10 @@ export const useOnboarding = () => {
     } catch (error) {
       console.error('Check username failed:', error);
     } finally {
-      setIsCheckingUsername(false);
+      // Only update loading state if this is still the active check
+      if (activeCheckRef.current === username) {
+        setIsCheckingUsername(false);
+      }
     }
   }, [forceLogout, router]);
 
@@ -109,9 +122,14 @@ export const useOnboarding = () => {
 
     const isFormatValid = username.length >= 3 && /^[a-zA-Z0-9_]+$/.test(username);
     const notCheckedYet = lastCheckedUsernameRef.current !== username;
-    const hasNoFormatError = !errors.username;
 
-    if (isFormatValid && notCheckedYet && hasNoFormatError) {
+    // Reset availability if format is invalid
+    if (!isFormatValid) {
+      setIsUsernameAvailable(false);
+      return;
+    }
+
+    if (isFormatValid && notCheckedYet) {
       checkTimeoutRef.current = setTimeout(() => {
         lastCheckedUsernameRef.current = username;
         checkUsername(username);
@@ -123,7 +141,7 @@ export const useOnboarding = () => {
         clearTimeout(checkTimeoutRef.current);
       }
     };
-  }, [formData.username, errors.username, checkUsername]);
+  }, [formData.username, checkUsername]);
 
   const validateForm = useCallback((): boolean => {
     const newErrors: ErrorsType = {};

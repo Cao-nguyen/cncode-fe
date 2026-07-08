@@ -23,6 +23,8 @@ import {
     Image as ImageIcon,
     BookOpen,
     Target,
+    Video,
+    Trophy,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -94,6 +96,11 @@ const menuItems = [
                 icon: <BookOpen size={18} />,
             },
             {
+                title: "Đấu trường học tập",
+                link: "/admin/dautruong",
+                icon: <Trophy size={18} />,
+            },
+            {
                 title: "Slideshow",
                 link: "/admin/slideshow",
                 icon: <ImageIcon size={18} />,
@@ -112,6 +119,16 @@ const menuItems = [
             {
                 title: "Quản lý Chat",
                 link: "/admin/congdong",
+                icon: <Message size={18} variant="Outline" />,
+            },
+            {
+                title: "Khám phá",
+                link: "/admin/khampha",
+                icon: <Video size={18} />,
+            },
+            {
+                title: "Thông tin",
+                link: "/admin/thongtin",
                 icon: <Message size={18} variant="Outline" />,
             },
             {

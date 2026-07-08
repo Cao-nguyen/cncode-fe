@@ -148,7 +148,11 @@ export const CustomInput = forwardRef<HTMLInputElement, CustomInputProps>(({
                 )}
             </div>
             {error && <p className="mt-1 text-[11px] lg:text-[13px] text-[var(--cn-error)]">{error}</p>}
-            {success && !error && <p className="mt-1 text-[11px] lg:text-[13px] text-[var(--cn-success)]">✓ Hợp lệ</p>}
+            {success && !error && (
+                <p className="mt-1 text-[11px] lg:text-[13px] text-[var(--cn-success)]">
+                    {prefix === '@' ? '✓ Tên người dùng khả dụng' : '✓ Hợp lệ'}
+                </p>
+            )}
             {textarea && maxLength && (
                 <div className="text-right text-[11px] lg:text-[13px] text-[var(--cn-text-muted)] mt-1">
                     {charCount}/{maxLength}

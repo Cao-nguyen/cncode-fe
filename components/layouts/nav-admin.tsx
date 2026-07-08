@@ -21,8 +21,11 @@ const PAGE_TITLES: Record<string, string> = {
     "/admin/hotroduan": "Hỗ trợ dự án",
     "/admin/blog": "Quản lý Blog",
     "/admin/luyentap": "Luyện tập",
+    "/admin/dautruong": "Đấu trường học tập",
     "/admin/chatwithadmin": "Chat với người dùng",
     "/admin/khoahoc": "Quản lý khoá học",
+    "/admin/khampha": "Khám phá",
+    "/admin/thongtin": "Thông tin",
 };
 
 interface NavAdminProps {
