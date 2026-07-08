@@ -51,6 +51,11 @@ export default function AdminLayout({
         return null;
     }
 
+    if (user.isOnboarded === false) {
+        router.push("/onboarding");
+        return null;
+    }
+
     return (
         <div className="min-h-screen bg-gray-100 dark:bg-[#0a0a0a]">
             <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
@@ -73,3 +78,5 @@ export default function AdminLayout({
         </div>
     );
 }
+
+

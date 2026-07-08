@@ -123,3 +123,11 @@ export interface IOnboardingResponse {
     message: string;
     data: User;
 }
+
+export interface ICheckUsernameResponse {
+    success: boolean;
+    data: {
+        available: boolean;
+    };
+    message: string;
+}

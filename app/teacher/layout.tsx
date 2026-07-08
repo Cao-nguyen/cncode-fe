@@ -27,6 +27,12 @@ export default function TeacherLayout({
             router.push('/');
             return;
         }
+
+        // Kiểm tra onboarding
+        if (user.isOnboarded === false) {
+            router.push('/onboarding');
+            return;
+        }
     }, [token, user, router]);
 
     // Hiển thị loading khi đang kiểm tra

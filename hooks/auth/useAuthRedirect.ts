@@ -5,7 +5,6 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useAuthStore } from '@/store/auth.store';
 
 const guestOnlyRoutes = ['/login', '/register', '/forgot-password', '/reset-password'];
-const protectedRoutes = ['/profile', '/me', '/admin', '/teacher'];
 
 export const useAuthRedirect = () => {
     const router = useRouter();
@@ -17,36 +16,36 @@ export const useAuthRedirect = () => {
         if (!_hasHydrated) return;
 
         const isGuestRoute = guestOnlyRoutes.includes(pathname);
-        const isProtectedRoute = protectedRoutes.some(route => pathname?.startsWith(route));
         const isOnboardingRoute = pathname === '/onboarding';
 
-        console.log('useAuthRedirect:', { pathname, isAuthenticated, isGuestRoute, isProtectedRoute });
-
         if (isAuthenticated) {
-            
-            if (isGuestRoute) {
-                router.replace('/');
-                return;
-            }
-
-            if (user?.isOnboarded === false && !isOnboardingRoute) {
-                router.replace('/onboarding');
-                return;
-            }
-
-            if (isOnboardingRoute && user?.isOnboarded === true) {
-                router.replace('/');
-                return;
+            // User is authenticated
+            if (user?.isOnboarded === false) {
+                // User needs to complete onboarding - only allow onboarding route
+                if (!isOnboardingRoute) {
+                    router.replace('/onboarding');
+                    return;
+                }
+            } else {
+                // User has completed onboarding - redirect away from guest routes
+                if (isGuestRoute) {
+                    router.replace('/');
+                    return;
+                }
+                // Redirect away from onboarding if already completed
+                if (isOnboardingRoute) {
+                    router.replace('/');
+                    return;
+                }
             }
         }
         
         else {
-            
-            if (isProtectedRoute || isOnboardingRoute) {
+            // User is not authenticated - only allow guest routes
+            if (!isGuestRoute) {
                 router.replace('/login');
                 return;
             }
-
         }
 
     }, [pathname, isAuthenticated, user, _hasHydrated, router]);
