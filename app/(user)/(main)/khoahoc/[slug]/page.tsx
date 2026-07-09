@@ -11,6 +11,7 @@ import Link from 'next/link';
 import { toast } from 'sonner';
 import StaticContent from '@/components/common/StaticContent';
 import axios from 'axios';
+import { getImageUrl } from '@/lib/utils/imageUrl';
 
 export default function CourseDetailPage() {
     const params = useParams();
@@ -303,7 +304,7 @@ export default function CourseDetailPage() {
                         <div className="aspect-video relative bg-gray-200">
                             {course.thumbnail ? (
                                 <img
-                                    src={course.thumbnail}
+                                    src={getImageUrl(course.thumbnail)}
                                     alt={course.title}
                                     className="w-full h-full object-cover"
                                 />

@@ -8,6 +8,7 @@ import { CustomSelect } from '@/components/custom/CustomSelect';
 import { toast } from 'sonner';
 import * as khoahocApi from '@/lib/api/khoahoc.api';
 import type { Course, CourseQuery } from '@/types/khoahoc.type';
+import { getImageUrl } from '@/lib/utils/imageUrl';
 
 export default function CoursesPage() {
     const router = useRouter();
@@ -151,7 +152,7 @@ export default function CoursesPage() {
                                 <div className="relative aspect-video bg-gray-100 dark:bg-gray-700 overflow-hidden">
                                     {course.thumbnail ? (
                                         <img
-                                            src={course.thumbnail}
+                                            src={getImageUrl(course.thumbnail)}
                                             alt={course.title}
                                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                                         />
@@ -209,7 +210,7 @@ export default function CoursesPage() {
                                     <div className="flex items-center gap-2 pt-1">
                                         <div className="w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-600 overflow-hidden shrink-0 border border-gray-300 dark:border-gray-500">
                                             {typeof course.teacherId === 'object' && course.teacherId.avatar ? (
-                                                <img src={course.teacherId.avatar} alt="" className="w-full h-full object-cover" />
+                                                <img src={getImageUrl(course.teacherId.avatar)} alt="" className="w-full h-full object-cover" />
                                             ) : (
                                                 <div className="w-full h-full flex items-center justify-center text-xs text-gray-500">?</div>
                                             )}

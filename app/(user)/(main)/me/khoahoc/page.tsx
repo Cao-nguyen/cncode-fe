@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Play, BookOpen, CheckCircle2, Clock, Loader2 } from 'lucide-react';
 import { khoahocApi } from '@/lib/api/khoahoc.api';
 import { MyCourse } from '@/types/khoahoc.type';
+import { getImageUrl } from '@/lib/utils/imageUrl';
 
 type TabType = 'all' | 'in-progress' | 'completed' | 'not-started';
 
@@ -133,7 +134,7 @@ export default function MyCoursesPage() {
                                         <div className="aspect-video bg-gray-100 rounded-xl overflow-hidden relative">
                                             {course.thumbnail ? (
                                                 <img
-                                                    src={course.thumbnail}
+                                                    src={getImageUrl(course.thumbnail)}
                                                     alt={course.title}
                                                     className="w-full h-full object-cover"
                                                 />
