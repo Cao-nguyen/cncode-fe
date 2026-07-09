@@ -35,7 +35,19 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
     const { setMessages, confirmMessage, updateConversationUnreadCount } = useConversationsStore();
 
     useEffect(() => {
-        const token = localStorage.getItem('token');
+        const getToken = (): string | null => {
+            if (typeof window === 'undefined') return null;
+            try {
+                const raw = localStorage.getItem('auth-storage');
+                if (!raw) return null;
+                const parsed = JSON.parse(raw);
+                return parsed?.state?.token ?? null;
+            } catch {
+                return null;
+            }
+        };
+
+        const token = getToken();
         if (!token) {
             console.log('[SOCKET] No token found, skipping connection');
             return;
