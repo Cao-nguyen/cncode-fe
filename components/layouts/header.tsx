@@ -668,6 +668,7 @@ export default function Header() {
     }, [displayUser?.avatar]);
 
     // Increment streak when user loads the page
+    // DISABLED: Backend endpoint /api/users/increment-streak not available (404 error)
     useEffect(() => {
         const incrementDailyStreak = async () => {
             if (!user || !token) {
@@ -677,30 +678,34 @@ export default function Header() {
 
             console.log('🔄 Attempting to increment streak for user:', user._id);
             try {
-                const result = await userApi.incrementStreak(token);
-                console.log('✅ Streak increment result:', result);
+                // Temporarily disabled due to missing backend endpoint
+                console.log('⚠️ Streak increment disabled - backend endpoint not available');
+                return;
 
-                if (result.success && result.data) {
-                    const { streak, coins, alreadyCompleted } = result.data;
+                // const result = await userApi.incrementStreak(token);
+                // console.log('✅ Streak increment result:', result);
 
-                    // Update local state with server values
-                    if (streak !== user.streak) {
-                        updateStreak(streak);
-                    }
+                // if (result.success && result.data) {
+                //     const { streak, coins, alreadyCompleted } = result.data;
 
-                    // Update coins if changed
-                    const currentCoins = user.coins || 0;
-                    if (coins !== currentCoins) {
-                        const diff = coins - currentCoins;
-                        updateCoins(diff);
-                    }
+                //     // Update local state with server values
+                //     if (streak !== user.streak) {
+                //         updateStreak(streak);
+                //     }
 
-                    // Show animation only if actually incremented (not already completed)
-                    if (!alreadyCompleted) {
-                        setActiveStreakIcon(true);
-                        setTimeout(() => setActiveStreakIcon(false), 3000);
-                    }
-                }
+                //     // Update coins if changed
+                //     const currentCoins = user.coins || 0;
+                //     if (coins !== currentCoins) {
+                //         const diff = coins - currentCoins;
+                //         updateCoins(diff);
+                //     }
+
+                //     // Show animation only if actually incremented (not already completed)
+                //     if (!alreadyCompleted) {
+                //         setActiveStreakIcon(true);
+                //         setTimeout(() => setActiveStreakIcon(false), 3000);
+                //     }
+                // }
             } catch (error) {
                 // Silent fail - streak increment is not critical
                 console.error('❌ Failed to increment streak:', error);
