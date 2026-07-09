@@ -17,21 +17,15 @@ export default function JobDetailPage() {
     const router = useRouter();
     const params = useParams();
     const { user } = useAuthStore();
-    const [job, setJob] = useState<CNJob | null>(null);
-    const [loading, setLoading] = useState(true);
+    const jobId = params.id as string;
+    const job = cnjobsStorage.getJobById(jobId);
 
+    // Only use useEffect for side effect (incrementing views)
     useEffect(() => {
-        const jobId = params.id as string;
-        const foundJob = cnjobsStorage.getJobById(jobId);
-
-        if (foundJob) {
-            // Increment view count
+        if (job) {
             cnjobsStorage.incrementViews(jobId);
-            setJob(foundJob);
         }
-
-        setLoading(false);
-    }, [params.id]);
+    }, [jobId, job]);
 
     const handleDelete = () => {
         if (!job) return;
@@ -66,14 +60,6 @@ export default function JobDetailPage() {
             alert('Đã copy link!');
         }
     };
-
-    if (loading) {
-        return (
-            <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-                <div className="text-gray-500">Đang tải...</div>
-            </div>
-        );
-    }
 
     if (!job) {
         return (

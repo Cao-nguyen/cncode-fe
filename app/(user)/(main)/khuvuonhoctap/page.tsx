@@ -23,14 +23,6 @@ export default function GardenPage() {
     const [selectedPlant, setSelectedPlant] = useState<Plant | null>(null);
     const [waterAmount, setWaterAmount] = useState(1);
 
-    useEffect(() => {
-        if (!user) {
-            router.push('/login');
-            return;
-        }
-        loadGarden();
-    }, [user, router]);
-
     const loadGarden = () => {
         if (!user) return;
 
@@ -41,6 +33,14 @@ export default function GardenPage() {
             setStats(gardenStorage.getStats(user._id));
         }
     };
+
+    useEffect(() => {
+        if (!user) {
+            router.push('/login');
+            return;
+        }
+        loadGarden();
+    }, [user, router]);
 
     const handleAddPlant = (name: string) => {
         if (!user || !name.trim()) return;

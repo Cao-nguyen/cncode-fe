@@ -191,6 +191,29 @@ export const rejectExercise = async (id: string, reason: string) => {
     return response.data;
 };
 
+// Code execution API
+export const runCodeTest = async (data: {
+    language: string;
+    code: string;
+    input?: string;
+    expectedOutput?: string;
+}) => {
+    try {
+        const response = await apiClient.post('/run-code', data);
+        return response.data;
+    } catch (error) {
+        // Mock response for development when backend is not available
+        return {
+            success: true,
+            data: {
+                output: 'Code execution not available in development',
+                passed: false,
+                error: 'Backend code execution service not configured'
+            }
+        };
+    }
+};
+
 export const getAdminExerciseById = async (id: string) => {
     const response = await apiClient.get(`/admin/${id}`);
     return response.data.data || response.data.exercise || response.data;
@@ -228,6 +251,7 @@ export const luyentapApi = {
     createExercise,
     updateExercise,
     deleteExercise,
+    runCodeTest,
     // Aliases for admin page compatibility
     adminList: getAdminExercises,
     adminGetById: getAdminExerciseById,

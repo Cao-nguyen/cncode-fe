@@ -8,6 +8,7 @@ import {
     Lesson,
     LessonCreate,
     Exercise,
+    ExerciseQuestion,
     Enrollment,
     Progress,
     Certificate,
@@ -290,12 +291,12 @@ export const khoahocApi = {
     },
 
     // Baitap module APIs (for new exercise system)
-    createBaitapExercise: async (lessonId: string, data: { courseId: string; questions: any[]; mustPassToNext?: boolean }): Promise<Exercise> => {
+    createBaitapExercise: async (lessonId: string, data: { courseId: string; questions: ExerciseQuestion[]; mustPassToNext?: boolean }): Promise<Exercise> => {
         const response = await apiClient.post(`/baitap/lesson/${lessonId}`, data);
         return response.data;
     },
 
-    updateBaitapExercise: async (exerciseId: string, data: { questions: any[] }): Promise<Exercise> => {
+    updateBaitapExercise: async (exerciseId: string, data: { questions: ExerciseQuestion[] }): Promise<Exercise> => {
         const response = await apiClient.put(`/baitap/${exerciseId}`, data);
         return response.data;
     },
@@ -421,7 +422,7 @@ export const khoahocApi = {
         return response.data.data;
     },
 
-    getMyCourses: async (): Promise<any[]> => {
+    getMyCourses: async (): Promise<Course[]> => {
         const response = await apiClient.get('/enrollment/me');
         return response.data.data;
     },

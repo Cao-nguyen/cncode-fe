@@ -8,11 +8,13 @@ import { useConversationsStore, Message } from '@/store/conversations.store';
 interface SocketContextType {
     socket: Socket | null;
     isConnected: boolean;
+    onlineUsers: any[];
 }
 
 const SocketContext = createContext<SocketContextType>({
     socket: null,
     isConnected: false,
+    onlineUsers: [],
 });
 
 export const useSocket = () => useContext(SocketContext);
@@ -21,6 +23,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
     const socketRef = useRef<Socket | null>(null);
     const [socket, setSocket] = useState<Socket | null>(null);
     const [isConnected, setIsConnected] = useState(false);
+    const [onlineUsers, setOnlineUsers] = useState<any[]>([]);
     const { setUnreadCount } = useUnreadMessagesStore();
     const { setMessages, confirmMessage, updateConversationUnreadCount } = useConversationsStore();
 
@@ -117,6 +120,12 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
             updateConversationUnreadCount(data.conversationId, data.unreadCount);
         });
 
+        // Xử lý online_users event
+        newSocket.on('online_users', (data: { users: any[] }) => {
+            console.log('[SOCKET] Received online_users:', data);
+            setOnlineUsers(data.users || []);
+        });
+
         // Cleanup: Xóa TẤT CẢ listeners khi unmount để tránh duplicate
         return () => {
             console.log('[SOCKET] Cleaning up socket connection');
@@ -125,12 +134,13 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
             newSocket.off('connect_error');
             newSocket.off('new_message');
             newSocket.off('conversation_read');
+            newSocket.off('online_users');
             newSocket.close();
         };
     }, []); // Chỉ chạy 1 lần khi mount
 
     return (
-        <SocketContext.Provider value={{ socket, isConnected }}>
+        <SocketContext.Provider value={{ socket, isConnected, onlineUsers }}>
             {children}
         </SocketContext.Provider>
     );
