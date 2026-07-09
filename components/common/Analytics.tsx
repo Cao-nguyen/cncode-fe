@@ -11,10 +11,11 @@ import GuestsPopup from "./analytics/GuestsPopup";
 import { getSessionId, shouldTrackVisit, markVisitTracked } from "@/lib/utils/session";
 
 interface OnlineUser {
-    _id: string;
-    username: string;
+    userId?: string;
+    fullName: string;
     avatar?: string;
-    full_name?: string;
+    role?: string;
+    device?: string;
 }
 
 interface OnlineStatsData {
