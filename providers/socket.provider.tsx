@@ -5,10 +5,17 @@ import { io, Socket } from 'socket.io-client';
 import { useUnreadMessagesStore } from '@/store/unreadMessages.store';
 import { useConversationsStore, Message } from '@/store/conversations.store';
 
+interface OnlineUser {
+    _id: string;
+    username: string;
+    avatar?: string;
+    full_name?: string;
+}
+
 interface SocketContextType {
     socket: Socket | null;
     isConnected: boolean;
-    onlineUsers: any[];
+    onlineUsers: OnlineUser[];
 }
 
 const SocketContext = createContext<SocketContextType>({
@@ -23,7 +30,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
     const socketRef = useRef<Socket | null>(null);
     const [socket, setSocket] = useState<Socket | null>(null);
     const [isConnected, setIsConnected] = useState(false);
-    const [onlineUsers, setOnlineUsers] = useState<any[]>([]);
+    const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([]);
     const { setUnreadCount } = useUnreadMessagesStore();
     const { setMessages, confirmMessage, updateConversationUnreadCount } = useConversationsStore();
 
@@ -121,7 +128,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
         });
 
         // Xử lý online_users event
-        newSocket.on('online_users', (data: { users: any[] }) => {
+        newSocket.on('online_users', (data: { users: OnlineUser[] }) => {
             console.log('[SOCKET] Received online_users:', data);
             setOnlineUsers(data.users || []);
         });

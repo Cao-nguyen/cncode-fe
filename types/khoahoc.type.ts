@@ -149,6 +149,22 @@ export interface Enrollment {
     createdAt: string;
 }
 
+export interface MyCourse {
+    _id: string;
+    courseId: string;
+    title: string;
+    slug: string;
+    thumbnail?: string;
+    teacherName?: string;
+    teacherAvatar?: string;
+    totalLessons: number;
+    completedLessons: number;
+    progress: number; // 0-100
+    lastAccessedLessonId?: string;
+    lastAccessedAt?: string;
+    enrolledAt: string;
+}
+
 // ===== TIEN DO (PROGRESS) =====
 
 export interface Progress {

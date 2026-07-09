@@ -17,6 +17,7 @@ import {
     PayOSPaymentLink,
     ExerciseAnswer,
     Note,
+    MyCourse,
 } from '../../types/khoahoc.type';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
@@ -422,7 +423,7 @@ export const khoahocApi = {
         return response.data.data;
     },
 
-    getMyCourses: async (): Promise<Course[]> => {
+    getMyCourses: async (): Promise<MyCourse[]> => {
         const response = await apiClient.get('/enrollment/me');
         return response.data.data;
     },

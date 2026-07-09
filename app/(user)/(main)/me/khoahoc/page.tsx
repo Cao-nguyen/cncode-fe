@@ -4,22 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Play, BookOpen, CheckCircle2, Clock, Loader2 } from 'lucide-react';
 import { khoahocApi } from '@/lib/api/khoahoc.api';
-
-interface MyCourse {
-    _id: string;
-    courseId: string;
-    title: string;
-    slug: string;
-    thumbnail?: string;
-    teacherName?: string;
-    teacherAvatar?: string;
-    totalLessons: number;
-    completedLessons: number;
-    progress: number; // 0-100
-    lastAccessedLessonId?: string;
-    lastAccessedAt?: string;
-    enrolledAt: string;
-}
+import { MyCourse } from '@/types/khoahoc.type';
 
 type TabType = 'all' | 'in-progress' | 'completed' | 'not-started';
 
