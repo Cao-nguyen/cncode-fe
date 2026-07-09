@@ -128,10 +128,10 @@ export default function Analytics() {
         };
     }, [socket, isConnected, user?._id, sessionId]);
 
-    // Fallback: Use onlineUsers from socket provider
+    // Use onlineUsers from socket provider
     useEffect(() => {
         console.log('[ANALYTICS] Socket provider onlineUsers updated:', socketOnlineUsers);
-        if (socketOnlineUsers && socketOnlineUsers.length > 0) {
+        if (socketOnlineUsers) {
             console.log('[ANALYTICS] Using onlineUsers from socket provider:', socketOnlineUsers);
             setOnlineStats(prev => ({ ...prev, users: socketOnlineUsers.length }));
             setOnlineUsers(socketOnlineUsers);
