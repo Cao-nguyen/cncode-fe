@@ -27,7 +27,7 @@ interface GuestInfo {
 }
 
 export default function Analytics() {
-    const { socket, isConnected, onlineUsers } = useSocket();
+    const { socket, isConnected } = useSocket();
     const { user } = useAuthStore();
 
     const [showUsersPopup, setShowUsersPopup] = useState(false);
@@ -35,6 +35,7 @@ export default function Analytics() {
     const [onlineStats, setOnlineStats] = useState<OnlineStatsData>({ users: 0, guests: 0 });
     const [stats, setStats] = useState({ totalVisits: 0, todayVisits: 0 });
     const [guests, setGuests] = useState<GuestInfo[]>([]);
+    const [onlineUsers, setOnlineUsers] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
     const isAdmin = user?.role?.toLowerCase() === 'admin';
