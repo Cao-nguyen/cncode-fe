@@ -255,11 +255,11 @@ export default function CnBookLessonPage() {
             {/* Drawing Overlay Canvas - Always rendered to preserve drawings */}
             <canvas
                 ref={overlayCanvasRef}
-                className={`fixed top-0 left-0 z-40 ${isDrawingMode ? 'pointer-events-auto' : 'pointer-events-none'}`}
+                className={`absolute top-0 left-0 z-40 ${isDrawingMode ? 'pointer-events-auto' : 'pointer-events-none'}`}
                 style={{
                     cursor: isDrawingMode ? 'crosshair' : 'default',
-                    width: '100vw',
-                    height: '100vh',
+                    width: `${canvasSize.width}px`,
+                    height: `${canvasSize.height}px`,
                     display: 'block'
                 }}
                 onMouseDown={isDrawingMode ? handleOverlayMouseDown : undefined}
