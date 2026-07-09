@@ -144,7 +144,7 @@ export default function CnBookLessonPage() {
                 overlayCtxRef.current.globalCompositeOperation = 'source-over';
                 overlayCtxRef.current.lineWidth = drawingTool === 'highlighter' ? 20 : 3;
                 overlayCtxRef.current.strokeStyle = drawingTool === 'highlighter'
-                    ? 'rgba(255, 255, 0, 0.3)'
+                    ? 'rgba(255, 255, 0, 0.15)'
                     : '#ff0000';
             }
             overlayCtxRef.current.lineCap = 'round';

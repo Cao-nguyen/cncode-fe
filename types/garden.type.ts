@@ -1,40 +1,34 @@
-export interface Tree {
-    _id: string;
+// Garden Types
+export type PlantLevel = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
+
+export interface Plant {
+    id: string;
     name: string;
-    description: string;
-    stages: string[];
-    waterRequired: number;
-    growthPerWater: number;
-    stageThresholds: number[];
-    minCoins: number;
-    maxCoins: number;
-    isActive: boolean;
+    level: PlantLevel;
+    waterAmount: number; // Current water amount
+    waterRequired: number; // Water needed to level up
+    createdAt: string;
+    lastWatered: string;
 }
 
-export interface GardenStats {
-    water: number;
-    totalCoins: number;
-    totalQuestions: number;
-    correctAnswers: number;
-    availableQuestions: number;
-    totalHarvests: number;
-    currentTree: {
-        id: string;
-        name: string;
-        stage: number;
-        growth: number;
-        stageName: string;
-        waterRequired: number;
-        canHarvest: boolean;
-    } | null;
+export interface GardenState {
+    userId: string;
+    plants: Plant[];
+    availableWater: number; // Water drops available for use
+    totalQuestionsAnswered: number;
+    createdAt: string;
+    updatedAt: string;
 }
 
-export interface Question {
-    _id: string;
+export interface QuizQuestion {
+    id: string;
     question: string;
     options: string[];
-    category: string;
-    difficulty: string;
-    xpReward: number;
     correctAnswer: number;
+    exerciseId: string;
+}
+
+export interface WaterReward {
+    amount: number;
+    source: 'quiz' | 'bonus';
 }
