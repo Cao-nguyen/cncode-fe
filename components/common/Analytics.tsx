@@ -80,9 +80,10 @@ export default function Analytics() {
     }, [user?._id]);
 
     useEffect(() => {
-        if (!socket) return;
+        if (!socket || !isConnected) return;
 
         const handleOnlineStats = (data: OnlineStatsData) => {
+            console.log('[ANALYTICS] Received online_stats:', data);
             setOnlineStats({ users: data.users || 0, guests: data.guests || 0 });
 
             if (data.totalVisits !== undefined && data.todayVisits !== undefined) {
@@ -98,7 +99,7 @@ export default function Analytics() {
         return () => {
             socket.off('online_stats', handleOnlineStats);
         };
-    }, [socket]);
+    }, [socket, isConnected]);
 
     const loadGuests = async () => {
         if (!isAdmin) return;
