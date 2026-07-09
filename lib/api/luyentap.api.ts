@@ -1,12 +1,4 @@
 import axios from 'axios';
-import type {
-    PracticeSet,
-    CreatePracticeDto,
-    PracticeListResponse,
-    SubmitResult,
-    PracticeAttempt,
-    PracticeAnswer,
-} from '@/types/luyentap.type';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
@@ -24,123 +16,226 @@ const getToken = (): string | null => {
 
 const apiClient = axios.create({
     baseURL: `${API_URL}/api/luyentap`,
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+        'Content-Type': 'application/json',
+    },
 });
 
 apiClient.interceptors.request.use((config) => {
     const token = getToken();
-    if (token) config.headers.Authorization = `Bearer ${token}`;
+    if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+    }
     return config;
 });
 
-interface ApiResponse<T> {
-    success: boolean;
-    data: T;
-    message?: string;
+apiClient.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        if (!error.response || error.response.status !== 404) {
+            console.error('API Error:', error.response?.data || error.message);
+        }
+        return Promise.reject(error);
+    }
+);
+
+// Types
+export interface User {
+    _id: string;
+    name: string;
+    email: string;
+    avatar?: string;
 }
 
+export interface Question {
+    _id?: string;
+    type: 'multiple-choice' | 'true-false' | 'short-answer';
+    question: string;
+    explanation?: string;
+    options?: Array<{ _id?: string; text: string; isCorrect: boolean }>;
+    trueFalseOptions?: Array<{ text: string; isCorrect: boolean }>;
+    correctAnswer?: string;
+}
+
+export interface Exercise {
+    _id: string;
+    title: string;
+    slug: string;
+    description?: string;
+    thumbnail?: string;
+    duration: number;
+    questions: Question[];
+    totalPoints: number;
+    status: 'draft' | 'published';
+    createdBy?: string | User;
+    participantCount: number;
+    maxAttempts: number;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface UserExerciseAnswer {
+    _id: string;
+    exerciseId: string | Exercise;
+    userId: string | User;
+    answers: Array<{
+        questionId: string;
+        selectedOption?: string;
+        trueFalseAnswers?: Array<{ optionIndex: number; isTrue: boolean }>;
+        shortAnswer?: string;
+        isCorrect: boolean;
+        points: number;
+        question?: Question;
+    }>;
+    totalScore: number;
+    percentage: number;
+    coinsAwarded: number;
+    timeSpent: number;
+    submittedAt: string;
+}
+
+export interface LeaderboardEntry {
+    rank: number;
+    userId: string;
+    userName: string;
+    userAvatar?: string;
+    score?: number;
+    timeSpent?: number;
+    submittedAt?: string;
+    totalScore?: number;
+    totalExercises?: number;
+    totalTimeSpent?: number;
+}
+
+// Public APIs
+export const getPublicExercises = async (params?: { page?: number; limit?: number }) => {
+    const response = await apiClient.get('/public', { params });
+    const result = response.data.data || response.data;
+    return result;
+};
+
+export const getExerciseBySlug = async (slug: string) => {
+    const response = await apiClient.get(`/public/${slug}`);
+    return response.data;
+};
+
+export const getPublicExerciseById = async (id: string) => {
+    const response = await apiClient.get(`/public/id/${id}`);
+    return response.data.data || response.data;
+};
+
+export const getOverallLeaderboard = async (limit?: number) => {
+    const response = await apiClient.get('/public/leaderboard/overall', { params: { limit } });
+    return response.data.data || response.data;
+};
+
+export const getExerciseLeaderboard = async (exerciseId: string, limit?: number) => {
+    const response = await apiClient.get(`/${exerciseId}/leaderboard`, { params: { limit } });
+    return response.data.data || response.data;
+};
+
+// User APIs
+export const getExerciseForTaking = async (exerciseId: string) => {
+    const response = await apiClient.get(`/${exerciseId}/take`);
+    return response.data.data || response.data;
+};
+
+export const submitExerciseAnswer = async (exerciseId: string, data: {
+    answers: Array<{
+        questionId: string;
+        selectedOption?: string;
+        trueFalseAnswers?: Array<{ optionIndex: number; isTrue: boolean }>;
+        shortAnswer?: string;
+    }>;
+    timeSpent: number;
+}) => {
+    const response = await apiClient.post(`/${exerciseId}/submit`, data);
+    return response.data;
+};
+
+export const getUserAnswer = async (exerciseId: string, answerId?: string) => {
+    const response = await apiClient.get(`/${exerciseId}/result`, {
+        params: answerId ? { answerId } : undefined
+    });
+    return response.data.data || response.data;
+};
+
+export const getUserExercises = async () => {
+    const response = await apiClient.get('/me/exercises');
+    return response.data;
+};
+
+export const checkUserAttempts = async (exerciseId: string) => {
+    const response = await apiClient.get(`/me/exercises/${exerciseId}/check-attempts`);
+    return response.data.data || response.data;
+};
+
+export const getUserExerciseHistory = async (exerciseId: string) => {
+    const response = await apiClient.get(`/me/exercises/${exerciseId}/history`);
+    return response.data.data || response.data;
+};
+
+// Admin APIs
+export const getAdminExercises = async (params?: { page?: number; limit?: number; status?: string; search?: string }) => {
+    const response = await apiClient.get('/admin/list', { params });
+    return response.data.data || response.data;
+};
+
+export const approveExercise = async (id: string) => {
+    const response = await apiClient.put(`/admin/${id}/approve`);
+    return response.data;
+};
+
+export const rejectExercise = async (id: string, reason: string) => {
+    const response = await apiClient.put(`/admin/${id}/reject`, { reason });
+    return response.data;
+};
+
+export const getAdminExerciseById = async (id: string) => {
+    const response = await apiClient.get(`/admin/${id}`);
+    return response.data.data || response.data.exercise || response.data;
+};
+
+export const createExercise = async (data: Partial<Exercise>) => {
+    const response = await apiClient.post('/admin', data);
+    return response.data;
+};
+
+export const updateExercise = async (id: string, data: Partial<Exercise>) => {
+    const response = await apiClient.put(`/admin/${id}`, data);
+    return response.data;
+};
+
+export const deleteExercise = async (id: string) => {
+    const response = await apiClient.delete(`/admin/${id}`);
+    return response.data;
+};
+
+// Export as named export for easier imports
 export const luyentapApi = {
-    list: async (params?: { page?: number; limit?: number; tier?: string; search?: string }) => {
-        const res = await apiClient.get<ApiResponse<PracticeListResponse>>('/', { params });
-        return res.data;
-    },
-
-    getById: async (id: string) => {
-        const res = await apiClient.get<ApiResponse<PracticeSet>>(`/${id}`);
-        return res.data;
-    },
-
-    getForTaking: async (id: string) => {
-        const res = await apiClient.get<ApiResponse<PracticeSet>>(`/${id}/take`);
-        return res.data;
-    },
-
-    submit: async (id: string, answers: PracticeAnswer[]) => {
-        const res = await apiClient.post<ApiResponse<SubmitResult>>(`/${id}/submit`, { answers });
-        return res.data;
-    },
-
-    getAttempt: async (attemptId: string) => {
-        const res = await apiClient.get<ApiResponse<PracticeAttempt>>(`/attempt/${attemptId}`);
-        return res.data;
-    },
-
-    getMyAttempts: async (id: string) => {
-        const res = await apiClient.get<ApiResponse<PracticeAttempt[]>>(`/${id}/attempts`);
-        return res.data;
-    },
-
-    runCodeTest: async (payload: { language: string; code: string; input?: string; expectedOutput: string }) => {
-        const res = await apiClient.post<ApiResponse<{ output: string; passed: boolean; error?: string }>>('/run-code', payload);
-        return res.data;
-    },
-
-    // Admin
-    adminList: async (params?: { page?: number; limit?: number; status?: string; search?: string }) => {
-        const res = await apiClient.get<ApiResponse<PracticeListResponse>>('/admin/all', { params });
-        return res.data;
-    },
-
-    adminGetById: async (id: string) => {
-        const res = await apiClient.get<ApiResponse<PracticeSet>>(`/admin/${id}`);
-        return res.data;
-    },
-
-    adminCreate: async (data: CreatePracticeDto) => {
-        const res = await apiClient.post<ApiResponse<PracticeSet>>('/admin', data);
-        return res.data;
-    },
-
-    adminUpdate: async (id: string, data: Partial<CreatePracticeDto>) => {
-        const res = await apiClient.put<ApiResponse<PracticeSet>>(`/admin/${id}`, data);
-        return res.data;
-    },
-
-    adminDelete: async (id: string) => {
-        const res = await apiClient.delete<ApiResponse<null>>(`/admin/${id}`);
-        return res.data;
-    },
-
-    adminApprove: async (id: string) => {
-        const res = await apiClient.put<ApiResponse<PracticeSet>>(`/admin/${id}/approve`);
-        return res.data;
-    },
-
-    adminReject: async (id: string, reason: string) => {
-        const res = await apiClient.put<ApiResponse<PracticeSet>>(`/admin/${id}/reject`, { reason });
-        return res.data;
-    },
-
-    // Teacher
-    teacherList: async (params?: { page?: number; limit?: number; status?: string }) => {
-        const res = await apiClient.get<ApiResponse<PracticeListResponse>>('/teacher/mine', { params });
-        return res.data;
-    },
-
-    teacherGetById: async (id: string) => {
-        const res = await apiClient.get<ApiResponse<PracticeSet>>(`/teacher/${id}`);
-        return res.data;
-    },
-
-    teacherCreate: async (data: CreatePracticeDto) => {
-        const res = await apiClient.post<ApiResponse<PracticeSet>>('/teacher', data);
-        return res.data;
-    },
-
-    teacherUpdate: async (id: string, data: Partial<CreatePracticeDto>) => {
-        const res = await apiClient.put<ApiResponse<PracticeSet>>(`/teacher/${id}`, data);
-        return res.data;
-    },
-
-    teacherDelete: async (id: string) => {
-        const res = await apiClient.delete<ApiResponse<null>>(`/teacher/${id}`);
-        return res.data;
-    },
-
-    teacherSubmitForReview: async (id: string) => {
-        const res = await apiClient.put<ApiResponse<PracticeSet>>(`/teacher/${id}/submit`);
-        return res.data;
-    },
+    getPublicExercises,
+    getExerciseBySlug,
+    getOverallLeaderboard,
+    getExerciseLeaderboard,
+    getExerciseForTaking,
+    submitExerciseAnswer,
+    getUserAnswer,
+    getUserExercises,
+    getUserExerciseHistory,
+    checkUserAttempts,
+    getAdminExercises,
+    getAdminExerciseById,
+    createExercise,
+    updateExercise,
+    deleteExercise,
+    // Aliases for admin page compatibility
+    adminList: getAdminExercises,
+    adminGetById: getAdminExerciseById,
+    adminCreate: createExercise,
+    adminUpdate: updateExercise,
+    adminDelete: deleteExercise,
+    adminApprove: approveExercise,
+    adminReject: rejectExercise,
 };
 
 export default luyentapApi;

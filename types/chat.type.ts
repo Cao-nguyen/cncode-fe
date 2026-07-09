@@ -35,10 +35,18 @@ export interface Message {
     conversationId: string;
     senderId: User;
     content: string;
-    type: 'text' | 'image' | 'file';
+    type: 'text' | 'image' | 'file' | 'sticker' | 'poll' | 'reminder';
     attachments?: string[];
     replyTo?: string;
-    readBy: string[];
+    readBy?: Array<{ userId: User; readAt: string }>;
+    isRead?: boolean;
+    isHearted?: boolean;
+    heartedBy?: User[];
+    reminder?: {
+        scheduledTime: string;
+        isTriggered: boolean;
+        triggeredAt?: string;
+    };
     createdAt: string;
     updatedAt: string;
 }

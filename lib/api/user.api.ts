@@ -322,4 +322,35 @@ export const userApi = {
         });
         return handleResponse<null>(response);
     },
+
+    incrementStreak: async (token: string): Promise<IApiResponse<{ streak: number; coins: number; alreadyCompleted?: boolean }>> => {
+        const response = await fetch(`${API_URL}/api/users/increment-streak`, {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        return handleResponse<{ streak: number; coins: number }>(response);
+    },
+};
+
+// Search users by username or email
+export const searchUsers = async (query: string): Promise<IUser[]> => {
+    const response = await fetch(
+        `${API_URL}/api/users/search?q=${encodeURIComponent(query)}`,
+        {
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        }
+    );
+
+    if (!response.ok) {
+        throw new Error('Failed to search users');
+    }
+
+    const data = await response.json();
+    return data.success ? data.data : [];
 };

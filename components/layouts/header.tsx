@@ -45,8 +45,10 @@ import type { Icon } from "iconsax-react";
 import NotificationBell from "./NotificationBell";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useAuthStore } from "@/store/auth.store";
+import { useUnreadMessagesStore } from "@/store/unreadMessages.store";
 import { useSocket } from "@/providers/socket.provider";
 import { getImageUrl } from "@/lib/utils/imageUrl";
+import { userApi } from "@/lib/api/user.api";
 
 const formatNumber = (num: number) =>
     new Intl.NumberFormat("en", { notation: "compact", maximumFractionDigits: 1 }).format(num);
@@ -505,12 +507,16 @@ export default function Header() {
     const router = useRouter();
     const { user, logout, token, coins, updateCoins, updateStreak, setUser } = useAuthStore();
     const { socket, isConnected } = useSocket();
+    const { getTotalUnread } = useUnreadMessagesStore();
     const [sheetOpen, setSheetOpen] = useState(false);
     const [drawerOpen, setDrawerOpen] = useState(false);
     const [showBetaTooltip, setShowBetaTooltip] = useState(false);
     const [showSearchInput, setShowSearchInput] = useState(false);
+    const [activeStreakIcon, setActiveStreakIcon] = useState(false);
     const betaBadgeRef = useRef<HTMLDivElement>(null);
     const searchRef = useRef<HTMLDivElement>(null);
+
+    const unreadCount = getTotalUnread();
 
     const displayCoins = user && token ? (coins ?? 0) : 0;
     const displayStreak = user && token ? (user?.streak ?? 0) : 0;
@@ -588,6 +594,10 @@ export default function Header() {
                 updateStreak(data.streak);
                 const diff = data.totalCoins - (user?.coins || 0);
                 if (diff !== 0) updateCoins(diff);
+
+                // Activate streak icon animation
+                setActiveStreakIcon(true);
+                setTimeout(() => setActiveStreakIcon(false), 3000);
             }
         };
         socket.on("streak_updated", handleStreakUpdated);
@@ -657,6 +667,49 @@ export default function Header() {
         }
     }, [displayUser?.avatar]);
 
+    // Increment streak when user loads the page
+    useEffect(() => {
+        const incrementDailyStreak = async () => {
+            if (!user || !token) {
+                console.log('❌ Streak: No user or token');
+                return;
+            }
+
+            console.log('🔄 Attempting to increment streak for user:', user._id);
+            try {
+                const result = await userApi.incrementStreak(token);
+                console.log('✅ Streak increment result:', result);
+
+                if (result.success && result.data) {
+                    const { streak, coins, alreadyCompleted } = result.data;
+
+                    // Update local state with server values
+                    if (streak !== user.streak) {
+                        updateStreak(streak);
+                    }
+
+                    // Update coins if changed
+                    const currentCoins = user.coins || 0;
+                    if (coins !== currentCoins) {
+                        const diff = coins - currentCoins;
+                        updateCoins(diff);
+                    }
+
+                    // Show animation only if actually incremented (not already completed)
+                    if (!alreadyCompleted) {
+                        setActiveStreakIcon(true);
+                        setTimeout(() => setActiveStreakIcon(false), 3000);
+                    }
+                }
+            } catch (error) {
+                // Silent fail - streak increment is not critical
+                console.error('❌ Failed to increment streak:', error);
+            }
+        };
+
+        incrementDailyStreak();
+    }, [user?._id, token, updateStreak, updateCoins]); // Only run when user logs in or page loads
+
     return (
         <>
             <header className="hidden lg:block bg-[var(--cn-bg-card)] w-full h-[60px] fixed top-0 z-50 shadow-[var(--cn-shadow-sm)]">
@@ -675,14 +728,18 @@ export default function Header() {
                     <nav className="flex h-full items-center gap-1">
                         {menu.map((item) => {
                             const isActive = pathname === item.link;
+                            const showBadge = item.link === '/forum' && unreadCount > 0;
                             return (
                                 <div key={item.link} className="relative h-full flex items-center">
                                     <Link
                                         href={item.link}
-                                        className={`px-3 py-2 font-bold text-sm transition-all duration-200 ${isActive ? "text-[var(--cn-primary)]" : "text-[var(--cn-text-sub)] hover:text-[var(--cn-primary)]"}`}
+                                        className={`relative px-3 py-2 font-bold text-sm transition-all duration-200 ${isActive ? "text-[var(--cn-primary)]" : "text-[var(--cn-text-sub)] hover:text-[var(--cn-primary)]"}`}
                                     >
                                         {item.title}
                                     </Link>
+                                    {showBadge && (
+                                        <span className="absolute top-4 right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse shadow-lg" />
+                                    )}
                                     {isActive && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--cn-primary)]" />}
                                 </div>
                             );
@@ -720,10 +777,16 @@ export default function Header() {
                                     <img src="/icons/coins.svg" alt="Coins" width={25} height={25} className="absolute -right-3" />
                                 </div>
                                 <div className="relative flex items-center">
-                                    <div className="border border-[var(--cn-border)] rounded-2xl pl-2 pr-5 py-0.5">
-                                        <p className="text-[var(--cn-primary)] text-xs font-medium">{formatNumber(displayStreak)}</p>
+                                    <div className="border border-orange-300 bg-orange-50 dark:bg-orange-950/20 rounded-2xl pl-2 pr-5 py-0.5 shadow-sm shadow-orange-200/50">
+                                        <p className="text-orange-600 dark:text-orange-400 text-xs font-bold">{formatNumber(displayStreak)}</p>
                                     </div>
-                                    <img src="/icons/streak.svg" alt="Streak" width={27} height={27} className="absolute -right-3" />
+                                    <img
+                                        src={displayStreak > 0 ? "/icons/streak-1.svg" : "/icons/streak.svg"}
+                                        alt="Streak"
+                                        width={27}
+                                        height={27}
+                                        className={`absolute -right-3 drop-shadow-md transition-all duration-300 ${activeStreakIcon ? 'scale-110 animate-bounce' : ''}`}
+                                    />
                                 </div>
                             </div>
                         )}
@@ -795,10 +858,16 @@ export default function Header() {
                                     <img src="/icons/coins.svg" alt="Coins" width={18} height={18} className="absolute -right-2" />
                                 </div>
                                 <div className="relative flex items-center">
-                                    <div className="border border-[var(--cn-border)] rounded-2xl pl-1.5 pr-4 py-0.5">
-                                        <p className="text-[var(--cn-primary)] text-[10px] font-medium">{formatNumber(displayStreak)}</p>
+                                    <div className="border border-orange-300 bg-orange-50 dark:bg-orange-950/20 rounded-2xl pl-1.5 pr-4 py-0.5">
+                                        <p className="text-orange-600 dark:text-orange-400 text-[10px] font-bold">{formatNumber(displayStreak)}</p>
                                     </div>
-                                    <img src="/icons/streak.svg" alt="Streak" width={20} height={20} className="absolute -right-2" />
+                                    <img
+                                        src={displayStreak > 0 ? "/icons/streak-1.svg" : "/icons/streak.svg"}
+                                        alt="Streak"
+                                        width={20}
+                                        height={20}
+                                        className={`absolute -right-2 drop-shadow transition-all duration-300 ${activeStreakIcon ? 'scale-110 animate-bounce' : ''}`}
+                                    />
                                 </div>
                             </div>
                         )}
@@ -827,21 +896,29 @@ export default function Header() {
                 <div className="w-full h-14 bg-[var(--cn-bg-card)] border-t border-[var(--cn-border)] rounded-t-2xl shadow-[0_-4px_20px_rgba(0,0,0,0.15)] flex items-center px-2">
                     {menuMobile.map((item) => {
                         const isActive = pathname === item.link;
+                        const showBadge = item.link === '/forum' && unreadCount > 0;
                         const iconSrc = mobileIconMap[item.link] || "/favicon/home.png";
                         return (
-                            <Link key={item.link} href={item.link} className="flex-1 flex flex-col items-center justify-center gap-1 active:scale-95 transition-all">
-                                <img
-                                    src={iconSrc}
-                                    alt={item.title}
-                                    className={`w-5 h-5 ${isActive ? "opacity-100" : "opacity-50"}`}
-                                    style={{
-                                        filter: isActive
-                                            ? 'brightness(0) saturate(100%) invert(27%) sepia(87%) saturate(2000%) hue-rotate(200deg) brightness(95%) contrast(90%)'
-                                            : 'grayscale(100%)'
-                                    }}
-                                />
-                                <span className={`text-[10px] font-medium ${isActive ? "text-[var(--cn-primary)]" : "text-[var(--cn-text-muted)]"}`}>{item.title}</span>
-                            </Link>
+                            <div key={item.link} className="relative flex-1 flex flex-col items-center justify-center gap-1 active:scale-95 transition-all">
+                                <Link href={item.link} className="w-full h-full flex flex-col items-center justify-center gap-1">
+                                    <div className="relative">
+                                        <img
+                                            src={iconSrc}
+                                            alt={item.title}
+                                            className={`w-5 h-5 ${isActive ? "opacity-100" : "opacity-50"}`}
+                                            style={{
+                                                filter: isActive
+                                                    ? 'brightness(0) saturate(100%) invert(27%) sepia(87%) saturate(2000%) hue-rotate(200deg) brightness(95%) contrast(90%)'
+                                                    : 'grayscale(100%)'
+                                            }}
+                                        />
+                                        {showBadge && (
+                                            <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                                        )}
+                                    </div>
+                                    <span className={`text-[10px] font-medium ${isActive ? "text-[var(--cn-primary)]" : "text-[var(--cn-text-muted)]"}`}>{item.title}</span>
+                                </Link>
+                            </div>
                         );
                     })}
                 </div>

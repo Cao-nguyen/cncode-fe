@@ -4,7 +4,6 @@ import {
     CourseQuery,
     Chapter,
     ChapterCreate,
-    ChapterReorder,
     ChapterWithLessons,
     Lesson,
     LessonCreate,
@@ -16,6 +15,7 @@ import {
     CommentCreate,
     PayOSPaymentLink,
     ExerciseAnswer,
+    Note,
 } from '../../types/khoahoc.type';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
@@ -281,12 +281,23 @@ export const khoahocApi = {
 
     createAdminExercise: async (lessonId: string, data: Partial<Exercise>): Promise<Exercise> => {
         const response = await apiClient.post(`/admin/khoahoc/lessons/${lessonId}/exercise`, data);
-        return response.data.data;
+        return response.data.data || response.data;
     },
 
     updateAdminExercise: async (exerciseId: string, data: Partial<Exercise>): Promise<Exercise> => {
         const response = await apiClient.put(`/admin/khoahoc/exercises/${exerciseId}`, data);
-        return response.data.data;
+        return response.data.data || response.data;
+    },
+
+    // Baitap module APIs (for new exercise system)
+    createBaitapExercise: async (lessonId: string, data: { courseId: string; questions: any[]; mustPassToNext?: boolean }): Promise<Exercise> => {
+        const response = await apiClient.post(`/baitap/lesson/${lessonId}`, data);
+        return response.data;
+    },
+
+    updateBaitapExercise: async (exerciseId: string, data: { questions: any[] }): Promise<Exercise> => {
+        const response = await apiClient.put(`/baitap/${exerciseId}`, data);
+        return response.data;
     },
 
     // ===== STUDENT APIs =====
@@ -313,7 +324,7 @@ export const khoahocApi = {
     getExerciseByLessonId: async (lessonId: string): Promise<Exercise | null> => {
         try {
             const response = await apiClient.get(`/baitap/lesson/${lessonId}`);
-            return response.data.data;
+            return response.data.data || response.data;
         } catch {
             return null;
         }
@@ -327,6 +338,36 @@ export const khoahocApi = {
     getLessonProgress: async (lessonId: string): Promise<Progress> => {
         const response = await apiClient.get(`/tiendo/lesson/${lessonId}`);
         return response.data.data;
+    },
+
+    getCourseProgress: async (courseId: string): Promise<{ total: number; completed: number; percent: number; progresses: Progress[] }> => {
+        const response = await apiClient.get(`/tiendo/course/${courseId}`);
+        return response.data.data;
+    },
+
+    // ===== NOTES APIs =====
+    createNote: async (data: { lessonId: string; courseId: string; time: number; timeStr: string; text: string }): Promise<Note> => {
+        const response = await apiClient.post('/notes', data);
+        return response.data.data;
+    },
+
+    getNotesByLesson: async (lessonId: string): Promise<Note[]> => {
+        const response = await apiClient.get(`/notes/lesson/${lessonId}`);
+        return response.data.data;
+    },
+
+    getNotesByCourse: async (courseId: string): Promise<Note[]> => {
+        const response = await apiClient.get(`/notes/course/${courseId}`);
+        return response.data.data;
+    },
+
+    updateNote: async (noteId: string, text: string): Promise<Note> => {
+        const response = await apiClient.put(`/notes/${noteId}`, { text });
+        return response.data.data;
+    },
+
+    deleteNote: async (noteId: string): Promise<void> => {
+        await apiClient.delete(`/notes/${noteId}`);
     },
 
     submitExercise: async (exerciseId: string, payload: { answer: ExerciseAnswer }): Promise<{ isCorrect: boolean; canProceed: boolean }> => {
@@ -379,6 +420,11 @@ export const khoahocApi = {
         const response = await apiClient.post(`/payment/khoahoc/${courseId}/payos`);
         return response.data.data;
     },
+
+    getMyCourses: async (): Promise<any[]> => {
+        const response = await apiClient.get('/enrollment/me');
+        return response.data.data;
+    },
 };
 
 // Backward compatibility exports
@@ -411,6 +457,12 @@ export const submitLessonProgress = khoahocApi.submitLessonProgress;
 export const saveProgress = khoahocApi.submitLessonProgress;
 export const getLessonProgress = khoahocApi.getLessonProgress;
 export const getProgress = khoahocApi.getLessonProgress;
+export const getCourseProgress = khoahocApi.getCourseProgress;
+export const createNote = khoahocApi.createNote;
+export const getNotesByLesson = khoahocApi.getNotesByLesson;
+export const getNotesByCourse = khoahocApi.getNotesByCourse;
+export const updateNote = khoahocApi.updateNote;
+export const deleteNote = khoahocApi.deleteNote;
 export const submitExercise = khoahocApi.submitExercise;
 export const checkCertificate = khoahocApi.checkCertificate;
 export const requestCertificate = khoahocApi.requestCertificate;
@@ -440,5 +492,6 @@ export const deleteAdminLesson = khoahocApi.deleteAdminLesson;
 export const reorderAdminLessons = khoahocApi.reorderAdminLessons;
 export const createAdminExercise = khoahocApi.createAdminExercise;
 export const updateAdminExercise = khoahocApi.updateAdminExercise;
+export const getMyCourses = khoahocApi.getMyCourses;
 
 export type { Course };

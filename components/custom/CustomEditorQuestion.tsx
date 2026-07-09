@@ -361,19 +361,37 @@ const CustomEditorQuestion: React.FC<{
     [parsedQuestions, scoreOverrides, typeOverrides]
   );
 
-  // Initialize with initial content when it changes
+  // Track the previous initialContent to detect external changes
+  const prevInitialContentRef = useRef(initialContent);
+  // When code is updated FROM the initialContent prop (external source), we must
+  // skip the next onContentChange notification. Otherwise the parent receives a
+  // "change" event for content it just sent down, which can cause it to set state
+  // again, re-triggering this effect and creating an infinite update loop
+  // ("Maximum update depth exceeded").
+  const skipNextNotifyRef = useRef(false);
+
+  // Initialize with initial content when it changes (external source only)
   useEffect(() => {
-    if (initialContent && initialContent !== code) {
+    if (initialContent && initialContent !== prevInitialContentRef.current) {
+      prevInitialContentRef.current = initialContent;
+      skipNextNotifyRef.current = true;
       setCode(initialContent);
     }
   }, [initialContent]);
 
-  // Notify parent when content changes
+  // Notify parent when content changes (excluding onContentChange from deps to prevent infinite loop)
   useEffect(() => {
+    if (skipNextNotifyRef.current) {
+      // This change originated from the initialContent prop, not from user input.
+      // Don't echo it back to the parent.
+      skipNextNotifyRef.current = false;
+      return;
+    }
     if (onContentChange) {
       onContentChange(code, questions);
     }
-  }, [code, questions, onContentChange]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [code, questions]);
 
   const lineNumbers = useMemo(() => code.split('\n').map((_, i) => i + 1), [code]);
 
@@ -476,16 +494,22 @@ const CustomEditorQuestion: React.FC<{
 
   const markCorrectAnswer = (questionIndex: number, optionIndex: number) => {
     const question = questions[questionIndex];
-    let nextCorrect: string[];
+    const optionLetter = question.type === 'multiple-choice'
+      ? String.fromCharCode(65 + optionIndex)
+      : String.fromCharCode(97 + optionIndex);
 
+    const current = question.correctAnswers || [];
+    const isCurrentlyCorrect = current.includes(optionLetter);
+
+    let nextCorrect: string[];
     if (question.type === 'multiple-choice') {
-      nextCorrect = [String.fromCharCode(65 + optionIndex)];
+      // For multiple-choice, toggle: if already correct, remove it; otherwise set it as the only correct answer
+      nextCorrect = isCurrentlyCorrect ? [] : [optionLetter];
     } else {
-      const letter = String.fromCharCode(97 + optionIndex);
-      const current = question.correctAnswers || [];
-      nextCorrect = current.includes(letter)
-        ? current.filter((l) => l !== letter)
-        : [...current, letter];
+      // For true-false, toggle: add or remove from the list
+      nextCorrect = isCurrentlyCorrect
+        ? current.filter((l) => l !== optionLetter)
+        : [...current, optionLetter];
     }
 
     const lines = code.split('\n');
@@ -508,11 +532,14 @@ const CustomEditorQuestion: React.FC<{
       if (!option) return line;
 
       const shouldMark = nextCorrect.includes(option.letter);
-      // Just add or remove the * marker from the original line
+      const lineWithoutMarker = line.trimStart().startsWith('*') ? line.replace(/^\s*\*/, '') : line;
+
       if (shouldMark) {
-        return trimmed.startsWith('*') ? line : `*${line}`;
+        // Add * marker
+        return lineWithoutMarker.startsWith('*') ? lineWithoutMarker : `*${lineWithoutMarker}`;
       } else {
-        return trimmed.startsWith('*') ? line.slice(1) : line;
+        // Remove * marker
+        return lineWithoutMarker;
       }
     });
 
@@ -576,10 +603,18 @@ const CustomEditorQuestion: React.FC<{
         <div className="sticky top-0 z-10 bg-white/95 backdrop-blur border-b border-gray-200 px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <h2 className="text-xl font-bold text-gray-900">Xem trước đề thi</h2>
-            <div className={`w-2 h-2 rounded-full ${saveStatus === 'unsaved' ? 'bg-orange-500' :
-                saveStatus === 'saving' ? 'bg-yellow-500 animate-pulse' :
-                  'bg-green-500'
-              }`} title={saveStatus === 'unsaved' ? 'Chưa lưu' : saveStatus === 'saving' ? 'Đang lưu...' : 'Đã lưu'} />
+            <div className={`flex items-center gap-1.5 text-xs font-medium px-2 py-1 rounded-full ${saveStatus === 'unsaved' ? 'bg-orange-100 text-orange-700' :
+                saveStatus === 'saving' ? 'bg-yellow-100 text-yellow-700' :
+                  'bg-green-100 text-green-700'
+              }`}>
+              <div className={`w-1.5 h-1.5 rounded-full ${saveStatus === 'unsaved' ? 'bg-orange-500' :
+                  saveStatus === 'saving' ? 'bg-yellow-500 animate-pulse' :
+                    'bg-green-500'
+                }`} />
+              {saveStatus === 'unsaved' && 'Chưa lưu'}
+              {saveStatus === 'saving' && 'Đang lưu...'}
+              {saveStatus === 'saved' && 'Đã lưu'}
+            </div>
           </div>
           <div className="flex items-center gap-3 text-sm">
             <span className="px-3 py-1 rounded-full bg-blue-100 text-blue-700 font-medium">
@@ -653,14 +688,14 @@ const CustomEditorQuestion: React.FC<{
                         key={optIndex}
                         onClick={() => markCorrectAnswer(index, optIndex)}
                         className={`flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer border transition-all ${isCorrect
-                            ? 'bg-green-50 border-green-300'
-                            : 'border-transparent hover:bg-blue-50 hover:border-blue-200'
+                          ? 'bg-green-50 border-green-300'
+                          : 'border-transparent hover:bg-blue-50 hover:border-blue-200'
                           }`}
                       >
                         <span
                           className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold shrink-0 ${isCorrect
-                              ? 'bg-green-500 text-white'
-                              : 'bg-gray-100 text-gray-500'
+                            ? 'bg-green-500 text-white'
+                            : 'bg-gray-100 text-gray-500'
                             }`}
                         >
                           {letter.toUpperCase()}
@@ -864,4 +899,3 @@ const ToolbarButton: React.FC<{ icon: React.ReactNode; title: string; onClick: (
 ToolbarButton.displayName = 'ToolbarButton';
 
 export default CustomEditorQuestion;
-

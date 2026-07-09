@@ -1,501 +1,137 @@
 'use client';
 
-import {
-    createContext,
-    useContext,
-    useEffect,
-    useRef,
-    useState,
-    useMemo,
-    useCallback,
-    type ReactNode,
-} from 'react';
-import { io, type Socket } from 'socket.io-client';
-import { toast } from 'sonner';
-import { useAuthStore } from '@/store/auth.store';
-import { useChatStore } from '@/store/chat.store';
-import type {
-    CoinsUpdatedPayload,
-    StreakUpdatedPayload,
-    RoleChangedPayload,
-} from '@/types/notification.type';
-
-interface OnlineUser {
-    userId: string;
-    fullName: string;
-    avatar?: string;
-    role?: string;
-    device?: string;
-}
+import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
+import { io, Socket } from 'socket.io-client';
+import { useUnreadMessagesStore } from '@/store/unreadMessages.store';
+import { useConversationsStore, Message } from '@/store/conversations.store';
 
 interface SocketContextType {
     socket: Socket | null;
     isConnected: boolean;
-    socketId: string | undefined;
-    onlineUsers: OnlineUser[];
-    joinPostRoom: (postSlug: string) => void;
-    leavePostRoom: (postSlug: string) => void;
-}
-
-interface NewMessagePayload {
-    conversationUserId?: string;
-    unreadCount?: number;
-    senderId?: string | { _id: string };
-}
-
-interface ForceLogoutPayload {
-    code?: string;
-    message: string;
-}
-
-interface RoleRequestResolvedPayload {
-    approved: boolean;
-    newRole: string;
-}
-
-interface ProfileUpdatedPayload {
-    user: ReturnType<typeof useAuthStore.getState>['user'];
-}
-
-interface AvatarUpdatedPayload {
-    avatar: string;
 }
 
 const SocketContext = createContext<SocketContextType>({
     socket: null,
     isConnected: false,
-    socketId: undefined,
-    onlineUsers: [],
-    joinPostRoom: () => { },
-    leavePostRoom: () => { },
 });
 
 export const useSocket = () => useContext(SocketContext);
 
-const getBaseUrl = () => {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-    if (!apiUrl) return '';
-    return apiUrl.replace(/\/api$/, '');
-};
-
-const BASE_URL = getBaseUrl();
-
-const getSessionId = () => {
-    if (typeof window === 'undefined') return null;
-    let sessionId = localStorage.getItem('guestSessionId');
-    if (!sessionId) {
-        sessionId =
-            crypto.randomUUID?.() ||
-            Math.random().toString(36).substring(2) + Date.now().toString(36);
-        localStorage.setItem('guestSessionId', sessionId);
-    }
-    return sessionId;
-};
-
-export function SocketProvider({ children }: { children: ReactNode }) {
-    const { user, token, updateCoins, updateStreak, setUser } = useAuthStore();
-
+export function SocketProvider({ children }: { children: React.ReactNode }) {
     const socketRef = useRef<Socket | null>(null);
-    const adminChatSocketRef = useRef<Socket | null>(null);
-    const [socketState, setSocketState] = useState<Socket | null>(null);
+    const [socket, setSocket] = useState<Socket | null>(null);
     const [isConnected, setIsConnected] = useState(false);
-    const [socketId, setSocketId] = useState<string | undefined>(undefined);
-    const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([]);
+    const { setUnreadCount } = useUnreadMessagesStore();
+    const { setMessages, confirmMessage, updateConversationUnreadCount } = useConversationsStore();
 
-    const registeredRef = useRef(false);
-    const reconnectAttempts = useRef(0);
-    const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
-    const activityCleanupRef = useRef<(() => void) | null>(null);
-    const lastPongRef = useRef<number | null>(null);
-    const forceReconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-    const joinPostRoom = useCallback(
-        (postSlug: string) => {
-            if (socketState?.connected) socketState.emit('join_post_room', { postSlug });
-        },
-        [socketState]
-    );
-
-    const leavePostRoom = useCallback(
-        (postSlug: string) => {
-            if (socketState?.connected) socketState.emit('leave_post_room', { postSlug });
-        },
-        [socketState]
-    );
-
-    const startHeartbeat = useCallback(() => {
-        if (heartbeatIntervalRef.current) clearInterval(heartbeatIntervalRef.current);
-        heartbeatIntervalRef.current = setInterval(() => {
-            if (socketRef.current?.connected) {
-                socketRef.current.emit('heartbeat', { timestamp: Date.now() });
-            }
-        }, 25000);
-    }, []);
-
-    const startActivityTracking = useCallback(() => {
-        const handle = () => {
-            if (socketRef.current?.connected) {
-                socketRef.current.emit('user_activity', { timestamp: Date.now() });
-            }
-        };
-
-        window.addEventListener('click', handle);
-        window.addEventListener('keypress', handle);
-
-        activityCleanupRef.current = () => {
-            window.removeEventListener('click', handle);
-            window.removeEventListener('keypress', handle);
-        };
-    }, []);
-
-    const reconnect = useCallback(() => {
-        if (forceReconnectTimeoutRef.current) clearTimeout(forceReconnectTimeoutRef.current);
-        if (socketRef.current) {
-            console.log('🔄 Force reconnecting...');
-            socketRef.current.disconnect();
-            socketRef.current.connect();
+    useEffect(() => {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            console.log('[SOCKET] No token found, skipping connection');
+            return;
         }
-    }, []);
 
-    useEffect(() => {
-        if (lastPongRef.current === null) lastPongRef.current = Date.now();
-        if (socketRef.current?.connected) return;
+        const socketUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+        console.log('[SOCKET] Connecting to:', socketUrl);
 
-        console.log('🔌 Connecting to socket at:', BASE_URL);
-
-        const instance = io(BASE_URL, {
-            auth: token ? { token } : undefined,
-            transports: ['polling', 'websocket'],
-            upgrade: false,
-            autoConnect: true,
-            reconnection: true,
-            reconnectionAttempts: 15,
-            reconnectionDelay: 2000,
-            reconnectionDelayMax: 15000,
-            timeout: 60000,
-            withCredentials: true,
-        });
-
-        socketRef.current = instance;
-
-        instance.on('connect', () => {
-            console.log('🔌 Socket connected:', instance.id);
-            setIsConnected(true);
-            setSocketId(instance.id);
-            setSocketState(instance);
-            registeredRef.current = false;
-            reconnectAttempts.current = 0;
-            lastPongRef.current = Date.now();
-
-            if (typeof window !== 'undefined') {
-                (window as Window & { socket?: Socket }).socket = instance;
-            }
-
-            startHeartbeat();
-            startActivityTracking();
-
-            const sessionId = getSessionId();
-            if (token && user?._id) {
-                instance.emit('register', { userId: user._id, sessionId });
-                console.log('📡 Registered user:', user._id);
-                console.log('📍 User should be in room:', user._id);
-            } else if (sessionId) {
-                instance.emit('register', { sessionId });
-                console.log('📡 Registered guest:', sessionId);
-            }
-            registeredRef.current = true;
-
-            setTimeout(() => {
-                if (instance.connected) {
-                    instance.emit('request_online_users');
-                    console.log('📋 Requested online users list');
-                }
-            }, 800);
-        });
-
-        instance.on('disconnect', (reason) => {
-            console.log('🔌 Socket disconnected:', reason);
-            setIsConnected(false);
-            setSocketId(undefined);
-            registeredRef.current = false;
-
-            if (
-                reason === 'io server disconnect' ||
-                reason === 'transport close' ||
-                reason === 'transport error'
-            ) {
-                forceReconnectTimeoutRef.current = setTimeout(reconnect, 3000);
-            }
-        });
-
-        instance.on('connect_error', (error) => {
-            // Don't log authentication errors for guests (expected behavior)
-            if (error.message !== 'Authentication error' || token) {
-                console.error('Socket connect error:', error.message);
-            }
-            setIsConnected(false);
-            reconnectAttempts.current++;
-
-            if (
-                reconnectAttempts.current > 3 &&
-                instance.io.opts.transports?.[0] === 'websocket'
-            ) {
-                console.log('⚠️ Falling back to polling...');
-                instance.io.opts.transports = ['polling', 'websocket'];
-            }
-        });
-
-        instance.on('pong', () => {
-            lastPongRef.current = Date.now();
-        });
-
-        return () => {
-            if (heartbeatIntervalRef.current) clearInterval(heartbeatIntervalRef.current);
-            if (forceReconnectTimeoutRef.current) clearTimeout(forceReconnectTimeoutRef.current);
-            activityCleanupRef.current?.();
-            instance.disconnect();
-            socketRef.current = null;
-            setSocketState(null);
-            setIsConnected(false);
-            setSocketId(undefined);
-            registeredRef.current = false;
-        };
-    }, [user?._id, token]);
-
-    useEffect(() => {
-        if (!socketState?.connected) return;
-
-        const healthCheck = setInterval(() => {
-            const now = Date.now();
-            const sinceLastPong = lastPongRef.current ? now - lastPongRef.current : 0;
-
-            if (sinceLastPong > 90000 && socketState.connected) {
-                console.log('⚠️ Connection seems dead, forcing reconnect...');
-                reconnect();
-            }
-        }, 30000);
-
-        return () => clearInterval(healthCheck);
-    }, [socketState, reconnect]);
-
-    useEffect(() => {
-        if (!socketState || !isConnected || registeredRef.current) return;
-
-        const sessionId = getSessionId();
-        if (token && user?._id) {
-            socketState.emit('register', { userId: user._id, sessionId });
-            console.log('📡 Re-registered user:', user._id);
-        } else if (sessionId) {
-            socketState.emit('register', { sessionId });
-            console.log('📡 Re-registered guest:', sessionId);
-        }
-        registeredRef.current = true;
-    }, [socketState, isConnected, token, user?._id]);
-
-    useEffect(() => {
-        if (!socketState || !isConnected) return;
-
-        const handleOnlineUsers = (users: OnlineUser[]) => {
-            console.log('👥 Received online_users:', users.length);
-            setOnlineUsers(users);
-        };
-
-        socketState.on('online_users', handleOnlineUsers);
-        socketState.emit('request_online_users');
-
-        return () => {
-            socketState.off('online_users', handleOnlineUsers);
-        };
-    }, [socketState, isConnected]);
-
-    useEffect(() => {
-        if (!socketState || !isConnected) return;
-
-        const handleUserOnline = (userData: OnlineUser) => {
-            setOnlineUsers(prev => {
-                if (prev.some(u => u.userId === userData.userId)) return prev;
-                return [...prev, userData];
-            });
-        };
-
-        const handleUserOffline = (data: { userId: string }) => {
-            setOnlineUsers(prev => prev.filter(u => u.userId !== data.userId));
-        };
-
-        socketState.on('user_online', handleUserOnline);
-        socketState.on('user_offline', handleUserOffline);
-
-        return () => {
-            socketState.off('user_online', handleUserOnline);
-            socketState.off('user_offline', handleUserOffline);
-        };
-    }, [socketState, isConnected]);
-
-    useEffect(() => {
-        if (!socketState || !isConnected) return;
-
-        const handler = (data: ForceLogoutPayload) => {
-            const isBanned = data.code === 'USER_BANNED';
-            toast.error(isBanned ? '🔴 Tài khoản bị khóa' : '⛔ Tài khoản bị xóa', {
-                description: data.message || 'Vui lòng liên hệ quản trị viên',
-                duration: 6000,
-            });
-            useAuthStore.getState().logout();
-            localStorage.removeItem('token');
-            localStorage.removeItem('auth-storage');
-            window.location.href = '/';
-        };
-
-        socketState.on('force_logout', handler);
-        return () => { socketState.off('force_logout', handler); };
-    }, [socketState, isConnected]);
-
-    useEffect(() => {
-        if (!socketState || !isConnected) return;
-
-        const handler = (data: RoleChangedPayload) => {
-            const currentUser = useAuthStore.getState().user;
-            if (currentUser && data.newRole !== currentUser.role) {
-                setUser({ ...currentUser, role: data.newRole, requestedRole: null });
-            }
-        };
-
-        socketState.on('role_changed', handler);
-        return () => { socketState.off('role_changed', handler); };
-    }, [socketState, isConnected, setUser]);
-
-    // Persistent admin-chat namespace socket for real-time red dot
-    useEffect(() => {
-        if (!socketState?.connected || !token || !user) return;
-
-        console.log('🔌 Connecting admin-chat socket for red dot');
-        const adminSocket = io(`${BASE_URL}/admin-chat`, {
+        const newSocket = io(socketUrl, {
             auth: { token },
-            transports: ['polling', 'websocket'],
-            upgrade: false,
+            transports: ['websocket', 'polling'],
+            reconnection: true,
+            reconnectionAttempts: 5,
+            reconnectionDelay: 1000,
         });
 
-        adminChatSocketRef.current = adminSocket;
+        socketRef.current = newSocket;
 
-        adminSocket.on('new_message', (msg: NewMessagePayload) => {
-            console.log('🔴 Admin chat new_message received (global)');
+        newSocket.on('connect', () => {
+            console.log('[SOCKET] Connected:', newSocket.id);
+            setSocket(newSocket);
+            setIsConnected(true);
+        });
 
-            const senderId = typeof msg.senderId === 'object' ? msg.senderId?._id : msg.senderId;
-            if (senderId === user._id) return;
+        newSocket.on('disconnect', (reason) => {
+            console.log('[SOCKET] Disconnected:', reason);
+            setSocket(null);
+            setIsConnected(false);
+        });
 
-            const isChatPage = window.location.pathname.includes('/chatwithadmin');
+        newSocket.on('connect_error', (error) => {
+            console.error('[SOCKET] Connection error:', error);
+            setIsConnected(false);
+        });
 
-            if (user.role === 'admin') {
-                if (msg.unreadCount !== undefined) {
-                    useChatStore.getState().setUnreadAdminChatCount(msg.unreadCount);
-                } else if (!isChatPage) {
-                    useChatStore.getState().incrementUnreadAdminChat();
+        // QUAN TRỌNG: Xử lý new_message event
+        // CHỈ set giá trị unread count từ server, KHÔNG tự cộng dồn
+        newSocket.on('new_message', (data: {
+            conversationId: string;
+            message: Message;
+            unreadCount: number;
+            isOwnMessage: boolean;
+        }) => {
+            console.log('[SOCKET] Received new_message:', data);
+
+            // QUAN TRỌNG: CHỈ set giá trị từ server
+            setUnreadCount(
+                data.conversationId,
+                data.unreadCount,
+                'socket.provider:new_message'
+            );
+
+            // Update conversation unread count
+            updateConversationUnreadCount(data.conversationId, data.unreadCount);
+
+            // Nếu là tin nhắn của mình (đã gửi thành công), confirm optimistic message
+            if (data.isOwnMessage) {
+                // Tìm optimistic message tương ứng (message cuối cùng đang isSending)
+                const currentMessages = useConversationsStore.getState().messages;
+                const optimisticMsg = currentMessages.find(
+                    (msg: Message) => msg.isSending && msg.content === data.message.content
+                );
+
+                if (optimisticMsg) {
+                    console.log('[SOCKET] Confirming optimistic message:', optimisticMsg._id, '->', data.message._id);
+                    confirmMessage(optimisticMsg._id, data.message);
                 }
             } else {
-                if (!isChatPage) {
-                    useChatStore.getState().incrementUnreadAdminChat();
-                }
+                // Tin nhắn từ người khác, thêm vào messages
+                const currentMessages = useConversationsStore.getState().messages;
+                setMessages([...currentMessages, data.message]);
             }
         });
 
+        // Xử lý conversation_read event
+        newSocket.on('conversation_read', (data: {
+            conversationId: string;
+            unreadCount: number;
+        }) => {
+            console.log('[SOCKET] Received conversation_read:', data);
+
+            // CHỈ set giá trị từ server
+            setUnreadCount(
+                data.conversationId,
+                data.unreadCount,
+                'socket.provider:conversation_read'
+            );
+
+            updateConversationUnreadCount(data.conversationId, data.unreadCount);
+        });
+
+        // Cleanup: Xóa TẤT CẢ listeners khi unmount để tránh duplicate
         return () => {
-            console.log('🔌 Disconnecting admin-chat socket');
-            adminSocket.disconnect();
-            adminChatSocketRef.current = null;
+            console.log('[SOCKET] Cleaning up socket connection');
+            newSocket.off('connect');
+            newSocket.off('disconnect');
+            newSocket.off('connect_error');
+            newSocket.off('new_message');
+            newSocket.off('conversation_read');
+            newSocket.close();
         };
-    }, [socketState?.connected, token, user]);
+    }, []); // Chỉ chạy 1 lần khi mount
 
-    useEffect(() => {
-        if (!socketState || !isConnected) return;
-
-        const handler = (data: RoleRequestResolvedPayload) => {
-            const currentUser = useAuthStore.getState().user;
-            if (currentUser) {
-                setUser({ ...currentUser, role: data.newRole as typeof currentUser.role, requestedRole: null });
-            }
-        };
-
-        socketState.on('role_request_resolved', handler);
-        return () => { socketState.off('role_request_resolved', handler); };
-    }, [socketState, isConnected, setUser]);
-
-    useEffect(() => {
-        if (!socketState || !isConnected) return;
-
-        const handler = (data: CoinsUpdatedPayload) => {
-            const currentCoins = useAuthStore.getState().coins;
-            const diff = data.coins - currentCoins;
-            if (diff !== 0) updateCoins(diff);
-        };
-
-        socketState.on('coins_updated', handler);
-        return () => { socketState.off('coins_updated', handler); };
-    }, [socketState, isConnected, updateCoins]);
-
-    useEffect(() => {
-        if (!socketState || !isConnected) return;
-
-        const handler = (data: StreakUpdatedPayload) => {
-            updateStreak(data.streak);
-            const currentCoins = useAuthStore.getState().coins;
-            const diff = data.totalCoins - currentCoins;
-            if (diff !== 0) updateCoins(diff);
-        };
-
-        socketState.on('streak_updated', handler);
-        return () => { socketState.off('streak_updated', handler); };
-    }, [socketState, isConnected, updateStreak, updateCoins]);
-
-    useEffect(() => {
-        if (!socketState || !isConnected) return;
-
-        const handler = (data: ProfileUpdatedPayload) => {
-            if (data.user) setUser(data.user);
-        };
-
-        socketState.on('profile_updated', handler);
-        return () => { socketState.off('profile_updated', handler); };
-    }, [socketState, isConnected, setUser]);
-
-    useEffect(() => {
-        if (!socketState || !isConnected) return;
-
-        const handler = (data: AvatarUpdatedPayload) => {
-            const currentUser = useAuthStore.getState().user;
-            if (currentUser) setUser({ ...currentUser, avatar: data.avatar });
-        };
-
-        socketState.on('avatar_updated', handler);
-        return () => { socketState.off('avatar_updated', handler); };
-    }, [socketState, isConnected, setUser]);
-
-    useEffect(() => {
-        const handleVisibilityChange = () => {
-            if (document.visibilityState === 'visible') {
-                if (socketRef.current && !socketRef.current.connected) {
-                    console.log('📱 Tab visible, reconnecting...');
-                    reconnect();
-                } else if (socketRef.current?.connected) {
-                    socketRef.current.emit('request_online_users');
-                }
-            }
-        };
-
-        document.addEventListener('visibilitychange', handleVisibilityChange);
-        return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-    }, [reconnect]);
-
-    const value = useMemo<SocketContextType>(
-        () => ({
-            socket: socketState,
-            isConnected,
-            socketId,
-            onlineUsers,
-            joinPostRoom,
-            leavePostRoom,
-        }),
-        [socketState, isConnected, socketId, onlineUsers, joinPostRoom, leavePostRoom]
+    return (
+        <SocketContext.Provider value={{ socket, isConnected }}>
+            {children}
+        </SocketContext.Provider>
     );
-
-    return <SocketContext.Provider value={value}>{children}</SocketContext.Provider>;
 }

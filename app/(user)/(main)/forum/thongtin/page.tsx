@@ -1,12 +1,31 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import CreatePostForm from '@/components/forum/CreatePostForm';
 import PostFeed from '@/components/forum/PostFeed';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+import { IForumPost } from '@/lib/api/forum.api';
 
 export default function ForumThongtinPage() {
+    const [posts, setPosts] = useState<IForumPost[]>([]);
+    const [hasFetched, setHasFetched] = useState(false);
+
+    const handlePostCreated = useCallback((newPost: IForumPost) => {
+        setPosts(prev => {
+            // Avoid duplicates
+            if (prev.some(p => p._id === newPost._id)) return prev;
+            return [newPost, ...prev];
+        });
+    }, []);
+
+    const handlePostsChange = useCallback((updatedPosts: IForumPost[]) => {
+        setPosts(updatedPosts);
+        if (updatedPosts.length > 0 && !hasFetched) {
+            setHasFetched(true);
+        }
+    }, [hasFetched]);
+
     return (
         <div className="min-h-screen bg-[var(--cn-bg-section)] py-4 sm:py-6">
             <div className="container mx-auto px-3 sm:px-4 max-w-3xl">
@@ -22,10 +41,10 @@ export default function ForumThongtinPage() {
                 </div>
 
                 {/* Create Post Form */}
-                <CreatePostForm />
+                <CreatePostForm onPostCreated={handlePostCreated} />
 
-                {/* Post Feed */}
-                <PostFeed />
+                {/* Post Feed - pass posts only after initial fetch */}
+                <PostFeed posts={hasFetched ? posts : undefined} onPostsChange={handlePostsChange} />
             </div>
         </div>
     );

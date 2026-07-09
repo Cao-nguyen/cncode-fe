@@ -41,12 +41,12 @@ export interface IForumPost {
     privacy: 'public' | 'friends' | 'private';
     feeling: string | null;
     location: string | null;
-    taggedUsers: any[];
+    taggedUsers: IForumUser[];
     isPinned: boolean;
     isDeleted: boolean;
     isEdited: boolean;
     editedAt: Date | null;
-    originalPost: any;
+    originalPost: IForumPost | null;
     createdAt: string;
     updatedAt: string;
 }
@@ -94,7 +94,7 @@ interface IForumActionResponse {
     isPinned?: boolean;
 }
 
-const handleResponse = async <T = any>(response: Response): Promise<T> => {
+const handleResponse = async <T = unknown>(response: Response): Promise<T> => {
     const data = await response.json();
     if (!response.ok) {
         throw new Error(data.message || 'An error occurred');

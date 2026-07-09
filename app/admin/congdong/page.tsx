@@ -2,7 +2,10 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useAuthStore } from '@/store/auth.store';
-import { MessageCircle, Users, Trash2, Search, TrendingUp, MessageSquare, Plus, X, Upload, Edit, ArrowLeft, MoreVertical, Send, UserPlus, Pin, Check, BellOff, LogOut, CheckCircle, Lock, Smile, Paperclip, Image as ImageIcon, BarChart3, Clock, Sticker as StickerIcon, Bell } from 'lucide-react';
+import { useUnreadMessagesStore } from '@/store/unreadMessages.store';
+import { useConversationsStore } from '@/store/conversations.store';
+import { useSocket } from '@/providers/socket.provider';
+import { MessageCircle, Users, Trash2, Search, TrendingUp, MessageSquare, Plus, X, Upload, Edit, ArrowLeft, MoreVertical, Send, UserPlus, Pin, Check, BellOff, LogOut, CheckCircle, Lock, Smile, Paperclip, Image as ImageIcon, BarChart3, Clock, Sticker as StickerIcon, Bell, Heart } from 'lucide-react';
 import { DashboardCard } from '@/components/custom/DashboardCard';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -23,6 +26,7 @@ import { PollDisplay } from '@/components/custom/PollDisplay';
 import { ReminderCreator } from '@/components/custom/ReminderCreator';
 import { ReminderDisplay } from '@/components/custom/ReminderDisplay';
 import { FileDisplay } from '@/components/custom/FileDisplay';
+import { FriendRequestModal } from '@/components/custom/FriendRequestModal';
 import { io, Socket } from 'socket.io-client';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
@@ -65,6 +69,10 @@ interface Message {
     senderId: User;
     content: string;
     type: string;
+    readBy?: Array<{ userId: User; readAt: string }>;
+    isRead?: boolean;
+    isHearted?: boolean;
+    heartedBy?: any[];
     createdAt: string;
     reminder?: {
         title: string;
@@ -84,6 +92,8 @@ interface Stats {
 
 export default function AdminCommunityPage() {
     const { token, user } = useAuthStore();
+    const { clearUnreadCount } = useUnreadMessagesStore();
+    const { socket } = useSocket();
     const [conversations, setConversations] = useState<Conversation[]>([]);
     const [allUsers, setAllUsers] = useState<User[]>([]);
     const [stats, setStats] = useState<Stats>({
@@ -115,6 +125,9 @@ export default function AdminCommunityPage() {
     const [messages, setMessages] = useState<Message[]>([]);
     const [newMessage, setNewMessage] = useState('');
     const [sending, setSending] = useState(false);
+    const [loadingOlderMessages, setLoadingOlderMessages] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [hasMoreMessages, setHasMoreMessages] = useState(false);
     const [chatSearch, setChatSearch] = useState('');
     const [filter, setFilter] = useState<'all' | 'unread'>('all');
     const [textareaRows, setTextareaRows] = useState(3);
@@ -127,73 +140,132 @@ export default function AdminCommunityPage() {
     const [showChatSidebar, setShowChatSidebar] = useState(true);
     const [uploadingFile, setUploadingFile] = useState(false);
     const [filesPreview, setFilesPreview] = useState<{ name: string; size: number; url: string }[]>([]);
+
+    // Add friend modal
+    const [showAddFriendModal, setShowAddFriendModal] = useState(false);
+
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const messagesContainerRef = useRef<HTMLDivElement>(null);
     const socketRef = useRef<Socket | null>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const imageInputRef = useRef<HTMLInputElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const selectedConvRef = useRef<Conversation | null>(null);
+    const userRef = useRef(user);
 
-    // Keep ref in sync with state
+    // Keep refs in sync with state
     useEffect(() => {
         selectedConvRef.current = selectedConv;
     }, [selectedConv]);
+
+    useEffect(() => {
+        userRef.current = user;
+    }, [user]);
 
     useEffect(() => {
         fetchStats();
         fetchConversations();
         fetchAllUsers();
 
-        // Setup socket
-        if (token) {
-            socketRef.current = io(API_URL, {
-                auth: { token },
-                transports: ['websocket', 'polling']
-            });
+        // Use socket from provider
+        console.log('Admin forum page - using socket from provider:', !!socket);
 
-            const handleNewMessage = ({ conversationId, message }: { conversationId: string; message: Message }) => {
-                console.log('New message received:', { conversationId, message, currentConv: selectedConvRef.current?._id });
-                // Use ref to get current value
-                if (selectedConvRef.current?._id === conversationId) {
-                    setMessages(prev => {
-                        // Check if message already exists to avoid duplicates
-                        const exists = prev.some(m => m._id === message._id);
-                        if (exists) {
-                            console.log('Message already exists, skipping');
-                            return prev;
-                        }
-                        return [...prev, message];
+        const handleNewMessage = ({ conversationId, message }: { conversationId: string; message: Message }) => {
+            console.log('🔔 Admin forum page - New message received:', { conversationId, message, currentConv: selectedConvRef.current?._id, isOwnMessage: message.senderId._id === userRef.current?._id });
+
+            // Skip if this is our own message (already added by sendMessage)
+            if (message.senderId._id === userRef.current?._id) {
+                console.log('Admin forum page - Skipping own message from socket event');
+                return;
+            }
+
+            // Add message to UI if viewing this conversation
+            // NOTE: Global socket handler in provider already updated conversation list & unread counts
+            if (selectedConvRef.current?._id === conversationId) {
+                console.log('Admin forum page - Adding message to UI');
+                setMessages(prev => {
+                    // Check if message already exists to avoid duplicates
+                    const exists = prev.some(m => m._id === message._id);
+                    if (exists) {
+                        console.log('Admin forum page - Message already exists, skipping');
+                        return prev;
+                    }
+                    return [...prev, message];
+                });
+
+                // Automatically mark as read since user is viewing the conversation
+                if (socket && socket.connected) {
+                    socket.emit('mark_read', { conversationId }, (response: { success: boolean }) => {
+                        console.log('📖 Admin forum page - Auto mark read response:', response);
                     });
                 }
-                fetchConversations();
-            };
+            }
+        };
 
-            socketRef.current.on('new_message', handleNewMessage);
+        const handlePollUpdated = ({ conversationId, message }: { conversationId: string; message: Message }) => {
+            console.log('Admin forum page - Poll updated:', { conversationId, message, currentConv: selectedConvRef.current?._id });
+            if (selectedConvRef.current?._id === conversationId) {
+                setMessages(prev => prev.map(m => m._id === message._id ? message : m));
+            }
+        };
 
-            socketRef.current.on('new_conversation', () => {
-                fetchConversations();
-                fetchStats();
-            });
+        const handleMessagesRead = (data: { conversationId: string; userId: string; readAt: string }) => {
+            console.log('📖 Admin forum page - Messages read:', data);
+            if (selectedConvRef.current?._id === data.conversationId) {
+                setMessages(prev => prev.map(msg => ({ ...msg, isRead: true })));
+            }
+        };
 
-            socketRef.current.on('poll_updated', ({ conversationId, message }: { conversationId: string; message: Message }) => {
-                console.log('Poll updated:', { conversationId, message, currentConv: selectedConvRef.current?._id });
-                if (selectedConvRef.current?._id === conversationId) {
-                    setMessages(prev => prev.map(m => m._id === message._id ? message : m));
+        const handleMessageHearted = (data: { messageId: string; isHearted: boolean; heartedBy: string[] }) => {
+            console.log('❤️ Admin forum page - Message hearted:', data);
+            setMessages(prev => prev.map(msg => {
+                if (msg._id === data.messageId) {
+                    return { ...msg, isHearted: data.isHearted, heartedBy: data.heartedBy };
                 }
-            });
+                return msg;
+            }));
+        };
+
+        // Listen to socket events
+        if (socket) {
+            socket.on('new_message', handleNewMessage);
+            socket.on('poll_updated', handlePollUpdated);
+            socket.on('messages_read', handleMessagesRead);
+            socket.on('message_hearted', handleMessageHearted);
+            console.log('✅ Admin forum page - Listening to new_message, poll_updated, messages_read, message_hearted from socket');
+        } else {
+            console.log('❌ Admin forum page - Socket not available yet');
         }
 
         return () => {
-            socketRef.current?.disconnect();
+            if (socket) {
+                socket.off('new_message', handleNewMessage);
+                socket.off('poll_updated', handlePollUpdated);
+                socket.off('messages_read', handleMessagesRead);
+                socket.off('message_hearted', handleMessageHearted);
+            }
         };
-    }, [page, token]);
+    }, [socket]);
 
     useEffect(() => {
         if (selectedConv) {
+            // Clear unread count for this conversation
+            clearUnreadCount(selectedConv._id);
             fetchMessages(selectedConv._id);
-            socketRef.current?.emit('join_conversation', selectedConv._id);
+            
+            // Emit join_conversation using socket from provider
+            if (socket && socket.connected) {
+                socket.emit('join_conversation', selectedConv._id);
+                console.log('✅ Admin forum page - Joined conversation room:', selectedConv._id);
+                // Mark messages as read
+                socket.emit('mark_read', { conversationId: selectedConv._id }, (response: { success: boolean }) => {
+                    console.log('📖 Admin forum page - Mark read response:', response);
+                });
+            } else {
+                console.log('❌ Admin forum page - Socket not available or not connected');
+            }
         }
-    }, [selectedConv]);
+    }, [selectedConv, clearUnreadCount, socket]);
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -232,7 +304,7 @@ export default function AdminCommunityPage() {
 
     const fetchAllUsers = async () => {
         try {
-            const res = await fetch(`${API_URL}/api/user/admin/users?limit=1000`, {
+            const res = await fetch(`${API_URL}/api/user/admin/users?limit=100`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const data = await res.json();
@@ -247,21 +319,61 @@ export default function AdminCommunityPage() {
         }
     };
 
-    const fetchMessages = async (conversationId: string) => {
+    const fetchMessages = async (conversationId: string, page: number = 1) => {
         try {
-            const res = await fetch(`${API_URL}/api/chat/conversations/${conversationId}/messages?limit=100`, {
+            const res = await fetch(`${API_URL}/api/chat/conversations/${conversationId}/messages?limit=50&page=${page}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const data = await res.json();
             if (data.success) {
-                setMessages(data.data);
-                // Scroll to bottom after loading messages
-                setTimeout(() => {
-                    messagesEndRef.current?.scrollIntoView({ behavior: 'instant' });
-                }, 100);
+                if (page === 1) {
+                    // First load - replace messages
+                    setMessages(data.data);
+                    setHasMoreMessages(data.pagination.hasMore);
+                    setCurrentPage(1);
+                    // Scroll to bottom after loading messages
+                    setTimeout(() => {
+                        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+                    }, 100);
+                } else {
+                    // Load more - prepend older messages
+                    const container = messagesContainerRef.current;
+                    const previousScrollHeight = container?.scrollHeight || 0;
+                    const previousScrollTop = container?.scrollTop || 0;
+
+                    setMessages(prev => [...data.data, ...prev]);
+                    setHasMoreMessages(data.pagination.hasMore);
+                    setCurrentPage(page);
+
+                    // Restore scroll position after new messages are added
+                    setTimeout(() => {
+                        if (container) {
+                            const newScrollHeight = container.scrollHeight;
+                            const scrollDiff = newScrollHeight - previousScrollHeight;
+                            container.scrollTop = previousScrollTop + scrollDiff;
+                        }
+                    }, 50);
+                }
             }
         } catch (error) {
             console.error('Error fetching messages:', error);
+        }
+    };
+
+    const handleLoadMoreMessages = () => {
+        if (!selectedConv || loadingOlderMessages || !hasMoreMessages) return;
+        
+        setLoadingOlderMessages(true);
+        const nextPage = currentPage + 1;
+        fetchMessages(selectedConv._id, nextPage).finally(() => {
+            setLoadingOlderMessages(false);
+        });
+    };
+
+    const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+        const container = e.currentTarget;
+        if (container.scrollTop < 100 && hasMoreMessages && !loadingOlderMessages) {
+            handleLoadMoreMessages();
         }
     };
 
@@ -427,6 +539,23 @@ export default function AdminCommunityPage() {
         } else {
             setTextareaRows(5);
         }
+    };
+
+    const handleHeartMessage = async (messageId: string) => {
+        if (!socket?.connected) return;
+        
+        socket.emit('heart_message', { messageId }, (response: { success: boolean; data?: any }) => {
+            if (response.success && response.data) {
+                console.log('❤️ Admin forum page - Heart message response:', response.data);
+                // Update local state immediately for optimistic UI
+                setMessages(prev => prev.map(msg => {
+                    if (msg._id === messageId) {
+                        return { ...msg, isHearted: response.data.isHearted, heartedBy: response.data.heartedBy };
+                    }
+                    return msg;
+                }));
+            }
+        });
     };
 
     const sendMessage = async (content?: string, type: string = 'text') => {
@@ -694,6 +823,8 @@ export default function AdminCommunityPage() {
             setDeleting(false);
         }
     };
+
+    // Note: Friend request functionality now handled by FriendRequestModal component
 
     const getConversationName = (conv: Conversation) => {
         return conv.name || 'Nhóm';
@@ -1061,9 +1192,9 @@ export default function AdminCommunityPage() {
 
             {/* Chat Overlay */}
             {selectedConv && (
-                <div className="fixed inset-0 bg-[var(--cn-bg-main)] z-50 flex">
+                <div className="fixed inset-0 bg-[var(--cn-bg-main)] z-50 flex animate-in fade-in duration-300">
                     {/* Sidebar - visible by default on mobile, always on desktop */}
-                    <div className={`${showChatSidebar ? 'flex' : 'hidden'} md:flex w-full md:w-72 lg:w-80 bg-[var(--cn-bg-card)] md:border-r border-[var(--cn-border)] flex-col absolute md:relative inset-0 z-10 md:z-auto`}>
+                    <div className={`${showChatSidebar ? 'flex' : 'hidden'} md:flex w-full md:w-72 lg:w-80 bg-[var(--cn-bg-card)] md:border-r border-[var(--cn-border)] flex-col absolute md:relative inset-0 z-10 md:z-auto transition-all duration-300`}>
                         {/* Overlay backdrop for mobile */}
                         <div className="md:hidden fixed inset-0 bg-black/30 -z-10" onClick={() => setShowChatSidebar(false)} />
                         <div className="border-b border-[var(--cn-border)]">
@@ -1072,7 +1203,12 @@ export default function AdminCommunityPage() {
                                     <ArrowLeft className="w-5 h-5" />
                                 </Button>
                                 <h1 className="text-lg font-semibold text-[var(--cn-text-main)]">Cộng đồng</h1>
-                                <Button variant="ghost" size="icon">
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => setShowAddFriendModal(true)}
+                                    title="Thêm bạn"
+                                >
                                     <UserPlus className="w-5 h-5" />
                                 </Button>
                             </div>
@@ -1162,7 +1298,16 @@ export default function AdminCommunityPage() {
                             </div>
                         </div>
 
-                        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                        <div 
+                            ref={messagesContainerRef}
+                            onScroll={handleScroll}
+                            className="flex-1 overflow-y-auto p-4 space-y-4"
+                        >
+                            {loadingOlderMessages && (
+                                <div className="flex justify-center py-4">
+                                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[var(--cn-primary)]"></div>
+                                </div>
+                            )}
                             {(() => {
                                 // Group messages by date and show date separators
                                 const getDateLabel = (dateStr: string): string => {
@@ -1205,6 +1350,7 @@ export default function AdminCommunityPage() {
                                     }
 
                                     const isOwn = msg.senderId._id === user?._id;
+                                    const isHeartedByCurrentUser = msg.heartedBy && msg.heartedBy.some((u: any) => u._id === user?._id);
                                     elements.push(
                                         <div key={msg._id} className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}>
                                             <div className={`flex gap-2 max-w-[70%] ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}>
@@ -1287,9 +1433,26 @@ export default function AdminCommunityPage() {
                                                             <p className="text-sm whitespace-pre-wrap break-words">{msg.content}</p>
                                                         </div>
                                                     )}
-                                                    <p className="text-xs text-[var(--cn-text-sub)] mt-1">
-                                                        {new Date(msg.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
-                                                    </p>
+                                                    <div className="flex items-center gap-2 mt-1">
+                                                        <p className="text-xs text-[var(--cn-text-sub)]">
+                                                            {new Date(msg.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                                                        </p>
+                                                        <button
+                                                            onClick={() => handleHeartMessage(msg._id)}
+                                                            className={`flex items-center gap-1 text-xs ${isHeartedByCurrentUser ? 'text-red-500' : 'text-gray-400'} transition`}
+                                                        >
+                                                            <Heart 
+                                                                className={`w-3.5 h-3.5 ${isHeartedByCurrentUser ? 'fill-current' : ''} ${!isHeartedByCurrentUser ? 'stroke-2' : ''}`} 
+                                                                data-filled="true"
+                                                            />
+                                                            {msg.heartedBy && msg.heartedBy.length > 0 && (
+                                                                <span>{msg.heartedBy.length}</span>
+                                                            )}
+                                                        </button>
+                                                        {isOwn && msg.isRead && (
+                                                            <span className="text-xs text-[var(--cn-text-sub)]">Đã xem</span>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -1431,6 +1594,12 @@ export default function AdminCommunityPage() {
                             onSubmit={handleReminderSubmit}
                         />
                     )}
+
+                    {/* Friend Request Modal */}
+                    <FriendRequestModal
+                        isOpen={showAddFriendModal}
+                        onClose={() => setShowAddFriendModal(false)}
+                    />
                 </div>
             )}
         </div>

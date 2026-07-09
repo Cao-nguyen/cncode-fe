@@ -106,8 +106,17 @@ export interface ExerciseQuestion {
     _id?: string;
     type: 'quiz' | 'true-false' | 'short-answer' | 'ide';
     question: string;
+    // New format (matching QuizPopup)
+    // For multiple-choice: options = ["A. text", "B. text"], correctAnswers = ["A"]
+    // For true-false: options = ["a. text", "b. text"], correctAnswers = ["a:true", "b:false"]
+    // For short-answer: correctAnswers = ["answer"]
+    options?: (string | ExerciseOption)[];
+    correctAnswers?: string[];
+    score?: number;
+    explanation?: string;
+    // Legacy format (for backward compatibility)
     // Quiz options
-    options?: ExerciseOption[];
+    legacyOptions?: ExerciseOption[];
     // True/false options (each option has its own isCorrect)
     trueFalseOptions?: { text: string; isCorrect: boolean }[];
     // Short answer
@@ -239,6 +248,7 @@ export interface LessonWithExercise {
     description?: string;
     isPreview?: boolean;
     exercise?: Partial<Exercise>;
+    progress?: Progress | null; // Progress data added by backend in learn context
 }
 
 // ===== EXERCISE ANSWER =====
@@ -269,6 +279,19 @@ export interface PayOSPaymentLink {
 }
 
 // ===== WEBHOOK =====
+
+// ===== NOTE =====
+export interface Note {
+    _id?: string;
+    userId: string;
+    lessonId: string;
+    courseId: string;
+    time: number;
+    timeStr: string;
+    text: string;
+    createdAt: string;
+    updatedAt: string;
+}
 
 export interface PayOSWebhookPayload {
     orderCode: number;

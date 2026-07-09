@@ -1,12 +1,13 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Save, X, Plus, Play, CheckCircle, Trash2 } from 'lucide-react';
+import { Save, X, Plus, Play, CheckCircle, Trash2, Upload } from 'lucide-react';
 import { CustomInput } from '../custom/CustomInput';
 import { CustomButton } from '../custom/CustomButton';
 import CustomEditor, { CustomEditorRef } from '../custom/CustomEditor';
-import CompactEditor, { CompactEditorRef } from '../custom/CompactEditor';
+import CustomEditorVideo from '../custom/CustomEditorVideo';
 import { createAdminLesson, updateAdminLesson } from '@/lib/api/khoahoc.api';
+import { uploadApi } from '@/lib/upload';
 import { Lesson } from '@/types/khoahoc.type';
 import { toast } from 'sonner';
 
@@ -33,7 +34,57 @@ interface QuizQuestion {
     question: string;
     options: string[];
     correctAnswer: number;
+    correctAnswers?: string[];
 }
+
+// Convert quizQuestions to CustomEditorVideo format
+const quizToEditorFormat = (quizzes: QuizQuestion[]): string => {
+    return quizzes.map((q, idx) => {
+        const h = Math.floor(q.time / 3600);
+        const m = Math.floor((q.time % 3600) / 60);
+        const s = q.time % 60;
+        const timeStr = `{TIME:${h}:${m}:${s}}`;
+        // Check if options already have letters (A., B., etc.) and skip adding letter
+        const options = q.options.map((opt, i) => {
+            const marker = q.correctAnswers?.includes(String.fromCharCode(65 + i)) ? '*' : '';
+            // If option already starts with letter pattern (A., B., etc.), keep it as is
+            if (/^[A-Da-d][).]\s/.test(opt)) {
+                return marker ? `*${opt}` : opt;
+            }
+            // Otherwise add letter
+            const letter = String.fromCharCode(65 + i);
+            return `${marker}${letter}. ${opt}`;
+        }).join('\n');
+        return `Câu ${idx + 1}. ${q.question}\n${timeStr}\n${options}`;
+    }).join('\n\n');
+};
+
+interface CustomEditorQuestion {
+    id: number;
+    type: 'multiple-choice' | 'true-false' | 'short-answer';
+    content: string;
+    options?: string[];
+    correctAnswers?: string[];
+    score: number;
+    explanation?: string;
+    time?: number;
+}
+
+// Convert CustomEditorVideo questions to backend format
+const convertQuestionsToBackendFormat = (questions: CustomEditorQuestion[]) => {
+    return questions.map(q => ({
+        time: q.time || 0,
+        type: q.type || 'multiple-choice',
+        question: q.content,
+        options: q.options || [],
+        correctAnswer: q.type === 'multiple-choice' && q.correctAnswers?.[0]
+            ? q.correctAnswers[0].charCodeAt(0) - 65
+            : 0,
+        correctAnswers: q.correctAnswers || [],
+        score: q.score || 1,
+        explanation: q.explanation || ''
+    }));
+};
 
 /**
  * Extract YouTube video ID from various URL formats
@@ -69,11 +120,19 @@ export default function LessonForm({
     const [youtubeUrl, setYoutubeUrl] = useState('');
     const [videoFileId, setVideoFileId] = useState(initialVideoFileId);
     const [embedId, setEmbedId] = useState(extractYoutubeId(initialVideoFileId));
+    const [uploadProgress, setUploadProgress] = useState(0);
+    const [uploadStatus, setUploadStatus] = useState('');
     const [duration, setDuration] = useState(initialDuration);
     const [saving, setSaving] = useState(false);
-    const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>(initialQuizQuestions);
+    const [quizQuestions, setQuizQuestions] = useState<CustomEditorQuestion[]>([]);
+    const [quizEditorContent, setQuizEditorContent] = useState(quizToEditorFormat(initialQuizQuestions));
+    const [videoTab, setVideoTab] = useState<'youtube' | 'upload'>('youtube');
+    const [uploadedVideoUrl, setUploadedVideoUrl] = useState('');
+    const [uploadingVideo, setUploadingVideo] = useState(false);
+    const [saveStatus, setSaveStatus] = useState<'unsaved' | 'saving' | 'saved'>('saved');
     const descriptionEditorRef = useRef<CustomEditorRef>(null);
-    const quizEditorRefs = useRef<{ [key: number]: { question: CompactEditorRef | null; options: (CompactEditorRef | null)[] } }>({});
+    const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+    const initialContentRef = useRef(quizEditorContent);
 
     // Sync title with initialTitle when it changes
     useEffect(() => {
@@ -87,6 +146,53 @@ export default function LessonForm({
         }
     }, []);
 
+    // Load draft from localStorage for new lessons
+    useEffect(() => {
+        if (!lessonId && chapterId) {
+            const storageKey = `lesson_draft_${chapterId}`;
+            const draft = localStorage.getItem(storageKey);
+            if (draft) {
+                try {
+                    const parsed = JSON.parse(draft);
+                    if (parsed.content && parsed.questions) {
+                        setQuizEditorContent(parsed.content);
+                        setQuizQuestions(parsed.questions);
+                        initialContentRef.current = parsed.content;
+                    }
+                } catch (error) {
+                    console.error('Failed to load draft:', error);
+                }
+            }
+        }
+    }, [lessonId, chapterId]);
+
+    // Auto-save function
+    const autoSaveQuestions = async (content: string, questions: CustomEditorQuestion[]) => {
+        setSaveStatus('saving');
+        try {
+            if (lessonId) {
+                // Auto-save to database for existing lessons
+                const quizzes = convertQuestionsToBackendFormat(questions);
+                await updateAdminLesson(lessonId, {
+                    quizQuestions: quizzes
+                });
+                setSaveStatus('saved');
+            } else {
+                // Save to localStorage for new lessons (not yet created)
+                const storageKey = `lesson_draft_${chapterId}`;
+                localStorage.setItem(storageKey, JSON.stringify({
+                    content,
+                    questions,
+                    timestamp: Date.now()
+                }));
+                setSaveStatus('saved');
+            }
+        } catch (error) {
+            console.error('Auto-save failed:', error);
+            setSaveStatus('unsaved');
+        }
+    };
+
     const handleYoutubeUrlChange = (value: string) => {
         setYoutubeUrl(value);
         const id = extractYoutubeId(value);
@@ -96,30 +202,58 @@ export default function LessonForm({
         }
     };
 
+    // Debounced auto-save effect
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            // Only auto-save if content has changed from initial and status is unsaved
+            if (quizEditorContent && quizQuestions.length > 0 && saveStatus === 'unsaved' && quizEditorContent !== initialContentRef.current) {
+                autoSaveQuestions(quizEditorContent, quizQuestions);
+            }
+        }, 500); // Save after 500ms of inactivity
+
+        return () => clearTimeout(timer);
+    }, [quizEditorContent, quizQuestions, saveStatus]);
+
+    // Warn before leaving with unsaved changes
+    useEffect(() => {
+        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+            if (saveStatus === 'unsaved' || saveStatus === 'saving') {
+                e.preventDefault();
+                e.returnValue = '';
+            }
+        };
+
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    }, [saveStatus]);
+
     const handleSave = async () => {
         if (!title.trim()) {
             toast.error('Vui lòng nhập tên bài học');
             return;
         }
 
-        if (!embedId) {
-            toast.error('Vui lòng nhập link YouTube');
-            return;
+        // Validate video source based on active tab
+        if (videoTab === 'youtube') {
+            if (!embedId) {
+                toast.error('Vui lòng nhập link YouTube hợp lệ');
+                return;
+            }
+        } else if (videoTab === 'upload') {
+            if (!uploadedVideoUrl) {
+                toast.error('Vui lòng tải lên video');
+                return;
+            }
         }
 
         try {
             setSaving(true);
 
-            // Collect quiz data from CompactEditor refs
-            const quizzes = quizQuestions.map((q, idx) => {
-                const refs = quizEditorRefs.current[idx];
-                return {
-                    time: q.time,
-                    question: refs?.question?.getContent() || '',
-                    options: q.options.map((_, optIdx) => refs?.options[optIdx]?.getContent() || ''),
-                    correctAnswer: q.correctAnswer,
-                };
-            });
+            // Convert questions using state from CustomEditorVideo
+            const quizzes = convertQuestionsToBackendFormat(quizQuestions as CustomEditorQuestion[]);
+
+            // Use the appropriate video source based on tab
+            const videoSource = videoTab === 'youtube' ? youtubeUrl : uploadedVideoUrl;
 
             const data = {
                 courseId,
@@ -127,7 +261,7 @@ export default function LessonForm({
                 title,
                 type: 'video' as const,
                 description: descriptionEditorRef.current?.getContent() || '',
-                videoFileId: youtubeUrl,
+                videoFileId: videoSource,
                 duration,
                 quizQuestions: quizzes,
             };
@@ -138,6 +272,9 @@ export default function LessonForm({
                 onSave(updatedLesson);
             } else {
                 const lesson = await createAdminLesson(chapterId, { ...data, order: 1 });
+                // Clear localStorage draft after successful creation
+                const storageKey = `lesson_draft_${chapterId}`;
+                localStorage.removeItem(storageKey);
                 toast.success('Đã tạo bài học');
                 onSave(lesson);
             }
@@ -146,22 +283,6 @@ export default function LessonForm({
         } finally {
             setSaving(false);
         }
-    };
-
-    const handleAddQuiz = () => {
-        setQuizQuestions([...quizQuestions, {
-            time: 0, question: '', options: ['', '', '', ''], correctAnswer: 0,
-        }]);
-    };
-
-    const handleRemoveQuiz = (index: number) => {
-        setQuizQuestions(quizQuestions.filter((_, i) => i !== index));
-    };
-
-    const handleQuizChange = (index: number, field: keyof QuizQuestion, value: string | number | string[]) => {
-        const updated = [...quizQuestions];
-        updated[index] = { ...updated[index], [field]: value };
-        setQuizQuestions(updated);
     };
 
     const formatDuration = (seconds: number) => {
@@ -203,38 +324,188 @@ export default function LessonForm({
                         />
                     </div>
 
-                    {/* YouTube URL */}
+                    {/* Video Source */}
                     <div>
-                        <label className="block text-sm font-medium mb-2">Link YouTube *</label>
-                        <CustomInput
-                            value={youtubeUrl}
-                            onChange={(e) => handleYoutubeUrlChange(e.target.value)}
-                            placeholder="https://youtube.com/watch?v=... hoặc https://youtu.be/..."
-                        />
+                        <label className="block text-sm font-medium mb-2">Nguồn video *</label>
 
-                        {embedId && (
-                            <div className="mt-4 space-y-4">
-                                <div className="relative bg-black rounded-lg overflow-hidden aspect-video">
-                                    <iframe
-                                        src={`https://www.youtube.com/embed/${embedId}?autoplay=0`}
-                                        className="w-full h-full"
-                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                        allowFullScreen
-                                    />
-                                </div>
-                                <div className="flex items-center gap-3 text-sm">
-                                    <div className="flex items-center gap-1 text-green-600">
-                                        <CheckCircle className="w-4 h-4" />
-                                        <span>Link YouTube hợp lệ</span>
-                                    </div>
-                                    {duration > 0 && (
-                                        <div className="flex items-center gap-1 text-gray-500">
-                                            <Play className="w-3 h-3" />
-                                            <span>{formatDuration(duration)}</span>
+                        {/* Tabs */}
+                        <div className="flex gap-2 mb-4 p-1 bg-gray-100 rounded-lg w-fit">
+                            <button
+                                type="button"
+                                onClick={() => setVideoTab('youtube')}
+                                className={`flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${videoTab === 'youtube'
+                                    ? 'bg-white text-blue-600 shadow-sm'
+                                    : 'text-gray-600 hover:text-gray-900'
+                                    }`}
+                            >
+                                <Play className="w-4 h-4" /> Link YouTube
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setVideoTab('upload')}
+                                className={`flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${videoTab === 'upload'
+                                    ? 'bg-white text-blue-600 shadow-sm'
+                                    : 'text-gray-600 hover:text-gray-900'
+                                    }`}
+                            >
+                                <Upload className="w-4 h-4" /> Tải lên video
+                            </button>
+                        </div>
+
+                        {/* YouTube Tab */}
+                        {videoTab === 'youtube' && (
+                            <>
+                                <CustomInput
+                                    value={youtubeUrl}
+                                    onChange={(e) => handleYoutubeUrlChange(e.target.value)}
+                                    placeholder="https://youtube.com/watch?v=... hoặc https://youtu.be/..."
+                                />
+
+                                {embedId && (
+                                    <div className="mt-4 space-y-4">
+                                        <div className="relative bg-black rounded-lg overflow-hidden aspect-video">
+                                            <iframe
+                                                src={`https://www.youtube.com/embed/${embedId}?autoplay=0`}
+                                                className="w-full h-full"
+                                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                                allowFullScreen
+                                            />
                                         </div>
+                                        <div className="flex items-center gap-3 text-sm">
+                                            <div className="flex items-center gap-1 text-green-600">
+                                                <CheckCircle className="w-4 h-4" />
+                                                <span>Link YouTube hợp lệ</span>
+                                            </div>
+                                            {duration > 0 && (
+                                                <div className="flex items-center gap-1 text-gray-500">
+                                                    <Play className="w-3 h-3" />
+                                                    <span>{formatDuration(duration)}</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+                            </>
+                        )}
+
+                        {/* Upload Tab */}
+                        {videoTab === 'upload' && (
+                            <>
+                                <label className={`flex flex-col items-center justify-center gap-3 border-2 border-dashed border-gray-300 rounded-lg py-12 cursor-pointer hover:border-blue-500 transition-colors bg-gray-50 relative ${uploadingVideo ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                                    {uploadingVideo ? (
+                                        <>
+                                            <div className="relative w-full max-w-xs">
+                                                <div className="w-full bg-gray-200 rounded-full h-2.5 mb-4">
+                                                    <div
+                                                        className="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
+                                                        style={{ width: `${uploadProgress}%` }}
+                                                    ></div>
+                                                </div>
+                                            </div>
+                                            <div className="text-center">
+                                                <span className="text-sm font-medium text-gray-700">{uploadStatus}</span>
+                                                <p className="text-xs text-gray-500 mt-1">{uploadProgress}%</p>
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Upload size={32} className="text-gray-400" />
+                                            <div className="text-center">
+                                                <span className="text-sm font-medium text-gray-700">Chọn file video từ máy tính</span>
+                                                <p className="text-xs text-gray-500 mt-1">MP4, WebM, hoặc OGG (tối đa 100MB)</p>
+                                            </div>
+                                        </>
                                     )}
-                                </div>
-                            </div>
+                                    <input
+                                        type="file"
+                                        accept="video/*"
+                                        className="hidden"
+                                        disabled={uploadingVideo}
+                                        onChange={async (e) => {
+                                            const file = e.target.files?.[0];
+                                            if (!file) return;
+
+                                            // Check file size
+                                            if (file.size > 100 * 1024 * 1024) {
+                                                toast.error('Video quá lớn. Tối đa 100MB');
+                                                return;
+                                            }
+
+                                            try {
+                                                setUploadingVideo(true);
+                                                setUploadProgress(0);
+                                                setUploadStatus('Bắt đầu upload...');
+                                                setEmbedId(null);
+                                                setYoutubeUrl('');
+
+                                                // Create preview
+                                                const reader = new FileReader();
+                                                reader.onload = () => {
+                                                    if (typeof reader.result === 'string') {
+                                                        setUploadedVideoUrl(reader.result);
+                                                    }
+                                                };
+                                                reader.readAsDataURL(file);
+
+                                                // Upload to server with progress
+                                                const result = await uploadApi.uploadVideoWithProgress(file, (progress, status) => {
+                                                    setUploadProgress(progress);
+                                                    setUploadStatus(status);
+                                                });
+
+                                                if (!result.success || !result.url) {
+                                                    throw new Error(result.message || 'Upload failed');
+                                                }
+
+                                                // Set video URL
+                                                setVideoFileId(result.url);
+                                                setUploadingVideo(false);
+                                                setUploadProgress(0);
+                                                setUploadStatus('');
+                                                toast.success('Video đã được tải lên thành công');
+
+                                            } catch (error) {
+                                                console.error('Upload error:', error);
+                                                toast.error(error instanceof Error ? error.message : 'Không thể tải video lên');
+                                                setUploadingVideo(false);
+                                                setUploadProgress(0);
+                                                setUploadStatus('');
+                                                setUploadedVideoUrl('');
+                                                setVideoFileId('');
+                                            }
+                                        }}
+                                    />
+                                </label>
+
+                                {uploadedVideoUrl && !uploadingVideo && (
+                                    <div className="mt-4 space-y-4">
+                                        <div className="relative bg-black rounded-lg overflow-hidden aspect-video">
+                                            <video
+                                                src={uploadedVideoUrl}
+                                                controls
+                                                className="w-full h-full"
+                                            />
+                                        </div>
+                                        <div className="flex items-center gap-3 text-sm">
+                                            <div className="flex items-center gap-1 text-green-600">
+                                                <CheckCircle className="w-4 h-4" />
+                                                <span>Video đã tải lên</span>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setUploadedVideoUrl('');
+                                                    setVideoFileId('');
+                                                }}
+                                                className="flex items-center gap-1 text-red-600 hover:text-red-700"
+                                            >
+                                                <Trash2 className="w-3 h-3" />
+                                                <span>Xóa video</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </>
                         )}
                     </div>
 
@@ -248,138 +519,25 @@ export default function LessonForm({
                     <div>
                         <div className="flex items-center justify-between mb-4">
                             <h4 className="text-lg font-semibold">Câu hỏi trong video</h4>
-                            <CustomButton onClick={handleAddQuiz} variant="secondary">
-                                <Plus className="w-4 h-4 mr-2" /> Thêm câu hỏi
-                            </CustomButton>
                         </div>
 
-                        {quizQuestions.length === 0 ? (
-                            <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
-                                <p className="text-sm text-gray-500">Chưa có câu hỏi nào</p>
-                                <CustomButton onClick={handleAddQuiz} variant="secondary" className="mt-3">
-                                    <Plus className="w-4 h-4 mr-2" /> Thêm câu hỏi đầu tiên
-                                </CustomButton>
-                            </div>
-                        ) : (
-                            <div className="space-y-6">
-                                {quizQuestions.map((quiz, index) => (
-                                    <div key={index} className="border rounded-lg p-4 space-y-3 bg-white">
-                                        <div className="flex items-start justify-between">
-                                            <h5 className="font-medium text-gray-900">Câu hỏi {index + 1}</h5>
-                                            <CustomButton
-                                                onClick={() => handleRemoveQuiz(index)}
-                                                variant="secondary"
-                                                size="small"
-                                                className="!p-1.5 !h-auto text-red-500 hover:bg-red-50"
-                                            >
-                                                <X className="w-4 h-4" />
-                                            </CustomButton>
-                                        </div>
-
-                                        <div>
-                                            <label className="block text-xs font-medium text-gray-700 mb-1">Thời gian hiển thị</label>
-                                            <div className="flex items-center gap-2">
-                                                <div className="flex-1">
-                                                    <label className="block text-[10px] text-gray-500 mb-0.5">Giờ</label>
-                                                    <CustomInput
-                                                        value={String(Math.floor(quiz.time / 3600)).padStart(2, '0')}
-                                                        onChange={(e) => {
-                                                            const h = parseInt(e.target.value.replace(/\D/g, '')) || 0;
-                                                            const m = Math.floor((quiz.time % 3600) / 60);
-                                                            const s = quiz.time % 60;
-                                                            handleQuizChange(index, 'time', h * 3600 + m * 60 + s);
-                                                        }}
-                                                        placeholder="00"
-                                                    />
-                                                </div>
-                                                <span className="text-gray-400 text-lg font-medium mt-5">:</span>
-                                                <div className="flex-1">
-                                                    <label className="block text-[10px] text-gray-500 mb-0.5">Phút</label>
-                                                    <CustomInput
-                                                        value={String(Math.floor((quiz.time % 3600) / 60)).padStart(2, '0')}
-                                                        onChange={(e) => {
-                                                            const h = Math.floor(quiz.time / 3600);
-                                                            const m = parseInt(e.target.value.replace(/\D/g, '')) || 0;
-                                                            const s = quiz.time % 60;
-                                                            handleQuizChange(index, 'time', h * 3600 + Math.min(m, 59) * 60 + s);
-                                                        }}
-                                                        placeholder="00"
-                                                    />
-                                                </div>
-                                                <span className="text-gray-400 text-lg font-medium mt-5">:</span>
-                                                <div className="flex-1">
-                                                    <label className="block text-[10px] text-gray-500 mb-0.5">Giây</label>
-                                                    <CustomInput
-                                                        value={String(quiz.time % 60).padStart(2, '0')}
-                                                        onChange={(e) => {
-                                                            const h = Math.floor(quiz.time / 3600);
-                                                            const m = Math.floor((quiz.time % 3600) / 60);
-                                                            const s = parseInt(e.target.value.replace(/\D/g, '')) || 0;
-                                                            handleQuizChange(index, 'time', h * 3600 + m * 60 + Math.min(s, 59));
-                                                        }}
-                                                        placeholder="00"
-                                                    />
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">Câu hỏi</label>
-                                            <CompactEditor
-                                                ref={(el) => {
-                                                    if (!quizEditorRefs.current[index]) quizEditorRefs.current[index] = { question: null, options: [] };
-                                                    quizEditorRefs.current[index].question = el;
-                                                }}
-                                                initialValue={quiz.question}
-                                                height="200px"
-                                            />
-                                        </div>
-
-                                        <div className="space-y-2">
-                                            <label className="block text-sm font-medium text-gray-700">Đáp án</label>
-                                            {quiz.options.map((opt, optIndex) => (
-                                                <div key={optIndex} className="flex items-start gap-2">
-                                                    <CustomButton
-                                                        onClick={() => handleQuizChange(index, 'correctAnswer', optIndex)}
-                                                        variant="secondary"
-                                                        size="small"
-                                                        className={`w-9 h-9 !p-0 flex items-center justify-center text-sm font-bold border-2 shrink-0 mt-1 transition-all ${quiz.correctAnswer === optIndex
-                                                            ? 'bg-indigo-600 text-white border-indigo-600 shadow-md hover:bg-indigo-700'
-                                                            : 'bg-white text-gray-600 border-gray-300 hover:border-indigo-400 hover:text-indigo-600'
-                                                            }`}
-                                                    >
-                                                        {String.fromCharCode(65 + optIndex)}
-                                                    </CustomButton>
-                                                    <div className="flex-1">
-                                                        <CompactEditor
-                                                            ref={(el) => {
-                                                                if (!quizEditorRefs.current[index]) quizEditorRefs.current[index] = { question: null, options: [] };
-                                                                quizEditorRefs.current[index].options[optIndex] = el;
-                                                            }}
-                                                            initialValue={opt}
-                                                            height="200px"
-                                                        />
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-
-                                        {index === quizQuestions.length - 1 && (
-                                            <div className="pt-4 border-t border-gray-100">
-                                                <CustomButton
-                                                    onClick={handleAddQuiz}
-                                                    variant="secondary"
-                                                    size="small"
-                                                    className="w-full"
-                                                >
-                                                    <Plus className="w-4 h-4 mr-2" /> Thêm câu hỏi
-                                                </CustomButton>
-                                            </div>
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
-                        )}
+                        <div className="border rounded-lg overflow-hidden bg-white">
+                            <CustomEditorVideo
+                                initialContent={quizEditorContent}
+                                onContentChange={(content, questions) => {
+                                    // Save questions from CustomEditorVideo directly
+                                    setQuizQuestions(questions);
+                                    setQuizEditorContent(content);
+                                    // Mark as unsaved when content changes
+                                    if (content !== initialContentRef.current) {
+                                        setSaveStatus('unsaved');
+                                    } else {
+                                        setSaveStatus('saved');
+                                    }
+                                }}
+                                saveStatus={saveStatus}
+                            />
+                        </div>
                     </div>
                 </div>
             </div>

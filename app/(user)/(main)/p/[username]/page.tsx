@@ -22,13 +22,16 @@ import {
     Video,
     MapPinned,
     ChevronDown,
-    Briefcase,
     Home,
     Flag
 } from 'lucide-react';
 import { toast } from 'sonner';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/auth.store';
+import PostFeed from '@/components/forum/PostFeed';
+import { IForumPost } from '@/lib/api/forum.api';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 interface IUser {
     _id: string;
@@ -50,29 +53,17 @@ interface IUser {
     updatedAt: string;
 }
 
-interface Post {
-    _id: string;
-    content: string;
-    images?: string[];
-    author: IUser;
-    likes: string[];
-    comments: number;
-    createdAt: string;
-}
-
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
 export default function ProfilePage() {
     const params = useParams();
+    const router = useRouter();
     const username = params.username as string;
     const { user: currentUser, token } = useAuthStore();
 
     const [profileUser, setProfileUser] = useState<IUser | null>(null);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<'posts' | 'friends' | 'favorites'>('posts');
-    const [posts, setPosts] = useState<Post[]>([]);
-    const [newPost, setNewPost] = useState('');
-    const [showCreatePost, setShowCreatePost] = useState(false);
     const [uploadingCover, setUploadingCover] = useState(false);
     const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
@@ -83,47 +74,30 @@ export default function ProfilePage() {
 
     useEffect(() => {
         fetchProfile();
-        fetchPosts();
     }, [username]);
 
     const fetchProfile = async () => {
         try {
-            if (currentUser && currentUser.username === username) {
-                setProfileUser({
-                    _id: currentUser._id,
-                    email: currentUser.email,
-                    username: currentUser.username || '',
-                    fullName: currentUser.fullName,
-                    avatar: currentUser.avatar || '',
-                    coverPhoto: '',
-                    role: currentUser.role,
-                    isOnboarded: currentUser.isOnboarded || false,
-                    class: '',
-                    province: '',
-                    school: '',
-                    birthday: '',
-                    bio: currentUser.bio || '',
-                    coins: currentUser.coins || 0,
-                    streak: currentUser.streak || 0,
-                    createdAt: currentUser.createdAt instanceof Date ? currentUser.createdAt.toISOString() : new Date().toISOString(),
-                    updatedAt: currentUser.updatedAt instanceof Date ? currentUser.updatedAt.toISOString() : new Date().toISOString()
-                });
+            const token = localStorage.getItem('token');
+            const response = await fetch(`${API_URL}/api/user/profile/${username}`, {
+                headers: token ? { Authorization: `Bearer ${token}` } : {}
+            });
+            const data = await response.json();
+
+            if (data.success && data.data) {
+                setProfileUser(data.data);
+            } else {
+                setProfileUser(null);
             }
         } catch (error) {
             console.error('Error fetching profile:', error);
             toast.error('Không thể tải thông tin người dùng');
+            setProfileUser(null);
         } finally {
             setLoading(false);
         }
     };
 
-    const fetchPosts = async () => {
-        try {
-            setPosts([]);
-        } catch (error) {
-            console.error('Error fetching posts:', error);
-        }
-    };
 
     const handleCoverUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -189,23 +163,6 @@ export default function ProfilePage() {
         }
     };
 
-    const handleCreatePost = async () => {
-        if (!newPost.trim()) {
-            toast.error('Vui lòng nhập nội dung');
-            return;
-        }
-
-        try {
-            toast.success('Đã đăng bài viết');
-            setNewPost('');
-            setShowCreatePost(false);
-            fetchPosts();
-        } catch (error) {
-            console.error('Error creating post:', error);
-            toast.error('Có lỗi xảy ra');
-        }
-    };
-
     const formatDate = (dateStr: string) => {
         if (!dateStr) return '';
         const date = new Date(dateStr);
@@ -214,19 +171,6 @@ export default function ProfilePage() {
             month: '2-digit',
             year: 'numeric'
         });
-    };
-
-    const formatPostDate = (dateStr: string) => {
-        const date = new Date(dateStr);
-        const now = new Date();
-        const diff = now.getTime() - date.getTime();
-        const hours = Math.floor(diff / (1000 * 60 * 60));
-        const days = Math.floor(hours / 24);
-
-        if (hours < 1) return 'Vừa xong';
-        if (hours < 24) return `${hours} giờ trước`;
-        if (days < 7) return `${days} ngày trước`;
-        return formatDate(dateStr);
     };
 
     if (loading) {
@@ -354,20 +298,12 @@ export default function ProfilePage() {
                                 {/* Action Buttons */}
                                 <div className="flex items-center gap-2">
                                     {isOwnProfile ? (
-                                        <>
-                                            <button
-                                                onClick={() => setShowCreatePost(true)}
-                                                className="px-4 py-2 bg-[var(--cn-primary)] hover:bg-[var(--cn-primary-hover)] text-white rounded-lg font-medium transition-colors"
-                                            >
-                                                Tạo bài viết
-                                            </button>
-                                            <Link
-                                                href="/settings"
-                                                className="px-4 py-2 bg-[var(--cn-bg-hover)] hover:bg-[var(--cn-bg-hover-strong)] text-[var(--cn-text-main)] rounded-lg font-medium transition-colors"
-                                            >
-                                                Chỉnh sửa trang cá nhân
-                                            </Link>
-                                        </>
+                                        <button
+                                            onClick={() => router.push('/forum/thongtin')}
+                                            className="px-4 py-2 bg-[var(--cn-primary)] hover:bg-[var(--cn-primary-hover)] text-white rounded-lg font-medium transition-colors"
+                                        >
+                                            Tạo bài viết
+                                        </button>
                                     ) : (
                                         <>
                                             <button className="px-4 py-2 bg-[var(--cn-primary)] hover:bg-[var(--cn-primary-hover)] text-white rounded-lg font-medium transition-colors flex items-center gap-2">
@@ -446,15 +382,6 @@ export default function ProfilePage() {
                                 )}
 
                                 <div className="space-y-3">
-                                    <div className="flex items-start gap-3 text-sm">
-                                        <Briefcase className="w-5 h-5 text-[var(--cn-text-sub)] mt-0.5" />
-                                        <div className="flex-1">
-                                            <span className="text-[var(--cn-text-main)]">
-                                                Product Designer tại <span className="font-medium">FPT Software</span>
-                                            </span>
-                                        </div>
-                                    </div>
-
                                     {profileUser.school && (
                                         <div className="flex items-start gap-3 text-sm">
                                             <School className="w-5 h-5 text-[var(--cn-text-sub)] mt-0.5" />
@@ -470,21 +397,12 @@ export default function ProfilePage() {
                                         <div className="flex items-start gap-3 text-sm">
                                             <GraduationCap className="w-5 h-5 text-[var(--cn-text-sub)] mt-0.5" />
                                             <div className="flex-1">
-                                                <span className="text-[var(--cn-text-main)]">
-                                                    Lớp <span className="font-medium">{profileUser.class}</span>
+                                                <span className="text-[var(--cn-text-main)] font-medium">
+                                                    {profileUser.class}
                                                 </span>
                                             </div>
                                         </div>
                                     )}
-
-                                    <div className="flex items-start gap-3 text-sm">
-                                        <Home className="w-5 h-5 text-[var(--cn-text-sub)] mt-0.5" />
-                                        <div className="flex-1">
-                                            <span className="text-[var(--cn-text-main)]">
-                                                Sống tại <span className="font-medium">Hà Nội</span>
-                                            </span>
-                                        </div>
-                                    </div>
 
                                     {profileUser.province && (
                                         <div className="flex items-start gap-3 text-sm">
@@ -498,13 +416,6 @@ export default function ProfilePage() {
                                     )}
 
                                     <div className="flex items-start gap-3 text-sm">
-                                        <Heart className="w-5 h-5 text-[var(--cn-text-sub)] mt-0.5" />
-                                        <div className="flex-1">
-                                            <span className="text-[var(--cn-text-main)]">Độc thân</span>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex items-start gap-3 text-sm">
                                         <Globe className="w-5 h-5 text-[var(--cn-text-sub)] mt-0.5" />
                                         <div className="flex-1">
                                             <span className="text-[var(--cn-text-main)]">
@@ -514,12 +425,6 @@ export default function ProfilePage() {
                                     </div>
                                 </div>
                             </div>
-
-                            {isOwnProfile && (
-                                <button className="w-full mt-4 px-4 py-2 bg-[var(--cn-bg-hover)] hover:bg-[var(--cn-bg-hover-strong)] text-[var(--cn-text-main)] rounded-lg font-medium transition-colors text-sm">
-                                    Chỉnh sửa chi tiết
-                                </button>
-                            )}
                         </div>
 
                         {/* Stats Card */}
@@ -563,151 +468,27 @@ export default function ProfilePage() {
                     {/* Main Content */}
                     <div className="lg:col-span-2 space-y-4">
                         {activeTab === 'posts' && (
-                            <>
-                                {/* Create Post Box */}
+                            <div className="space-y-4">
                                 {isOwnProfile && (
-                                    <div className="bg-[var(--cn-bg-card)] rounded-xl p-4 border border-[var(--cn-border)] shadow-sm">
-                                        <div className="flex items-center gap-3 mb-3">
-                                            <div className="w-10 h-10 rounded-full overflow-hidden bg-[var(--cn-bg-hover)]">
-                                                {profileUser.avatar ? (
-                                                    <img src={profileUser.avatar} alt="" className="w-full h-full object-cover" />
-                                                ) : (
-                                                    <div className="w-full h-full flex items-center justify-center">
-                                                        <User className="w-5 h-5 text-[var(--cn-text-sub)]" />
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <button
-                                                onClick={() => setShowCreatePost(true)}
-                                                className="flex-1 px-4 py-2 bg-[var(--cn-bg-hover)] hover:bg-[var(--cn-bg-hover-strong)] rounded-full text-left text-[var(--cn-text-sub)] transition-colors"
-                                            >
-                                                Bạn đang nghĩ gì?
-                                            </button>
-                                        </div>
-                                        <div className="border-t border-[var(--cn-border)] pt-3 grid grid-cols-3 gap-2">
-                                            <button className="flex items-center justify-center gap-2 px-3 py-2 hover:bg-[var(--cn-bg-hover)] rounded-lg transition-colors">
-                                                <Video className="w-5 h-5 text-red-500" />
-                                                <span className="text-sm font-medium text-[var(--cn-text-main)]">Video trực tiếp</span>
-                                            </button>
-                                            <button className="flex items-center justify-center gap-2 px-3 py-2 hover:bg-[var(--cn-bg-hover)] rounded-lg transition-colors">
-                                                <ImageIcon className="w-5 h-5 text-green-500" />
-                                                <span className="text-sm font-medium text-[var(--cn-text-main)]">Ảnh/video</span>
-                                            </button>
-                                            <button className="flex items-center justify-center gap-2 px-3 py-2 hover:bg-[var(--cn-bg-hover)] rounded-lg transition-colors">
-                                                <Flag className="w-5 h-5 text-yellow-500" />
-                                                <span className="text-sm font-medium text-[var(--cn-text-main)]">Sự kiện trong đời</span>
-                                            </button>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Create Post Modal */}
-                                {showCreatePost && isOwnProfile && (
-                                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                                        <div className="bg-[var(--cn-bg-card)] rounded-xl max-w-lg w-full shadow-2xl">
-                                            <div className="p-4 border-b border-[var(--cn-border)] flex items-center justify-between">
-                                                <h3 className="text-lg font-bold text-[var(--cn-text-main)]">Tạo bài viết</h3>
-                                                <button
-                                                    onClick={() => {
-                                                        setShowCreatePost(false);
-                                                        setNewPost('');
-                                                    }}
-                                                    className="p-2 hover:bg-[var(--cn-bg-hover)] rounded-full transition-colors"
-                                                >
-                                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                                    </svg>
-                                                </button>
-                                            </div>
-                                            <div className="p-4">
-                                                <div className="flex items-center gap-3 mb-4">
-                                                    <div className="w-10 h-10 rounded-full overflow-hidden bg-[var(--cn-bg-hover)]">
-                                                        {profileUser.avatar ? (
-                                                            <img src={profileUser.avatar} alt="" className="w-full h-full object-cover" />
-                                                        ) : (
-                                                            <div className="w-full h-full flex items-center justify-center">
-                                                                <User className="w-5 h-5 text-[var(--cn-text-sub)]" />
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                    <span className="font-medium text-[var(--cn-text-main)]">{profileUser.fullName}</span>
-                                                </div>
-                                                <textarea
-                                                    value={newPost}
-                                                    onChange={(e) => setNewPost(e.target.value)}
-                                                    placeholder="Bạn đang nghĩ gì?"
-                                                    className="w-full p-4 bg-[var(--cn-bg-main)] border border-[var(--cn-border)] rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-[var(--cn-primary)] text-[var(--cn-text-main)]"
-                                                    rows={6}
-                                                    autoFocus
-                                                />
-                                                <button
-                                                    onClick={handleCreatePost}
-                                                    disabled={!newPost.trim()}
-                                                    className="w-full mt-4 px-4 py-2 bg-[var(--cn-primary)] hover:bg-[var(--cn-primary-hover)] text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                                >
-                                                    Đăng
-                                                </button>
+                                    <div
+                                        onClick={() => router.push('/forum/thongtin')}
+                                        className="bg-[var(--cn-bg-card)] rounded-2xl shadow-sm border border-[var(--cn-border)] p-3 sm:p-4 mb-4 cursor-pointer hover:bg-[var(--cn-bg-section)] transition-colors"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <Avatar className="w-10 h-10 sm:w-12 sm:h-12 flex-shrink-0">
+                                                <AvatarImage src={currentUser?.avatar} />
+                                                <AvatarFallback className="text-sm sm:text-base font-bold bg-[var(--cn-primary)] text-white">
+                                                    {currentUser?.fullName?.charAt(0) || 'U'}
+                                                </AvatarFallback>
+                                            </Avatar>
+                                            <div className="flex-1 bg-[var(--cn-bg-section)] rounded-full px-4 py-2.5 sm:py-3 text-sm sm:text-base text-gray-500">
+                                                {currentUser?.fullName}, hôm nay bạn nghĩ gì?
                                             </div>
                                         </div>
                                     </div>
                                 )}
-
-                                {/* Posts List */}
-                                {posts.length === 0 ? (
-                                    <div className="bg-[var(--cn-bg-card)] rounded-xl p-12 border border-[var(--cn-border)] shadow-sm text-center">
-                                        <MessageCircle className="w-16 h-16 text-[var(--cn-text-sub)] mx-auto mb-4 opacity-30" />
-                                        <h3 className="text-lg font-semibold text-[var(--cn-text-main)] mb-2">
-                                            Chưa có bài viết nào
-                                        </h3>
-                                        <p className="text-[var(--cn-text-sub)] text-sm">
-                                            {isOwnProfile ? 'Hãy tạo bài viết đầu tiên của bạn!' : 'Người dùng này chưa đăng bài viết nào'}
-                                        </p>
-                                    </div>
-                                ) : (
-                                    posts.map((post) => (
-                                        <div key={post._id} className="bg-[var(--cn-bg-card)] rounded-xl p-6 border border-[var(--cn-border)] shadow-sm">
-                                            <div className="flex items-start justify-between mb-4">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-10 h-10 rounded-full overflow-hidden bg-[var(--cn-bg-hover)]">
-                                                        {post.author.avatar ? (
-                                                            <img src={post.author.avatar} alt="" className="w-full h-full object-cover" />
-                                                        ) : (
-                                                            <div className="w-full h-full flex items-center justify-center">
-                                                                <User className="w-5 h-5 text-[var(--cn-text-sub)]" />
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                    <div>
-                                                        <p className="font-medium text-[var(--cn-text-main)]">{post.author.fullName}</p>
-                                                        <p className="text-xs text-[var(--cn-text-sub)]">{formatPostDate(post.createdAt)}</p>
-                                                    </div>
-                                                </div>
-                                                <button className="p-2 hover:bg-[var(--cn-bg-hover)] rounded-lg transition-colors">
-                                                    <MoreHorizontal className="w-5 h-5 text-[var(--cn-text-sub)]" />
-                                                </button>
-                                            </div>
-                                            <p className="text-[var(--cn-text-main)] mb-4 whitespace-pre-wrap">{post.content}</p>
-                                            {post.images && post.images.length > 0 && (
-                                                <div className="grid grid-cols-2 gap-2 mb-4">
-                                                    {post.images.map((img, idx) => (
-                                                        <img key={idx} src={img} alt="" className="w-full rounded-lg" />
-                                                    ))}
-                                                </div>
-                                            )}
-                                            <div className="flex items-center gap-6 pt-4 border-t border-[var(--cn-border)]">
-                                                <button className="flex items-center gap-2 text-[var(--cn-text-sub)] hover:text-[var(--cn-primary)] transition-colors">
-                                                    <Heart className="w-5 h-5" />
-                                                    <span className="text-sm">{post.likes.length}</span>
-                                                </button>
-                                                <button className="flex items-center gap-2 text-[var(--cn-text-sub)] hover:text-[var(--cn-primary)] transition-colors">
-                                                    <MessageCircle className="w-5 h-5" />
-                                                    <span className="text-sm">{post.comments}</span>
-                                                </button>
-                                            </div>
-                                        </div>
-                                    ))
-                                )}
-                            </>
+                                <PostFeed />
+                            </div>
                         )}
 
                         {activeTab === 'friends' && (

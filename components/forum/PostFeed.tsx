@@ -78,13 +78,28 @@ export default function PostFeed({ posts: initialPosts, onPostsChange }: PostFee
         }
     }, [page]);
 
+    // Sync from initialPosts only on first render
+    const initialRenderRef = useRef(true);
+
     useEffect(() => {
-        if (initialPosts && initialPosts.length > 0 && posts.length === 0) {
-            setPosts(initialPosts);
-        } else if (!initialPosts && posts.length === 0) {
+        if (initialRenderRef.current) {
+            // First render: if initialPosts provided, use it; otherwise fetch
+            if (initialPosts !== undefined && initialPosts.length > 0) {
+                setPosts(dedupePosts(initialPosts));
+            } else if (initialPosts === undefined) {
+                fetchPosts();
+            }
+            initialRenderRef.current = false;
+        } else if (initialPosts !== undefined && initialPosts.length > 0) {
+            // Subsequent renders: only update if initialPosts is provided with new data
+            setPosts(dedupePosts(initialPosts));
+        } else if (initialPosts === undefined && posts.length === 0) {
+            // Re-fetch if no posts
             fetchPosts();
         }
+    }, [initialPosts]);
 
+    useEffect(() => {
         // Socket event listeners for real-time updates
         if (socket) {
             socket.on('forum:post-created', (data) => {
@@ -170,14 +185,15 @@ export default function PostFeed({ posts: initialPosts, onPostsChange }: PostFee
             setLoading(true);
             const result = await forumApi.getPosts(pageNum, 10);
 
-            if (pageNum === 1) {
-                setPosts(dedupePosts(result.data));
-            } else {
-                setPosts((prev) => dedupePosts([...prev, ...result.data]));
-            }
+            const newPosts = pageNum === 1
+                ? dedupePosts(result.data)
+                : dedupePosts([...posts, ...result.data]);
 
+            setPosts(newPosts);
             setHasMore(pageNum < result.pagination.totalPages);
-            onPostsChange?.(result.data);
+
+            // Pass full posts array to parent, not just current page
+            onPostsChange?.(newPosts);
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Lỗi khi tải bài viết';
             toast.error(errorMessage);

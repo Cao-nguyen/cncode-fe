@@ -10,11 +10,12 @@ import ForumImagePreview from './ForumImagePreview';
 
 interface CreatePostFormProps {
     onPostCreated?: (newPost: IForumPost) => void;
+    autoOpen?: boolean;
 }
 
-export default function CreatePostForm({ onPostCreated }: CreatePostFormProps) {
+export default function CreatePostForm({ onPostCreated, autoOpen = false }: CreatePostFormProps) {
     const { user, token } = useAuthStore();
-    const [showModal, setShowModal] = useState(false);
+    const [showModal, setShowModal] = useState(autoOpen);
     const [content, setContent] = useState('');
     const [images, setImages] = useState<string[]>([]);
     const [showPrivacy, setShowPrivacy] = useState(false);

@@ -1,99 +1,204 @@
-
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import {
-    CreditCard,
-    Settings,
-    AlertCircle,
-    ArrowLeft,
-    Clock,
-    ShieldAlert,
-    MessageCircle
-} from 'lucide-react';
+import { ShoppingCart, Eye, Plus } from 'lucide-react';
+import { CustomButton } from '@/components/custom/CustomButton';
+import { CustomInputSearch } from '@/components/custom/CustomInputSearch';
+import { CustomSelect } from '@/components/custom/CustomSelect';
+import { getProducts, ShopProduct } from '@/lib/utils/shopHistory';
+import { initializeShopData } from '@/lib/data/shop.data';
+import { useAuthStore } from '@/store/auth.store';
 
-export default function PaymentMaintenancePage() {
+const CATEGORIES = ['Tài liệu', 'Bài thuyết trình', 'Code', 'Thiết kế', 'Khác'];
+const CATEGORY_OPTIONS = [
+    { value: '', label: 'Tất cả danh mục' },
+    ...CATEGORIES.map(cat => ({ value: cat, label: cat }))
+];
+
+export default function ShopPage() {
+    const router = useRouter();
+    const { user } = useAuthStore();
+    const [search, setSearch] = useState('');
+    const [categoryFilter, setCategoryFilter] = useState('');
+
+    const allProducts = useMemo(() => {
+        initializeShopData();
+        return getProducts();
+    }, []);
+
+    const products = useMemo(() => {
+        return allProducts.filter(p => p.status === 'approved');
+    }, [allProducts]);
+
+    const filteredProducts = useMemo(() => {
+        return products.filter(product => {
+            const matchesSearch = !search ||
+                product.title.toLowerCase().includes(search.toLowerCase()) ||
+                product.description.toLowerCase().includes(search.toLowerCase()) ||
+                product.tags.some(tag => tag.toLowerCase().includes(search.toLowerCase()));
+
+            const matchesCategory = !categoryFilter || product.category === categoryFilter;
+
+            return matchesSearch && matchesCategory;
+        });
+    }, [products, search, categoryFilter]);
+
+    const formatPrice = (price: number) => {
+        return new Intl.NumberFormat('vi-VN', {
+            style: 'currency',
+            currency: 'VND'
+        }).format(price);
+    };
+
     return (
-        <div className="min-h-screen bg-white flex items-center justify-center p-6">
-            <div className="max-w-md w-full text-center">
-
-                {}
-                <div className="relative inline-flex mb-8">
-                    {}
-                    <div className="absolute inset-0 bg-orange-50 rounded-full scale-150 blur-3xl opacity-60" />
-
-                    <div className="relative w-24 h-24 bg-gradient-to-br from-orange-400 to-amber-500 rounded-[32px] shadow-2xl shadow-orange-100 flex items-center justify-center">
-                        <CreditCard className="w-10 h-10 text-white" />
-
-                        {}
-                        <div className="absolute -bottom-1 -right-1 w-10 h-10 bg-white rounded-2xl shadow-lg flex items-center justify-center">
-                            <Settings className="w-6 h-6 text-orange-500 animate-spin-slow" />
-                        </div>
-                    </div>
+        <div className="max-w-7xl mx-auto px-4 py-8">
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+                <div>
+                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Cửa hàng số</h1>
+                    <p className="text-gray-600 dark:text-gray-400 mt-1">
+                        Mua và bán tài liệu, code, thiết kế số
+                    </p>
                 </div>
-
-                {}
-                <h1 className="text-2xl font-black text-gray-900 mb-3 tracking-tight uppercase">
-                    Hệ thống thanh toán bảo trì
-                </h1>
-
-                <p className="text-gray-500 text-sm leading-relaxed mb-10 px-2">
-                    Chúng tôi đang tiến hành nâng cấp cổng thanh toán để mang lại trải nghiệm tốt hơn.
-                    Tính năng này <span className="font-bold text-orange-600">tạm thời bị khóa</span> và sẽ sớm hoạt động trở lại.
-                </p>
-
-                {}
-                <div className="space-y-4 mb-10">
-                    <div className="flex items-center gap-4 p-4 bg-orange-50 rounded-2xl border border-orange-100 text-left">
-                        <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm">
-                            <Clock className="w-5 h-5 text-orange-500" />
-                        </div>
-                        <div>
-                            <p className="text-[10px] font-bold text-orange-400 uppercase tracking-widest">Thời gian dự kiến</p>
-                            <p className="text-sm font-bold text-gray-700">Hoàn thành trong vài ngày tới</p>
-                        </div>
-                    </div>
-
-                    <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-2xl border border-gray-100 text-left">
-                        <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm">
-                            <ShieldAlert className="w-5 h-5 text-gray-400" />
-                        </div>
-                        <div>
-                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">An toàn dữ liệu</p>
-                            <p className="text-sm font-bold text-gray-700">Mọi giao dịch cũ vẫn an toàn</p>
-                        </div>
-                    </div>
-                </div>
-
-                {}
-                <div className="flex flex-col gap-4">
-                    <Link href="https://zalo.me/0394217863" target="_blank">
-                        <button className="w-full py-4 bg-gray-900 text-white rounded-2xl font-bold text-sm shadow-xl shadow-gray-200 hover:bg-orange-500 transition-all flex items-center justify-center gap-2 group">
-                            <MessageCircle className="w-4 h-4" />
-                            Liên hệ Admin qua Zalo
-                        </button>
-                    </Link>
-
-                    <Link
-                        href="/"
-                        className="flex items-center justify-center gap-2 text-sm font-bold text-gray-400 hover:text-gray-600 transition-colors"
+                {user && (
+                    <CustomButton
+                        onClick={() => router.push('/cuahangso/dang-san-pham')}
+                        className="gap-2"
                     >
-                        <ArrowLeft className="w-4 h-4" />
-                        Quay lại trang chủ
-                    </Link>
+                        <Plus className="w-4 h-4" />
+                        Đăng bán sản phẩm
+                    </CustomButton>
+                )}
+            </div>
+
+            {/* Filters */}
+            <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 mb-6 shadow-sm">
+                <div className="flex flex-col sm:flex-row gap-3">
+                    <div className="flex-1">
+                        <CustomInputSearch
+                            placeholder="Tìm kiếm sản phẩm..."
+                            value={search}
+                            onChange={setSearch}
+                        />
+                    </div>
+                    <div className="sm:w-64">
+                        <CustomSelect
+                            options={CATEGORY_OPTIONS}
+                            value={categoryFilter}
+                            onChange={setCategoryFilter}
+                            placeholder="Chọn danh mục"
+                        />
+                    </div>
                 </div>
             </div>
 
-            <style jsx global>{`
-                @keyframes spin-slow {
-                    from { transform: rotate(0 dream); }
-                    to { transform: rotate(360deg); }
-                }
-                .animate-spin-slow {
-                    animation: spin-slow 4s linear infinite;
-                }
-            `}</style>
+            {/* Stats */}
+            <div className="mb-6">
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Tìm thấy <span className="font-semibold text-gray-900 dark:text-white">{filteredProducts.length}</span> sản phẩm
+                </p>
+            </div>
+
+            {/* Products Grid */}
+            {filteredProducts.length === 0 ? (
+                <div className="text-center py-16 bg-white dark:bg-gray-800 rounded-2xl">
+                    <ShoppingCart className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                        Không tìm thấy sản phẩm
+                    </h3>
+                    <p className="text-gray-500 dark:text-gray-400">
+                        Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm
+                    </p>
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    {filteredProducts.map((product) => (
+                        <Link
+                            key={product._id}
+                            href={`/cuahangso/${product._id}`}
+                            className="bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 group"
+                        >
+                            {/* Product Image */}
+                            <div className="relative h-48 bg-gray-100 dark:bg-gray-700 overflow-hidden">
+                                {product.images && product.images.length > 0 ? (
+                                    <img
+                                        src={product.images[0]}
+                                        alt={product.title}
+                                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                                    />
+                                ) : (
+                                    <div className="flex items-center justify-center h-full">
+                                        <ShoppingCart className="w-16 h-16 text-gray-300" />
+                                    </div>
+                                )}
+                                <div className="absolute top-2 left-2">
+                                    <span className="px-3 py-1 text-xs font-medium rounded-full bg-white/90 text-gray-800">
+                                        {product.category}
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Product Info */}
+                            <div className="p-4">
+                                <h3 className="font-semibold text-gray-900 dark:text-white mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors">
+                                    {product.title}
+                                </h3>
+                                <p className="text-sm text-gray-600 dark:text-gray-400 mb-3 line-clamp-2">
+                                    {product.description}
+                                </p>
+
+                                {/* Price */}
+                                <div className="mb-3">
+                                    {product.price === 0 ? (
+                                        <span className="text-2xl font-bold text-green-600 dark:text-green-400">
+                                            Miễn phí
+                                        </span>
+                                    ) : (
+                                        <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                                            {formatPrice(product.price)}
+                                        </span>
+                                    )}
+                                </div>
+
+                                {/* Stats */}
+                                <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
+                                    <div className="flex items-center gap-1">
+                                        <Eye className="w-4 h-4" />
+                                        <span>{product.views}</span>
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                        <ShoppingCart className="w-4 h-4" />
+                                        <span>{product.purchases} đã mua</span>
+                                    </div>
+                                </div>
+
+                                {/* Seller */}
+                                <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+                                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                                        Người bán: <span className="font-medium text-gray-700 dark:text-gray-300">{product.sellerName}</span>
+                                    </p>
+                                </div>
+
+                                {/* Tags */}
+                                {product.tags && product.tags.length > 0 && (
+                                    <div className="flex flex-wrap gap-1 mt-3">
+                                        {product.tags.slice(0, 3).map((tag, idx) => (
+                                            <span
+                                                key={idx}
+                                                className="px-2 py-0.5 text-xs rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400"
+                                            >
+                                                {tag}
+                                            </span>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </Link>
+                    ))}
+                </div>
+            )}
         </div>
     );
 }

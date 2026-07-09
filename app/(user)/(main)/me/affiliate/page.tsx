@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Users, FileText, GraduationCap, Trophy, CheckCircle, XCircle, Gift, TrendingUp, Crown, Medal, Coins, Copy, Check, UserPlus, BookOpen, ClipboardList } from 'lucide-react';
+import { Users, FileText, GraduationCap, Trophy, CheckCircle, XCircle, Gift, TrendingUp, Crown, Medal, Coins, Copy, Check, UserPlus, BookOpen } from 'lucide-react';
 import { useAuthStore } from '@/store/auth.store';
 import { useSocket } from '@/providers/socket.provider';
 import { affiliateApi } from '@/lib/api/affiliate.api';
@@ -14,7 +14,6 @@ import { DashboardCard } from '@/components/custom/DashboardCard';
 const TOAST_MESSAGES: Record<string, string> = {
     new_registration: '🎉 Có người vừa đăng ký qua link của bạn!',
     post_created: '📝 Người được giới thiệu vừa đăng bài viết mới!',
-    quiz_taken: '🎓 Người được giới thiệu vừa hoàn thành bài kiểm tra!',
     referred_user_deleted: '⚠️ Một người dùng được giới thiệu đã bị xóa khỏi hệ thống',
     user_deleted: '⚠️ Dữ liệu affiliate của bạn đã được cập nhật',
 };
@@ -160,11 +159,6 @@ export default function AffiliatePage() {
                                 icon={<BookOpen size={16} className="text-green-500" />}
                             />
                             <DashboardCard
-                                title="Bài tập"
-                                value={affiliate.totalTakenQuiz || 0}
-                                icon={<ClipboardList size={16} className="text-purple-500" />}
-                            />
-                            <DashboardCard
                                 title="Tổng xu"
                                 value={affiliate.totalCoinsEarned?.toLocaleString() || 0}
                                 icon={<Coins size={16} className="text-yellow-500" />}
@@ -200,18 +194,6 @@ export default function AffiliatePage() {
                                     <div className="flex items-center gap-1 sm:gap-1.5">
                                         <Coins size={14} className="text-yellow-500 sm:w-4 sm:h-4" />
                                         <span className="text-xs sm:text-sm font-bold text-[var(--cn-primary)]">+30 xu</span>
-                                    </div>
-                                </div>
-                                <div className="flex items-center justify-between p-2.5 sm:p-3 bg-white dark:bg-gray-900 rounded-[var(--cn-radius-sm)]">
-                                    <div className="flex items-center gap-2 sm:gap-3">
-                                        <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[var(--cn-bg-section)] flex items-center justify-center">
-                                            <ClipboardList size={14} className="text-purple-500 sm:w-4 sm:h-4" />
-                                        </div>
-                                        <span className="text-xs sm:text-sm font-medium text-[var(--cn-text-sub)]">Làm bài tập</span>
-                                    </div>
-                                    <div className="flex items-center gap-1 sm:gap-1.5">
-                                        <Coins size={14} className="text-yellow-500 sm:w-4 sm:h-4" />
-                                        <span className="text-xs sm:text-sm font-bold text-[var(--cn-primary)]">+20 xu</span>
                                     </div>
                                 </div>
                             </div>
@@ -322,14 +304,7 @@ export default function AffiliatePage() {
                                             </div>
                                             <div className="flex gap-1.5 sm:gap-2">
                                                 <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-[9px] sm:text-xs font-medium ${referredUser.hasPosted ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-500'}`}>
-                                                    {referredUser.hasPosted ? <CheckCircle size={10} /> : <XCircle size={10} />}
-                                                    <span className="hidden xs:inline">Bài viết</span>
-                                                    <span className="xs:hidden">📝</span>
-                                                </div>
-                                                <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-[9px] sm:text-xs font-medium ${referredUser.hasTakenQuiz ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-500'}`}>
-                                                    {referredUser.hasTakenQuiz ? <CheckCircle size={10} /> : <XCircle size={10} />}
-                                                    <span className="hidden xs:inline">Bài tập</span>
-                                                    <span className="xs:hidden">📚</span>
+                                                    {referredUser.hasPosted ? 'Đã đăng' : 'Chưa đăng'}
                                                 </div>
                                             </div>
                                         </div>
