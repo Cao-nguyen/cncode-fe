@@ -10,6 +10,13 @@ import UsersPopup from "./analytics/UsersPopup";
 import GuestsPopup from "./analytics/GuestsPopup";
 import { getSessionId, shouldTrackVisit, markVisitTracked } from "@/lib/utils/session";
 
+interface OnlineUser {
+    _id: string;
+    username: string;
+    avatar?: string;
+    full_name?: string;
+}
+
 interface OnlineStatsData {
     users: number;
     guests: number;
@@ -27,7 +34,7 @@ interface GuestInfo {
 }
 
 export default function Analytics() {
-    const { socket, isConnected } = useSocket();
+    const { socket, isConnected, onlineUsers: socketOnlineUsers } = useSocket();
     const { user } = useAuthStore();
 
     const [showUsersPopup, setShowUsersPopup] = useState(false);
@@ -94,12 +101,29 @@ export default function Analytics() {
             }
         };
 
+        const handleOnlineUsers = (data: { users: OnlineUser[] }) => {
+            console.log('[ANALYTICS] Received online_users:', data);
+            setOnlineStats(prev => ({ ...prev, users: data.users?.length || 0 }));
+            setOnlineUsers(data.users || []);
+        };
+
         socket.on('online_stats', handleOnlineStats);
+        socket.on('online_users', handleOnlineUsers);
 
         return () => {
             socket.off('online_stats', handleOnlineStats);
+            socket.off('online_users', handleOnlineUsers);
         };
     }, [socket, isConnected]);
+
+    // Fallback: Use onlineUsers from socket provider
+    useEffect(() => {
+        if (socketOnlineUsers && socketOnlineUsers.length > 0) {
+            console.log('[ANALYTICS] Using onlineUsers from socket provider:', socketOnlineUsers);
+            setOnlineStats(prev => ({ ...prev, users: socketOnlineUsers.length }));
+            setOnlineUsers(socketOnlineUsers);
+        }
+    }, [socketOnlineUsers]);
 
     const loadGuests = async () => {
         if (!isAdmin) return;
