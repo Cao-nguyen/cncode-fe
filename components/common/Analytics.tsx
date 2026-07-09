@@ -44,6 +44,7 @@ export default function Analytics() {
     const [guests, setGuests] = useState<GuestInfo[]>([]);
     const [onlineUsers, setOnlineUsers] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const sessionId = getSessionId();
 
     const isAdmin = user?.role?.toLowerCase() === 'admin';
 
@@ -87,7 +88,23 @@ export default function Analytics() {
     }, [user?._id]);
 
     useEffect(() => {
-        if (!socket || !isConnected) return;
+        console.log('[ANALYTICS] Socket state check:', { socket: !!socket, isConnected });
+        if (!socket || !isConnected) {
+            console.log('[ANALYTICS] Socket not connected, skipping event registration');
+            return;
+        }
+
+        // Register with analytics service to be tracked as online user
+        if (user?._id) {
+            console.log('[ANALYTICS] Registering user with analytics service:', user._id);
+            socket.emit('register', { userId: user._id });
+        } else if (sessionId) {
+            console.log('[ANALYTICS] Registering guest with analytics service:', sessionId);
+            socket.emit('register', { sessionId });
+        }
+
+        // Request current online users list
+        socket.emit('request_online_users');
 
         const handleOnlineStats = (data: OnlineStatsData) => {
             console.log('[ANALYTICS] Received online_stats:', data);
@@ -107,14 +124,16 @@ export default function Analytics() {
             setOnlineUsers(data.users || []);
         };
 
+        console.log('[ANALYTICS] Registering socket listeners: online_stats, online_users');
         socket.on('online_stats', handleOnlineStats);
         socket.on('online_users', handleOnlineUsers);
 
         return () => {
+            console.log('[ANALYTICS] Cleaning up socket listeners');
             socket.off('online_stats', handleOnlineStats);
             socket.off('online_users', handleOnlineUsers);
         };
-    }, [socket, isConnected]);
+    }, [socket, isConnected, user?._id, sessionId]);
 
     // Fallback: Use onlineUsers from socket provider
     useEffect(() => {
