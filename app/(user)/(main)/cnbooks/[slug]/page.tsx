@@ -5,7 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import {
     Book, Clock, Award, CheckCircle, PenTool, Code,
     ChevronLeft, ChevronRight, Check, X, ChevronDown, ChevronUp,
-    Save, Undo, Redo, Brush, Type, FileText
+    Save, Undo, Redo, Brush, Type, FileText, Edit3, StickyNote, Eraser
 } from 'lucide-react';
 import { CustomButton } from '@/components/custom/CustomButton';
 import { CNBOOKS_DATA } from '@/lib/data/cnbooks.data';
@@ -31,6 +31,13 @@ interface QuizQuestion {
     selectedAnswer: number | null;
 }
 
+interface PositionNote {
+    id: string;
+    x: number;
+    y: number;
+    text: string;
+}
+
 export default function CnBookLessonPage() {
     const router = useRouter();
     const params = useParams();
@@ -45,23 +52,63 @@ export default function CnBookLessonPage() {
         selectedAnswer: null
     })) || []);
     const [activeTab, setActiveTab] = useState<'theory' | 'exercises' | 'quiz'>('theory');
-    const [showNotes, setShowNotes] = useState(false);
-    const [notes, setNotes] = useState<string[]>(lesson?.userNotes || []);
-    const [noteText, setNoteText] = useState('');
-    const [notesOpen, setNotesOpen] = useState(true);
 
-    // Drawing state
+    // Drawing overlay state
+    const [isDrawingMode, setIsDrawingMode] = useState(false);
     const [isDrawing, setIsDrawing] = useState(false);
-    const [currentTool, setCurrentTool] = useState<'pen' | 'highlighter'>('pen');
-    const [canvasWidth, setCanvasWidth] = useState(0);
-    const canvasRef = useRef<HTMLCanvasElement>(null);
-    const ctxRef = useRef<CanvasRenderingContext2D | null>(null);
+    const [drawingTool, setDrawingTool] = useState<'pen' | 'highlighter' | 'eraser'>('pen');
+    const overlayCanvasRef = useRef<HTMLCanvasElement>(null);
+    const overlayCtxRef = useRef<CanvasRenderingContext2D | null>(null);
+    const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
 
-    // Initialize canvas size
+    // Position notes state
+    const [isNoteMode, setIsNoteMode] = useState(false);
+    const [positionNotes, setPositionNotes] = useState<PositionNote[]>([]);
+    const [editingNote, setEditingNote] = useState<{ id: string; text: string } | null>(null);
+    const [noteInputPosition, setNoteInputPosition] = useState<{ x: number; y: number } | null>(null);
+    const [tempNoteText, setTempNoteText] = useState('');
+
+    // Initialize canvas size and context
     useEffect(() => {
-        if (canvasRef.current) {
-            setCanvasWidth(canvasRef.current.clientWidth);
-        }
+        const updateCanvasSize = () => {
+            const width = Math.max(
+                document.documentElement.scrollWidth,
+                window.innerWidth
+            );
+            const height = Math.max(
+                document.documentElement.scrollHeight,
+                document.body.scrollHeight,
+                window.innerHeight
+            );
+            setCanvasSize({ width, height });
+
+            if (overlayCanvasRef.current) {
+                const canvas = overlayCanvasRef.current;
+                // Save current drawing before resize
+                const imageData = overlayCtxRef.current?.getImageData(0, 0, canvas.width, canvas.height);
+
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                overlayCtxRef.current = ctx;
+
+                // Restore drawing after resize
+                if (imageData && ctx) {
+                    ctx.putImageData(imageData, 0, 0);
+                }
+            }
+        };
+
+        // Initial setup with delay to ensure DOM is ready
+        setTimeout(updateCanvasSize, 100);
+
+        window.addEventListener('resize', updateCanvasSize);
+        window.addEventListener('scroll', updateCanvasSize);
+
+        return () => {
+            window.removeEventListener('resize', updateCanvasSize);
+            window.removeEventListener('scroll', updateCanvasSize);
+        };
     }, []);
 
     if (!lesson) {
@@ -76,55 +123,87 @@ export default function CnBookLessonPage() {
         );
     }
 
-    const handleStartDrawing = (e: React.MouseEvent) => {
-        if (!canvasRef.current) return;
-        setIsDrawing(true);
-        const canvas = canvasRef.current;
-        const rect = canvas.getBoundingClientRect();
-        ctxRef.current = canvas.getContext('2d');
+    // Drawing functions
+    const handleOverlayMouseDown = (e: React.MouseEvent) => {
+        if (!isDrawingMode || !overlayCanvasRef.current) return;
 
-        if (ctxRef.current) {
-            ctxRef.current.beginPath();
-            ctxRef.current.moveTo(e.clientX - rect.left, e.clientY - rect.top);
-            ctxRef.current.lineWidth = currentTool === 'highlighter' ? 20 : 3;
-            ctxRef.current.lineCap = 'round';
-            ctxRef.current.strokeStyle = currentTool === 'highlighter' ? 'rgba(255, 255, 0, 0.3)' : '#000';
-        }
-    };
-
-    const handleDraw = (e: React.MouseEvent) => {
-        if (!isDrawing || !canvasRef.current || !ctxRef.current) return;
-        const canvas = canvasRef.current;
+        const canvas = overlayCanvasRef.current;
         const rect = canvas.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
 
-        ctxRef.current.lineTo(x, y);
-        ctxRef.current.stroke();
+        setIsDrawing(true);
+        if (overlayCtxRef.current) {
+            overlayCtxRef.current.beginPath();
+            overlayCtxRef.current.moveTo(x, y);
+
+            if (drawingTool === 'eraser') {
+                overlayCtxRef.current.globalCompositeOperation = 'destination-out';
+                overlayCtxRef.current.lineWidth = 20;
+            } else {
+                overlayCtxRef.current.globalCompositeOperation = 'source-over';
+                overlayCtxRef.current.lineWidth = drawingTool === 'highlighter' ? 20 : 3;
+                overlayCtxRef.current.strokeStyle = drawingTool === 'highlighter'
+                    ? 'rgba(255, 255, 0, 0.3)'
+                    : '#ff0000';
+            }
+            overlayCtxRef.current.lineCap = 'round';
+        }
     };
 
-    const handleStopDrawing = () => {
-        if (ctxRef.current) {
-            ctxRef.current.closePath();
+    const handleOverlayMouseMove = (e: React.MouseEvent) => {
+        if (!isDrawing || !overlayCanvasRef.current || !overlayCtxRef.current) return;
+
+        const canvas = overlayCanvasRef.current;
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        overlayCtxRef.current.lineTo(x, y);
+        overlayCtxRef.current.stroke();
+    };
+
+    const handleOverlayMouseUp = () => {
+        if (overlayCtxRef.current) {
+            overlayCtxRef.current.closePath();
         }
         setIsDrawing(false);
     };
 
-    const clearCanvas = () => {
-        if (canvasRef.current && ctxRef.current) {
-            ctxRef.current.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+    const clearOverlayCanvas = () => {
+        if (overlayCanvasRef.current && overlayCtxRef.current) {
+            overlayCtxRef.current.clearRect(0, 0, canvasSize.width, canvasSize.height);
         }
     };
 
-    const handleSaveNote = () => {
-        if (noteText.trim()) {
-            setNotes([...notes, noteText.trim()]);
-            setNoteText('');
-        }
+    // Position note functions
+    const handlePageClick = (e: React.MouseEvent) => {
+        if (!isNoteMode) return;
+
+        const x = e.clientX + window.scrollX;
+        const y = e.clientY + window.scrollY;
+
+        setNoteInputPosition({ x, y });
+        setTempNoteText('');
     };
 
-    const removeNote = (index: number) => {
-        setNotes(notes.filter((_, i) => i !== index));
+    const savePositionNote = () => {
+        if (!noteInputPosition || !tempNoteText.trim()) return;
+
+        const newNote: PositionNote = {
+            id: `note-${Date.now()}`,
+            x: noteInputPosition.x,
+            y: noteInputPosition.y,
+            text: tempNoteText.trim()
+        };
+
+        setPositionNotes([...positionNotes, newNote]);
+        setNoteInputPosition(null);
+        setTempNoteText('');
+    };
+
+    const deletePositionNote = (id: string) => {
+        setPositionNotes(positionNotes.filter(n => n.id !== id));
     };
 
     const handleExerciseChange = (exerciseId: string, newCode: string) => {
@@ -169,9 +248,177 @@ export default function CnBookLessonPage() {
     const nextLesson = lessonIndex < CNBOOKS_DATA.lessons.length - 1 ? CNBOOKS_DATA.lessons[lessonIndex + 1] : null;
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        <div
+            className="min-h-screen bg-gray-50 dark:bg-gray-900 relative"
+            onClick={isNoteMode ? handlePageClick : undefined}
+        >
+            {/* Drawing Overlay Canvas - Always rendered to preserve drawings */}
+            <canvas
+                ref={overlayCanvasRef}
+                className={`fixed top-0 left-0 z-40 ${isDrawingMode ? 'pointer-events-auto' : 'pointer-events-none'}`}
+                style={{
+                    cursor: isDrawingMode ? 'crosshair' : 'default',
+                    width: '100vw',
+                    height: '100vh',
+                    display: 'block'
+                }}
+                onMouseDown={isDrawingMode ? handleOverlayMouseDown : undefined}
+                onMouseMove={isDrawingMode ? handleOverlayMouseMove : undefined}
+                onMouseUp={isDrawingMode ? handleOverlayMouseUp : undefined}
+                onMouseLeave={isDrawingMode ? handleOverlayMouseUp : undefined}
+            />
+
+            {/* Position Notes */}
+            {positionNotes.map(note => (
+                <div
+                    key={note.id}
+                    className="fixed z-50 bg-yellow-100 dark:bg-yellow-900 p-2 rounded-lg shadow-lg border-2 border-yellow-400 dark:border-yellow-600 max-w-xs"
+                    style={{
+                        left: note.x,
+                        top: note.y,
+                        pointerEvents: isNoteMode ? 'auto' : 'none'
+                    }}
+                >
+                    <div className="flex items-start gap-2">
+                        <StickyNote className="w-4 h-4 text-yellow-600 dark:text-yellow-300 flex-shrink-0 mt-0.5" />
+                        <p className="text-xs text-gray-800 dark:text-gray-200 flex-1">{note.text}</p>
+                        {isNoteMode && (
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    deletePositionNote(note.id);
+                                }}
+                                className="text-red-500 hover:text-red-700"
+                            >
+                                <X className="w-3 h-3" />
+                            </button>
+                        )}
+                    </div>
+                </div>
+            ))}
+
+            {/* Note Input Popup */}
+            {noteInputPosition && (
+                <div
+                    className="fixed z-50 bg-white dark:bg-gray-800 p-4 rounded-lg shadow-2xl border-2 border-blue-500"
+                    style={{ left: noteInputPosition.x, top: noteInputPosition.y }}
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    <div className="space-y-2">
+                        <h4 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                            <StickyNote className="w-4 h-4" />
+                            Thêm ghi chú
+                        </h4>
+                        <textarea
+                            value={tempNoteText}
+                            onChange={(e) => setTempNoteText(e.target.value)}
+                            placeholder="Nhập ghi chú..."
+                            className="w-64 h-20 p-2 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none"
+                            autoFocus
+                        />
+                        <div className="flex gap-2">
+                            <button
+                                onClick={savePositionNote}
+                                className="flex-1 px-3 py-1.5 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+                            >
+                                Lưu
+                            </button>
+                            <button
+                                onClick={() => setNoteInputPosition(null)}
+                                className="px-3 py-1.5 bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-200 text-sm rounded hover:bg-gray-400 dark:hover:bg-gray-500"
+                            >
+                                Hủy
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Floating Toolbar */}
+            <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-2">
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-3 space-y-2 border border-gray-200 dark:border-gray-700">
+                    <div className="text-xs font-semibold text-gray-600 dark:text-gray-300 mb-2 text-center">
+                        Công cụ
+                    </div>
+
+                    {/* Drawing Mode Toggle */}
+                    <button
+                        onClick={() => {
+                            setIsDrawingMode(!isDrawingMode);
+                            setIsNoteMode(false);
+                        }}
+                        className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${isDrawingMode
+                            ? 'bg-blue-500 text-white'
+                            : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                            }`}
+                        title="Chế độ vẽ"
+                    >
+                        <Edit3 className="w-4 h-4" />
+                        <span>Vẽ</span>
+                    </button>
+
+                    {/* Drawing Tools */}
+                    {isDrawingMode && (
+                        <div className="space-y-1 pl-2 border-l-2 border-blue-500">
+                            <button
+                                onClick={() => setDrawingTool('pen')}
+                                className={`w-full flex items-center gap-2 px-2 py-1.5 rounded text-xs ${drawingTool === 'pen' ? 'bg-blue-100 dark:bg-blue-900' : 'hover:bg-gray-100 dark:hover:bg-gray-700'
+                                    }`}
+                            >
+                                <PenTool className="w-3 h-3" />
+                                Bút
+                            </button>
+                            <button
+                                onClick={() => setDrawingTool('highlighter')}
+                                className={`w-full flex items-center gap-2 px-2 py-1.5 rounded text-xs ${drawingTool === 'highlighter' ? 'bg-yellow-100 dark:bg-yellow-900' : 'hover:bg-gray-100 dark:hover:bg-gray-700'
+                                    }`}
+                            >
+                                <Brush className="w-3 h-3" />
+                                Đánh dấu
+                            </button>
+                            <button
+                                onClick={() => setDrawingTool('eraser')}
+                                className={`w-full flex items-center gap-2 px-2 py-1.5 rounded text-xs ${drawingTool === 'eraser' ? 'bg-gray-200 dark:bg-gray-600' : 'hover:bg-gray-100 dark:hover:bg-gray-700'
+                                    }`}
+                            >
+                                <Eraser className="w-3 h-3" />
+                                Tẩy
+                            </button>
+                            <button
+                                onClick={clearOverlayCanvas}
+                                className="w-full px-2 py-1.5 bg-red-500 text-white rounded text-xs hover:bg-red-600"
+                            >
+                                Xóa hết
+                            </button>
+                        </div>
+                    )}
+
+                    {/* Note Mode Toggle */}
+                    <button
+                        onClick={() => {
+                            setIsNoteMode(!isNoteMode);
+                            setIsDrawingMode(false);
+                        }}
+                        className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${isNoteMode
+                            ? 'bg-yellow-500 text-white'
+                            : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                            }`}
+                        title="Chế độ ghi chú"
+                    >
+                        <StickyNote className="w-4 h-4" />
+                        <span>Ghi chú</span>
+                    </button>
+
+                    {isNoteMode && (
+                        <div className="text-xs text-gray-500 dark:text-gray-400 italic text-center px-2">
+                            Click vào trang để thêm ghi chú
+                        </div>
+                    )}
+                </div>
+            </div>
+
             {/* Header */}
-            <div className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10">
+            <div className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 sticky top-0 z-30">
                 <div className="max-w-7xl mx-auto px-4 py-3">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
@@ -257,63 +504,6 @@ export default function CnBookLessonPage() {
 
                     {activeTab === 'theory' && (
                         <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm">
-                            {/* Note Toggle */}
-                            <div className="flex items-center justify-between mb-4">
-                                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Ghi chú</h2>
-                                <button
-                                    onClick={() => setShowNotes(!showNotes)}
-                                    className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400 hover:underline"
-                                >
-                                    <FileText className="w-4 h-4" />
-                                    {showNotes ? 'Ẩn ghi chú' : 'Hiển thị ghi chú'}
-                                </button>
-                            </div>
-
-                            {showNotes && (
-                                <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-xl p-4 mb-6">
-                                    <div className="flex items-center gap-2 mb-3">
-                                        <PenTool className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
-                                        <h3 className="font-medium text-gray-900 dark:text-white">Viết ghi chú</h3>
-                                    </div>
-                                    <div className="flex gap-2 mb-3">
-                                        <input
-                                            type="text"
-                                            value={noteText}
-                                            onChange={(e) => setNoteText(e.target.value)}
-                                            placeholder="Ghi chú của bạn..."
-                                            className="flex-1 p-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                                        />
-                                        <CustomButton onClick={handleSaveNote} variant="secondary">
-                                            <Save className="w-4 h-4" />
-                                            <span>Lưu</span>
-                                        </CustomButton>
-                                    </div>
-                                    {notesOpen && (
-                                        <div className="space-y-2 max-h-60 overflow-y-auto">
-                                            {notes.map((note, index) => (
-                                                <div key={index} className="flex items-start gap-2 bg-white dark:bg-gray-700 p-3 rounded-lg">
-                                                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-300 text-xs font-bold">
-                                                        {index + 1}
-                                                    </div>
-                                                    <div className="flex-1">
-                                                        <p className="text-sm text-gray-700 dark:text-gray-300">{note}</p>
-                                                        <button
-                                                            onClick={() => removeNote(index)}
-                                                            className="text-red-500 hover:text-red-700 mt-1"
-                                                        >
-                                                            <X className="w-3 h-3" />
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                            {notes.length === 0 && (
-                                                <p className="text-sm text-gray-500 italic">Chưa có ghi chú nào</p>
-                                            )}
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-
                             {/* Content */}
                             <div className="prose dark:prose-invert max-w-none">
                                 {lesson.content.map((item, index) => (
@@ -332,11 +522,6 @@ export default function CnBookLessonPage() {
                                                 {item.text}
                                             </h3>
                                         )}
-                                        {item.type === 'heading' && item.level === 4 && (
-                                            <h4 className="text-gray-900 dark:text-white font-semibold mt-4 mb-2">
-                                                {item.text}
-                                            </h4>
-                                        )}
 
                                         {item.type === 'note' && (
                                             <div className={`p-4 rounded-lg border-l-4 ${item.style === 'tip' ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-500' :
@@ -346,7 +531,7 @@ export default function CnBookLessonPage() {
                                                 <div className="flex items-start gap-2">
                                                     <span className="font-medium text-gray-900 dark:text-white">
                                                         {item.style === 'tip' ? '💡 Mẹo:' :
-                                                            item.style === 'warning' ? '⚠️ Lưu ý:' : '❌ Lưu ý:'}
+                                                            item.style === 'warning' ? '⚠️ Lưu ý:' : '❌ Cảnh báo:'}
                                                     </span>
                                                     <p className="text-gray-700 dark:text-gray-300">{item.text}</p>
                                                 </div>
@@ -370,59 +555,12 @@ export default function CnBookLessonPage() {
                                         )}
                                     </div>
                                 ))}
-
-                                {/* Drawing Canvas */}
-                                {lesson.content.some(c => c.type === 'code') && (
-                                    <div className="mt-8">
-                                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
-                                            Vẽ sơ đồ / Ghi chú trên code
-                                        </h3>
-                                        <div
-                                            className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden"
-                                            onMouseLeave={handleStopDrawing}
-                                        >
-                                            <div className="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-800">
-                                                <button
-                                                    onClick={() => setCurrentTool('pen')}
-                                                    className={`p-2 rounded-lg ${currentTool === 'pen' ? 'bg-blue-500 text-white' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}`}
-                                                    title="Bút vẽ"
-                                                >
-                                                    <PenTool className="w-4 h-4" />
-                                                </button>
-                                                <button
-                                                    onClick={() => setCurrentTool('highlighter')}
-                                                    className={`p-2 rounded-lg ${currentTool === 'highlighter' ? 'bg-yellow-500 text-white' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}`}
-                                                    title="Đánh dấu"
-                                                >
-                                                    <Brush className="w-4 h-4" />
-                                                </button>
-                                                <div className="flex-1" />
-                                                <button
-                                                    onClick={clearCanvas}
-                                                    className="px-3 py-1.5 text-xs bg-red-500 text-white rounded-lg hover:bg-red-600"
-                                                >
-                                                    Xóa
-                                                </button>
-                                            </div>
-                                            <canvas
-                                                ref={canvasRef}
-                                                width={600}
-                                                height={300}
-                                                onMouseDown={handleStartDrawing}
-                                                onMouseMove={handleDraw}
-                                                onMouseUp={handleStopDrawing}
-                                                className="cursor-crosshair bg-white"
-                                                style={{ maxWidth: '100%' }}
-                                            />
-                                        </div>
-                                    </div>
-                                )}
                             </div>
 
                             {/* Key Takeaways */}
                             <div className="mt-8 p-6 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl">
                                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                                    要点/Key Takeaways
+                                    📌 Điểm chính
                                 </h3>
                                 <ul className="space-y-2">
                                     {lesson.keyTakeaways.map((takeaway, index) => (
@@ -464,27 +602,23 @@ export default function CnBookLessonPage() {
                                             <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
                                                 Code của bạn
                                             </label>
-                                            <div className="relative">
-                                                <textarea
-                                                    value={exercise.userCode}
-                                                    onChange={(e) => handleExerciseChange(exercise.id, e.target.value)}
-                                                    className="w-full h-40 p-4 bg-gray-900 text-gray-100 rounded-lg font-mono text-sm resize-none focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                                                    placeholder="# Viết code của bạn ở đây..."
-                                                />
-                                                <div className="absolute bottom-3 right-3 flex gap-2">
-                                                    <button
-                                                        onClick={() => runCode(exercise)}
-                                                        className="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700"
-                                                    >
-                                                        Chạy
-                                                    </button>
-                                                </div>
-                                            </div>
+                                            <textarea
+                                                value={exercise.userCode}
+                                                onChange={(e) => handleExerciseChange(exercise.id, e.target.value)}
+                                                className="w-full h-40 p-4 bg-gray-900 text-gray-100 rounded-lg font-mono text-sm resize-none focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                                placeholder="# Viết code của bạn ở đây..."
+                                            />
+                                            <button
+                                                onClick={() => runCode(exercise)}
+                                                className="mt-2 px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700"
+                                            >
+                                                Chạy code
+                                            </button>
                                         </div>
 
                                         <div>
                                             <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                                                Hướng dẫn
+                                                Gợi ý
                                             </label>
                                             <div className="space-y-2">
                                                 {exercise.hints.map((hint, idx) => (
@@ -603,19 +737,19 @@ export default function CnBookLessonPage() {
                         </div>
                     </div>
 
-                    {/* Notes Preview */}
-                    {showNotes && notes.length > 0 && (
+                    {/* Position Notes Summary */}
+                    {positionNotes.length > 0 && (
                         <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-2xl p-6 shadow-sm">
                             <div className="flex items-center justify-between mb-3">
-                                <h3 className="font-semibold text-gray-900 dark:text-white">Ghi chú</h3>
+                                <h3 className="font-semibold text-gray-900 dark:text-white">Ghi chú của bạn</h3>
                                 <span className="text-xs bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300 px-2 py-1 rounded-full">
-                                    {notes.length} ghi chú
+                                    {positionNotes.length}
                                 </span>
                             </div>
                             <div className="space-y-2 max-h-48 overflow-y-auto">
-                                {notes.slice(-3).map((note, index) => (
-                                    <div key={index} className="text-sm bg-white dark:bg-gray-800 p-2 rounded-lg">
-                                        <p className="line-clamp-2 text-gray-600 dark:text-gray-300">{note}</p>
+                                {positionNotes.slice(-5).map((note) => (
+                                    <div key={note.id} className="text-sm bg-white dark:bg-gray-800 p-2 rounded-lg">
+                                        <p className="line-clamp-2 text-gray-600 dark:text-gray-300">{note.text}</p>
                                     </div>
                                 ))}
                             </div>

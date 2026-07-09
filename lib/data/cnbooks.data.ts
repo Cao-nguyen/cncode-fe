@@ -300,6 +300,214 @@ export const CNBOOKS_DATA: CnBookData = {
                     explanation: "Tên biến không được bắt đầu bằng chữ số."
                 }
             ]
+        },
+        {
+            id: "lesson-03",
+            order: 3,
+            title: "Toán tử và Biểu thức",
+            slug: "toan-tu-va-bieu-thuc",
+            duration: "25 phút",
+            difficulty: "beginner",
+            objectives: [
+                "Sử dụng các toán tử số học (+, -, *, /, %, **)",
+                "Hiểu toán tử so sánh và logic",
+                "Biết thứ tự ưu tiên của các toán tử"
+            ],
+            content: [
+                { type: "paragraph", text: "Python hỗ trợ đầy đủ các toán tử cơ bản để thực hiện tính toán và so sánh." },
+                { type: "heading", level: 2, text: "Toán tử số học" },
+                { type: "code", language: "python", code: "a = 10\nb = 3\nprint(a + b)  # Cộng: 13\nprint(a - b)  # Trừ: 7\nprint(a * b)  # Nhân: 30\nprint(a / b)  # Chia: 3.333...\nprint(a // b) # Chia lấy phần nguyên: 3\nprint(a % b)  # Chia lấy phần dư: 1\nprint(a ** b) # Lũy thừa: 1000", caption: "Các phép toán cơ bản" },
+                { type: "heading", level: 2, text: "Toán tử so sánh" },
+                { type: "paragraph", text: "Các toán tử so sánh trả về True hoặc False: ==, !=, >, <, >=, <=" },
+                { type: "note", style: "tip", text: "Toán tử == (so sánh) khác với = (gán giá trị)" }
+            ],
+            notesEnabled: true,
+            userNotes: [],
+            keyTakeaways: [
+                "Python có đầy đủ toán tử số học cơ bản",
+                "Toán tử // chia lấy phần nguyên, % lấy phần dư",
+                "Toán tử so sánh trả về giá trị boolean"
+            ],
+            exercises: [
+                {
+                    id: "ex-3-1",
+                    title: "Tính diện tích hình chữ nhật",
+                    description: "Cho chiều dài = 10, chiều rộng = 5. Tính và in ra diện tích.",
+                    difficulty: "easy",
+                    starterCode: "chieu_dai = 10\nchieu_rong = 5\n# Tính diện tích",
+                    solution: "chieu_dai = 10\nchieu_rong = 5\ndien_tich = chieu_dai * chieu_rong\nprint(dien_tich)",
+                    testCases: [{ input: "", expectedOutput: "50" }],
+                    hints: ["Diện tích = chiều dài * chiều rộng"],
+                    userCode: "",
+                    completed: false
+                },
+                {
+                    id: "ex-3-2",
+                    title: "Kiểm tra số chẵn lẻ",
+                    description: "Cho số n = 17. In ra True nếu n là số lẻ, False nếu là số chẵn.",
+                    difficulty: "medium",
+                    starterCode: "n = 17\n# Kiểm tra chẵn lẻ",
+                    solution: "n = 17\nla_so_le = (n % 2 == 1)\nprint(la_so_le)",
+                    testCases: [{ input: "", expectedOutput: "True" }],
+                    hints: ["Số lẻ chia 2 dư 1", "Dùng toán tử % và =="],
+                    userCode: "",
+                    completed: false
+                }
+            ],
+            quiz: [
+                {
+                    question: "Kết quả của 10 // 3 là gì?",
+                    options: ["3.333", "3", "3.0", "Lỗi"],
+                    answerIndex: 1,
+                    explanation: "Toán tử // chia lấy phần nguyên, kết quả là 3"
+                },
+                {
+                    question: "Toán tử nào dùng để kiểm tra hai giá trị bằng nhau?",
+                    options: ["=", "==", "===", "!="],
+                    answerIndex: 1,
+                    explanation: "== là toán tử so sánh bằng, = là toán tử gán"
+                }
+            ]
+        },
+        {
+            id: "lesson-04",
+            order: 4,
+            title: "Cấu trúc điều kiện if-else",
+            slug: "cau-truc-dieu-kien",
+            duration: "30 phút",
+            difficulty: "beginner",
+            objectives: [
+                "Sử dụng if, elif, else để kiểm soát luồng chương trình",
+                "Hiểu về khối lệnh và indentation trong Python",
+                "Kết hợp điều kiện với toán tử logic"
+            ],
+            content: [
+                { type: "paragraph", text: "Cấu trúc if-else cho phép chương trình thực hiện các hành động khác nhau dựa trên điều kiện." },
+                { type: "code", language: "python", code: "tuoi = 18\nif tuoi >= 18:\n    print(\"Bạn đã đủ tuổi\")\nelse:\n    print(\"Bạn chưa đủ tuổi\")", caption: "if-else cơ bản" },
+                { type: "note", style: "warning", text: "Python dùng indentation (thụt đầu dòng) để xác định khối lệnh. Thường dùng 4 dấu cách." },
+                { type: "heading", level: 2, text: "elif - Nhiều điều kiện" },
+                { type: "code", language: "python", code: "diem = 85\nif diem >= 90:\n    print(\"Xuất sắc\")\nelif diem >= 80:\n    print(\"Giỏi\")\nelif diem >= 70:\n    print(\"Khá\")\nelse:\n    print(\"Trung bình\")", caption: "Sử dụng elif" }
+            ],
+            notesEnabled: true,
+            userNotes: [],
+            keyTakeaways: [
+                "if-else giúp chương trình ra quyết định",
+                "Indentation rất quan trọng trong Python",
+                "elif cho phép kiểm tra nhiều điều kiện"
+            ],
+            exercises: [
+                {
+                    id: "ex-4-1",
+                    title: "Kiểm tra số dương âm",
+                    description: "Cho số n. In 'Dương' nếu n > 0, 'Âm' nếu n < 0, 'Không' nếu n = 0",
+                    difficulty: "easy",
+                    starterCode: "n = -5\n# Viết code kiểm tra",
+                    solution: "n = -5\nif n > 0:\n    print('Dương')\nelif n < 0:\n    print('Âm')\nelse:\n    print('Không')",
+                    testCases: [{ input: "", expectedOutput: "Âm" }],
+                    hints: ["Dùng if-elif-else", "So sánh n với 0"],
+                    userCode: "",
+                    completed: false
+                },
+                {
+                    id: "ex-4-2",
+                    title: "Xếp loại học lực",
+                    description: "Cho điểm. In 'Giỏi' nếu >= 8, 'Khá' nếu >= 6.5, 'Trung bình' nếu >= 5, 'Yếu' nếu < 5",
+                    difficulty: "medium",
+                    starterCode: "diem = 7.5\n# Xếp loại",
+                    solution: "diem = 7.5\nif diem >= 8:\n    print('Giỏi')\nelif diem >= 6.5:\n    print('Khá')\nelif diem >= 5:\n    print('Trung bình')\nelse:\n    print('Yếu')",
+                    testCases: [{ input: "", expectedOutput: "Khá" }],
+                    hints: ["Dùng nhiều elif", "Kiểm tra từ cao xuống thấp"],
+                    userCode: "",
+                    completed: false
+                }
+            ],
+            quiz: [
+                {
+                    question: "Python dùng gì để xác định khối lệnh?",
+                    options: ["Dấu {} như C", "Indentation (thụt đầu dòng)", "Dấu ; cuối dòng", "Từ khóa begin-end"],
+                    answerIndex: 1,
+                    explanation: "Python sử dụng indentation để xác định khối lệnh"
+                },
+                {
+                    question: "Khi nào dùng elif thay vì nhiều if riêng lẻ?",
+                    options: [
+                        "Không bao giờ",
+                        "Khi muốn kiểm tra nhiều điều kiện loại trừ lẫn nhau",
+                        "Khi muốn kiểm tra tất cả điều kiện",
+                        "Khi không có else"
+                    ],
+                    answerIndex: 1,
+                    explanation: "elif dùng khi các điều kiện loại trừ nhau, chỉ một điều kiện được thực hiện"
+                }
+            ]
+        },
+        {
+            id: "lesson-05",
+            order: 5,
+            title: "Vòng lặp for và while",
+            slug: "vong-lap",
+            duration: "35 phút",
+            difficulty: "intermediate",
+            objectives: [
+                "Sử dụng vòng lặp for để duyệt qua sequence",
+                "Sử dụng while cho vòng lặp có điều kiện",
+                "Hiểu break, continue và range()"
+            ],
+            content: [
+                { type: "paragraph", text: "Vòng lặp giúp thực hiện một đoạn code nhiều lần." },
+                { type: "heading", level: 2, text: "Vòng lặp for" },
+                { type: "code", language: "python", code: "# Lặp qua dãy số\nfor i in range(5):\n    print(i)  # In 0, 1, 2, 3, 4", caption: "for với range()" },
+                { type: "heading", level: 2, text: "Vòng lặp while" },
+                { type: "code", language: "python", code: "count = 0\nwhile count < 5:\n    print(count)\n    count += 1", caption: "while lặp khi điều kiện đúng" },
+                { type: "note", style: "warning", text: "Cẩn thận vòng lặp vô hạn! Đảm bảo điều kiện while cuối cùng sẽ False" }
+            ],
+            notesEnabled: true,
+            userNotes: [],
+            keyTakeaways: [
+                "for dùng để lặp qua sequence (list, range, string...)",
+                "while lặp khi điều kiện còn đúng",
+                "break thoát vòng lặp, continue bỏ qua vòng hiện tại"
+            ],
+            exercises: [
+                {
+                    id: "ex-5-1",
+                    title: "In bảng cửu chương",
+                    description: "In bảng cửu chương 5 (từ 5x1 đến 5x10)",
+                    difficulty: "easy",
+                    starterCode: "# In bảng cửu chương 5",
+                    solution: "for i in range(1, 11):\n    print(f'5 x {i} = {5*i}')",
+                    testCases: [{ input: "", expectedOutput: "10 dòng từ 5x1=5 đến 5x10=50" }],
+                    hints: ["Dùng for i in range(1, 11)", "In kết quả 5 * i"],
+                    userCode: "",
+                    completed: false
+                },
+                {
+                    id: "ex-5-2",
+                    title: "Tính tổng các số từ 1 đến n",
+                    description: "Cho n = 100. Tính tổng 1+2+3+...+100",
+                    difficulty: "medium",
+                    starterCode: "n = 100\n# Tính tổng",
+                    solution: "n = 100\ntong = 0\nfor i in range(1, n+1):\n    tong += i\nprint(tong)",
+                    testCases: [{ input: "", expectedOutput: "5050" }],
+                    hints: ["Khởi tạo tong = 0", "Dùng vòng lặp for", "tong += i trong mỗi vòng"],
+                    userCode: "",
+                    completed: false
+                }
+            ],
+            quiz: [
+                {
+                    question: "range(5) tạo ra dãy số nào?",
+                    options: ["1, 2, 3, 4, 5", "0, 1, 2, 3, 4", "0, 1, 2, 3, 4, 5", "1, 2, 3, 4"],
+                    answerIndex: 1,
+                    explanation: "range(5) tạo ra 0, 1, 2, 3, 4 (bắt đầu từ 0, không bao gồm 5)"
+                },
+                {
+                    question: "Lệnh nào thoát khỏi vòng lặp ngay lập tức?",
+                    options: ["continue", "break", "exit", "return"],
+                    answerIndex: 1,
+                    explanation: "break thoát vòng lặp, continue bỏ qua vòng hiện tại và tiếp tục"
+                }
+            ]
         }
     ]
 };
