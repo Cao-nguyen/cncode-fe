@@ -119,29 +119,26 @@ export default function Analytics() {
             }
         };
 
-        const handleOnlineUsers = (data: { users: OnlineUser[] }) => {
-            console.log('[ANALYTICS] Received online_users:', data);
-            setOnlineStats(prev => ({ ...prev, users: data.users?.length || 0 }));
-            setOnlineUsers(data.users || []);
-        };
-
-        console.log('[ANALYTICS] Registering socket listeners: online_stats, online_users');
+        console.log('[ANALYTICS] Registering socket listener: online_stats');
         socket.on('online_stats', handleOnlineStats);
-        socket.on('online_users', handleOnlineUsers);
 
         return () => {
             console.log('[ANALYTICS] Cleaning up socket listeners');
             socket.off('online_stats', handleOnlineStats);
-            socket.off('online_users', handleOnlineUsers);
         };
     }, [socket, isConnected, user?._id, sessionId]);
 
     // Fallback: Use onlineUsers from socket provider
     useEffect(() => {
+        console.log('[ANALYTICS] Socket provider onlineUsers updated:', socketOnlineUsers);
         if (socketOnlineUsers && socketOnlineUsers.length > 0) {
             console.log('[ANALYTICS] Using onlineUsers from socket provider:', socketOnlineUsers);
             setOnlineStats(prev => ({ ...prev, users: socketOnlineUsers.length }));
             setOnlineUsers(socketOnlineUsers);
+        } else {
+            console.log('[ANALYTICS] Socket provider has no online users, clearing');
+            setOnlineUsers([]);
+            setOnlineStats(prev => ({ ...prev, users: 0 }));
         }
     }, [socketOnlineUsers]);
 

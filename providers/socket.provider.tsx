@@ -6,10 +6,11 @@ import { useUnreadMessagesStore } from '@/store/unreadMessages.store';
 import { useConversationsStore, Message } from '@/store/conversations.store';
 
 interface OnlineUser {
-    _id: string;
-    username: string;
+    userId?: string;
+    fullName: string;
     avatar?: string;
-    full_name?: string;
+    role?: string;
+    device?: string;
 }
 
 interface SocketContextType {
@@ -142,6 +143,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
         // Xử lý online_users event
         newSocket.on('online_users', (data: { users: OnlineUser[] }) => {
             console.log('[SOCKET] Received online_users:', data);
+            console.log('[SOCKET] Users data:', JSON.stringify(data.users, null, 2));
             setOnlineUsers(data.users || []);
         });
 
