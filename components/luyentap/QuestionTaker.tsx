@@ -2,7 +2,6 @@
 
 import React from 'react';
 import StaticContent from '@/components/common/StaticContent';
-import CodeIDE from './CodeIDE';
 import type { PracticeQuestion, PracticeAnswer } from '@/types/luyentap.type';
 
 interface QuestionTakerProps {
@@ -129,12 +128,12 @@ export default function QuestionTaker({
 
             {question.type === 'code' && (
                 <div className="ml-0 sm:ml-11">
-                    <CodeIDE
-                        language={question.language || 'javascript'}
+                    <textarea
+                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-600 resize-y min-h-[200px] font-mono text-sm"
                         value={(answer as string) ?? question.starterCode ?? ''}
-                        onChange={code => onChange(code)}
-                        testCases={question.testCases}
-                        readOnly={disabled}
+                        onChange={e => onChange(e.target.value)}
+                        disabled={disabled}
+                        placeholder="Nhập code của bạn..."
                     />
                 </div>
             )}

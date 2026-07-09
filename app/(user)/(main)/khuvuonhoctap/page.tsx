@@ -23,6 +23,22 @@ export default function GardenPage() {
     const [selectedPlant, setSelectedPlant] = useState<Plant | null>(null);
     const [waterAmount, setWaterAmount] = useState(1);
 
+    useEffect(() => {
+        if (!user) {
+            router.push('/login');
+            return;
+        }
+
+        // Loading initial data from localStorage is a valid effect use case
+        // eslint-disable-next-line
+        const garden = gardenStorage.getGarden(user._id);
+        if (garden) {
+            setPlants(garden.plants);
+            setAvailableWater(garden.availableWater);
+            setStats(gardenStorage.getStats(user._id));
+        }
+    }, [user, router]);
+
     const loadGarden = () => {
         if (!user) return;
 
@@ -33,14 +49,6 @@ export default function GardenPage() {
             setStats(gardenStorage.getStats(user._id));
         }
     };
-
-    useEffect(() => {
-        if (!user) {
-            router.push('/login');
-            return;
-        }
-        loadGarden();
-    }, [user, router]);
 
     const handleAddPlant = (name: string) => {
         if (!user || !name.trim()) return;

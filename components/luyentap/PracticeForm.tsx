@@ -5,8 +5,6 @@ import { Plus, Trash2, Save, Send } from 'lucide-react';
 import { CustomInput } from '@/components/custom/CustomInput';
 import { CustomButton } from '@/components/custom/CustomButton';
 import { CustomSelect } from '@/components/custom/CustomSelect';
-import ExerciseEditor, { ExerciseEditorRef } from '@/components/custom/ExerciseEditor';
-import CodeIDE from './CodeIDE';
 import {
     PracticeSet,
     PracticeQuestion,
@@ -52,7 +50,6 @@ export default function PracticeForm({ initial, onSave, onSubmitReview, mode }: 
     );
     const [activeQ, setActiveQ] = useState(0);
     const [saving, setSaving] = useState(false);
-    const questionEditorRef = React.useRef<ExerciseEditorRef>(null);
 
     const current = questions[activeQ];
 
@@ -62,9 +59,8 @@ export default function PracticeForm({ initial, onSave, onSubmitReview, mode }: 
 
     const handleSave = async () => {
         if (!title.trim()) { toast.error('Nhập tiêu đề'); return; }
-        const qText = questionEditorRef.current?.getContent() || current.question;
         const finalQuestions = questions.map((q, i) =>
-            i === activeQ ? { ...q, question: qText } : q
+            i === activeQ ? { ...q, question: current.question } : q
         );
         if (!finalQuestions.every(q => q.question.trim())) {
             toast.error('Mỗi câu hỏi cần có nội dung');
@@ -124,7 +120,12 @@ export default function PracticeForm({ initial, onSave, onSubmitReview, mode }: 
 
             <div>
                 <label className="block text-sm font-medium mb-2">Nội dung câu hỏi</label>
-                <ExerciseEditor ref={questionEditorRef} initialValue={current.question} height="120px" />
+                <textarea
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-600 resize-y min-h-[120px]"
+                    value={current.question}
+                    onChange={e => updateQuestion({ question: e.target.value })}
+                    placeholder="Nhập nội dung câu hỏi..."
+                />
             </div>
 
             {current.type === 'quiz' && (
@@ -208,10 +209,11 @@ export default function PracticeForm({ initial, onSave, onSubmitReview, mode }: 
                     />
                     <div>
                         <label className="text-sm font-medium mb-2 block">Code khởi tạo</label>
-                        <CodeIDE
-                            language={current.language || 'javascript'}
+                        <textarea
+                            className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-600 resize-y min-h-[120px] font-mono text-sm"
                             value={current.starterCode || ''}
-                            onChange={code => updateQuestion({ starterCode: code })}
+                            onChange={e => updateQuestion({ starterCode: e.target.value })}
+                            placeholder="Nhập code khởi tạo..."
                         />
                     </div>
                     <div>
