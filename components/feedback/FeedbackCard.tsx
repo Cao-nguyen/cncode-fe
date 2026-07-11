@@ -194,7 +194,7 @@ export default function FeedbackCard({
                         <label className="block text-sm font-medium text-gray-700 mb-1.5">Nội dung</label>
                         <CustomTextarea
                             value={editForm.content}
-                            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setEditForm(prev => ({ ...prev, content: e.target.value }))}
+                            onChange={(value: string) => setEditForm(prev => ({ ...prev, content: value }))}
                             placeholder="Nội dung chi tiết..."
                             rows={5}
                         />

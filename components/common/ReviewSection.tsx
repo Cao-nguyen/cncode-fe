@@ -197,7 +197,7 @@ export default function ReviewSection({ targetType, targetId, canReview = true }
                         </div>
                         <CustomTextarea
                             value={formComment}
-                            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFormComment(e.target.value)}
+                            onChange={(value: string) => setFormComment(value)}
                             placeholder="Chia sẻ trải nghiệm của bạn..."
                             rows={3}
                         />

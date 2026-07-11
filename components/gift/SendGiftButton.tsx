@@ -18,8 +18,8 @@ interface SendGiftButtonProps {
     targetId?: string;
 }
 
-export function SendGiftButton({ 
-    recipientId, 
+export function SendGiftButton({
+    recipientId,
     recipientName,
     targetType = 'user',
     targetId = recipientId
@@ -44,14 +44,15 @@ export function SendGiftButton({
             toast.error('Bạn không thể tự tặng quà cho chính mình');
             return;
         }
-        
+
         try {
             setLoading(true);
             const data = await giftApi.getActiveGifts();
             setGifts(data);
             setShowModal(true);
-        } catch (error: any) {
-            toast.error(error.message || 'Lỗi khi tải danh sách quà tặng');
+        } catch (error: unknown) {
+            const err = error as { message?: string };
+            toast.error(err.message || 'Lỗi khi tải danh sách quà tặng');
         } finally {
             setLoading(false);
         }
@@ -79,7 +80,7 @@ export function SendGiftButton({
             }
 
             const particleCount = 50 * (timeLeft / duration);
-            
+
             confetti({
                 ...defaults,
                 particleCount,
@@ -104,7 +105,7 @@ export function SendGiftButton({
 
         try {
             setSending(true);
-            
+
             // Gửi từng quà (nếu số lượng > 1)
             for (let i = 0; i < quantity; i++) {
                 await giftApi.sendGift({
@@ -121,7 +122,7 @@ export function SendGiftButton({
             setSelectedGift(null);
             setQuantity(1);
             setMessage('');
-            
+
             // Update local coins
             useAuthStore.getState().updateCoins(-totalPrice);
 
@@ -141,8 +142,9 @@ export function SendGiftButton({
                     sender: user
                 }
             }));
-        } catch (error: any) {
-            toast.error(error.message || 'Lỗi khi gửi quà tặng');
+        } catch (error: unknown) {
+            const err = error as { message?: string };
+            toast.error(err.message || 'Lỗi khi gửi quà tặng');
         } finally {
             setSending(false);
         }
@@ -239,7 +241,7 @@ export function SendGiftButton({
                                         label="Lời nhắn (tùy chọn)"
                                         placeholder="Viết lời nhắn kèm theo quà..."
                                         value={message}
-                                        onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setMessage(e.target.value)}
+                                        onChange={(value: string) => setMessage(value)}
                                         rows={3}
                                         maxLength={200}
                                     />
