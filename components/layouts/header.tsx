@@ -791,60 +791,73 @@ export default function Header() {
                             </button>
 
                             {menuOpen && (
-                                <div className="absolute right-0 mt-3 w-80 bg-[var(--cn-bg-card)] border border-[var(--cn-border)] rounded-2xl shadow-2xl shadow-black/10 dark:shadow-black/40 z-20 overflow-hidden animate-[slideDown_0.2s_ease-out]">
-                                    {/* Header of menu */}
-                                    <div className="p-4 border-b border-[var(--cn-border)]">
-                                        <h3 className="text-base font-bold text-[var(--cn-text-main)]">Menu</h3>
-                                    </div>
-                                    {/* Coins and Streak */}
-                                    <div className="p-4 flex items-center justify-between">
-                                        <div className="relative flex items-center">
-                                            <div className="border border-[var(--cn-border)] rounded-2xl pl-3 pr-6 py-1.5">
-                                                <p className="text-[var(--cn-primary)] text-sm font-medium">{displayCoins}</p>
-                                            </div>
-                                            <img src="/icons/coins.svg" alt="Coins" width={30} height={30} className="absolute -right-3" />
+                                <>
+                                    {/* Mobile backdrop */}
+                                    <div
+                                        className="fixed inset-0 bg-black/50 z-40 md:hidden"
+                                        onClick={() => setMenuOpen(false)}
+                                    />
+
+                                    {/* Menu panel - mobile sidebar, desktop dropdown */}
+                                    <div className="fixed inset-y-0 right-0 w-full max-w-sm
+                                        md:absolute md:inset-y-auto md:right-0 md:mt-3 md:w-80 md:max-w-none
+                                        bg-[var(--cn-bg-card)] border-l md:border border-[var(--cn-border)]
+                                        md:rounded-2xl shadow-2xl shadow-black/10 dark:shadow-black/40 z-50 overflow-hidden
+                                        animate-[slideInRight_0.3s_ease-out] md:animate-[slideDown_0.2s_ease-out]">
+                                        {/* Header of menu */}
+                                        <div className="p-4 border-b border-[var(--cn-border)]">
+                                            <h3 className="text-base font-bold text-[var(--cn-text-main)]">Menu</h3>
                                         </div>
-                                        <div className="relative flex items-center">
-                                            <div className="border border-orange-300 bg-orange-50 dark:bg-orange-950/20 rounded-2xl pl-3 pr-7 py-1.5 shadow-sm shadow-orange-200/50">
-                                                <p className="text-orange-600 dark:text-orange-400 text-sm font-bold">{displayStreak}</p>
+                                        {/* Coins and Streak */}
+                                        <div className="p-4 flex items-center justify-between">
+                                            <div className="relative flex items-center">
+                                                <div className="border border-[var(--cn-border)] rounded-2xl pl-3 pr-6 py-1.5">
+                                                    <p className="text-[var(--cn-primary)] text-sm font-medium">{displayCoins}</p>
+                                                </div>
+                                                <img src="/icons/coins.svg" alt="Coins" width={30} height={30} className="absolute -right-3" />
                                             </div>
-                                            <img
-                                                src={displayStreak > 0 ? "/icons/streak-1.svg" : "/icons/streak.svg"}
-                                                alt="Streak"
-                                                width={35}
-                                                height={35}
-                                                className={`absolute -right-3 drop-shadow-md transition-all duration-300 ${activeStreakIcon ? 'scale-110 animate-bounce' : ''}`}
-                                            />
+                                            <div className="relative flex items-center">
+                                                <div className="border border-orange-300 bg-orange-50 dark:bg-orange-950/20 rounded-2xl pl-3 pr-7 py-1.5 shadow-sm shadow-orange-200/50">
+                                                    <p className="text-orange-600 dark:text-orange-400 text-sm font-bold">{displayStreak}</p>
+                                                </div>
+                                                <img
+                                                    src={displayStreak > 0 ? "/icons/streak-1.svg" : "/icons/streak.svg"}
+                                                    alt="Streak"
+                                                    width={35}
+                                                    height={35}
+                                                    className={`absolute -right-3 drop-shadow-md transition-all duration-300 ${activeStreakIcon ? 'scale-110 animate-bounce' : ''}`}
+                                                />
+                                            </div>
+                                        </div>
+                                        {/* Menu Items */}
+                                        <div className="p-4 pt-0">
+                                            {menuMobile.map((item) => {
+                                                const isActive = item.link === '/' ? pathname === item.link : pathname.startsWith(item.link);
+                                                return (
+                                                    <Link
+                                                        key={item.link}
+                                                        href={item.link}
+                                                        onClick={() => setMenuOpen(false)}
+                                                        className={`flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 ${isActive ? 'text-[var(--cn-primary)] bg-[var(--cn-primary-light)]' : 'text-[var(--cn-text-sub)] hover:bg-[var(--cn-bg-section)]'}`}
+                                                    >
+                                                        <img
+                                                            src={mobileIconMap[item.link] || "/favicon/home.png"}
+                                                            alt={item.title}
+                                                            className="w-5 h-5"
+                                                            style={{
+                                                                filter: isActive
+                                                                    ? 'brightness(0) saturate(100%) invert(27%) sepia(87%) saturate(2000%) hue-rotate(200deg) brightness(95%) contrast(90%)'
+                                                                    : 'grayscale(100%)',
+                                                                opacity: isActive ? 1 : 0.5
+                                                            }}
+                                                        />
+                                                        <span className="text-sm font-medium">{item.title}</span>
+                                                    </Link>
+                                                );
+                                            })}
                                         </div>
                                     </div>
-                                    {/* Menu Items */}
-                                    <div className="p-4 pt-0">
-                                        {menuMobile.map((item) => {
-                                            const isActive = item.link === '/' ? pathname === item.link : pathname.startsWith(item.link);
-                                            return (
-                                                <Link
-                                                    key={item.link}
-                                                    href={item.link}
-                                                    onClick={() => setMenuOpen(false)}
-                                                    className={`flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 ${isActive ? 'text-[var(--cn-primary)] bg-[var(--cn-primary-light)]' : 'text-[var(--cn-text-sub)] hover:bg-[var(--cn-bg-section)]'}`}
-                                                >
-                                                    <img
-                                                        src={mobileIconMap[item.link] || "/favicon/home.png"}
-                                                        alt={item.title}
-                                                        className="w-5 h-5"
-                                                        style={{
-                                                            filter: isActive
-                                                                ? 'brightness(0) saturate(100%) invert(27%) sepia(87%) saturate(2000%) hue-rotate(200deg) brightness(95%) contrast(90%)'
-                                                                : 'grayscale(100%)',
-                                                            opacity: isActive ? 1 : 0.5
-                                                        }}
-                                                    />
-                                                    <span className="text-sm font-medium">{item.title}</span>
-                                                </Link>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
+                                </>
                             )}
                         </div>
                         <NotificationBell />

@@ -483,74 +483,85 @@ export default function NotificationBell() {
             </button>
 
             {open && (
-                <div className="absolute right-0 mt-3 
-                    w-[90vw] max-w-[400px] sm:w-[400px] lg:w-[440px]
-                    bg-[var(--cn-bg-card)] border border-[var(--cn-border)] rounded-2xl shadow-2xl shadow-black/10 dark:shadow-black/40 z-20 overflow-hidden animate-[slideDown_0.2s_ease-out]">
-                    <div className="sticky top-0 z-10 flex items-center justify-between p-4 border-b border-[var(--cn-border)] bg-gradient-to-r from-blue-50/50 to-indigo-50/50 dark:from-blue-950/20 dark:to-indigo-950/20 backdrop-blur-sm">
-                        <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
-                                <Bell className="w-4 h-4 text-white" />
-                            </div>
-                            <h3 className="text-base font-bold text-[var(--cn-text-main)]">
-                                Thông báo
-                                {unreadCount > 0 && (
-                                    <span className="ml-2 text-xs font-medium px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400">
-                                        {unreadCount}
-                                    </span>
-                                )}
-                            </h3>
-                        </div>
-                        {unreadCount > 0 && (
-                            <button
-                                onClick={markAllAsRead}
-                                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-lg transition-all duration-200"
-                            >
-                                <CheckCheck className="w-3.5 h-3.5" />
-                                <span>Đọc tất cả</span>
-                            </button>
-                        )}
-                    </div>
+                <>
+                    {/* Mobile backdrop */}
+                    <div
+                        className="fixed inset-0 bg-black/50 z-40 md:hidden"
+                        onClick={() => setOpen(false)}
+                    />
 
-                    <div className="max-h-[400px] overflow-y-auto">
-                        {isLoading && notifications.length === 0 ? (
-                            <div className="flex items-center justify-center py-8">
-                                <Loader2 className="w-5 h-5 sm:w-6 sm:h-6 text-[var(--cn-primary)] animate-spin" />
+                    {/* Notification panel - mobile sidebar, desktop dropdown */}
+                    <div className="fixed inset-y-0 right-0 w-full max-w-sm
+                        md:absolute md:inset-y-auto md:right-0 md:mt-3 md:w-[400px] lg:w-[440px] md:max-w-none
+                        bg-[var(--cn-bg-card)] border-l md:border border-[var(--cn-border)] 
+                        md:rounded-2xl shadow-2xl shadow-black/10 dark:shadow-black/40 z-50 overflow-hidden
+                        animate-[slideInRight_0.3s_ease-out] md:animate-[slideDown_0.2s_ease-out]">
+                        <div className="sticky top-0 z-10 flex items-center justify-between p-4 border-b border-[var(--cn-border)] bg-gradient-to-r from-blue-50/50 to-indigo-50/50 dark:from-blue-950/20 dark:to-indigo-950/20 backdrop-blur-sm">
+                            <div className="flex items-center gap-2">
+                                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
+                                    <Bell className="w-4 h-4 text-white" />
+                                </div>
+                                <h3 className="text-base font-bold text-[var(--cn-text-main)]">
+                                    Thông báo
+                                    {unreadCount > 0 && (
+                                        <span className="ml-2 text-xs font-medium px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400">
+                                            {unreadCount}
+                                        </span>
+                                    )}
+                                </h3>
                             </div>
-                        ) : notifications.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center py-8 text-[var(--cn-text-muted)]">
-                                <Bell className="w-10 h-10 sm:w-12 sm:h-12 mb-2 opacity-50" />
-                                <p className="text-xs sm:text-sm">Chưa có thông báo nào</p>
-                            </div>
-                        ) : (
-                            <div className="divide-y divide-[var(--cn-border)]">
-                                {notifications.map((notification, index) => (
-                                    <NotificationItem
-                                        key={notification._id || `notification-${index}-${notification.createdAt}`}
-                                        notification={notification}
-                                        onMarkAsRead={markAsRead}
-                                        onClose={() => setOpen(false)}
-                                    />
-                                ))}
-                            </div>
-                        )}
-
-                        {totalPages > 1 && page < totalPages && (
-                            <div className="p-2 sm:p-3 text-center border-t border-[var(--cn-border)]">
-                                <CustomButton
-                                    variant="outline-primary"
-                                    size="small"
-                                    onClick={loadMore}
-                                    disabled={isLoading}
-                                    loading={isLoading}
-                                    fullWidth
-                                    className="text-xs sm:text-sm"
+                            {unreadCount > 0 && (
+                                <button
+                                    onClick={markAllAsRead}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-lg transition-all duration-200"
                                 >
-                                    {isLoading ? 'Đang tải...' : 'Xem thêm'}
-                                </CustomButton>
-                            </div>
-                        )}
+                                    <CheckCheck className="w-3.5 h-3.5" />
+                                    <span>Đọc tất cả</span>
+                                </button>
+                            )}
+                        </div>
+
+                        <div className="max-h-[400px] overflow-y-auto">
+                            {isLoading && notifications.length === 0 ? (
+                                <div className="flex items-center justify-center py-8">
+                                    <Loader2 className="w-5 h-5 sm:w-6 sm:h-6 text-[var(--cn-primary)] animate-spin" />
+                                </div>
+                            ) : notifications.length === 0 ? (
+                                <div className="flex flex-col items-center justify-center py-8 text-[var(--cn-text-muted)]">
+                                    <Bell className="w-10 h-10 sm:w-12 sm:h-12 mb-2 opacity-50" />
+                                    <p className="text-xs sm:text-sm">Chưa có thông báo nào</p>
+                                </div>
+                            ) : (
+                                <div className="divide-y divide-[var(--cn-border)]">
+                                    {notifications.map((notification, index) => (
+                                        <NotificationItem
+                                            key={notification._id || `notification-${index}-${notification.createdAt}`}
+                                            notification={notification}
+                                            onMarkAsRead={markAsRead}
+                                            onClose={() => setOpen(false)}
+                                        />
+                                    ))}
+                                </div>
+                            )}
+
+                            {totalPages > 1 && page < totalPages && (
+                                <div className="p-2 sm:p-3 text-center border-t border-[var(--cn-border)]">
+                                    <CustomButton
+                                        variant="outline-primary"
+                                        size="small"
+                                        onClick={loadMore}
+                                        disabled={isLoading}
+                                        loading={isLoading}
+                                        fullWidth
+                                        className="text-xs sm:text-sm"
+                                    >
+                                        {isLoading ? 'Đang tải...' : 'Xem thêm'}
+                                    </CustomButton>
+                                </div>
+                            )}
+                        </div>
                     </div>
-                </div>
+                </>
             )}
         </div>
     );
