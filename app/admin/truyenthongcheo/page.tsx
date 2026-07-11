@@ -726,7 +726,7 @@ function AdminCrossPromotionPageContent() {
                             <CustomTextarea
                                 label="Phản hồi của Admin (tùy chọn)"
                                 value={adminResponseMessage}
-                                onChange={setAdminResponseMessage}
+                                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setAdminResponseMessage(e.target.value)}
                                 placeholder="Nhập phản hồi cho người yêu cầu..."
                                 rows={4}
                                 maxLength={500}

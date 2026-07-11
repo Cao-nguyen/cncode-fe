@@ -5,7 +5,7 @@ import Link from "next/link";
 
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
-import { Search } from "lucide-react";
+
 import {
     User,
     Setting2 as Settings,
@@ -28,6 +28,7 @@ import {
     Clock,
     Coin1,
     MessageProgramming,
+    Element4,
 } from "iconsax-react";
 import {
     Home as Trangchu,
@@ -57,6 +58,26 @@ interface MenuItem { title: string; link: string; }
 interface MobileMenuItem { title: string; link: string; icon: Icon; }
 interface SheetItem { icon: React.ReactNode; title: string; subtitle: string; href: string; }
 interface SheetSection { label: string; items: SheetItem[]; }
+
+const menuMobile: MobileMenuItem[] = [
+    { title: "Trang chủ", link: "/", icon: Trangchu },
+    { title: "Diễn đàn", link: "/forum", icon: Diendan },
+    { title: "Khoá học", link: "/khoahoc", icon: Khoahoc },
+    { title: "Luyện tập", link: "/luyentap", icon: Luyentap },
+    { title: "Sự kiện", link: "/sukien", icon: Sukien },
+    { title: "Bài viết", link: "/blog", icon: Baiviet },
+    { title: "Cửa hàng số", link: "/cuahangso", icon: Cuahangso },
+];
+
+const mobileIconMap: Record<string, string> = {
+    "/": "/favicon/home.png",
+    "/forum": "/favicon/chat.png",
+    "/khoahoc": "/favicon/open-book.png",
+    "/luyentap": "/favicon/terminal.png",
+    "/sukien": "/favicon/appointment.png",
+    "/blog": "/favicon/computer.png",
+    "/cuahangso": "/favicon/shopping-bag.png",
+};
 
 function buildSections(
     user: { username: string; role: string },
@@ -502,6 +523,12 @@ function MobileUserSheet({ user, onLogout, onClose, open }: MobileSheetProps) {
     );
 }
 
+
+
+
+
+
+
 export default function Header() {
     const pathname = usePathname();
     const router = useRouter();
@@ -510,33 +537,43 @@ export default function Header() {
     const { getTotalUnread } = useUnreadMessagesStore();
     const [sheetOpen, setSheetOpen] = useState(false);
     const [drawerOpen, setDrawerOpen] = useState(false);
-    const [showBetaTooltip, setShowBetaTooltip] = useState(false);
-    const [showSearchInput, setShowSearchInput] = useState(false);
     const [activeStreakIcon, setActiveStreakIcon] = useState(false);
-    const betaBadgeRef = useRef<HTMLDivElement>(null);
-    const searchRef = useRef<HTMLDivElement>(null);
+    const [menuOpen, setMenuOpen] = useState(false);
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const dropdownRef = useRef<HTMLDivElement>(null);
+    const mobileDropdownRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (!menuOpen) return;
+
+        const handleClickOutside = (event: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setMenuOpen(false);
+            }
+        };
+
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, [menuOpen]);
+
+    useEffect(() => {
+        if (!mobileMenuOpen) return;
+
+        const handleClickOutside = (event: MouseEvent) => {
+            if (mobileDropdownRef.current && !mobileDropdownRef.current.contains(event.target as Node)) {
+                setMobileMenuOpen(false);
+            }
+        };
+
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, [mobileMenuOpen]);
 
     const unreadCount = getTotalUnread();
 
     const displayCoins = user && token ? (coins ?? 0) : 0;
     const displayStreak = user && token ? (user?.streak ?? 0) : 0;
     const displayRole = user?.role || "user";
-
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (betaBadgeRef.current && !betaBadgeRef.current.contains(event.target as Node)) {
-                setShowBetaTooltip(false);
-            }
-            if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
-                setShowSearchInput(false);
-            }
-        };
-
-        if (showBetaTooltip || showSearchInput) {
-            document.addEventListener('mousedown', handleClickOutside);
-            return () => document.removeEventListener('mousedown', handleClickOutside);
-        }
-    }, [showBetaTooltip, showSearchInput]);
 
     useEffect(() => {
         const checkTokenValidity = async () => {
@@ -627,28 +664,8 @@ export default function Header() {
         { title: "Luyện tập", link: "/luyentap" },
         { title: "Sự kiện", link: "/sukien" },
         { title: "Bài viết", link: "/blog" },
-        { title: "Cửa hàng", link: "/cuahangso" },
+        { title: "Cửa hàng số", link: "/cuahangso" },
     ];
-
-    const menuMobile: MobileMenuItem[] = [
-        { title: "Trang chủ", link: "/", icon: Trangchu },
-        { title: "Diễn đàn", link: "/forum", icon: Diendan },
-        { title: "Khoá học", link: "/khoahoc", icon: Khoahoc },
-        { title: "Luyện tập", link: "/luyentap", icon: Luyentap },
-        { title: "Sự kiện", link: "/sukien", icon: Sukien },
-        { title: "Bài viết", link: "/blog", icon: Baiviet },
-        { title: "Cửa hàng", link: "/cuahangso", icon: Cuahangso },
-    ];
-
-    const mobileIconMap: Record<string, string> = {
-        "/": "/favicon/home.png",
-        "/forum": "/favicon/chat.png",
-        "/khoahoc": "/favicon/open-book.png",
-        "/luyentap": "/favicon/terminal.png",
-        "/sukien": "/favicon/appointment.png",
-        "/blog": "/favicon/computer.png",
-        "/cuahangso": "/favicon/shopping-bag.png",
-    };
 
     const displayUser = user && token ? {
         fullname: user.fullName || "Người dùng",
@@ -719,82 +736,117 @@ export default function Header() {
         <>
             <header className="hidden lg:block bg-[var(--cn-bg-card)] w-full h-[60px] fixed top-0 z-50 shadow-[var(--cn-shadow-sm)]">
                 <div className="flex h-full justify-between items-center px-4">
-                    <div className="flex-shrink-0 relative group">
+                    <div className="flex-shrink-0 relative group mr-2.5">
                         <Link href="/">
                             <img src="/images/logo.png" alt="Logo CNcode" width={100} height={55} />
                         </Link>
-                        <span className="absolute -bottom-1 -right-2 bg-gray-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
-                            Beta
-                        </span>
-                        <div className="absolute -bottom-8 left-0 bg-gray-900 text-white text-xs px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-10 pointer-events-none">
-                            Website đang trong quá trình thử nghiệm
-                        </div>
                     </div>
-                    <nav className="flex h-full items-center gap-1">
-                        {menu.map((item) => {
-                            const isActive = pathname === item.link;
+                    <nav className="flex h-full items-center gap-5">
+                        {menuMobile.map((item) => {
+                            const isActive = item.link === '/' ? pathname === item.link : pathname.startsWith(item.link);
                             const showBadge = item.link === '/forum' && unreadCount > 0;
+                            const iconSrc = mobileIconMap[item.link] || "/favicon/home.png";
                             return (
-                                <div key={item.link} className="relative h-full flex items-center">
+                                <div key={item.link} className="relative h-full flex items-center group">
                                     <Link
                                         href={item.link}
-                                        className={`relative px-3 py-2 font-bold text-sm transition-all duration-200 ${isActive ? "text-[var(--cn-primary)]" : "text-[var(--cn-text-sub)] hover:text-[var(--cn-primary)]"}`}
+                                        className={`relative px-7 py-2 rounded-lg transition-all duration-200 ${isActive ? "text-[var(--cn-primary)]" : "text-[var(--cn-text-sub)] hover:text-[var(--cn-primary)] hover:bg-gray-100 dark:hover:bg-gray-800"}`}
                                     >
-                                        {item.title}
+                                        <img
+                                            src={iconSrc}
+                                            alt={item.title}
+                                            className="w-[23px] h-[23px]"
+                                            style={{
+                                                filter: isActive
+                                                    ? 'brightness(0) saturate(100%) invert(27%) sepia(87%) saturate(2000%) hue-rotate(200deg) brightness(95%) contrast(90%)'
+                                                    : 'grayscale(100%)',
+                                                opacity: isActive ? 1 : 0.5
+                                            }}
+                                        />
                                     </Link>
                                     {showBadge && (
-                                        <span className="absolute top-4 right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse shadow-lg" />
+                                        <span className="absolute top-2 right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse shadow-lg" />
                                     )}
-                                    {isActive && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--cn-primary)]" />}
+                                    {isActive && <div className="absolute bottom-0 left-0 right-0 h-1 bg-[var(--cn-primary)]" />}
+                                    <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 px-3 py-1.5 bg-gray-900 text-white text-xs font-medium rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50 pointer-events-none">
+                                        {item.title}
+                                        <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-gray-900 rotate-45" />
+                                    </div>
                                 </div>
                             );
                         })}
                     </nav>
                     <div className="flex items-center gap-4">
-                        <div className="relative" ref={searchRef}>
+                        <div className="relative inline-block" ref={dropdownRef}>
                             <button
                                 type="button"
-                                onClick={() => setShowSearchInput(!showSearchInput)}
-                                className="relative p-2 rounded-xl hover:bg-gradient-to-br hover:from-blue-50 hover:to-indigo-50 dark:hover:from-blue-950/30 dark:hover:to-indigo-950/30 transition-all duration-200 group"
-                                aria-label="Tìm kiếm"
+                                onClick={() => setMenuOpen(!menuOpen)}
+                                className="relative p-1.5 lg:p-2 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gradient-to-br hover:from-blue-50 hover:to-indigo-50 dark:hover:from-blue-950/30 dark:hover:to-indigo-950/30 transition-all duration-200 group"
+                                aria-label="Layout"
                             >
-                                <Search className="w-5 h-5 text-[var(--cn-text-sub)] group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors" />
+                                <Element4
+                                    variant="Bold"
+                                    className="w-4 lg:w-5 h-4 lg:h-5 text-[var(--cn-text-sub)] group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors"
+                                />
                             </button>
-                            {showSearchInput && (
+
+                            {menuOpen && (
                                 <div className="absolute right-0 mt-3 w-80 bg-[var(--cn-bg-card)] border border-[var(--cn-border)] rounded-2xl shadow-2xl shadow-black/10 dark:shadow-black/40 z-20 overflow-hidden animate-[slideDown_0.2s_ease-out]">
-                                    <div className="p-3">
-                                        <input
-                                            type="text"
-                                            placeholder="Tìm kiếm..."
-                                            className="w-full px-4 py-2 bg-[var(--cn-bg-section)] border border-[var(--cn-border)] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--cn-primary)]"
-                                            autoFocus
-                                        />
+                                    {/* Header of menu */}
+                                    <div className="p-4 border-b border-[var(--cn-border)]">
+                                        <h3 className="text-base font-bold text-[var(--cn-text-main)]">Menu</h3>
+                                    </div>
+                                    {/* Coins and Streak */}
+                                    <div className="p-4 flex items-center justify-between">
+                                        <div className="relative flex items-center">
+                                            <div className="border border-[var(--cn-border)] rounded-2xl pl-3 pr-6 py-1.5">
+                                                <p className="text-[var(--cn-primary)] text-sm font-medium">{displayCoins}</p>
+                                            </div>
+                                            <img src="/icons/coins.svg" alt="Coins" width={30} height={30} className="absolute -right-3" />
+                                        </div>
+                                        <div className="relative flex items-center">
+                                            <div className="border border-orange-300 bg-orange-50 dark:bg-orange-950/20 rounded-2xl pl-3 pr-7 py-1.5 shadow-sm shadow-orange-200/50">
+                                                <p className="text-orange-600 dark:text-orange-400 text-sm font-bold">{displayStreak}</p>
+                                            </div>
+                                            <img
+                                                src={displayStreak > 0 ? "/icons/streak-1.svg" : "/icons/streak.svg"}
+                                                alt="Streak"
+                                                width={35}
+                                                height={35}
+                                                className={`absolute -right-3 drop-shadow-md transition-all duration-300 ${activeStreakIcon ? 'scale-110 animate-bounce' : ''}`}
+                                            />
+                                        </div>
+                                    </div>
+                                    {/* Menu Items */}
+                                    <div className="p-4 pt-0">
+                                        {menuMobile.map((item) => {
+                                            const isActive = item.link === '/' ? pathname === item.link : pathname.startsWith(item.link);
+                                            return (
+                                                <Link
+                                                    key={item.link}
+                                                    href={item.link}
+                                                    onClick={() => setMenuOpen(false)}
+                                                    className={`flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 ${isActive ? 'text-[var(--cn-primary)] bg-[var(--cn-primary-light)]' : 'text-[var(--cn-text-sub)] hover:bg-[var(--cn-bg-section)]'}`}
+                                                >
+                                                    <img
+                                                        src={mobileIconMap[item.link] || "/favicon/home.png"}
+                                                        alt={item.title}
+                                                        className="w-5 h-5"
+                                                        style={{
+                                                            filter: isActive
+                                                                ? 'brightness(0) saturate(100%) invert(27%) sepia(87%) saturate(2000%) hue-rotate(200deg) brightness(95%) contrast(90%)'
+                                                                : 'grayscale(100%)',
+                                                            opacity: isActive ? 1 : 0.5
+                                                        }}
+                                                    />
+                                                    <span className="text-sm font-medium">{item.title}</span>
+                                                </Link>
+                                            );
+                                        })}
                                     </div>
                                 </div>
                             )}
                         </div>
-                        {displayUser && (
-                            <div className="flex items-center gap-4">
-                                <div className="relative flex items-center">
-                                    <div className="border border-[var(--cn-border)] rounded-2xl pl-2 pr-4 py-0.5">
-                                        <p className="text-[var(--cn-primary)] text-xs font-medium">{formatNumber(displayCoins)}</p>
-                                    </div>
-                                    <img src="/icons/coins.svg" alt="Coins" width={25} height={25} className="absolute -right-3" />
-                                </div>
-                                <div className="relative flex items-center">
-                                    <div className="border border-orange-300 bg-orange-50 dark:bg-orange-950/20 rounded-2xl pl-2 pr-5 py-0.5 shadow-sm shadow-orange-200/50">
-                                        <p className="text-orange-600 dark:text-orange-400 text-xs font-bold">{formatNumber(displayStreak)}</p>
-                                    </div>
-                                    <img
-                                        src={displayStreak > 0 ? "/icons/streak-1.svg" : "/icons/streak.svg"}
-                                        alt="Streak"
-                                        width={27}
-                                        height={27}
-                                        className={`absolute -right-3 drop-shadow-md transition-all duration-300 ${activeStreakIcon ? 'scale-110 animate-bounce' : ''}`}
-                                    />
-                                </div>
-                            </div>
-                        )}
                         <NotificationBell />
                         {displayUser ? (
                             <button onClick={() => setDrawerOpen(true)} className="relative p-0.5 rounded-full focus:outline-none group">
@@ -815,67 +867,82 @@ export default function Header() {
 
             <div className="lg:hidden fixed top-0 w-full h-10 bg-[var(--cn-bg-card)] z-50 border-b border-[var(--cn-border)]">
                 <div className="flex h-full justify-between items-center px-2">
-                    <div className="relative" ref={betaBadgeRef}>
+                    <div className="relative mr-2.5">
                         <Link href="/">
                             <img src="/images/logo.png" alt="Logo" width={60} height={30} className="object-contain" />
                         </Link>
-                        <span
-                            className="absolute -bottom-0.5 -right-1 bg-gray-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full"
-                            onClick={() => setShowBetaTooltip(!showBetaTooltip)}
-                        >
-                            Beta
-                        </span>
-                        {showBetaTooltip && (
-                            <div className="absolute -bottom-8 left-0 bg-gray-900 text-white text-[10px] px-2 py-1 rounded-lg whitespace-nowrap z-10">
-                                Website đang trong quá trình thử nghiệm
-                            </div>
-                        )}
                     </div>
                     <div className="flex items-center gap-3">
-                        <div className="relative" ref={searchRef}>
+                        <div className="relative inline-block" ref={mobileDropdownRef}>
                             <button
                                 type="button"
-                                onClick={() => setShowSearchInput(!showSearchInput)}
-                                className="relative p-2 rounded-lg hover:bg-[var(--cn-bg-section)] transition-colors"
-                                aria-label="Tìm kiếm"
+                                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                                className="relative p-1.5 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gradient-to-br hover:from-blue-50 hover:to-indigo-50 dark:hover:from-blue-950/30 dark:hover:to-indigo-950/30 transition-all duration-200 group"
+                                aria-label="Layout"
                             >
-                                <Search className="w-4 h-4 text-[var(--cn-text-sub)]" />
+                                <Element4
+                                    variant="Bold"
+                                    className="w-4 h-4 text-[var(--cn-text-sub)] group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors"
+                                />
                             </button>
-                            {showSearchInput && (
-                                <div className="absolute right-0 mt-2 w-64 bg-[var(--cn-bg-card)] border border-[var(--cn-border)] rounded-xl shadow-xl z-20 overflow-hidden animate-[slideDown_0.2s_ease-out]">
-                                    <div className="p-2">
-                                        <input
-                                            type="text"
-                                            placeholder="Tìm kiếm..."
-                                            className="w-full px-3 py-2 bg-[var(--cn-bg-section)] border border-[var(--cn-border)] rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[var(--cn-primary)]"
-                                            autoFocus
-                                        />
+
+                            {mobileMenuOpen && (
+                                <div className="absolute right-0 mt-3 w-80 bg-[var(--cn-bg-card)] border border-[var(--cn-border)] rounded-2xl shadow-2xl shadow-black/10 dark:shadow-black/40 z-20 overflow-hidden animate-[slideDown_0.2s_ease-out]">
+                                    {/* Header of menu */}
+                                    <div className="p-4 border-b border-[var(--cn-border)]">
+                                        <h3 className="text-base font-bold text-[var(--cn-text-main)]">Menu</h3>
+                                    </div>
+                                    {/* Coins and Streak */}
+                                    <div className="p-4 flex items-center justify-between">
+                                        <div className="relative flex items-center">
+                                            <div className="border border-[var(--cn-border)] rounded-2xl pl-3 pr-6 py-1.5">
+                                                <p className="text-[var(--cn-primary)] text-sm font-medium">{displayCoins}</p>
+                                            </div>
+                                            <img src="/icons/coins.svg" alt="Coins" width={30} height={30} className="absolute -right-3" />
+                                        </div>
+                                        <div className="relative flex items-center">
+                                            <div className="border border-orange-300 bg-orange-50 dark:bg-orange-950/20 rounded-2xl pl-3 pr-7 py-1.5 shadow-sm shadow-orange-200/50">
+                                                <p className="text-orange-600 dark:text-orange-400 text-sm font-bold">{displayStreak}</p>
+                                            </div>
+                                            <img
+                                                src={displayStreak > 0 ? "/icons/streak-1.svg" : "/icons/streak.svg"}
+                                                alt="Streak"
+                                                width={35}
+                                                height={35}
+                                                className={`absolute -right-3 drop-shadow-md transition-all duration-300 ${activeStreakIcon ? 'scale-110 animate-bounce' : ''}`}
+                                            />
+                                        </div>
+                                    </div>
+                                    {/* Menu Items */}
+                                    <div className="p-4 pt-0">
+                                        {menuMobile.map((item) => {
+                                            const isActive = item.link === '/' ? pathname === item.link : pathname.startsWith(item.link);
+                                            return (
+                                                <Link
+                                                    key={item.link}
+                                                    href={item.link}
+                                                    onClick={() => setMobileMenuOpen(false)}
+                                                    className={`flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 ${isActive ? 'text-[var(--cn-primary)] bg-[var(--cn-primary-light)]' : 'text-[var(--cn-text-sub)] hover:bg-[var(--cn-bg-section)]'}`}
+                                                >
+                                                    <img
+                                                        src={mobileIconMap[item.link] || "/favicon/home.png"}
+                                                        alt={item.title}
+                                                        className="w-5 h-5"
+                                                        style={{
+                                                            filter: isActive
+                                                                ? 'brightness(0) saturate(100%) invert(27%) sepia(87%) saturate(2000%) hue-rotate(200deg) brightness(95%) contrast(90%)'
+                                                                : 'grayscale(100%)',
+                                                            opacity: isActive ? 1 : 0.5
+                                                        }}
+                                                    />
+                                                    <span className="text-sm font-medium">{item.title}</span>
+                                                </Link>
+                                            );
+                                        })}
                                     </div>
                                 </div>
                             )}
                         </div>
-                        {displayUser && (
-                            <div className="flex items-center gap-3">
-                                <div className="relative flex items-center">
-                                    <div className="border border-[var(--cn-border)] rounded-2xl pl-1.5 pr-3 py-0.5">
-                                        <p className="text-[var(--cn-primary)] text-[10px] font-medium">{formatNumber(displayCoins)}</p>
-                                    </div>
-                                    <img src="/icons/coins.svg" alt="Coins" width={18} height={18} className="absolute -right-2" />
-                                </div>
-                                <div className="relative flex items-center">
-                                    <div className="border border-orange-300 bg-orange-50 dark:bg-orange-950/20 rounded-2xl pl-1.5 pr-4 py-0.5">
-                                        <p className="text-orange-600 dark:text-orange-400 text-[10px] font-bold">{formatNumber(displayStreak)}</p>
-                                    </div>
-                                    <img
-                                        src={displayStreak > 0 ? "/icons/streak-1.svg" : "/icons/streak.svg"}
-                                        alt="Streak"
-                                        width={20}
-                                        height={20}
-                                        className={`absolute -right-2 drop-shadow transition-all duration-300 ${activeStreakIcon ? 'scale-110 animate-bounce' : ''}`}
-                                    />
-                                </div>
-                            </div>
-                        )}
                         <NotificationBell />
                         {displayUser ? (
                             <button onClick={() => setSheetOpen(true)} className="relative">
@@ -900,7 +967,7 @@ export default function Header() {
             <div className="lg:hidden fixed bottom-0 left-0 w-full z-40">
                 <div className="w-full h-14 bg-[var(--cn-bg-card)] border-t border-[var(--cn-border)] rounded-t-2xl shadow-[0_-4px_20px_rgba(0,0,0,0.15)] flex items-center px-2">
                     {menuMobile.map((item) => {
-                        const isActive = pathname === item.link;
+                        const isActive = item.link === '/' ? pathname === item.link : pathname.startsWith(item.link);
                         const showBadge = item.link === '/forum' && unreadCount > 0;
                         const iconSrc = mobileIconMap[item.link] || "/favicon/home.png";
                         return (

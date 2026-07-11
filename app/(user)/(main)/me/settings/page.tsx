@@ -589,7 +589,7 @@ const SettingsPage = () => {
                                 <CustomTextarea
                                     label="Giới thiệu bản thân"
                                     value={formData.bio}
-                                    onChange={(value) => handleInputChange('bio', value)}
+                                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleInputChange('bio', e.target.value)}
                                     placeholder="Chia sẻ một chút về bản thân..."
                                     rows={4}
                                     maxLength={500}

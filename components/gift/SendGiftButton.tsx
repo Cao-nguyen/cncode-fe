@@ -239,7 +239,7 @@ export function SendGiftButton({
                                         label="Lời nhắn (tùy chọn)"
                                         placeholder="Viết lời nhắn kèm theo quà..."
                                         value={message}
-                                        onChange={setMessage}
+                                        onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setMessage(e.target.value)}
                                         rows={3}
                                         maxLength={200}
                                     />

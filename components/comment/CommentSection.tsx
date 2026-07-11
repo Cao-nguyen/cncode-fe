@@ -5,10 +5,10 @@ import { useAuthStore } from '@/store/auth.store';
 import { useSocket } from '@/providers/socket.provider';
 import { commentApi, CommentType } from '@/lib/api/comment.api';
 import CommentItem from './CommentItem';
-import { CustomTextarea } from '@/components/custom/CustomTextarea';
+import { CustomTextCmt } from '@/components/custom/CustomTextCmt';
 import { getImageUrl } from '@/lib/utils/imageUrl';
 import { DeleteConfirmModal } from '@/components/common/DeleteConfirmModal';
-import { Loader2, Send } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface CommentSectionProps {
@@ -24,6 +24,7 @@ export default function CommentSection({ targetType, targetId, onCommentCountCha
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [newComment, setNewComment] = useState('');
+    const [isCommentExpanded, setIsCommentExpanded] = useState(false);
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [hasMore, setHasMore] = useState(false);
@@ -140,6 +141,7 @@ export default function CommentSection({ targetType, targetId, onCommentCountCha
 
             if (result.success) {
                 setNewComment('');
+                setIsCommentExpanded(false);
                 toast.success('Bình luận thành công');
                 fetchComments(1);
             } else {
@@ -150,6 +152,11 @@ export default function CommentSection({ targetType, targetId, onCommentCountCha
         } finally {
             setSubmitting(false);
         }
+    };
+
+    const handleCancelComment = () => {
+        setNewComment('');
+        setIsCommentExpanded(false);
     };
 
     const handleLike = async (commentId: string, type: string) => {
@@ -270,7 +277,7 @@ export default function CommentSection({ targetType, targetId, onCommentCountCha
     };
 
     return (
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
+        <div className="bg-white rounded-xl pt-2">
             <h3 className="text-lg font-semibold text-gray-800 mb-4">
                 Bình luận ({comments.length})
             </h3>
@@ -298,22 +305,17 @@ export default function CommentSection({ targetType, targetId, onCommentCountCha
                         </div>
                     </div>
                     <div className="flex-1">
-                        <CustomTextarea
+                        <CustomTextCmt
                             value={newComment}
                             onChange={setNewComment}
                             placeholder="Viết bình luận..."
                             rows={3}
+                            onSubmit={handleSubmitComment}
+                            onCancel={handleCancelComment}
+                            submitLabel="Gửi bình luận"
+                            cancelLabel="Hủy"
+                            isSubmitting={submitting}
                         />
-                        <div className="flex justify-end mt-2">
-                            <button
-                                onClick={handleSubmitComment}
-                                disabled={submitting || !newComment.trim()}
-                                className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg text-sm font-medium hover:bg-blue-600 transition disabled:opacity-50"
-                            >
-                                {submitting ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
-                                Gửi bình luận
-                            </button>
-                        </div>
                     </div>
                 </div>
             ) : (

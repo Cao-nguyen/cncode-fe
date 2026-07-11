@@ -1048,7 +1048,7 @@ function AdminUsersPageContent() {
                                 <label className="block text-sm font-medium mb-2 text-gray-600">Lý do</label>
                                 <CustomTextarea
                                     value={coinReason}
-                                    onChange={setCoinReason}
+                                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setCoinReason(e.target.value)}
                                     placeholder="Nhập lý do..."
                                     rows={3}
                                     maxLength={500}
@@ -1095,7 +1095,7 @@ function AdminUsersPageContent() {
                                 <label className="block text-sm font-medium mb-2 text-gray-600">Lý do</label>
                                 <CustomTextarea
                                     value={violationReason}
-                                    onChange={setViolationReason}
+                                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setViolationReason(e.target.value)}
                                     placeholder="Nhập lý do vi phạm..."
                                     rows={3}
                                     maxLength={500}

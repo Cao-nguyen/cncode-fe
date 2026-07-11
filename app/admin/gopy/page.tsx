@@ -465,7 +465,7 @@ export default function AdminFeedbackPage() {
                             </div>
                             <div>
                                 <label className="block text-sm font-medium mb-2 text-gray-700">Phản hồi</label>
-                                <CustomTextarea value={adminResponse} onChange={setAdminResponse} placeholder="Nhập phản hồi..." rows={3} maxLength={500} />
+                                <CustomTextarea value={adminResponse} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setAdminResponse(e.target.value)} placeholder="Nhập phản hồi..." rows={3} maxLength={500} />
                             </div>
                             <div className="flex gap-3">
                                 <CustomButton
