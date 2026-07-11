@@ -491,16 +491,13 @@ export default function NotificationBell() {
                     />
 
                     {/* Notification panel - mobile sidebar, desktop dropdown */}
-                    <div className="fixed inset-y-0 right-0 w-full max-w-sm
-                        md:absolute md:inset-y-auto md:right-0 md:mt-3 md:w-[400px] lg:w-[440px] md:max-w-none
+                    <div className="fixed inset-y-0 right-0 w-full flex flex-col
+                        md:absolute md:inset-y-auto md:right-0 md:mt-3 md:w-[400px] lg:w-[440px] md:max-w-[400px] lg:md:max-w-[440px]
                         bg-[var(--cn-bg-card)] border-l md:border border-[var(--cn-border)] 
                         md:rounded-2xl shadow-2xl shadow-black/10 dark:shadow-black/40 z-50 overflow-hidden
                         animate-[slideInRight_0.3s_ease-out] md:animate-[slideDown_0.2s_ease-out]">
-                        <div className="sticky top-0 z-10 flex items-center justify-between p-4 border-b border-[var(--cn-border)] bg-gradient-to-r from-blue-50/50 to-indigo-50/50 dark:from-blue-950/20 dark:to-indigo-950/20 backdrop-blur-sm">
+                        <div className="flex-shrink-0 flex items-center justify-between p-4 border-b border-[var(--cn-border)] bg-gradient-to-r from-blue-50/50 to-indigo-50/50 dark:from-blue-950/20 dark:to-indigo-950/20 backdrop-blur-sm">
                             <div className="flex items-center gap-2">
-                                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
-                                    <Bell className="w-4 h-4 text-white" />
-                                </div>
                                 <h3 className="text-base font-bold text-[var(--cn-text-main)]">
                                     Thông báo
                                     {unreadCount > 0 && (
@@ -510,18 +507,27 @@ export default function NotificationBell() {
                                     )}
                                 </h3>
                             </div>
-                            {unreadCount > 0 && (
+                            <div className="flex items-center gap-2">
+                                {unreadCount > 0 && (
+                                    <button
+                                        onClick={markAllAsRead}
+                                        className="hidden md:flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-lg transition-all duration-200"
+                                    >
+                                        <CheckCheck className="w-3.5 h-3.5" />
+                                        <span>Đọc tất cả</span>
+                                    </button>
+                                )}
                                 <button
-                                    onClick={markAllAsRead}
-                                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-lg transition-all duration-200"
+                                    onClick={() => setOpen(false)}
+                                    className="md:hidden p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                                    aria-label="Đóng"
                                 >
-                                    <CheckCheck className="w-3.5 h-3.5" />
-                                    <span>Đọc tất cả</span>
+                                    <X className="w-5 h-5 text-gray-500" />
                                 </button>
-                            )}
+                            </div>
                         </div>
 
-                        <div className="max-h-[400px] overflow-y-auto">
+                        <div className="flex-1 md:max-h-[400px] overflow-y-auto">
                             {isLoading && notifications.length === 0 ? (
                                 <div className="flex items-center justify-center py-8">
                                     <Loader2 className="w-5 h-5 sm:w-6 sm:h-6 text-[var(--cn-primary)] animate-spin" />

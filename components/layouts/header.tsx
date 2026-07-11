@@ -2,7 +2,7 @@
 'use client';
 
 import Link from "next/link";
-
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 
@@ -29,7 +29,9 @@ import {
     Coin1,
     MessageProgramming,
     Element4,
+    SearchNormal1,
 } from "iconsax-react";
+import { X, Search } from "lucide-react";
 import {
     Home as Trangchu,
     Message2 as Diendan,
@@ -66,7 +68,7 @@ const menuMobile: MobileMenuItem[] = [
     { title: "Luyện tập", link: "/luyentap", icon: Luyentap },
     { title: "Sự kiện", link: "/sukien", icon: Sukien },
     { title: "Bài viết", link: "/blog", icon: Baiviet },
-    { title: "Cửa hàng số", link: "/cuahangso", icon: Cuahangso },
+    { title: "Cửa hàng", link: "/cuahangso", icon: Cuahangso },
 ];
 
 const mobileIconMap: Record<string, string> = {
@@ -79,6 +81,53 @@ const mobileIconMap: Record<string, string> = {
     "/cuahangso": "/favicon/shopping-bag.png",
 };
 
+interface MenuGroup {
+    label: string;
+    items: { icon: string; title: string; subtitle: string; href: string; }[];
+}
+
+function buildMenuGroups(): MenuGroup[] {
+    return [
+        {
+            label: "CỘNG ĐỒNG",
+            items: [
+                { icon: HEADER_MENU_ICONS.ho_tro_du_an, title: "Hỗ trợ dự án", subtitle: "Cùng nhau thực hiện ý tưởng", href: "/hotroduan" },
+                { icon: HEADER_MENU_ICONS.hoi_dap, title: "Hỏi đáp (FAQ)", subtitle: "Câu hỏi thường gặp", href: "/faq" },
+                { icon: HEADER_MENU_ICONS.truyen_thong_cheo, title: "Truyền thông chéo", subtitle: "Kết nối & chia sẻ", href: "/truyenthongcheo" },
+                { icon: HEADER_MENU_ICONS.tiep_thi_lien_ket, title: "Tiếp thị liên kết", subtitle: "Nhận xu từ giới thiệu", href: "/me/affiliate" },
+                { icon: HEADER_MENU_ICONS.hanh_trinh_yeu_thuong, title: "Hành trình yêu thương", subtitle: "Câu chuyện của bạn", href: "/hanhtrinhyeuthuong" },
+            ],
+        },
+        {
+            label: "NỀN TẢNG",
+            items: [
+                { icon: HEADER_MENU_ICONS.gop_y, title: "Góp ý", subtitle: "Chia sẻ ý kiến của bạn", href: "/gopy" },
+                { icon: HEADER_MENU_ICONS.gia_su_ai, title: "Gia sư AI", subtitle: "Học cùng trí tuệ nhân tạo", href: "/giasuai" },
+                { icon: HEADER_MENU_ICONS.chat_voi_admin, title: "Chat với Admin", subtitle: "Liên hệ hỗ trợ", href: "/chatwithadmin" },
+            ],
+        },
+        {
+            label: "TIỆN ÍCH",
+            items: [
+                { icon: HEADER_MENU_ICONS.rut_gon_lien_ket, title: "Rút gọn liên kết", subtitle: "Sở hữu link ngắn", href: "/rutgonlink" },
+                { icon: HEADER_MENU_ICONS.cnjobs, title: "CNjobs", subtitle: "Cơ hội việc làm", href: "/cnjobs" },
+                { icon: HEADER_MENU_ICONS.cnsocial, title: "CNsocial", subtitle: "Mạng xã hội cộng đồng", href: "/cnsocial" },
+                { icon: HEADER_MENU_ICONS.huong_nghiep, title: "Hướng nghiệp", subtitle: "Định hướng tương lai", href: "/huongnghiep" },
+            ],
+        },
+        {
+            label: "HỌC TẬP",
+            items: [
+                { icon: HEADER_MENU_ICONS.khoa_hoc_cua_toi, title: "Khoá học của tôi", subtitle: "Tiếp tục học tập", href: "/me/khoahoc" },
+                { icon: HEADER_MENU_ICONS.bai_viet_cua_toi, title: "Bài viết của tôi", subtitle: "Quản lý nội dung", href: "/me/blog" },
+                { icon: HEADER_MENU_ICONS.cnbooks, title: "CNbooks", subtitle: "Thư viện sách số", href: "/cnbooks" },
+                { icon: HEADER_MENU_ICONS.khu_vuon_hoc_tap, title: "Khu vườn học tập", subtitle: "Không gian của bạn", href: "/khuvuonhoctap" },
+                { icon: HEADER_MENU_ICONS.dau_truong_hoc_tap, title: "Đấu trường học tập", subtitle: "Thử thách và leo rank", href: "/dautruonghoctap" },
+            ],
+        },
+    ];
+}
+
 function buildSections(
     user: { username: string; role: string },
     iconSize: { width: number; height: number }
@@ -87,49 +136,17 @@ function buildSections(
         {
             label: "Tài khoản",
             items: [
-                { icon: <User variant="Bold" style={iconSize} />, title: "Trang cá nhân", subtitle: "Xem hồ sơ của bạn", href: `/p/${user.username}` },
-                { icon: <NhaHang variant="Bold" style={iconSize} />, title: "Kho quà của tôi", subtitle: "Quản lý quà tặng", href: "/me/shop" },
-                ...(user.role === "admin" ? [{ icon: <Settings variant="Bold" style={iconSize} />, title: "Trang quản trị", subtitle: "Quản lý hệ thống", href: "/admin/dashboard" }] : []),
-                ...(user.role === "teacher" ? [{ icon: <Settings variant="Bold" style={iconSize} />, title: "Trang quản lý", subtitle: "Quản lý lớp học", href: "/quanly" }] : []),
-                { icon: <Clock variant="Bold" style={iconSize} />, title: "Lịch sử giao dịch", subtitle: "Xem các giao dịch của bạn", href: "/me/lichsugiaodich" },
-            ],
-        },
-        {
-            label: "Cộng đồng",
-            items: [
-                { icon: <Heart variant="Bold" style={iconSize} />, title: "Hành trình yêu thương", subtitle: "Câu chuyện của bạn", href: "/hanhtrinhyeuthuong" },
-                { icon: <NhaHang variant="Bold" style={iconSize} />, title: "Tiếp thị liên kết", subtitle: "Nhận xu từ giới thiệu", href: "/me/affiliate" },
-                { icon: <ArchiveBox variant="Bold" style={iconSize} />, title: "Góp ý", subtitle: "Chia sẻ ý kiến của bạn", href: "/gopy" },
-                { icon: <BoxSearch variant="Bold" style={iconSize} />, title: "Hỏi đáp (FAQ)", subtitle: "Câu hỏi thường gặp", href: "/faq" },
-                { icon: <MessageProgramming variant="Bold" style={iconSize} />, title: "Hỗ trợ dự án", subtitle: "Cùng nhau thực hiện ý tưởng", href: "/hotroduan" },
-                { icon: <Global variant="Bold" style={iconSize} />, title: "Truyền thông chéo", subtitle: "Kết nối & chia sẻ", href: "/truyenthongcheo" },
-            ],
-        },
-        {
-            label: "Tiện ích",
-            items: [
-                { icon: <Link1 variant="Bold" style={iconSize} />, title: "Rút gọn liên kết", subtitle: "Sở hữu link ngắn", href: "/rutgonlink" },
-                { icon: <Message variant="Bold" style={iconSize} />, title: "Gia sư AI", subtitle: "Học cùng trí tuệ nhân tạo", href: "/giasuai" },
-                { icon: <DeviceMessage variant="Bold" style={iconSize} />, title: "Chat với Admin", subtitle: "Liên hệ hỗ trợ", href: "/chatwithadmin" },
-                { icon: <Briefcase variant="Bold" style={iconSize} />, title: "CNjobs", subtitle: "Cơ hội việc làm", href: "/cnjobs" },
-                { icon: <GlobalSearch variant="Bold" style={iconSize} />, title: "CNsocial", subtitle: "Mạng xã hội cộng đồng", href: "/cnsocial" },
-            ],
-        },
-        {
-            label: "Học tập",
-            items: [
-                { icon: <ArchiveBook variant="Bold" style={iconSize} />, title: "CNbooks", subtitle: "Thư viện sách số", href: "/cnbooks" },
-                { icon: <BookOpen variant="Bold" style={iconSize} />, title: "Khoá học của tôi", subtitle: "Tiếp tục học tập", href: "/me/khoahoc" },
-                { icon: <FileText variant="Bold" style={iconSize} />, title: "Bài viết của tôi", subtitle: "Quản lý nội dung", href: "/me/blog" },
-                { icon: <Huongnghiep variant="Bold" style={iconSize} />, title: "Hướng nghiệp", subtitle: "Định hướng tương lai", href: "/huongnghiep" },
-                { icon: <Home variant="Bold" style={iconSize} />, title: "Khu vườn học tập", subtitle: "Không gian của bạn", href: "/khuvuonhoctap" },
-                { icon: <Dautruong variant="Bold" style={iconSize} />, title: "Đấu trường học tập", subtitle: "Thử thách và leo rank", href: "/dautruonghoctap" },
+                { icon: <Image src={HEADER_MENU_ICONS.trang_ca_nhan} alt="Trang cá nhân" width={iconSize.width} height={iconSize.height} />, title: "Trang cá nhân", subtitle: "Xem hồ sơ của bạn", href: `/p/${user.username}` },
+                { icon: <Image src={HEADER_MENU_ICONS.kho_qua_tang} alt="Kho quà" width={iconSize.width} height={iconSize.height} />, title: "Kho quà của tôi", subtitle: "Quản lý quà tặng", href: "/me/shop" },
+                ...(user.role === "admin" ? [{ icon: <Image src={HEADER_MENU_ICONS.trang_quan_tri} alt="Quản trị" width={iconSize.width} height={iconSize.height} />, title: "Trang quản trị", subtitle: "Quản lý hệ thống", href: "/admin/dashboard" }] : []),
+                ...(user.role === "teacher" ? [{ icon: <Image src={HEADER_MENU_ICONS.trang_quan_li} alt="Quản lý" width={iconSize.width} height={iconSize.height} />, title: "Trang quản lý", subtitle: "Quản lý lớp học", href: "/quanly" }] : []),
+                { icon: <Image src={HEADER_MENU_ICONS.lich_su_giao_dich} alt="Lịch sử" width={iconSize.width} height={iconSize.height} />, title: "Lịch sử giao dịch", subtitle: "Xem các giao dịch của bạn", href: "/me/lichsugiaodich" },
             ],
         },
         {
             label: "Cài đặt",
             items: [
-                { icon: <Settings variant="Bold" style={iconSize} />, title: "Cài đặt", subtitle: "Tuỳ chỉnh tài khoản", href: "/me/settings" },
+                { icon: <Image src={HEADER_MENU_ICONS.cai_dat} alt="Cài đặt" width={iconSize.width} height={iconSize.height} />, title: "Cài đặt", subtitle: "Tuỳ chỉnh tài khoản", href: "/me/settings" },
             ],
         },
     ];
@@ -142,6 +159,33 @@ const ROLE_BADGE: Record<string, string> = {
     user: "bg-gray-100 text-gray-500",
 };
 
+const HEADER_MENU_ICONS: Record<string, string> = {
+    "trang_ca_nhan": "/header_menu/trang_ca_nhan.png",
+    "kho_qua_tang": "/header_menu/kho_qua_tang.png",
+    "trang_quan_tri": "/header_menu/trang_quan_tri.png",
+    "trang_quan_li": "/header_menu/trang_quan_li.png",
+    "lich_su_giao_dich": "/header_menu/lich_su_giao_dich.png",
+    "hanh_trinh_yeu_thuong": "/header_menu/hanh_trinh_yeu_thuong.png",
+    "tiep_thi_lien_ket": "/header_menu/tiep_thi_lien_ket.png",
+    "gop_y": "/header_menu/gop_y.png",
+    "hoi_dap": "/header_menu/hoi_dap.png",
+    "ho_tro_du_an": "/header_menu/ho_tro_du_an.png",
+    "truyen_thong_cheo": "/header_menu/truyen_thong_cheo.png",
+    "rut_gon_lien_ket": "/header_menu/rut_gon_lien_ket.png",
+    "gia_su_ai": "/header_menu/gia_su_ai.png",
+    "chat_voi_admin": "/header_menu/chat_voi_admin.png",
+    "cnjobs": "/header_menu/cnjobs.png",
+    "cnsocial": "/header_menu/cnsocial.png",
+    "cnbooks": "/header_menu/cnbooks.png",
+    "huong_nghiep": "/header_menu/huong_nghiep.png",
+    "khu_vuon_hoc_tap": "/header_menu/khu_vuon_hoc_tap.png",
+    "dau_truong_hoc_tap": "/header_menu/dau_truong_hoc_tap.png",
+    "bai_viet_cua_toi": "/header_menu/bai_viet_cua_toi.png",
+    "cai_dat": "/header_menu/cai_dat.png",
+    "dang_xuat": "/header_menu/dang_xuat.png",
+    "khoa_hoc_cua_toi": "/header_menu/khoa_hoc_cua_toi.png",
+};
+
 interface DrawerProps {
     user: { fullname: string; username: string; avatar: string; role: string };
     onLogout: () => void;
@@ -151,7 +195,7 @@ interface DrawerProps {
 
 function DesktopUserDrawer({ user, onLogout, onClose, open }: DrawerProps) {
     const drawerRef = useRef<HTMLDivElement>(null);
-    const iconSize = { width: 18, height: 18 };
+    const iconSize = { width: 22, height: 22 };
     const sections = buildSections(user, iconSize);
     const badgeClass = ROLE_BADGE[user.role] ?? "bg-gray-100 text-gray-500";
 
@@ -256,7 +300,7 @@ function DesktopUserDrawer({ user, onLogout, onClose, open }: DrawerProps) {
                         style={{ background: "#fff1f2", border: "1px solid #fecdd3" }}
                     >
                         <div className="w-8 h-8 flex items-center justify-center rounded-xl bg-white text-red-500 shadow-sm flex-shrink-0">
-                            <LogOut variant="Bold" className="w-[18px] h-[18px]" />
+                            <img src={HEADER_MENU_ICONS.dang_xuat} alt="Đăng xuất" className="w-[18px] h-[18px]" />
                         </div>
                         <div className="flex-1 text-left">
                             <p className="text-[13px] font-semibold text-red-500">Đăng xuất</p>
@@ -277,7 +321,7 @@ interface MobileSheetProps {
 }
 
 function MobileUserSheet({ user, onLogout, onClose, open }: MobileSheetProps) {
-    const iconSize = { width: 20, height: 20 };
+    const iconSize = { width: 24, height: 24 };
     const sections = buildSections(user, iconSize);
     const badgeClass = ROLE_BADGE[user.role] ?? "bg-gray-100 text-gray-500";
 
@@ -509,7 +553,7 @@ function MobileUserSheet({ user, onLogout, onClose, open }: MobileSheetProps) {
                             style={{ background: "#fff1f2", border: "1px solid #fecdd3" }}
                         >
                             <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center text-red-500 shadow-sm flex-shrink-0">
-                                <LogOut variant="Bold" className="w-5 h-5" />
+                                <img src={HEADER_MENU_ICONS.dang_xuat} alt="Đăng xuất" className="w-5 h-5" />
                             </div>
                             <div className="flex-1 text-left">
                                 <p className="text-[13px] font-semibold text-red-500">Đăng xuất</p>
@@ -540,6 +584,7 @@ export default function Header() {
     const [activeStreakIcon, setActiveStreakIcon] = useState(false);
     const [menuOpen, setMenuOpen] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const [searchQuery, setSearchQuery] = useState("");
     const dropdownRef = useRef<HTMLDivElement>(null);
     const mobileDropdownRef = useRef<HTMLDivElement>(null);
 
@@ -677,10 +722,10 @@ export default function Header() {
     // Avatar error debugging
     useEffect(() => {
         if (displayUser) {
-            const testImg = new Image();
-            testImg.onload = () => console.log('✅ Avatar loaded successfully:', displayUser.avatar);
-            testImg.onerror = (e) => console.error('❌ Avatar failed to load:', displayUser.avatar, e);
-            testImg.src = getImageUrl(displayUser.avatar);
+            const testImage = new window.Image();
+            testImage.onload = () => console.log('✅ Avatar loaded successfully:', displayUser.avatar);
+            testImage.onerror = (e) => console.error('❌ Avatar failed to load:', displayUser.avatar, e);
+            testImage.src = getImageUrl(displayUser.avatar);
         }
     }, [displayUser?.avatar]);
 
@@ -799,14 +844,35 @@ export default function Header() {
                                     />
 
                                     {/* Menu panel - mobile sidebar, desktop dropdown */}
-                                    <div className="fixed inset-y-0 right-0 w-full max-w-sm
-                                        md:absolute md:inset-y-auto md:right-0 md:mt-3 md:w-80 md:max-w-none
+                                    <div className="fixed inset-y-0 right-0 w-full max-w-md
+                                        md:absolute md:inset-y-auto md:right-0 md:mt-3 md:w-96 md:max-w-[420px]
                                         bg-[var(--cn-bg-card)] border-l md:border border-[var(--cn-border)]
                                         md:rounded-2xl shadow-2xl shadow-black/10 dark:shadow-black/40 z-50 overflow-hidden
                                         animate-[slideInRight_0.3s_ease-out] md:animate-[slideDown_0.2s_ease-out]">
                                         {/* Header of menu */}
                                         <div className="p-4 border-b border-[var(--cn-border)]">
                                             <h3 className="text-base font-bold text-[var(--cn-text-main)]">Menu</h3>
+                                        </div>
+                                        {/* Search Bar */}
+                                        <div className="p-4 pb-3">
+                                            <div className="relative">
+                                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                                <input
+                                                    type="text"
+                                                    value={searchQuery}
+                                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                                    placeholder="Tìm kiếm menu..."
+                                                    className="w-full pl-10 pr-4 py-2 text-sm bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                                />
+                                                {searchQuery && (
+                                                    <button
+                                                        onClick={() => setSearchQuery("")}
+                                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                                                    >
+                                                        <X className="w-4 h-4" />
+                                                    </button>
+                                                )}
+                                            </div>
                                         </div>
                                         {/* Coins and Streak */}
                                         <div className="p-4 flex items-center justify-between">
@@ -830,31 +896,53 @@ export default function Header() {
                                             </div>
                                         </div>
                                         {/* Menu Items */}
-                                        <div className="p-4 pt-0">
-                                            {menuMobile.map((item) => {
-                                                const isActive = item.link === '/' ? pathname === item.link : pathname.startsWith(item.link);
-                                                return (
-                                                    <Link
-                                                        key={item.link}
-                                                        href={item.link}
-                                                        onClick={() => setMenuOpen(false)}
-                                                        className={`flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 ${isActive ? 'text-[var(--cn-primary)] bg-[var(--cn-primary-light)]' : 'text-[var(--cn-text-sub)] hover:bg-[var(--cn-bg-section)]'}`}
-                                                    >
-                                                        <img
-                                                            src={mobileIconMap[item.link] || "/favicon/home.png"}
-                                                            alt={item.title}
-                                                            className="w-5 h-5"
-                                                            style={{
-                                                                filter: isActive
-                                                                    ? 'brightness(0) saturate(100%) invert(27%) sepia(87%) saturate(2000%) hue-rotate(200deg) brightness(95%) contrast(90%)'
-                                                                    : 'grayscale(100%)',
-                                                                opacity: isActive ? 1 : 0.5
-                                                            }}
-                                                        />
-                                                        <span className="text-sm font-medium">{item.title}</span>
-                                                    </Link>
-                                                );
-                                            })}
+                                        <div className="p-4 pt-0 max-h-[calc(100vh-280px)] overflow-y-auto">
+                                            {buildMenuGroups()
+                                                .map(group => ({
+                                                    ...group,
+                                                    items: group.items.filter(item =>
+                                                        item.title.toLowerCase().includes(searchQuery.toLowerCase())
+                                                    )
+                                                }))
+                                                .filter(group => group.items.length > 0)
+                                                .map((group, groupIdx, groups) => (
+                                                    <div key={group.label} className={groupIdx < groups.length - 1 ? "mb-3" : ""}>
+                                                        <p className="text-[10px] font-bold text-[var(--cn-text-muted)] mb-2 px-1">{group.label}</p>
+                                                        {group.items.map((item, idx) => (
+                                                            <Link
+                                                                key={item.href}
+                                                                href={item.href}
+                                                                onClick={() => {
+                                                                    setMenuOpen(false);
+                                                                    setSearchQuery("");
+                                                                }}
+                                                                className="flex items-center gap-3 px-3 py-2.5 mb-1.5 rounded-xl hover:bg-[var(--cn-bg-section)] transition-all duration-200"
+                                                            >
+                                                                <Image
+                                                                    src={item.icon}
+                                                                    alt={item.title}
+                                                                    width={40}
+                                                                    height={40}
+                                                                    className="flex-shrink-0"
+                                                                />
+                                                                <div className="flex-1 min-w-0">
+                                                                    <p className="text-sm font-semibold text-[var(--cn-text-main)]">{item.title}</p>
+                                                                    <p className="text-xs text-[var(--cn-text-muted)] truncate">{item.subtitle}</p>
+                                                                </div>
+                                                            </Link>
+                                                        ))}
+                                                        {groupIdx < groups.length - 1 && (
+                                                            <div className="h-px bg-[var(--cn-border)] my-3" />
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            {buildMenuGroups().every(group =>
+                                                group.items.every(item => !item.title.toLowerCase().includes(searchQuery.toLowerCase()))
+                                            ) && searchQuery && (
+                                                    <div className="text-center py-8 text-gray-400 text-sm">
+                                                        Không tìm thấy kết quả cho {`"${searchQuery}"`}
+                                                    </div>
+                                                )}
                                         </div>
                                     </div>
                                 </>
@@ -900,60 +988,123 @@ export default function Header() {
                             </button>
 
                             {mobileMenuOpen && (
-                                <div className="absolute right-0 mt-3 w-80 bg-[var(--cn-bg-card)] border border-[var(--cn-border)] rounded-2xl shadow-2xl shadow-black/10 dark:shadow-black/40 z-20 overflow-hidden animate-[slideDown_0.2s_ease-out]">
-                                    {/* Header of menu */}
-                                    <div className="p-4 border-b border-[var(--cn-border)]">
-                                        <h3 className="text-base font-bold text-[var(--cn-text-main)]">Menu</h3>
-                                    </div>
-                                    {/* Coins and Streak */}
-                                    <div className="p-4 flex items-center justify-between">
-                                        <div className="relative flex items-center">
-                                            <div className="border border-[var(--cn-border)] rounded-2xl pl-3 pr-6 py-1.5">
-                                                <p className="text-[var(--cn-primary)] text-sm font-medium">{displayCoins}</p>
-                                            </div>
-                                            <img src="/icons/coins.svg" alt="Coins" width={30} height={30} className="absolute -right-3" />
+                                <>
+                                    {/* Mobile backdrop */}
+                                    <div
+                                        className="fixed inset-0 bg-black/50 z-40 md:hidden"
+                                        onClick={() => setMobileMenuOpen(false)}
+                                    />
+
+                                    {/* Menu panel - mobile sidebar, desktop dropdown */}
+                                    <div className="fixed inset-y-0 right-0 w-full flex flex-col
+                                        md:absolute md:inset-y-auto md:right-0 md:mt-3 md:w-80 md:max-w-[320px]
+                                        bg-[var(--cn-bg-card)] border-l md:border border-[var(--cn-border)]
+                                        md:rounded-2xl shadow-2xl shadow-black/10 dark:shadow-black/40 z-50 overflow-hidden
+                                        animate-[slideInRight_0.3s_ease-out] md:animate-[slideDown_0.2s_ease-out]">
+                                        {/* Header of menu */}
+                                        <div className="flex-shrink-0 flex items-center justify-between p-4 border-b border-[var(--cn-border)]">
+                                            <h3 className="text-base font-bold text-[var(--cn-text-main)]">Menu</h3>
+                                            <button
+                                                onClick={() => setMobileMenuOpen(false)}
+                                                className="md:hidden p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                                                aria-label="Đóng"
+                                            >
+                                                <X className="w-5 h-5 text-gray-500" />
+                                            </button>
                                         </div>
-                                        <div className="relative flex items-center">
-                                            <div className="border border-orange-300 bg-orange-50 dark:bg-orange-950/20 rounded-2xl pl-3 pr-7 py-1.5 shadow-sm shadow-orange-200/50">
-                                                <p className="text-orange-600 dark:text-orange-400 text-sm font-bold">{displayStreak}</p>
+                                        {/* Coins and Streak */}
+                                        <div className="p-4 flex items-center justify-between">
+                                            <div className="relative flex items-center">
+                                                <div className="border border-[var(--cn-border)] rounded-2xl pl-3 pr-6 py-1.5">
+                                                    <p className="text-[var(--cn-primary)] text-sm font-medium">{displayCoins}</p>
+                                                </div>
+                                                <img src="/icons/coins.svg" alt="Coins" width={30} height={30} className="absolute -right-3" />
                                             </div>
-                                            <img
-                                                src={displayStreak > 0 ? "/icons/streak-1.svg" : "/icons/streak.svg"}
-                                                alt="Streak"
-                                                width={35}
-                                                height={35}
-                                                className={`absolute -right-3 drop-shadow-md transition-all duration-300 ${activeStreakIcon ? 'scale-110 animate-bounce' : ''}`}
-                                            />
+                                            <div className="relative flex items-center">
+                                                <div className="border border-orange-300 bg-orange-50 dark:bg-orange-950/20 rounded-2xl pl-3 pr-7 py-1.5 shadow-sm shadow-orange-200/50">
+                                                    <p className="text-orange-600 dark:text-orange-400 text-sm font-bold">{displayStreak}</p>
+                                                </div>
+                                                <img
+                                                    src={displayStreak > 0 ? "/icons/streak-1.svg" : "/icons/streak.svg"}
+                                                    alt="Streak"
+                                                    width={35}
+                                                    height={35}
+                                                    className={`absolute -right-3 drop-shadow-md transition-all duration-300 ${activeStreakIcon ? 'scale-110 animate-bounce' : ''}`}
+                                                />
+                                            </div>
+                                        </div>
+                                        {/* Search Bar */}
+                                        <div className="p-4 pb-3">
+                                            <div className="relative">
+                                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                                <input
+                                                    type="text"
+                                                    value={searchQuery}
+                                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                                    placeholder="Tìm kiếm menu..."
+                                                    className="w-full pl-10 pr-4 py-2 text-sm bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                                />
+                                                {searchQuery && (
+                                                    <button
+                                                        onClick={() => setSearchQuery("")}
+                                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                                                    >
+                                                        <X className="w-4 h-4" />
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                        {/* Menu Items */}
+                                        <div className="p-4 pt-0 flex-1 overflow-y-auto">
+                                            {buildMenuGroups()
+                                                .map(group => ({
+                                                    ...group,
+                                                    items: group.items.filter(item =>
+                                                        item.title.toLowerCase().includes(searchQuery.toLowerCase())
+                                                    )
+                                                }))
+                                                .filter(group => group.items.length > 0)
+                                                .map((group, groupIdx, groups) => (
+                                                    <div key={group.label} className={groupIdx < groups.length - 1 ? "mb-3" : ""}>
+                                                        <p className="text-[10px] font-bold text-[var(--cn-text-muted)] mb-2 px-1">{group.label}</p>
+                                                        {group.items.map((item, idx) => (
+                                                            <Link
+                                                                key={item.href}
+                                                                href={item.href}
+                                                                onClick={() => {
+                                                                    setMobileMenuOpen(false);
+                                                                    setSearchQuery("");
+                                                                }}
+                                                                className="flex items-center gap-3 px-3 py-2.5 mb-1.5 rounded-xl hover:bg-[var(--cn-bg-section)] active:bg-[var(--cn-bg-section)] transition-all duration-200"
+                                                            >
+                                                                <Image
+                                                                    src={item.icon}
+                                                                    alt={item.title}
+                                                                    width={32}
+                                                                    height={32}
+                                                                    className="flex-shrink-0"
+                                                                />
+                                                                <div className="flex-1 min-w-0">
+                                                                    <p className="text-sm font-semibold text-[var(--cn-text-main)]">{item.title}</p>
+                                                                    <p className="text-xs text-[var(--cn-text-muted)] truncate">{item.subtitle}</p>
+                                                                </div>
+                                                            </Link>
+                                                        ))}
+                                                        {groupIdx < groups.length - 1 && (
+                                                            <div className="h-px bg-[var(--cn-border)] my-3" />
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            {buildMenuGroups().every(group =>
+                                                group.items.every(item => !item.title.toLowerCase().includes(searchQuery.toLowerCase()))
+                                            ) && searchQuery && (
+                                                    <div className="text-center py-8 text-gray-400 text-sm">
+                                                        Không tìm thấy kết quả cho {`"${searchQuery}"`}
+                                                    </div>
+                                                )}
                                         </div>
                                     </div>
-                                    {/* Menu Items */}
-                                    <div className="p-4 pt-0">
-                                        {menuMobile.map((item) => {
-                                            const isActive = item.link === '/' ? pathname === item.link : pathname.startsWith(item.link);
-                                            return (
-                                                <Link
-                                                    key={item.link}
-                                                    href={item.link}
-                                                    onClick={() => setMobileMenuOpen(false)}
-                                                    className={`flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 ${isActive ? 'text-[var(--cn-primary)] bg-[var(--cn-primary-light)]' : 'text-[var(--cn-text-sub)] hover:bg-[var(--cn-bg-section)]'}`}
-                                                >
-                                                    <img
-                                                        src={mobileIconMap[item.link] || "/favicon/home.png"}
-                                                        alt={item.title}
-                                                        className="w-5 h-5"
-                                                        style={{
-                                                            filter: isActive
-                                                                ? 'brightness(0) saturate(100%) invert(27%) sepia(87%) saturate(2000%) hue-rotate(200deg) brightness(95%) contrast(90%)'
-                                                                : 'grayscale(100%)',
-                                                            opacity: isActive ? 1 : 0.5
-                                                        }}
-                                                    />
-                                                    <span className="text-sm font-medium">{item.title}</span>
-                                                </Link>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
+                                </>
                             )}
                         </div>
                         <NotificationBell />
