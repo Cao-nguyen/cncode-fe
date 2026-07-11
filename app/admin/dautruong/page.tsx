@@ -474,7 +474,7 @@ export default function AdminDauTruongPage() {
                                     </label>
                                     <CustomTextarea
                                         value={form.description}
-                                        onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setForm({ ...form, description: e.target.value })}
+                                        onChange={(value: string) => setForm({ ...form, description: value })}
                                         rows={3}
                                         placeholder="Nhập mô tả cuộc thi"
                                     />
