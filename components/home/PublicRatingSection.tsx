@@ -170,7 +170,7 @@ export default function PublicRatingSection() {
 
     return (
         <>
-            <div className="py-12">
+            <div>
                 <div className="text-center mb-8">
                     <h2 className="text-2xl sm:text-3xl font-bold text-[var(--cn-text-main)]">
                         Học viên nói gì về CNcode?

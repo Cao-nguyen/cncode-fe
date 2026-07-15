@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuthStore } from '@/store/auth.store';
 
-const guestOnlyRoutes = ['/login', '/register', '/forgot-password', '/reset-password'];
+const guestOnlyRoutes = ['/', '/login', '/register', '/forgot-password', '/reset-password'];
 
 export const useAuthRedirect = () => {
     const router = useRouter();
@@ -12,7 +12,7 @@ export const useAuthRedirect = () => {
     const { isAuthenticated, user, _hasHydrated } = useAuthStore();
 
     useEffect(() => {
-        
+
         if (!_hasHydrated) return;
 
         const isGuestRoute = guestOnlyRoutes.includes(pathname);
@@ -39,14 +39,8 @@ export const useAuthRedirect = () => {
                 }
             }
         }
-        
-        else {
-            // User is not authenticated - only allow guest routes
-            if (!isGuestRoute) {
-                router.replace('/login');
-                return;
-            }
-        }
+
+        // Unauthenticated users can access all routes - no redirect
 
     }, [pathname, isAuthenticated, user, _hasHydrated, router]);
 };

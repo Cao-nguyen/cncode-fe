@@ -266,7 +266,7 @@ export default function LatestPosts() {
     }
 
     return (
-        <div className="py-12">
+        <div>
             {header}
 
             {isDesktop ? (

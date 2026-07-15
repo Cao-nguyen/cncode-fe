@@ -141,10 +141,10 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
         });
 
         // Xử lý online_users event
-        newSocket.on('online_users', (data: { users: OnlineUser[] }) => {
-            console.log('[SOCKET] Received online_users:', data);
-            console.log('[SOCKET] Users data:', JSON.stringify(data.users, null, 2));
-            setOnlineUsers(data.users || []);
+        newSocket.on('online_users', (users: OnlineUser[]) => {
+            console.log('[SOCKET] Received online_users:', users);
+            console.log('[SOCKET] Users data:', JSON.stringify(users, null, 2));
+            setOnlineUsers(users || []);
         });
 
         // Cleanup: Xóa TẤT CẢ listeners khi unmount để tránh duplicate

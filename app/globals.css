@@ -97,6 +97,20 @@ body {
   scrollbar-width: none !important;
 }
 
+/* ========== MARQUEE ANIMATION ========== */
+@keyframes marquee-text {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
+.animate-marquee-text {
+  animation: marquee-text 20s linear infinite;
+}
+
 /* ========== UTILITY CLASSES ========== */
 .no-download {
   user-select: none;

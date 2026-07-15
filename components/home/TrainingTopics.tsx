@@ -31,10 +31,13 @@ export default function TrainingTopics() {
         onMouseLeave,
         onTouchStart,
         onTouchEnd,
-    } = useHorizontalMarquee();
+    } = useHorizontalMarquee({
+        desktopSpeed: 0.55,
+        mobileSpeed: 0.55, // Same speed as desktop for smooth mobile experience
+    });
 
     return (
-        <div className="py-8">
+        <div>
             <div className="mb-8 text-center">
                 <h2 className="text-2xl sm:text-3xl font-bold mb-2" style={{ color: 'var(--cn-text-main)' }}>
                     CNcode đào tạo những gì?
@@ -69,8 +72,12 @@ export default function TrainingTopics() {
                                     backgroundColor: 'var(--cn-bg-card)',
                                     border: `1.5px solid ${isActive ? topic.color : 'var(--cn-border)'}`,
                                 }}
+                                // Hỗ trợ hover trên Desktop
                                 onMouseEnter={() => setActive(index % topics.length)}
                                 onMouseLeave={() => setActive(null)}
+                                // Hỗ trợ active highlight phản hồi nhanh khi chạm trên Mobile
+                                onTouchStart={() => setActive(index % topics.length)}
+                                onTouchEnd={() => setActive(null)}
                             >
                                 <div
                                     className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full"

@@ -1159,7 +1159,6 @@ export default function Header() {
                     })}
                 </div>
             </div>
-            <div className="lg:hidden h-10" />
         </>
     );
 }

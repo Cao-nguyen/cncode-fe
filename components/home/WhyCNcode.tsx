@@ -66,9 +66,8 @@ function ReasonCard({
 
     return (
         <article
-            className={`group relative overflow-hidden rounded-2xl border transition-all duration-300 ${
-                featured ? 'p-6 sm:p-8 lg:min-h-[280px]' : 'p-5 sm:p-6'
-            } ${isActive ? 'shadow-[var(--cn-shadow-lg)] -translate-y-0.5' : 'shadow-[var(--cn-shadow-sm)] hover:shadow-[var(--cn-shadow-md)] hover:-translate-y-0.5'}`}
+            className={`group relative overflow-hidden rounded-2xl border transition-all duration-300 ${featured ? 'p-6 sm:p-8 lg:min-h-[280px]' : 'p-5 sm:p-6'
+                } ${isActive ? 'shadow-[var(--cn-shadow-lg)] -translate-y-0.5' : 'shadow-[var(--cn-shadow-sm)] hover:shadow-[var(--cn-shadow-md)] hover:-translate-y-0.5'}`}
             style={{
                 backgroundColor: 'var(--cn-bg-card)',
                 borderColor: isActive ? `${reason.color}55` : 'var(--cn-border)',
@@ -91,9 +90,8 @@ function ReasonCard({
             <div className="relative flex h-full flex-col">
                 <div className="mb-4 flex items-start justify-between gap-3">
                     <div
-                        className={`flex shrink-0 items-center justify-center rounded-xl transition-all duration-300 ${
-                            featured ? 'h-12 w-12' : 'h-10 w-10'
-                        }`}
+                        className={`flex shrink-0 items-center justify-center rounded-xl transition-all duration-300 ${featured ? 'h-12 w-12' : 'h-10 w-10'
+                            }`}
                         style={{
                             backgroundColor: isActive ? reason.color : `${reason.color}18`,
                             boxShadow: isActive ? `0 8px 24px ${reason.color}40` : 'none',
@@ -147,7 +145,7 @@ export default function WhyCNcode() {
     const [active, setActive] = useState<number | null>(null);
 
     return (
-        <section className="relative py-8">
+        <section className="relative">
             <div
                 className="relative overflow-hidden rounded-3xl border px-4 py-8 sm:px-6 sm:py-10 lg:px-8 lg:py-12"
                 style={{

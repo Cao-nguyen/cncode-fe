@@ -8,6 +8,7 @@ import TrainingTopics from "@/components/home/TrainingTopics";
 import LatestPosts from "@/components/home/LatestPosts";
 import PublicRatingSection from "@/components/home/PublicRatingSection";
 import Analytics from "@/components/common/Analytics";
+import MarqueeBanner from "@/components/common/MarqueeBanner";
 import Link from "next/link";
 import { MessageCircleMore } from "lucide-react";
 import { useSocket } from "@/providers/socket.provider";
@@ -66,39 +67,40 @@ export default function Home() {
     }, [socket, isConnected, user?._id]);
 
     return (
-        <div className="pt-5 relative">
+        <div className="pt-5 lg:pt-0 pt-[40px] relative">
+            <MarqueeBanner />
             {/* Hero Slideshow */}
-            <div className="container mx-auto px-4 sm:px-6 lg:px-8 mb-6">
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8 pb-8">
                 <HeroSlideshow />
             </div>
 
             {/* Feature Showcase */}
-            <div className="container mx-auto px-4 sm:px-6 lg:px-8 mb-6">
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8 pb-8">
                 <FeatureShowcase />
             </div>
 
             {/* Why CNcode */}
-            <div className="container mx-auto px-4 sm:px-6 lg:px-8 mb-6">
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8 pb-8">
                 <WhyCNcode />
             </div>
 
             {/* Training Topics */}
-            <div className="container mx-auto px-4 sm:px-6 lg:px-8 mb-6">
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8 pb-8">
                 <TrainingTopics />
             </div>
 
             {/* Latest Posts */}
-            <div className="container mx-auto px-4 sm:px-6 lg:px-8 mb-6">
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8 pb-8">
                 <LatestPosts />
             </div>
 
             {/* Reviews/Ratings */}
-            <div className="container mx-auto px-4 sm:px-6 lg:px-8 mb-6">
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8 pb-8">
                 <PublicRatingSection />
             </div>
 
             {/* Analytics */}
-            <div className="container mx-auto px-4 sm:px-6 lg:px-8 pb-4">
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8 pb-8">
                 <Analytics />
             </div>
 

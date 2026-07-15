@@ -30,9 +30,10 @@ export function useHorizontalMarquee(options?: {
     const isPausedRef = useRef(false);
     const isHoveringRef = useRef(false);
     const isDraggingRef = useRef(false);
-    const dragRef = useRef({ startX: 0, startScrollLeft: 0, pointerId: -1 });
+    const dragRef = useRef({ startX: 0, startY: 0, startScrollLeft: 0, pointerId: -1 });
     const resumeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const dragMovedRef = useRef(false);
+    const isHorizontalScrollRef = useRef(false);
 
     const [isDragging, setIsDragging] = useState(false);
 
@@ -86,10 +87,12 @@ export function useHorizontalMarquee(options?: {
 
         pauseAutoScroll();
         dragMovedRef.current = false;
+        isHorizontalScrollRef.current = false;
         isDraggingRef.current = true;
         setIsDragging(true);
         dragRef.current = {
             startX: e.clientX,
+            startY: e.clientY,
             startScrollLeft: el.scrollLeft,
             pointerId: e.pointerId,
         };
@@ -102,10 +105,28 @@ export function useHorizontalMarquee(options?: {
         const el = containerRef.current;
         if (!el) return;
 
-        const delta = dragRef.current.startX - e.clientX;
-        if (Math.abs(delta) > 4) dragMovedRef.current = true;
-        el.scrollLeft = dragRef.current.startScrollLeft + delta;
-        normalizeScroll(el);
+        const deltaX = dragRef.current.startX - e.clientX;
+        const deltaY = dragRef.current.startY - e.clientY;
+
+        // Determine scroll direction based on which axis has more movement
+        if (!isHorizontalScrollRef.current) {
+            if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 10) {
+                isHorizontalScrollRef.current = true;
+            } else if (Math.abs(deltaY) > Math.abs(deltaX) && Math.abs(deltaY) > 10) {
+                // Vertical scroll detected, don't interfere with page scroll
+                isDraggingRef.current = false;
+                setIsDragging(false);
+                el.releasePointerCapture(e.pointerId);
+                return;
+            }
+        }
+
+        // Only scroll horizontally if horizontal scroll was detected
+        if (isHorizontalScrollRef.current) {
+            if (Math.abs(deltaX) > 4) dragMovedRef.current = true;
+            el.scrollLeft = dragRef.current.startScrollLeft + deltaX;
+            normalizeScroll(el);
+        }
     }, []);
 
     const onPointerUp = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
