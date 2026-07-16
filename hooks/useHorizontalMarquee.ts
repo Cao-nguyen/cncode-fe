@@ -96,8 +96,10 @@ export function useHorizontalMarquee(options?: {
             startScrollLeft: el.scrollLeft,
             pointerId: e.pointerId,
         };
-        // Set pointer capture to track pointer events
-        el.setPointerCapture(e.pointerId);
+        // Only set pointer capture on desktop
+        if (!isMobileRef.current) {
+            el.setPointerCapture(e.pointerId);
+        }
     }, [pauseAutoScroll]);
 
     const onPointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {

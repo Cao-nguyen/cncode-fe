@@ -166,7 +166,7 @@ export default function LatestPosts() {
         onMouseLeave,
         onTouchStart,
         onTouchEnd,
-    } = useHorizontalMarquee({ enabled: !isDesktop && !loading && posts.length > 0 });
+    } = useHorizontalMarquee({ enabled: false });
 
     useEffect(() => {
         const updateViewport = () => setIsDesktop(window.innerWidth >= 1024);
@@ -310,7 +310,7 @@ export default function LatestPosts() {
                     onPointerMove={onPointerMove}
                     onPointerUp={onPointerUp}
                     onPointerCancel={onPointerCancel}
-                    style={{ touchAction: 'none' }}
+                    style={{ touchAction: 'auto' }}
                 >
                     <div className="flex w-max gap-4 px-1">
                         {loopPosts.map((blog, index) => (
