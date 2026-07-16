@@ -301,7 +301,7 @@ export default function LatestPosts() {
             ) : (
                 <div
                     ref={containerRef}
-                    className={`no-scrollbar overflow-x-auto select-none touch-pan-x ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+                    className={`no-scrollbar overflow-x-auto select-none ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
                     onMouseEnter={onMouseEnter}
                     onMouseLeave={onMouseLeave}
                     onTouchStart={onTouchStart}
@@ -310,6 +310,7 @@ export default function LatestPosts() {
                     onPointerMove={onPointerMove}
                     onPointerUp={onPointerUp}
                     onPointerCancel={onPointerCancel}
+                    style={{ touchAction: 'pan-y' }}
                 >
                     <div className="flex w-max gap-4 px-1">
                         {loopPosts.map((blog, index) => (
