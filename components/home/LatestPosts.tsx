@@ -310,7 +310,7 @@ export default function LatestPosts() {
                     onPointerMove={onPointerMove}
                     onPointerUp={onPointerUp}
                     onPointerCancel={onPointerCancel}
-                    style={{ touchAction: 'pan-y' }}
+                    style={{ touchAction: 'none' }}
                 >
                     <div className="flex w-max gap-4 px-1">
                         {loopPosts.map((blog, index) => (

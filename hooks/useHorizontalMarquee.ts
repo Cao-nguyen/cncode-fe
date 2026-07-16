@@ -96,10 +96,8 @@ export function useHorizontalMarquee(options?: {
             startScrollLeft: el.scrollLeft,
             pointerId: e.pointerId,
         };
-        // Don't set pointer capture on mobile to allow vertical page scroll
-        if (!isMobileRef.current) {
-            el.setPointerCapture(e.pointerId);
-        }
+        // Set pointer capture to track pointer events
+        el.setPointerCapture(e.pointerId);
     }, [pauseAutoScroll]);
 
     const onPointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
@@ -116,12 +114,10 @@ export function useHorizontalMarquee(options?: {
             if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 5) {
                 isHorizontalScrollRef.current = true;
             } else if (Math.abs(deltaY) > Math.abs(deltaX) && Math.abs(deltaY) > 5) {
-                // Vertical scroll detected, don't interfere with page scroll
+                // Vertical scroll detected, release capture to allow page scroll
                 isDraggingRef.current = false;
                 setIsDragging(false);
-                if (!isMobileRef.current) {
-                    el.releasePointerCapture(e.pointerId);
-                }
+                el.releasePointerCapture(e.pointerId);
                 return;
             }
         }
