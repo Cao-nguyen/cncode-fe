@@ -110,9 +110,9 @@ export function useHorizontalMarquee(options?: {
 
         // Determine scroll direction based on which axis has more movement
         if (!isHorizontalScrollRef.current) {
-            if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 10) {
+            if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 5) {
                 isHorizontalScrollRef.current = true;
-            } else if (Math.abs(deltaY) > Math.abs(deltaX) && Math.abs(deltaY) > 10) {
+            } else if (Math.abs(deltaY) > Math.abs(deltaX) && Math.abs(deltaY) > 5) {
                 // Vertical scroll detected, don't interfere with page scroll
                 isDraggingRef.current = false;
                 setIsDragging(false);
