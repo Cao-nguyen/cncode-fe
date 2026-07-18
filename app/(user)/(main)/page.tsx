@@ -6,7 +6,7 @@ import FeatureShowcase from "@/components/home/FeatureShowcase";
 import WhyCNcode from "@/components/home/WhyCNcode";
 import TrainingTopics from "@/components/home/TrainingTopics";
 import LatestPosts from "@/components/home/LatestPosts";
-import PublicRatingSection from "@/components/home/PublicRatingSection";
+import Review from "@/components/home/Review";
 import Analytics from "@/components/common/Analytics";
 import MarqueeBanner from "@/components/common/MarqueeBanner";
 import Link from "next/link";
@@ -96,7 +96,7 @@ export default function Home() {
 
             {/* Reviews/Ratings */}
             <div className="container mx-auto px-4 sm:px-6 lg:px-8 pb-8">
-                <PublicRatingSection />
+                <Review />
             </div>
 
             {/* Analytics */}

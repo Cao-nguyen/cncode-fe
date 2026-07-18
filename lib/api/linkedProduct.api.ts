@@ -1,4 +1,3 @@
-
 import axios from 'axios';
 import { LinkedProduct, CreateLinkedProductDto, UpdateLinkedProductDto, ProductsResponse } from '@/types/linkedProduct.type';
 
@@ -20,7 +19,11 @@ const api = axios.create({
     baseURL: `${API_URL}/api/linked-products`,
 });
 
-api.interceptors.request.use(
+const adminApi = axios.create({
+    baseURL: `${API_URL}/api/admin/linked-products`,
+});
+
+adminApi.interceptors.request.use(
     (config) => {
         const token = getToken();
         if (token) {
@@ -39,27 +42,27 @@ export const linkedProductApi = {
     },
 
     getUserProducts: async (params?: { page?: number; limit?: number; status?: string }) => {
-        const response = await api.get<ProductsResponse>('/my-products', { params });
+        const response = await adminApi.get<ProductsResponse>('/my-products', { params });
         return response.data;
     },
 
     createProduct: async (productData: CreateLinkedProductDto) => {
-        const response = await api.post<{ success: boolean; data: LinkedProduct }>('/', productData);
+        const response = await adminApi.post<{ success: boolean; data: LinkedProduct }>('/', productData);
         return response.data;
     },
 
     updateProduct: async (id: string, productData: UpdateLinkedProductDto) => {
-        const response = await api.put<{ success: boolean; data: LinkedProduct }>(`/${id}`, productData);
+        const response = await adminApi.put<{ success: boolean; data: LinkedProduct }>(`/${id}`, productData);
         return response.data;
     },
 
     deleteProduct: async (id: string) => {
-        const response = await api.delete<{ success: boolean; message: string }>(`/${id}`);
+        const response = await adminApi.delete<{ success: boolean; message: string }>(`/${id}`);
         return response.data;
     },
 
     updateSortOrder: async (updates: { id: string; sortOrder: number }[]) => {
-        const response = await api.put<{ success: boolean; message: string }>('/sort-order', { updates });
+        const response = await adminApi.put<{ success: boolean; message: string }>('/sort-order', { updates });
         return response.data;
     },
 };

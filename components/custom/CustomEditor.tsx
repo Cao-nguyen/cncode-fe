@@ -39,7 +39,8 @@ import {
     Trash2,
     Loader2,
     Sigma,
-    FileText
+    FileText,
+    Link2
 } from "lucide-react";
 import { createRoot } from "react-dom/client";
 import { toast } from "sonner";
@@ -47,8 +48,8 @@ import { toast } from "sonner";
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type HeadingLevel = "p" | "h1" | "h2" | "h3";
-type ModalMode = "image" | "code" | "math" | "file" | null;
-type ImgAlign = "left" | "center" | "right";
+type ModalMode = "image" | "math" | "file" | "link" | null;
+type ImgAlign = "center";
 
 interface ActiveStates {
     bold: boolean;
@@ -74,6 +75,7 @@ interface CustomEditorProps {
     onImageUpload?: (base64Image: string) => Promise<string>;
     uploading?: boolean;
     compact?: boolean;
+    placeholder?: string;
 }
 
 export interface CustomEditorRef {
@@ -138,6 +140,7 @@ const SHORTCUTS: Record<string, string> = {
     "Căn phải": "Ctrl+Shift+R",
     "Căn đều": "Ctrl+Shift+J",
     "Trích dẫn": "Ctrl+Shift+Q",
+    "Code": "Ctrl+`",
     "Code block": "Ctrl+Shift+K",
     "Chèn ảnh": "Ctrl+Shift+I",
     "Chèn bảng": "Ctrl+Shift+T",
@@ -205,7 +208,6 @@ function generateFileCardHTML(filename: string, messageId: string, fileSize: str
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
     const ext = filename.split('.').pop()?.toLowerCase() ?? '';
 
-    // SVG icons và màu sắc theo loại file
     const configs: Record<string, { svg: string; color: string; canPreview: boolean }> = {
         pdf: {
             svg: '<svg viewBox="0 0 24 24" width="28" height="28"><path fill="#e11d48" d="M19,2L14,2L14,9L20,9L20,4C20,2.89 19.1,2 19,2M13,2H6C4.89,2 4,2.89 4,4V20C4,21.11 4.89,22 6,22H18C19.11,22 20,21.11 20,20V10L13,2M9,19H7V13H9C10.1,13 11,13.9 11,15V17C11,18.1 10.1,19 9,19M15,19H13V13H17V15H15V16H17V18H15V19M9,15V17H7V15H9M13,3.5L18.5,9H13V3.5Z"/></svg>',
@@ -287,19 +289,14 @@ function generateFileCardHTML(filename: string, messageId: string, fileSize: str
 
 // ─── FIX 1: Auto-link và highlight email/link ────────────────────────────────
 
-// Regex cho email và URL (bao gồm cả có và không có https)
 const EMAIL_REGEX = /[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/g;
-// Cải thiện URL_REGEX để bắt được domain như cncode.io.vn
 const URL_REGEX = /(?:https?:\/\/)?(?:www\.)?[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+(?:\.[a-zA-Z]{2,})+(?:\/[^\s<>"']*)?/g;
 
 function autoLinkText(node: Node) {
     if (node.nodeType === Node.TEXT_NODE) {
         const text = node.textContent ?? "";
-
-        // Kết hợp cả URL và email, tìm tất cả matches
         const combined: Array<{ index: number; length: number; url: string; isEmail: boolean; text: string }> = [];
 
-        // Tìm emails - highlight với màu xanh dương
         EMAIL_REGEX.lastIndex = 0;
         let m: RegExpExecArray | null;
         while ((m = EMAIL_REGEX.exec(text)) !== null) {
@@ -312,13 +309,11 @@ function autoLinkText(node: Node) {
             });
         }
 
-        // Tìm URLs - skip nếu vị trí đã bị email chiếm
         URL_REGEX.lastIndex = 0;
         while ((m = URL_REGEX.exec(text)) !== null) {
             const overlap = combined.some(e => m!.index >= e.index && m!.index < e.index + e.length);
             if (!overlap) {
                 const matchText = m[0];
-                // Xác định href: thêm https:// nếu chưa có protocol
                 const href = matchText.match(/^https?:\/\//) ? matchText : `https://${matchText}`;
                 combined.push({
                     index: m.index,
@@ -361,16 +356,13 @@ function autoLinkText(node: Node) {
     }
 }
 
-// ─── FIX 3: Strip paste formatting → plain text với font/size chuẩn ──────────
+// ─── FIX 3: Strip paste formatting ──────────────────────────────────────────
 
 function stripAndNormalizePaste(html: string): string {
-    // Tạo DOM tạm để parse
     const tmp = document.createElement("div");
     tmp.innerHTML = html;
 
-    // Xóa hết style inline, giữ lại cấu trúc block
     function cleanNode(el: Element) {
-        // Giữ một số thuộc tính semantic nhưng xóa style
         el.removeAttribute("style");
         el.removeAttribute("class");
         el.removeAttribute("font");
@@ -383,7 +375,6 @@ function stripAndNormalizePaste(html: string): string {
     }
     cleanNode(tmp);
 
-    // Unwrap các tag font/span không semantic
     const unwrapTags = ["font", "span"];
     for (const tag of unwrapTags) {
         tmp.querySelectorAll(tag).forEach(el => {
@@ -406,6 +397,7 @@ const ToolbarButton: React.FC<{
     const title = shortcut ? `${label} (${shortcut})` : label;
     return (
         <button type="button" title={title} onClick={onClick}
+            onMouseDown={(e) => e.preventDefault()}
             className={`tb-btn${active ? " tb-btn-active" : ""}`} aria-pressed={active} aria-label={label}>
             {icon}
         </button>
@@ -460,32 +452,6 @@ const HighlightPicker: React.FC<{
     );
 };
 
-// ─── Code Modal ───────────────────────────────────────────────────────────────
-
-const CodeModal: React.FC<{ onClose: () => void; onInsert: (code: string, lang: string) => void }> = ({ onClose, onInsert }) => {
-    const [code, setCode] = useState("");
-    const [lang, setLang] = useState("javascript");
-    return (
-        <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
-            <div className="modal-box">
-                <div className="modal-header">
-                    <span className="modal-title">Chèn code block</span>
-                    <button onClick={onClose} className="modal-close-btn"><X size={20} /></button>
-                </div>
-                <select value={lang} onChange={e => setLang(e.target.value)} className="modal-select">
-                    {CODE_LANGUAGES.map(l => <option key={l.value} value={l.value}>{l.label}</option>)}
-                </select>
-                <textarea value={code} onChange={e => setCode(e.target.value)}
-                    placeholder="// Dán code vào đây..." className="modal-textarea" rows={9} spellCheck={false} autoFocus />
-                <div className="modal-actions">
-                    <button onClick={onClose} className="btn-cancel">Hủy</button>
-                    <button onClick={() => { onInsert(code, lang); onClose(); }} className="btn-ok">Chèn</button>
-                </div>
-            </div>
-        </div>
-    );
-};
-
 // ─── Math Modal ───────────────────────────────────────────────────────────────
 
 const MathModal: React.FC<{ onClose: () => void; onInsert: (latex: string) => void }> = ({ onClose, onInsert }) => {
@@ -494,26 +460,17 @@ const MathModal: React.FC<{ onClose: () => void; onInsert: (latex: string) => vo
 
     useEffect(() => {
         if (mathFieldRef.current && !mathField) {
-            import('mathlive').then((MathLive) => {
-                // Configure mathlive fonts path - để null để tự động load từ package
-                const MathfieldElementClass = MathLive.MathfieldElement as unknown as {
-                    new(): MathfieldElement;
-                    fontsDirectory: string | null;
-                };
-
-                // Không set fontsDirectory, để mathlive tự động tìm fonts
-                const mf = new MathfieldElementClass();
+            import('mathlive').then(() => {
+                // Khởi tạo mathlive an toàn bằng document.createElement
+                const mf = document.createElement('math-field') as MathfieldElement;
                 mf.style.fontSize = '20px';
                 mf.style.padding = '12px';
                 mf.style.border = '1px solid #d1d5db';
                 mf.style.borderRadius = '6px';
                 mf.style.minHeight = '60px';
                 mf.style.background = '#ffffff';
-
-                // Cấu hình virtual keyboard - ẩn nút toggle keyboard
                 mf.mathVirtualKeyboardPolicy = 'manual';
 
-                // Ẩn các nút toggle keyboard trong mathfield
                 const style = document.createElement('style');
                 style.textContent = `
                     math-field::part(virtual-keyboard-toggle) {
@@ -521,20 +478,25 @@ const MathModal: React.FC<{ onClose: () => void; onInsert: (latex: string) => vo
                     }
                 `;
                 document.head.appendChild(style);
+                
+                // Bật bàn phím ảo một cách an toàn
                 mf.addEventListener('focus', () => {
-                    if (typeof window !== 'undefined' && (window as Window & { mathVirtualKeyboard?: { show(): void } }).mathVirtualKeyboard) {
-                        (window as Window & { mathVirtualKeyboard: { show(): void } }).mathVirtualKeyboard.show();
+                    const mvk = (window as any).mathVirtualKeyboard;
+                    if (mvk) {
+                        mvk.layouts = ['numeric', 'symbols'];
+                        mvk.show();
                     }
                 });
 
                 mathFieldRef.current?.appendChild(mf);
                 setMathField(mf);
 
-                // Show keyboard ngay khi mở modal
                 setTimeout(() => {
                     mf.focus();
-                    if (typeof window !== 'undefined' && (window as Window & { mathVirtualKeyboard?: { show(): void } }).mathVirtualKeyboard) {
-                        (window as Window & { mathVirtualKeyboard: { show(): void } }).mathVirtualKeyboard.show();
+                    const mvk = (window as any).mathVirtualKeyboard;
+                    if (mvk) {
+                        mvk.layouts = ['numeric', 'symbols'];
+                        mvk.show();
                     }
                 }, 100);
             }).catch(err => {
@@ -543,8 +505,9 @@ const MathModal: React.FC<{ onClose: () => void; onInsert: (latex: string) => vo
         }
 
         return () => {
-            if (typeof window !== 'undefined' && (window as Window & { mathVirtualKeyboard?: { hide(): void } }).mathVirtualKeyboard) {
-                (window as Window & { mathVirtualKeyboard: { hide(): void } }).mathVirtualKeyboard.hide();
+            const mvk = (window as any).mathVirtualKeyboard;
+            if (mvk) {
+                mvk.hide();
             }
         };
     }, [mathField]);
@@ -560,7 +523,7 @@ const MathModal: React.FC<{ onClose: () => void; onInsert: (latex: string) => vo
     };
 
     return (
-        <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
+        <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()} style={{ alignItems: 'flex-start', paddingTop: '10vh' }}>
             <div className="modal-box" style={{ width: 480 }}>
                 <div className="modal-header">
                     <span className="modal-title">Chèn công thức toán</span>
@@ -850,72 +813,12 @@ const ImageWidget: React.FC<{
     src: string;
     alt: string;
     onDelete: () => void;
-    onUpdate?: (id: string, data: { width?: number; rotation?: number; align?: string; x?: number; y?: number }) => void;
+    onUpdate?: (id: string, data: { width?: number; rotation?: number }) => void;
     widgetId?: string;
 }> = ({ src, alt, onDelete, onUpdate, widgetId }) => {
-    const getInitialWidth = () => {
-        if (widgetId) {
-            const el = document.querySelector(`[data-img-id="${widgetId}"]`);
-            const savedWidth = el?.getAttribute('data-img-width');
-            return savedWidth ? parseInt(savedWidth) : 280;
-        }
-        return 280;
-    };
-
-    const getInitialRotation = () => {
-        if (widgetId) {
-            const el = document.querySelector(`[data-img-id="${widgetId}"]`);
-            const savedRotation = el?.getAttribute('data-img-rotation');
-            return savedRotation ? parseInt(savedRotation) : 0;
-        }
-        return 0;
-    };
-
-    const getInitialAlign = () => {
-        if (widgetId) {
-            const el = document.querySelector(`[data-img-id="${widgetId}"]`);
-            const savedAlign = el?.getAttribute('data-img-align');
-            return (savedAlign as ImgAlign) || "left";
-        }
-        return "left";
-    };
-
-    const getInitialPos = () => {
-        if (widgetId) {
-            const el = document.querySelector(`[data-img-id="${widgetId}"]`);
-            const savedX = el?.getAttribute('data-img-x');
-            const savedY = el?.getAttribute('data-img-y');
-            return {
-                x: savedX ? parseInt(savedX) : 0,
-                y: savedY ? parseInt(savedY) : 0
-            };
-        }
-        return { x: 0, y: 0 };
-    };
-
-    const [width, setWidth] = useState(getInitialWidth());
-    const [rotation, setRotation] = useState(getInitialRotation());
-    const [align, setAlign] = useState<ImgAlign>(getInitialAlign());
+    const [rotation, setRotation] = useState(0);
     const [selected, setSelected] = useState(false);
-    const [pos, setPos] = useState(getInitialPos());
-    const [dragging, setDragging] = useState(false);
-    const wrapRef = useRef<HTMLSpanElement>(null);
-    const dragStart = useRef({ mx: 0, my: 0, px: 0, py: 0 });
-    const resizeStartRef = useRef({ mx: 0, w: 0 });
-
-    const saveChanges = useCallback((updates: { width?: number; rotation?: number; align?: ImgAlign; x?: number; y?: number }) => {
-        if (widgetId) {
-            const el = document.querySelector(`[data-img-id="${widgetId}"]`);
-            if (el) {
-                if (updates.width !== undefined) el.setAttribute('data-img-width', updates.width.toString());
-                if (updates.rotation !== undefined) el.setAttribute('data-img-rotation', updates.rotation.toString());
-                if (updates.align !== undefined) el.setAttribute('data-img-align', updates.align);
-                if (updates.x !== undefined) el.setAttribute('data-img-x', updates.x.toString());
-                if (updates.y !== undefined) el.setAttribute('data-img-y', updates.y.toString());
-            }
-        }
-        onUpdate?.(widgetId || '', updates);
-    }, [widgetId, onUpdate]);
+    const wrapRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         const onOut = (e: MouseEvent) => {
@@ -925,126 +828,76 @@ const ImageWidget: React.FC<{
         return () => document.removeEventListener("mousedown", onOut);
     }, []);
 
-    const onDragStart = (e: React.MouseEvent) => {
-        if ((e.target as HTMLElement).dataset["handle"]) return;
-        e.preventDefault();
-        setDragging(true);
-        dragStart.current = { mx: e.clientX, my: e.clientY, px: pos.x, py: pos.y };
-        const onMove = (me: MouseEvent) => {
-            const newPos = {
-                x: dragStart.current.px + me.clientX - dragStart.current.mx,
-                y: dragStart.current.py + me.clientY - dragStart.current.my,
-            };
-            setPos(newPos);
-            saveChanges({ x: newPos.x, y: newPos.y });
-        };
-        const onUp = () => { setDragging(false); document.removeEventListener("mousemove", onMove); document.removeEventListener("mouseup", onUp); };
-        document.addEventListener("mousemove", onMove);
-        document.addEventListener("mouseup", onUp);
-    };
-
-    const onResizeStart = (e: React.MouseEvent) => {
-        e.preventDefault(); e.stopPropagation();
-        resizeStartRef.current = { mx: e.clientX, w: width };
-        const onMove = (me: MouseEvent) => {
-            const newWidth = Math.max(60, resizeStartRef.current.w + me.clientX - resizeStartRef.current.mx);
-            setWidth(newWidth);
-            saveChanges({ width: newWidth });
-        };
-        const onUp = () => { document.removeEventListener("mousemove", onMove); document.removeEventListener("mouseup", onUp); };
-        document.addEventListener("mousemove", onMove);
-        document.addEventListener("mouseup", onUp);
-    };
-
-    const handleSetAlign = (newAlign: ImgAlign) => {
-        setAlign(newAlign);
-        saveChanges({ align: newAlign });
-    };
-
     const handleRotate = (delta: number) => {
         const newRotation = rotation + delta;
         setRotation(newRotation);
-        saveChanges({ rotation: newRotation });
+        onUpdate?.(widgetId || '', { rotation: newRotation });
     };
-
-    const handleReset = () => {
-        setWidth(280);
-        setRotation(0);
-        setAlign("left");
-        setPos({ x: 0, y: 0 });
-        saveChanges({ width: 280, rotation: 0, align: "left", x: 0, y: 0 });
-    };
-
-    const alignStyle: React.CSSProperties = align === "center"
-        ? { display: "block", margin: "0.5em auto" }
-        : align === "right"
-            ? { display: "block", marginLeft: "auto", marginTop: "0.5em", marginBottom: "0.5em" }
-            : { display: "block", marginTop: "0.5em", marginBottom: "0.5em" };
 
     return (
-        <span ref={wrapRef} contentEditable={false}
+        <div
+            ref={wrapRef}
+            contentEditable={false}
             className={`img-widget-outer${selected ? " img-selected" : ""}`}
             style={{
-                ...alignStyle,
-                width: "fit-content",
-                transform: `translate(${pos.x}px, ${pos.y}px)`,
-                cursor: dragging ? "grabbing" : selected ? "grab" : "pointer",
-                userSelect: "none",
+                width: "100%",
+                display: "flex",
+                justifyContent: "center",
+                margin: "0.5em 0",
                 position: "relative",
             }}
             onClick={() => setSelected(true)}
-            onMouseDown={selected ? onDragStart : undefined}
         >
-            <img src={src} alt={alt} style={{
-                width, maxWidth: "100%", display: "block", borderRadius: 7,
-                transform: `rotate(${rotation}deg)`, transition: "transform 0.2s",
-                border: selected ? "2px solid #6366f1" : "1.5px solid #e5e7eb",
-            }} draggable={false} />
-            {selected && (
-                <>
-                    <span className="img-toolbar">
-                        <button data-handle="1"
-                            onMouseDown={e => { e.preventDefault(); e.stopPropagation(); handleSetAlign("left"); }}
-                            className={`img-tb-btn${align === "left" ? " img-tb-btn-active" : ""}`} title="Căn trái">
-                            <AlignLeft size={11} />
+            <div style={{ position: "relative", display: "inline-block", maxWidth: "100%" }}>
+                <img
+                    src={src}
+                    alt={alt}
+                    style={{
+                        width: "100%",
+                        maxWidth: "100%",
+                        display: "block",
+                        borderRadius: 7,
+                        transform: `rotate(${rotation}deg)`,
+                        transition: "transform 0.2s",
+                        border: selected ? "2px solid #6366f1" : "1.5px solid #e5e7eb",
+                    }}
+                    draggable={false}
+                />
+                {selected && (
+                    <>
+                        {/* Nút xóa - góc trên bên phải */}
+                        <button
+                            className="img-delete-btn"
+                            onClick={(e) => { e.stopPropagation(); onDelete(); }}
+                            title="Xóa ảnh"
+                        >
+                            <X size={14} />
                         </button>
-                        <button data-handle="1"
-                            onMouseDown={e => { e.preventDefault(); e.stopPropagation(); handleSetAlign("center"); }}
-                            className={`img-tb-btn${align === "center" ? " img-tb-btn-active" : ""}`} title="Căn giữa">
-                            <AlignCenter size={11} />
-                        </button>
-                        <button data-handle="1"
-                            onMouseDown={e => { e.preventDefault(); e.stopPropagation(); handleSetAlign("right"); }}
-                            className={`img-tb-btn${align === "right" ? " img-tb-btn-active" : ""}`} title="Căn phải">
-                            <AlignRight size={11} />
-                        </button>
-                        <span className="img-tb-divider" />
-                        <button data-handle="1"
-                            onMouseDown={e => { e.preventDefault(); e.stopPropagation(); handleRotate(-90); }}
-                            className="img-tb-btn" title="Xoay trái">
-                            <RotateCcw size={11} />
-                        </button>
-                        <button data-handle="1"
-                            onMouseDown={e => { e.preventDefault(); e.stopPropagation(); handleRotate(90); }}
-                            className="img-tb-btn" title="Xoay phải">
-                            <RotateCw size={11} />
-                        </button>
-                        <button data-handle="1"
-                            onMouseDown={e => { e.preventDefault(); e.stopPropagation(); handleReset(); }}
-                            className="img-tb-btn" title="Đặt lại">
-                            <Maximize2 size={11} />
-                        </button>
-                        <span className="img-tb-divider" />
-                        <button data-handle="1"
-                            onMouseDown={e => { e.preventDefault(); e.stopPropagation(); onDelete(); }}
-                            className="img-tb-btn img-tb-btn-danger" title="Xóa ảnh">
-                            <Trash2 size={11} />
-                        </button>
-                    </span>
-                    <span data-handle="1" onMouseDown={onResizeStart} className="img-resize-handle" title="Kéo để resize" />
-                </>
-            )}
-        </span>
+                        {/* Các nút chỉnh sửa - góc trên bên trái */}
+                        <div className="img-edit-toolbar">
+                            <button
+                                onClick={(e) => { e.stopPropagation(); handleRotate(-90); }}
+                                title="Xoay trái"
+                            >
+                                <RotateCcw size={12} />
+                            </button>
+                            <button
+                                onClick={(e) => { e.stopPropagation(); handleRotate(90); }}
+                                title="Xoay phải"
+                            >
+                                <RotateCw size={12} />
+                            </button>
+                            <button
+                                onClick={(e) => { e.stopPropagation(); setRotation(0); onUpdate?.(widgetId || '', { rotation: 0 }); }}
+                                title="Đặt lại"
+                            >
+                                <Maximize2 size={12} />
+                            </button>
+                        </div>
+                    </>
+                )}
+            </div>
+        </div>
     );
 };
 
@@ -1184,7 +1037,7 @@ const TableWidget: React.FC<{
                             ))}
                             {selected && (
                                 <th className="tw-th tw-add-col" onClick={addCol} title="Thêm cột">
-                                    <Plus size={13} style={{ color: "#6366f1" }} />
+                                    <Plus size={13} style={{ color: "#818cf8" }} />
                                 </th>
                             )}
                         </tr>
@@ -1235,7 +1088,7 @@ const mountedRoots = new Map<string, ReturnType<typeof createRoot>>();
 
 // ─── Main Editor ──────────────────────────────────────────────────────────────
 
-const CustomEditor = forwardRef<CustomEditorRef, CustomEditorProps>(({ initialValue = '', onImageUpload, uploading = false, compact = false }, ref) => {
+const CustomEditor = forwardRef<CustomEditorRef, CustomEditorProps>(({ initialValue = '', onImageUpload, uploading = false, compact = false, placeholder = "Nội dung" }, ref) => {
     const editorRef = useRef<HTMLDivElement>(null);
     const savedRangeRef = useRef<Range | null>(null);
     const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -1247,23 +1100,49 @@ const CustomEditor = forwardRef<CustomEditorRef, CustomEditorProps>(({ initialVa
         superscript: false, subscript: false,
     });
     const [status, setStatus] = useState<EditorStatus>({ words: 0, chars: 0, saved: true });
-    // FIX 6: heading state sẽ được update theo vị trí con trỏ thực tế
+    const [isEmpty, setIsEmpty] = useState(true);
     const [heading, setHeading] = useState<HeadingLevel>("p");
     const [fontColor, setFontColor] = useState<string>("#111827");
     const [activeHighlight, setActiveHighlight] = useState<string | null>(null);
     const [modal, setModal] = useState<ModalMode>(null);
 
+    const spaceCountRef = useRef(0);
     const imageCounter = useRef(0);
     const tableCounter = useRef(0);
     const hasInitialized = useRef(false);
+    const isComposingRef = useRef(false);
     const [imageWidgets, setImageWidgets] = useState<Map<string, { src: string; alt: string }>>(new Map());
     const [tableWidgets, setTableWidgets] = useState<Map<string, { rows: number; cols: number }>>(new Map());
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [isUploading, setIsUploading] = useState(false);
 
     const updateStatus = useCallback(() => {
-        const text = editorRef.current?.innerText ?? "";
-        const words = text.trim() ? text.trim().split(/\s+/).length : 0;
-        const chars = text.replace(/\n/g, "").length;
-        startTransition(() => setStatus(s => ({ ...s, words, chars })));
+        if (!editorRef.current) return;
+
+        const editor = editorRef.current;
+        const text = editor.innerText.trim();
+        const html = editor.innerHTML.trim();
+
+        const hasContent =
+            text.length > 0 ||
+            (html !== '<p><br></p>' && html !== '<p></p>' && html !== '<br>') ||
+            editor.querySelector('[data-img-id]') ||
+            editor.querySelector('[data-table-id]') ||
+            editor.querySelector('.ed-code-block') ||
+            editor.querySelector('.math-inline') ||
+            editor.querySelector('.file-card') ||
+            editor.querySelector('blockquote') ||
+            editor.querySelector('h1, h2, h3') ||
+            editor.querySelector('img') ||
+            editor.querySelector('pre, code');
+
+        const words = text ? text.split(/\s+/).length : 0;
+        const chars = editor.innerText.replace(/\n/g, "").length;
+
+        startTransition(() => {
+            setStatus(s => ({ ...s, words, chars }));
+            setIsEmpty(!hasContent);
+        });
     }, []);
 
     const scheduleAutosave = useCallback(() => {
@@ -1273,7 +1152,6 @@ const CustomEditor = forwardRef<CustomEditorRef, CustomEditorProps>(({ initialVa
         updateStatus();
     }, [updateStatus]);
 
-    // FIX 6: Detect block format tại vị trí con trỏ hiện tại
     const detectHeadingAtCursor = useCallback(() => {
         const sel = window.getSelection();
         if (!sel || !sel.rangeCount) return;
@@ -1306,9 +1184,19 @@ const CustomEditor = forwardRef<CustomEditorRef, CustomEditorProps>(({ initialVa
                 subscript: document.queryCommandState("subscript"),
             });
         });
-        // FIX 6: luôn sync heading khi update states
         detectHeadingAtCursor();
     }, [detectHeadingAtCursor]);
+
+    // Bổ sung listener selectionchange để Active trạng thái ngay khi có tương tác / thay đổi vị trí con trỏ
+    useEffect(() => {
+        const handleSelectionChange = () => {
+            if (document.activeElement === editorRef.current || editorRef.current?.contains(document.activeElement)) {
+                updateActiveStates();
+            }
+        };
+        document.addEventListener("selectionchange", handleSelectionChange);
+        return () => document.removeEventListener("selectionchange", handleSelectionChange);
+    }, [updateActiveStates]);
 
     const exec = useCallback((cmd: string, val?: string) => {
         editorRef.current?.focus();
@@ -1396,7 +1284,6 @@ const CustomEditor = forwardRef<CustomEditorRef, CustomEditorProps>(({ initialVa
         });
     }, [deleteTable, scheduleAutosave]);
 
-    // Set initial content only once on mount - use ref to prevent re-initialization
     useEffect(() => {
         if (editorRef.current && !hasInitialized.current) {
             hasInitialized.current = true;
@@ -1407,8 +1294,7 @@ const CustomEditor = forwardRef<CustomEditorRef, CustomEditorProps>(({ initialVa
                 mountTableWidgets();
             }, 0);
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []); // Empty deps - only run once on mount, ignore initialValue changes
+    }, []);
 
     useEffect(() => {
         if (!editorRef.current) return;
@@ -1425,7 +1311,13 @@ const CustomEditor = forwardRef<CustomEditorRef, CustomEditorProps>(({ initialVa
     useImperativeHandle(ref, () => ({
         getContent: () => {
             if (editorRef.current) syncAllTableWidgetsToDom(editorRef.current);
-            return editorRef.current?.innerHTML || '';
+            const html = editorRef.current?.innerHTML || '';
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = html;
+            tempDiv.querySelectorAll('.inline-code').forEach(code => {
+                code.textContent = (code.textContent || '').replace(/\u200B/g, '');
+            });
+            return tempDiv.innerHTML;
         },
         setContent: (content: string) => {
             if (editorRef.current) {
@@ -1497,6 +1389,69 @@ const CustomEditor = forwardRef<CustomEditorRef, CustomEditorProps>(({ initialVa
         scheduleAutosave();
     };
 
+    // ================== CODE INLINE ==================
+    const insertInlineCode = useCallback(() => {
+        if (!editorRef.current) return;
+
+        editorRef.current.focus();
+        restoreRange();
+        const sel = window.getSelection();
+        if (!sel || sel.rangeCount === 0) return;
+
+        const range = sel.getRangeAt(0);
+        let existingCodeEl: Element | null = null;
+        let current: Node | null = range.startContainer;
+
+        while (current && current !== editorRef.current) {
+            if (current.nodeType === Node.ELEMENT_NODE &&
+                (current as Element).classList.contains('inline-code')) {
+                existingCodeEl = current as Element;
+                break;
+            }
+            current = current.parentNode;
+        }
+
+        if (existingCodeEl) {
+            const exitRange = document.createRange();
+            exitRange.setStartAfter(existingCodeEl);
+            exitRange.collapse(true);
+
+            const zws = document.createTextNode('\u200B');
+            exitRange.insertNode(zws);
+            exitRange.setStartAfter(zws);
+            exitRange.collapse(true);
+
+            sel.removeAllRanges();
+            sel.addRange(exitRange);
+            
+            updateActiveStates();
+            scheduleAutosave();
+            return;
+        }
+
+        if (!range.collapsed) {
+            const selectedText = sel.toString();
+            document.execCommand("insertHTML", false, `<code class="inline-code">${selectedText}</code>\u200B`);
+        } else {
+            const tempId = `code-tmp-${Date.now()}`;
+            document.execCommand("insertHTML", false, `<code class="inline-code" id="${tempId}">\u200B</code>`);
+            setTimeout(() => {
+                const el = document.getElementById(tempId);
+                if (el) {
+                    el.removeAttribute("id");
+                    const newRange = document.createRange();
+                    newRange.setStart(el, 1);
+                    newRange.collapse(true);
+                    sel.removeAllRanges();
+                    sel.addRange(newRange);
+                }
+            }, 0);
+        }
+
+        scheduleAutosave();
+        updateActiveStates();
+    }, [restoreRange, scheduleAutosave, updateActiveStates]);
+
     const insertImage = useCallback((src: string, alt: string) => {
         if (!src) return;
         editorRef.current?.focus();
@@ -1506,18 +1461,14 @@ const CustomEditor = forwardRef<CustomEditorRef, CustomEditorProps>(({ initialVa
         const range = sel.getRangeAt(0);
         const id = `img-${++imageCounter.current}`;
         setImageWidgets(m => new Map(m).set(id, { src, alt }));
-        const placeholder = document.createElement("span");
+        const placeholder = document.createElement("div");
         placeholder.setAttribute("data-img-id", id);
         placeholder.setAttribute("data-img-src", src);
         placeholder.setAttribute("data-img-alt", alt);
-        placeholder.setAttribute("data-img-width", "280");
-        placeholder.setAttribute("data-img-rotation", "0");
-        placeholder.setAttribute("data-img-align", "left");
-        placeholder.setAttribute("data-img-x", "0");
-        placeholder.setAttribute("data-img-y", "0");
         placeholder.className = "img-placeholder";
         placeholder.contentEditable = "false";
         range.insertNode(placeholder);
+        placeholder.insertAdjacentHTML("afterend", "<p><br></p>");
         scheduleAutosave();
         setTimeout(() => {
             const el = editorRef.current?.querySelector(`[data-img-id="${id}"]`);
@@ -1534,15 +1485,38 @@ const CustomEditor = forwardRef<CustomEditorRef, CustomEditorProps>(({ initialVa
         }, 0);
     }, [scheduleAutosave, restoreRange, deleteImage]);
 
-    const insertCode = (code: string, lang: string) => {
-        if (!code) return;
+    // Code block
+    const insertCodeBlock = useCallback(() => {
         editorRef.current?.focus();
         restoreRange();
-        const highlighted = tokenize(code, lang);
-        const html = `<pre class="ed-code-block" data-lang="${lang}"><div class="ed-code-lang-badge">${lang}</div><code>${highlighted}</code></pre><p><br></p>`;
+
+        const html = `
+            <div class="ed-code-block" data-lang="javascript">
+                <code contenteditable="true" class="code-editable" spellcheck="false"></code>
+            </div>
+            <p><br></p>
+        `;
+
         document.execCommand("insertHTML", false, html);
+
+        setTimeout(() => {
+            const codeEl = editorRef.current?.querySelector('.code-editable:last-of-type') as HTMLElement;
+            if (codeEl) {
+                codeEl.focus();
+                const range = document.createRange();
+                const textNode = document.createTextNode('');
+                codeEl.innerHTML = '';
+                codeEl.appendChild(textNode);
+                range.setStart(textNode, 0);
+                range.collapse(true);
+                const sel = window.getSelection();
+                sel?.removeAllRanges();
+                sel?.addRange(range);
+            }
+        }, 10);
+
         scheduleAutosave();
-    };
+    }, [restoreRange, scheduleAutosave]);
 
     const insertTable = () => {
         editorRef.current?.focus();
@@ -1585,17 +1559,15 @@ const CustomEditor = forwardRef<CustomEditorRef, CustomEditorProps>(({ initialVa
         editorRef.current?.focus();
         restoreRange();
 
-        // FIX 11: Sử dụng math-live để render công thức - bỏ bg và border
         const mathId = `math-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
         const html = `<span class="math-inline" data-math-id="${mathId}" data-latex="${latex.replace(/"/g, '"')}" contenteditable="false"></span>&nbsp;`;
         document.execCommand("insertHTML", false, html);
 
-        // Render công thức bằng math-live
         setTimeout(() => {
             const mathEl = editorRef.current?.querySelector(`[data-math-id="${mathId}"]`);
             if (mathEl && typeof window !== 'undefined') {
-                import('mathlive').then((MathLive) => {
-                    const mf = new MathLive.MathfieldElement();
+                import('mathlive').then(() => {
+                    const mf = document.createElement('math-field') as any;
                     mf.value = latex;
                     mf.readOnly = true;
                     mf.style.display = 'inline-block';
@@ -1607,7 +1579,6 @@ const CustomEditor = forwardRef<CustomEditorRef, CustomEditorProps>(({ initialVa
                     mathEl.appendChild(mf);
                 }).catch(err => {
                     console.error('Failed to load mathlive:', err);
-                    // Fallback: hiển thị LaTeX text
                     mathEl.textContent = latex;
                     mathEl.setAttribute('style', 'font-family:monospace;color:#111827;');
                 });
@@ -1617,183 +1588,233 @@ const CustomEditor = forwardRef<CustomEditorRef, CustomEditorProps>(({ initialVa
         scheduleAutosave();
     };
 
-    // ─── FIX 2: Helper đặt cursor ngay sau node ───────────────────────────────
-    const placeCursorAfter = (node: Node) => {
-        const sel = window.getSelection();
-        if (!sel) return;
-        const range = document.createRange();
-        try {
-            // Tìm node text hoặc element tiếp theo sau node này
-            if (node.nextSibling) {
-                if (node.nextSibling.nodeType === Node.TEXT_NODE) {
-                    range.setStart(node.nextSibling, 0);
+    const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+        setTimeout(() => {
+            const selection = window.getSelection();
+            if (!selection || selection.rangeCount === 0) return;
+
+            const range = selection.getRangeAt(0);
+            const node = range.startContainer;
+
+            let codeElement: HTMLElement | null = null;
+            if (node.nodeType === Node.ELEMENT_NODE) {
+                const el = node as HTMLElement;
+                if (el.classList?.contains('inline-code')) {
+                    codeElement = el;
                 } else {
-                    range.setStartAfter(node);
+                    codeElement = el.closest('.inline-code');
                 }
-            } else if (node.parentNode) {
-                // Nếu không có sibling, đặt sau parent
-                const parent = node.parentNode;
-                const idx = Array.from(parent.childNodes).indexOf(node as ChildNode);
-                range.setStart(parent, idx + 1);
-            } else {
-                range.setStartAfter(node);
-            }
-            range.collapse(true);
-            sel.removeAllRanges();
-            sel.addRange(range);
-        } catch {
-            // fallback
-        }
-    };
-
-    // ─── FIX 7 & 8: Quote Enter/Backspace logic ───────────────────────────────
-    const handleQuoteEnter = (e: React.KeyboardEvent<HTMLDivElement>): boolean => {
-        const sel = window.getSelection();
-        if (!sel?.rangeCount) return false;
-
-        // Tìm blockquote cha
-        let bq: Element | null = null;
-        let cur: Node | null = sel.getRangeAt(0).startContainer;
-        while (cur && cur !== editorRef.current) {
-            if ((cur as Element).tagName === "BLOCKQUOTE") { bq = cur as Element; break; }
-            cur = cur.parentNode;
-        }
-        if (!bq) return false;
-
-        const range = sel.getRangeAt(0);
-        const atEnd = range.collapsed && range.endOffset === (range.endContainer.textContent?.length ?? 0);
-
-        if (atEnd) {
-            // Kiểm tra nội dung blockquote hiện tại có trống không
-            const bqText = bq.textContent?.trim() ?? "";
-            if (bqText === "") {
-                // FIX 8: blockquote rỗng + Enter → thoát quote, thêm p trống
-                e.preventDefault();
-                const p = document.createElement("p");
-                p.innerHTML = "<br>";
-                bq.parentNode?.insertBefore(p, bq.nextSibling);
-                bq.parentNode?.removeChild(bq);
-                const newRange = document.createRange();
-                newRange.setStart(p, 0);
-                newRange.collapse(true);
-                sel.removeAllRanges();
-                sel.addRange(newRange);
-                scheduleAutosave();
-                return true;
+            } else if (node.parentElement) {
+                codeElement = node.parentElement.closest('.inline-code');
             }
 
-            // FIX 7: Enter cuối blockquote → kiểm tra dòng cuối có rỗng không
-            // Lấy nội dung phần sau cursor trong blockquote
-            const clonedRange = range.cloneRange();
-            clonedRange.selectNodeContents(bq);
-            clonedRange.setStart(range.endContainer, range.endOffset);
-            const afterText = clonedRange.toString();
+            if (codeElement) {
+                const textNode = Array.from(codeElement.childNodes).find(
+                    n => n.nodeType === Node.TEXT_NODE
+                ) || codeElement.firstChild;
 
-            if (afterText.trim() === "") {
-                // Double enter: thoát khỏi blockquote
-                e.preventDefault();
-                // Xóa dòng trống cuối trong blockquote nếu có
-                const lastChild = bq.lastChild;
-                if (lastChild && lastChild.textContent?.trim() === "" && bq.childNodes.length > 1) {
-                    bq.removeChild(lastChild);
+                if (textNode) {
+                    const newRange = document.createRange();
+                    const rawText = textNode.textContent || '';
+                    const textContent = rawText.replace(/\u200B/g, '');
+
+                    if (textContent.length === 0 && rawText.includes('\u200B')) {
+                        newRange.setStart(textNode, 1);
+                        newRange.collapse(true);
+                    } else {
+                        const offset = node === textNode ? range.startOffset : textContent.length;
+                        newRange.setStart(textNode, Math.min(offset, textContent.length));
+                        newRange.collapse(true);
+                    }
+
+                    selection.removeAllRanges();
+                    selection.addRange(newRange);
                 }
-                const p = document.createElement("p");
-                p.innerHTML = "<br>";
-                bq.parentNode?.insertBefore(p, bq.nextSibling);
-                const newRange = document.createRange();
-                newRange.setStart(p, 0);
-                newRange.collapse(true);
-                sel.removeAllRanges();
-                sel.addRange(newRange);
-                scheduleAutosave();
-                return true;
             }
-        }
-        return false;
+        }, 0);
     };
 
-    const handleQuoteBackspace = (e: React.KeyboardEvent<HTMLDivElement>): boolean => {
-        const sel = window.getSelection();
-        if (!sel?.rangeCount) return false;
-        const range = sel.getRangeAt(0);
-        if (!range.collapsed) return false;
-
-        let cur: Node | null = range.startContainer;
-        let bq: Element | null = null;
-        while (cur && cur !== editorRef.current) {
-            if ((cur as Element).tagName === "BLOCKQUOTE") { bq = cur as Element; break; }
-            cur = cur.parentNode;
-        }
-        if (!bq) return false;
-
-        const bqText = bq.textContent?.trim() ?? "";
-        const atStart = range.startOffset === 0;
-        const containerText = range.startContainer.textContent?.trim() ?? "";
-
-        // FIX 8: Backspace khi blockquote rỗng hoặc con trỏ ở đầu dòng đầu tiên rỗng
-        if ((bqText === "" || (atStart && containerText === "")) && bqText.length <= 1) {
-            e.preventDefault();
-            const p = document.createElement("p");
-            p.innerHTML = "<br>";
-            bq.parentNode?.insertBefore(p, bq);
-            bq.parentNode?.removeChild(bq);
-            const newRange = document.createRange();
-            newRange.setStart(p, 0);
-            newRange.collapse(true);
-            sel.removeAllRanges();
-            sel.addRange(newRange);
-            scheduleAutosave();
-            return true;
-        }
-        return false;
-    };
-
-    // ─── FIX 10: Shift+Enter trong code block → xuống dòng trống ─────────────
-    const handleCodeShiftEnter = (e: React.KeyboardEvent<HTMLDivElement>): boolean => {
-        if (!e.shiftKey) return false;
-        const sel = window.getSelection();
-        if (!sel?.rangeCount) return false;
-        let cur: Node | null = sel.getRangeAt(0).startContainer;
-        let inCode = false;
-        while (cur && cur !== editorRef.current) {
-            if ((cur as Element).tagName === "PRE" && (cur as Element).classList.contains("ed-code-block")) {
-                inCode = true; break;
-            }
-            cur = cur.parentNode;
-        }
-        if (!inCode) return false;
-
-        // Thoát khỏi code block, thêm paragraph sau
-        e.preventDefault();
-        const pre = cur as Element;
-        const p = document.createElement("p");
-        p.innerHTML = "<br>";
-        pre.parentNode?.insertBefore(p, pre.nextSibling);
-        const range = document.createRange();
-        range.setStart(p, 0);
-        range.collapse(true);
-        sel.removeAllRanges();
-        sel.addRange(range);
+    const handleInput = () => {
+        updateActiveStates();
         scheduleAutosave();
-        return true;
     };
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-        // FIX 10: Shift+Enter trong code block
-        if (e.key === "Enter" && handleCodeShiftEnter(e)) return;
+        const sel = window.getSelection();
+        if (!sel?.rangeCount) return;
 
-        // FIX 7 & 8: Quote handling
-        if (e.key === "Enter" && !e.shiftKey && handleQuoteEnter(e)) return;
-        if (e.key === "Backspace" && handleQuoteBackspace(e)) return;
+        if (isComposingRef.current && e.key !== "Enter") return;
 
-        // FIX: Xóa công thức và ảnh khi bấm Backspace/Delete
+        // ================== CODE INLINE HANDLING ==================
+        let inlineCodeEl: Element | null = null;
+        let current: Node | null = sel.getRangeAt(0).startContainer;
+
+        while (current && current !== editorRef.current) {
+            if (current.nodeType === Node.ELEMENT_NODE &&
+                (current as Element).classList.contains('inline-code')) {
+                inlineCodeEl = current as Element;
+                break;
+            }
+            current = current.parentNode;
+        }
+
+        if (inlineCodeEl) {
+            const range = sel.getRangeAt(0);
+            const endRange = document.createRange();
+            endRange.selectNodeContents(inlineCodeEl);
+            endRange.collapse(false);
+            const isAtEnd = range.collapsed &&
+                range.compareBoundaryPoints(Range.END_TO_END, endRange) === 0;
+
+            const startRange = document.createRange();
+            startRange.selectNodeContents(inlineCodeEl);
+            startRange.collapse(true);
+            const isAtStart = range.collapsed &&
+                range.compareBoundaryPoints(Range.START_TO_START, startRange) === 0;
+
+            if (e.key === " ") {
+                if (isAtEnd) {
+                    spaceCountRef.current++;
+                    if (spaceCountRef.current >= 2) {
+                        e.preventDefault();
+                        spaceCountRef.current = 0;
+                        document.execCommand('delete', false, undefined);
+
+                        const exitRange = document.createRange();
+                        exitRange.setStartAfter(inlineCodeEl);
+                        exitRange.collapse(true);
+                        sel.removeAllRanges();
+                        sel.addRange(exitRange);
+
+                        setTimeout(() => {
+                            document.execCommand("insertText", false, " ");
+                        }, 10);
+                    } else {
+                        e.preventDefault();
+                        document.execCommand('insertText', false, ' ');
+                        scheduleAutosave();
+                    }
+                    return;
+                } else {
+                    spaceCountRef.current = 0;
+                }
+            } else if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") {
+                spaceCountRef.current = 0;
+            }
+
+            if (e.key === "ArrowRight" && isAtEnd) {
+                e.preventDefault();
+                spaceCountRef.current = 0;
+                const exitRange = document.createRange();
+                exitRange.setStartAfter(inlineCodeEl);
+                exitRange.collapse(true);
+                sel.removeAllRanges();
+                sel.addRange(exitRange);
+                return;
+            }
+
+            if (e.key === "ArrowLeft" && isAtStart) {
+                e.preventDefault();
+                spaceCountRef.current = 0;
+                const exitRange = document.createRange();
+                exitRange.setStartBefore(inlineCodeEl);
+                exitRange.collapse(true);
+                sel.removeAllRanges();
+                sel.addRange(exitRange);
+                return;
+            }
+        } else {
+            spaceCountRef.current = 0;
+        }
+
+        // ================== ENTER TRONG CODE BLOCK ==================
+        if (e.key === "Enter") {
+            const sel = window.getSelection();
+            if (sel?.rangeCount && editorRef.current) {
+                const range = sel.getRangeAt(0);
+                let current: Node | null = range.startContainer;
+
+                while (current && current !== editorRef.current) {
+                    if (current.nodeType === Node.ELEMENT_NODE) {
+                        const el = current as Element;
+                        if (el.classList.contains('code-editable') || el.closest('.ed-code-block')) {
+                            e.preventDefault();
+                            document.execCommand('insertLineBreak');
+                            scheduleAutosave();
+                            return;
+                        }
+                    }
+                    current = current.parentNode;
+                }
+            }
+        }
+
         if (e.key === "Backspace" || e.key === "Delete") {
             const sel = window.getSelection();
             if (sel?.rangeCount) {
                 const range = sel.getRangeAt(0);
                 let node: Node | null = range.startContainer;
+                
+                // XỬ LÝ XOÁ CODE BLOCK (NẾU RỖNG BẤM XOÁ LÀ XOÁ LUÔN CODE BLOCK)
+                if (e.key === "Backspace") {
+                    let codeEditableEl: Element | null = null;
+                    let curr: Node | null = node;
+                    while (curr && curr !== editorRef.current) {
+                        if (curr.nodeType === Node.ELEMENT_NODE && (curr as Element).classList.contains('code-editable')) {
+                            codeEditableEl = curr as Element;
+                            break;
+                        }
+                        curr = curr.parentNode;
+                    }
 
-                // Tìm math-inline element
+                    if (codeEditableEl) {
+                        const text = codeEditableEl.textContent || "";
+                        if (text.length === 0) {
+                            e.preventDefault();
+                            const codeBlock = codeEditableEl.closest('.ed-code-block');
+                            if (codeBlock && codeBlock.parentNode) {
+                                const exitRange = document.createRange();
+                                exitRange.setStartBefore(codeBlock);
+                                exitRange.collapse(true);
+                                codeBlock.parentNode.removeChild(codeBlock);
+                                sel.removeAllRanges();
+                                sel.addRange(exitRange);
+                                scheduleAutosave();
+                            }
+                            return;
+                        }
+                    }
+                }
+
+                let inlineCodeEl: Element | null = null;
+                let current: Node | null = range.startContainer;
+                while (current && current !== editorRef.current) {
+                    if (current.nodeType === Node.ELEMENT_NODE &&
+                        (current as Element).classList.contains('inline-code')) {
+                        inlineCodeEl = current as Element;
+                        break;
+                    }
+                    current = current.parentNode;
+                }
+
+                if (inlineCodeEl && e.key === "Backspace") {
+                    const text = (inlineCodeEl.textContent || "").replace(/\u200B/g, '');
+                    if (text.length === 0) {
+                        e.preventDefault();
+                        const parent = inlineCodeEl.parentNode;
+                        if (parent) {
+                            const exitRange = document.createRange();
+                            exitRange.setStartBefore(inlineCodeEl);
+                            exitRange.collapse(true);
+                            parent.removeChild(inlineCodeEl);
+                            sel.removeAllRanges();
+                            sel.addRange(exitRange);
+                            scheduleAutosave();
+                        }
+                        return;
+                    }
+                }
+
                 while (node && node !== editorRef.current) {
                     if (node.nodeType === Node.ELEMENT_NODE) {
                         const el = node as Element;
@@ -1803,7 +1824,6 @@ const CustomEditor = forwardRef<CustomEditorRef, CustomEditorProps>(({ initialVa
                             scheduleAutosave();
                             return;
                         }
-                        // Tìm img-placeholder element
                         if (el.classList.contains('img-placeholder') || el.hasAttribute('data-img-id')) {
                             e.preventDefault();
                             const imgId = el.getAttribute('data-img-id');
@@ -1814,47 +1834,6 @@ const CustomEditor = forwardRef<CustomEditorRef, CustomEditorProps>(({ initialVa
                     }
                     node = node.parentNode;
                 }
-
-                // Kiểm tra nếu cursor ngay trước/sau math/image element
-                if (range.collapsed) {
-                    const container = range.startContainer;
-                    if (container.nodeType === Node.ELEMENT_NODE) {
-                        const offset = range.startOffset;
-                        if (e.key === "Backspace" && offset > 0) {
-                            const prevNode = container.childNodes[offset - 1];
-                            if (prevNode && (prevNode as Element).classList?.contains('math-inline')) {
-                                e.preventDefault();
-                                prevNode.parentNode?.removeChild(prevNode);
-                                scheduleAutosave();
-                                return;
-                            }
-                            // Xóa ảnh khi Backspace
-                            if (prevNode && ((prevNode as Element).classList?.contains('img-placeholder') || (prevNode as Element).hasAttribute?.('data-img-id'))) {
-                                e.preventDefault();
-                                const imgId = (prevNode as Element).getAttribute('data-img-id');
-                                if (imgId) deleteImage(imgId);
-                                scheduleAutosave();
-                                return;
-                            }
-                        } else if (e.key === "Delete" && offset < container.childNodes.length) {
-                            const nextNode = container.childNodes[offset];
-                            if (nextNode && (nextNode as Element).classList?.contains('math-inline')) {
-                                e.preventDefault();
-                                nextNode.parentNode?.removeChild(nextNode);
-                                scheduleAutosave();
-                                return;
-                            }
-                            // Xóa ảnh khi Delete
-                            if (nextNode && ((nextNode as Element).classList?.contains('img-placeholder') || (nextNode as Element).hasAttribute?.('data-img-id'))) {
-                                e.preventDefault();
-                                const imgId = (nextNode as Element).getAttribute('data-img-id');
-                                if (imgId) deleteImage(imgId);
-                                scheduleAutosave();
-                                return;
-                            }
-                        }
-                    }
-                }
             }
         }
 
@@ -1864,7 +1843,6 @@ const CustomEditor = forwardRef<CustomEditorRef, CustomEditorProps>(({ initialVa
             return;
         }
 
-        // FIX 2: Autolink sau Space/Enter — cursor đúng vị trí sau link
         if (e.key === " " || e.key === "Enter") {
             setTimeout(() => {
                 const selAfter = window.getSelection();
@@ -1874,7 +1852,6 @@ const CustomEditor = forwardRef<CustomEditorRef, CustomEditorProps>(({ initialVa
                 const anchorNode = rangeAfter.startContainer;
                 const anchorOffset = rangeAfter.startOffset;
 
-                // Tìm text node chứa URL (ngay trước cursor)
                 let targetNode: Node | null = null;
                 if (anchorNode.nodeType === Node.TEXT_NODE) {
                     targetNode = anchorNode;
@@ -1890,16 +1867,13 @@ const CustomEditor = forwardRef<CustomEditorRef, CustomEditorProps>(({ initialVa
                 if (targetNode.parentNode?.nodeName === "A") return;
 
                 const fullText = targetNode.textContent ?? "";
-                // Cải thiện regex để bắt được domain như cncode.io.vn
                 const hasLink = /(?:https?:\/\/)?(?:www\.)?[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+(?:\.[a-zA-Z]{2,})|[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/i.test(fullText);
                 if (!hasLink) return;
 
-                // Lưu nextSibling TRƯỚC khi autoLinkText replace node
                 const parent = targetNode.parentNode;
                 const nextSiblingBeforeReplace = targetNode.nextSibling;
 
                 autoLinkText(targetNode);
-                // targetNode giờ đã bị detach, nextSiblingBeforeReplace vẫn còn trong DOM
 
                 try {
                     const newSel = window.getSelection();
@@ -1908,14 +1882,12 @@ const CustomEditor = forwardRef<CustomEditorRef, CustomEditorProps>(({ initialVa
 
                     if (nextSiblingBeforeReplace && nextSiblingBeforeReplace.isConnected) {
                         if (nextSiblingBeforeReplace.nodeType === Node.TEXT_NODE) {
-                            // Đặt cursor sau space/enter
                             const offset = e.key === " " ? Math.min(1, nextSiblingBeforeReplace.textContent?.length ?? 0) : 0;
                             newRange.setStart(nextSiblingBeforeReplace, offset);
                         } else {
                             newRange.setStartBefore(nextSiblingBeforeReplace);
                         }
                     } else if (parent && parent.isConnected) {
-                        // Không có nextSibling → cuối parent
                         newRange.selectNodeContents(parent);
                         newRange.collapse(false);
                     } else {
@@ -1930,21 +1902,17 @@ const CustomEditor = forwardRef<CustomEditorRef, CustomEditorProps>(({ initialVa
         }
     };
 
-    // FIX 3: Handle paste — strip formatting
     const handlePaste = useCallback((e: React.ClipboardEvent<HTMLDivElement>) => {
         e.preventDefault();
         const clipData = e.clipboardData;
 
-        // Ưu tiên plain text nếu có
         const plainText = clipData.getData("text/plain");
         const htmlData = clipData.getData("text/html");
 
         if (htmlData) {
-            // Strip toàn bộ style, giữ cấu trúc block cơ bản
             const cleaned = stripAndNormalizePaste(htmlData);
             document.execCommand("insertHTML", false, cleaned);
         } else if (plainText) {
-            // Plain text: giữ nguyên, chỉ escape HTML
             const escaped = plainText
                 .replace(/&/g, "&amp;")
                 .replace(/</g, "&lt;")
@@ -1960,6 +1928,33 @@ const CustomEditor = forwardRef<CustomEditorRef, CustomEditorProps>(({ initialVa
         <>
             <style>{editorStyles}</style>
             <div className="ed-shell">
+                <div className="ed-content-wrap">
+                    <div
+                        ref={editorRef}
+                        id="editor"
+                        className={isEmpty ? "ed-empty" : undefined}
+                        data-placeholder={placeholder}
+                        contentEditable
+                        suppressContentEditableWarning
+                        spellCheck
+                        role="textbox"
+                        aria-multiline
+                        aria-label="Trình soạn thảo"
+                        style={{
+                            fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+                            fontSize: "15px",
+                            lineHeight: "1.75",
+                        }}
+                        onInput={handleInput}
+                        onCompositionStart={() => { isComposingRef.current = true; }}
+                        onCompositionEnd={() => { isComposingRef.current = false; }}
+                        onKeyUp={updateActiveStates}
+                        onMouseUp={updateActiveStates}
+                        onMouseDown={handleMouseDown}
+                        onKeyDown={handleKeyDown}
+                        onPaste={handlePaste}
+                    />
+                </div>
                 <div className="ed-header">
                     <div className="ed-toolbar">
                         <ToolbarButton icon={<Undo2 size={15} />} label="Undo" onClick={() => exec("undo")} />
@@ -1980,11 +1975,12 @@ const CustomEditor = forwardRef<CustomEditorRef, CustomEditorProps>(({ initialVa
                         <ToolbarButton icon={<AlignJustify size={15} />} label="Căn đều" active={active.justifyFull} onClick={() => exec("justifyFull")} />
                         <Sep />
                         <ToolbarButton icon={<Quote size={15} />} label="Trích dẫn" onClick={() => { editorRef.current?.focus(); document.execCommand("formatBlock", false, "blockquote"); scheduleAutosave(); }} />
-                        <ToolbarButton icon={<Code size={15} />} label="Code block" onClick={() => { saveRange(); setModal("code"); }} />
+                        <Sep />
+                        <ToolbarButton icon={<Code size={15} />} label="Code" onClick={insertInlineCode} />
+                        <ToolbarButton icon={<div style={{ fontWeight: 'bold', fontSize: '12px', fontFamily: 'monospace' }}>{'</>'}</div>} label="Code block" onClick={insertCodeBlock} />
                         <ToolbarButton icon={<Sigma size={15} />} label="Công thức toán" onClick={() => { saveRange(); setModal("math"); }} />
                         <Sep />
                         <div className="ed-select-wrapper">
-                            {/* FIX 6: value phản ánh heading thực tại cursor */}
                             <select value={heading} onChange={e => applyHeading(e.target.value as HeadingLevel)} className="ed-select" style={{ width: 110 }}>
                                 <option value="p">Đoạn văn</option>
                                 <option value="h1">Tiêu đề 1</option>
@@ -1994,32 +1990,8 @@ const CustomEditor = forwardRef<CustomEditorRef, CustomEditorProps>(({ initialVa
                         </div>
                         <input type="color" value={fontColor} onChange={e => applyColor(e.target.value)} title="Màu chữ" className="ed-color-picker" />
                         <Sep />
-                        <ToolbarButton icon={<ImageIcon size={15} />} label="Chèn ảnh" onClick={() => { saveRange(); setModal("image"); }} />
+                        <ToolbarButton icon={<ImageIcon size={15} />} label="Chèn ảnh" onClick={() => { saveRange(); fileInputRef.current?.click(); }} />
                         <ToolbarButton icon={<Table size={15} />} label="Chèn bảng" onClick={insertTable} />
-                    </div>
-                </div>
-                <div className="ed-body">
-                    <div className="ed-content-wrap">
-                        <div
-                            ref={editorRef}
-                            id="editor"
-                            contentEditable
-                            suppressContentEditableWarning
-                            spellCheck
-                            role="textbox"
-                            aria-multiline
-                            aria-label="Trình soạn thảo"
-                            style={{
-                                fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-                                fontSize: "15px",
-                                lineHeight: "1.75",
-                            }}
-                            onInput={() => { updateActiveStates(); scheduleAutosave(); }}
-                            onKeyUp={updateActiveStates}
-                            onMouseUp={updateActiveStates}
-                            onKeyDown={handleKeyDown}
-                            onPaste={handlePaste}
-                        />
                     </div>
                 </div>
                 <div className="ed-statusbar">
@@ -2030,18 +2002,50 @@ const CustomEditor = forwardRef<CustomEditorRef, CustomEditorProps>(({ initialVa
                         <span className="ed-pill">{status.words} từ</span>
                         <span className="ed-pill">{status.chars} ký tự</span>
                     </div>
-                    <span className="ed-statusbar-right">UTF-8</span>
                 </div>
-                {modal === "code" && <CodeModal onClose={() => setModal(null)} onInsert={insertCode} />}
                 {modal === "math" && <MathModal onClose={() => setModal(null)} onInsert={insertMath} />}
-                {modal === "image" && (
-                    <UploadImageModal
-                        onClose={() => setModal(null)}
-                        onConfirm={(src, alt) => { insertImage(src, alt); setModal(null); }}
-                        onImageUpload={onImageUpload}
-                        uploading={uploading}
-                    />
-                )}
+                <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    style={{ display: 'none' }}
+                    onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+
+                        setIsUploading(true);
+                        try {
+                            const objectUrl = URL.createObjectURL(file);
+                            const response = await fetch(objectUrl);
+                            const blob = await response.blob();
+
+                            const base64 = await new Promise<string>((resolve) => {
+                                const reader = new FileReader();
+                                reader.onloadend = () => resolve(reader.result as string);
+                                reader.readAsDataURL(blob);
+                            });
+
+                            const result = await uploadApi.uploadImage(base64, 'editor');
+
+                            if (!result?.success || !result.url) {
+                                toast.error(result?.message || "Upload thất bại");
+                                return;
+                            }
+
+                            insertImage(result.url, file.name.replace(/\.[^.]+$/, ""));
+                            toast.success("Upload ảnh thành công");
+                            URL.revokeObjectURL(objectUrl);
+                        } catch (error) {
+                            console.error(error);
+                            toast.error("Có lỗi xảy ra khi upload");
+                        } finally {
+                            setIsUploading(false);
+                            if (fileInputRef.current) {
+                                fileInputRef.current.value = '';
+                            }
+                        }
+                    }}
+                />
                 {modal === "file" && (
                     <UploadFileModal
                         onClose={() => setModal(null)}
@@ -2049,13 +2053,8 @@ const CustomEditor = forwardRef<CustomEditorRef, CustomEditorProps>(({ initialVa
                             editorRef.current?.focus();
                             restoreRange();
 
-                            // Estimate file size - sẽ hiển thị khi có thông tin từ server
                             const fileSize = '0 MB';
-
-                            // Generate HTML cho file card với messageId
                             const fileCardHTML = generateFileCardHTML(filename, messageId, fileSize);
-
-                            // Insert HTML vào editor
                             document.execCommand("insertHTML", false, fileCardHTML + '<p><br></p>');
 
                             scheduleAutosave();
@@ -2074,22 +2073,21 @@ CustomEditor.displayName = 'CustomEditor';
 
 const editorStyles = `
   .ed-shell {
-    background: #ffffff;
-    border: 0.5px solid #d1d5db;
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    overflow: visible;
+    box-shadow: none;
     display: flex;
     flex-direction: column;
-    height: 560px;
+    height: auto;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     position: relative;
-    isolation: isolate;
   }
   .ed-header {
-    background: #fafafa;
-    border-bottom: 0.5px solid #e5e7eb;
-    padding: 7px 10px;
+    background: transparent;
+    border: none;
+    padding: 6px 0 0 0;
     flex-shrink: 0;
   }
   .ed-toolbar {
@@ -2100,7 +2098,7 @@ const editorStyles = `
   }
   .tb-btn {
     display: inline-flex; align-items: center; justify-content: center;
-    width: 30px; height: 28px; border-radius: 6px; border: none;
+    width: 30px; height: 28px; border-radius: 50%; border: none;
     background: transparent; color: #6b7280; cursor: pointer;
     transition: background 0.12s, color 0.12s; flex-shrink: 0;
   }
@@ -2119,34 +2117,54 @@ const editorStyles = `
     width: 28px; height: 28px; border: 0.5px solid #e5e7eb; border-radius: 6px;
     cursor: pointer; padding: 2px; background: #f3f4f6;
   }
-  .ed-body { display: flex; flex: 1; overflow: hidden; }
-  .ed-content-wrap { flex: 1; overflow-y: auto; }
+  .ed-content-wrap { position: relative; }
 
-  /* FIX 9: Line-height cố định, không bao giờ thay đổi */
   #editor {
-    outline: none; padding: 1.5rem 2.25rem;
+    outline: none; padding: 0.5rem 0.25rem;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
     font-size: 15px !important;
-    line-height: 1.75 !important;
+    line-height: 1.5 !important;
     color: #111827;
-    min-height: 100%; caret-color: #6366f1;
+    min-height: calc(3 * 1.5em + 1rem);
+    max-height: calc(20 * 1.5em + 1rem);
+    overflow-y: auto;
+    caret-color: #6366f1;
     box-sizing: border-box;
+    position: relative;
   }
 
-  /* FIX 3: Đảm bảo mọi thứ trong editor dùng font Inter */
+  #editor.no-scrollbar {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  #editor.no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  #editor.ed-empty::before {
+    content: attr(data-placeholder);
+    position: absolute;
+    top: 0.5rem;
+    left: 0.25rem;
+    right: 0.25rem;
+    color: #9ca3af;
+    pointer-events: none;
+    font-size: 15px;
+    line-height: 1.75;
+  }
+
   #editor * {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
-    line-height: 1.75 !important;
+    line-height: 1.5 !important;
   }
 
-  /* FIX 9: Khoảng cách dòng cố định */
   #editor p {
-    margin: 0 0 0.7em 0 !important;
+    margin: 0 0 0.5em 0 !important;
     font-size: 15px !important;
-    line-height: 1.75 !important;
+    line-height: 1.5 !important;
   }
 
-  /* FIX 4 & 5: Heading sizes — rõ ràng, đồng nhất font-weight */
   #editor h1 {
     font-size: 1.7em !important;
     font-weight: 700 !important;
@@ -2170,7 +2188,6 @@ const editorStyles = `
     line-height: 1.4 !important;
   }
 
-  /* FIX 4: Bold đồng nhất với heading weight */
   #editor b, #editor strong {
     font-weight: 700 !important;
   }
@@ -2178,36 +2195,73 @@ const editorStyles = `
   #editor blockquote {
     border-left: 3px solid #6366f1; padding: 0.5em 1.1em; margin: 0.85em 0 !important;
     color: #6b7280; font-style: italic; background: #f5f5ff; border-radius: 0 6px 6px 0;
-    line-height: 1.75 !important;
+    line-height: 1.5 !important;
   }
-  #editor code {
-    font-family: 'JetBrains Mono', 'Fira Code', monospace !important; font-size: 0.8em;
-    background: #f3f4f6; border: 0.5px solid #e5e7eb;
-    padding: 0.15em 0.4em; border-radius: 4px; color: #4338ca;
-    line-height: 1.75 !important;
-  }
-  #editor sup { font-size: 0.75em; vertical-align: super; line-height: 0 !important; }
-  #editor sub { font-size: 0.75em; vertical-align: sub; line-height: 0 !important; }
-  #editor .ed-code-block {
-    background: #1e1e2e; border: none; border-radius: 10px;
-    padding: 0; margin: 1em 0; overflow: hidden; font-size: 0;
-    line-height: normal !important;
-  }
-  #editor .ed-code-lang-badge {
-    display: block; background: rgba(255,255,255,0.07); color: #636da6;
-    font-size: 10px; font-family: 'JetBrains Mono', 'Fira Code', monospace !important;
-    padding: 4px 12px; border-bottom: 1px solid rgba(255,255,255,0.05);
-    letter-spacing: 0.08em; text-transform: uppercase;
-    line-height: 1.6 !important;
-  }
-  #editor .ed-code-block code {
-    display: block; background: none; border: none;
-    padding: 1em 1.25em; font-size: 13px; line-height: 1.7 !important;
-    color: #d4d4d4; overflow-x: auto; white-space: pre;
+  
+  /* Inline code */
+  #editor .inline-code {
     font-family: 'JetBrains Mono', 'Fira Code', monospace !important;
+    font-size: 0.85em;
+    background: #f3f4f6;
+    padding: 0.15em 0.3em;
+    border-radius: 4px;
+    color: #4338ca;
+    line-height: inherit !important;
+  }
+  
+  /* Code block */
+  #editor .ed-code-block {
+    background: #1e1e2e;
+    border: 1px solid #313244;
+    border-radius: 10px;
+    padding: 0;
+    margin: 1em 0;
+    overflow: hidden;
+    position: relative;
   }
 
-  /* FIX 1: Link + email — màu xanh, gạch chân và highlight background */
+  #editor .ed-code-lang-badge {
+    display: inline-block;
+    background: rgba(255,255,255,0.07);
+    color: #636da6;
+    font-size: 10px;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace !important;
+    padding: 3px 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    line-height: 1.6 !important;
+  }
+
+  #editor .ed-code-block .code-editable {
+    display: block;
+    background: none;
+    border: none;
+    padding: 12px 16px;
+    font-size: 13.5px;
+    line-height: 1.5 !important;
+    color: #d4d4d4;
+    overflow-x: auto;
+    white-space: pre-wrap !important;
+    word-break: break-all;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace !important;
+    outline: none;
+    min-height: 50px;
+    tab-size: 4;
+    box-sizing: border-box;
+  }
+
+  /* Đề phòng các thẻ div/p khi người dùng dán code bị dính margin */
+  #editor .ed-code-block .code-editable p,
+  #editor .ed-code-block .code-editable div {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  #editor .ed-code-block .code-editable:focus {
+    outline: none;
+  }
+
   #editor a { 
     color: #2563eb !important; 
     text-decoration: underline !important; 
@@ -2228,7 +2282,6 @@ const editorStyles = `
     color: #2563eb !important; 
   }
 
-  /* FIX 11: Math inline styling */
   #editor .math-inline {
     display: inline-block;
     vertical-align: middle;
@@ -2238,48 +2291,95 @@ const editorStyles = `
     font-size: 15px !important;
   }
 
-  #editor ul { margin: 0.5em 0 0.5em 1.6em !important; }
-  #editor ol { margin: 0.5em 0 0.5em 1.6em !important; }
-  #editor li { margin: 0.2em 0 !important; line-height: 1.75 !important; }
   #editor ::selection { background: rgba(99,102,241,0.15); }
 
   .highlight-picker {
-    position: absolute; top: 34px; left: 0;
+    position: absolute; bottom: 34px; left: 0;
     background: #fff; border: 0.5px solid #e5e7eb; border-radius: 8px;
     padding: 6px; display: grid; grid-template-columns: repeat(4, 1fr);
     gap: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.12);
     width: 96px;
   }
   .highlight-swatch {
-    width: 18px; height: 18px; border-radius: 4px;
+    width: 18px; height: 18px; border-radius: 50%;
     border: 1.5px solid rgba(0,0,0,0.12); cursor: pointer;
     transition: transform 0.1s, border-color 0.1s;
     padding: 0;
   }
   .highlight-swatch:hover { transform: scale(1.2); border-color: #6366f1; }
-  .img-placeholder { display: block; }
-  .img-widget-outer { position: relative; }
-  .img-toolbar {
-    position: absolute; top: -34px; left: 0; z-index: 20;
-    background: #1e1e2e; border-radius: 7px;
-    display: flex; align-items: center; gap: 1px; padding: 3px 5px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.25); white-space: nowrap;
+  
+  /* Image styles - full width, centered */
+  .img-placeholder { 
+    display: block; 
+    width: 100%;
   }
-  .img-tb-btn {
-    background: none; border: none; color: #c8ccd8; cursor: pointer;
-    padding: 3px 5px; border-radius: 4px;
-    display: flex; align-items: center; justify-content: center;
-    transition: background 0.1s;
+  .img-widget-outer { 
+    position: relative; 
+    width: 100%;
   }
-  .img-tb-btn:hover { background: rgba(255,255,255,0.12); color: #fff; }
-  .img-tb-btn-active { background: rgba(99,102,241,0.3) !important; color: #818cf8 !important; }
-  .img-tb-btn-danger:hover { background: rgba(239,68,68,0.25) !important; color: #f87171 !important; }
-  .img-tb-divider { width: 1px; height: 16px; background: rgba(255,255,255,0.12); margin: 0 3px; }
-  .img-resize-handle {
-    position: absolute; right: -5px; bottom: -5px;
-    width: 13px; height: 13px; background: #6366f1;
-    border-radius: 3px; cursor: se-resize; z-index: 10; border: 2px solid #fff;
+  
+  .img-widget-outer .img-delete-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.6);
+    border: none;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    z-index: 10;
   }
+  .img-widget-outer .img-delete-btn:hover {
+    background: rgba(239, 68, 68, 0.9);
+    transform: scale(1.05);
+  }
+  
+  .img-widget-outer .img-edit-toolbar {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    display: flex;
+    gap: 4px;
+    background: rgba(0, 0, 0, 0.6);
+    padding: 4px;
+    border-radius: 6px;
+    z-index: 10;
+  }
+  .img-widget-outer .img-edit-toolbar button {
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    border: none;
+    background: transparent;
+    color: #d1d5db;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .img-widget-outer .img-edit-toolbar button:hover {
+    background: rgba(255,255,255,0.15);
+    color: white;
+  }
+  
+  .img-widget-outer.img-selected .img-delete-btn {
+    display: flex;
+  }
+  
+  .img-widget-outer:not(.img-selected) .img-delete-btn {
+    display: none;
+  }
+  .img-widget-outer:not(.img-selected) .img-edit-toolbar {
+    display: none;
+  }
+
   .table-placeholder { display: block; margin: 0.85em 0; }
   .table-widget { margin: 0.85em 0; display: inline-block; width: 100%; }
   .table-selected { outline: 2px solid #6366f1; border-radius: 8px; outline-offset: 2px; }
@@ -2318,7 +2418,7 @@ const editorStyles = `
   }
   .tw-delete-table:hover { background: #fee2e2; }
   .ed-statusbar {
-    background: #fafafa; border-top: 0.5px solid #e5e7eb; padding: 5px 12px;
+    background: transparent; border-top: none; padding: 5px 0 0 0;
     display: flex; align-items: center; justify-content: space-between;
     font-size: 11px; color: #9ca3af; font-family: 'Inter', system-ui, sans-serif;
     flex-shrink: 0;
@@ -2370,25 +2470,27 @@ const editorStyles = `
   }
   .modal-textarea {
     width: 100%; border: 0.5px solid #d1d5db; border-radius: 6px;
-    padding: 8px 10px; font-size: 12px; background: #1e1e2e; color: #d4d4d4;
-    outline: none; font-family: 'JetBrains Mono', 'Fira Code', monospace;
-    box-sizing: border-box; resize: vertical; line-height: 1.6;
+    padding: 8px 10px; font-size: 13px; font-family: 'Inter', system-ui, sans-serif;
+    background: #f9fafb; color: #111827; outline: none; resize: vertical; box-sizing: border-box;
   }
-  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
+  .modal-textarea:focus { border-color: #6366f1; }
+  .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
   .btn-cancel {
-    font-size: 12px; padding: 6px 14px; border-radius: 6px;
-    border: 0.5px solid #d1d5db; background: #f3f4f6; color: #6b7280;
+    padding: 7px 14px; border: 0.5px solid #d1d5db; border-radius: 6px;
+    background: #fff; color: #374151; font-size: 13px; font-weight: 500;
     cursor: pointer; font-family: 'Inter', system-ui, sans-serif;
   }
-  .btn-cancel:hover { background: #e9eaec; }
+  .btn-cancel:hover { background: #f9fafb; }
+  .btn-cancel:disabled { opacity: 0.5; cursor: not-allowed; }
   .btn-ok {
-    font-size: 12px; padding: 6px 14px; border-radius: 6px;
-    border: 0.5px solid #6366f1; background: #6366f1; color: #fff;
-    cursor: pointer; font-family: 'Inter', system-ui, sans-serif;
-    display: flex; align-items: center; gap: 5px;
+    padding: 7px 14px; border: none; border-radius: 6px;
+    background: #6366f1; color: #fff; font-size: 13px; font-weight: 500;
+    cursor: pointer; display: flex; align-items: center; gap: 6px; font-family: 'Inter', system-ui, sans-serif;
   }
   .btn-ok:hover { background: #4f46e5; }
-  .btn-ok:disabled { opacity: 0.45; cursor: not-allowed; }
+  .btn-ok:disabled { opacity: 0.5; cursor: not-allowed; }
+  .animate-spin { animation: spin 1s linear infinite; }
+  @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 `;
 
 export default CustomEditor;

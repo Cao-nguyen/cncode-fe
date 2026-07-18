@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { IRating } from '@/lib/api/rating.api';
 import StarRating from '@/components/common/StarRating';
 import { DeleteConfirmModal } from '@/components/common/DeleteConfirmModal';
-import { ChevronLeft, ChevronRight, Star, Pencil, Trash2, Loader2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Star, Pencil, Trash, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { toast } from 'sonner';
@@ -143,7 +143,7 @@ export default function RatingSlideshow({
                                         {deletingId === currentRating._id ? (
                                             <Loader2 className="w-3 h-3 animate-spin" />
                                         ) : (
-                                            <Trash2 size={14} />
+                                            <Trash size={14} />
                                         )}
                                     </button>
                                 </div>

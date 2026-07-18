@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { CreateShortLink } from '@/components/shortlink/CreateShortLink';
 import { MyLinksList } from '@/components/shortlink/MyLinksList';
+import { UserStatsOverview } from '@/components/shortlink/UserStatsOverview';
 
 export const metadata: Metadata = {
     title: 'Rút gọn link',
@@ -9,7 +10,7 @@ export const metadata: Metadata = {
 
 export default function RutgonLinkPage() {
     return (
-        <div className="max-w-3xl mx-auto py-4 sm:py-8 px-3 sm:px-4 space-y-4 sm:space-y-6">
+        <div className="max-w-3xl mx-auto pt-16 pb-4 sm:py-8 px-3 sm:px-4 space-y-4 sm:space-y-6">
             <div className="text-center space-y-1 sm:space-y-2">
                 <h1 className="text-2xl sm:text-3xl font-bold text-main">Rút gọn link</h1>
                 <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
@@ -19,6 +20,10 @@ export default function RutgonLinkPage() {
 
             <div className="bg-white dark:bg-gray-900 rounded-xl sm:rounded-2xl shadow-sm p-4 sm:p-6 border border-gray-100 dark:border-gray-800">
                 <CreateShortLink />
+            </div>
+
+            <div className="bg-white dark:bg-gray-900 rounded-xl sm:rounded-2xl shadow-sm p-4 sm:p-6 border border-gray-100 dark:border-gray-800">
+                <UserStatsOverview />
             </div>
 
             <div className="bg-white dark:bg-gray-900 rounded-xl sm:rounded-2xl shadow-sm p-4 sm:p-6 border border-gray-100 dark:border-gray-800">

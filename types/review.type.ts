@@ -5,11 +5,9 @@ export interface Review {
         fullName: string;
         avatar?: string;
     };
-    targetType: 'course' | 'product';
-    targetId: string;
     rating: number;
-    comment: string;
-    isHidden: boolean;
+    content: string;
+    status: 'active' | 'deleted';
     createdAt: string;
     updatedAt: string;
 }

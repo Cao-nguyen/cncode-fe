@@ -1,6 +1,8 @@
 import axios from 'axios';
 import { ReviewsResponse, ReviewStats, Review } from '@/types/review.type';
 
+export type { Review, ReviewStats };
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
 const getToken = (): string | null => {
@@ -24,31 +26,31 @@ api.interceptors.request.use((config) => {
 });
 
 export const reviewApi = {
-    getByTarget: async (targetType: string, targetId: string, page = 1, limit = 10): Promise<ReviewsResponse> => {
-        const { data } = await api.get(`/${targetType}/${targetId}`, { params: { page, limit } });
+    getAllReviews: async (page = 1, limit = 10): Promise<ReviewsResponse> => {
+        const { data } = await api.get('/', { params: { page, limit } });
         return data;
     },
 
-    getStats: async (targetType: string, targetId: string): Promise<ReviewStats> => {
-        const { data } = await api.get(`/${targetType}/${targetId}/stats`);
+    getStats: async (): Promise<ReviewStats> => {
+        const { data } = await api.get('/stats');
         return data;
     },
 
-    getMyReview: async (targetType: string, targetId: string): Promise<Review | null> => {
+    getMyReview: async (): Promise<Review | null> => {
         try {
-            const { data } = await api.get(`/my/${targetType}/${targetId}`);
+            const { data } = await api.get('/my');
             return data;
         } catch {
             return null;
         }
     },
 
-    create: async (payload: { targetType: string; targetId: string; rating: number; comment: string }): Promise<Review> => {
+    create: async (payload: { rating: number; content: string }): Promise<Review> => {
         const { data } = await api.post('/', payload);
         return data;
     },
 
-    update: async (id: string, payload: { rating?: number; comment?: string }): Promise<Review> => {
+    update: async (id: string, payload: { rating?: number; content?: string }): Promise<Review> => {
         const { data } = await api.put(`/${id}`, payload);
         return data;
     },

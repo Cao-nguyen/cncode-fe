@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useRef } from 'react';
-import { reviewApi } from '@/lib/api/review.api';
-import { Review, ReviewStats } from '@/types/review.type';
+import { ratingApi, IRating, IRatingStats } from '@/lib/api/rating.api';
 import { Star, Loader2, Trash2, Edit3 } from 'lucide-react';
 import { toast } from 'sonner';
 import { CustomButton } from '@/components/custom/CustomButton';
@@ -16,13 +15,17 @@ interface Props {
     canReview?: boolean;
 }
 
+interface RatingStatsType {
+    average: number;
+    total: number;
+    distribution: Record<number, number>;
+}
+
 export default function ReviewSection({ targetType, targetId, canReview = true }: Props) {
-    const { user } = useAuthStore();
-    const [reviews, setReviews] = useState<Review[]>([]);
-    const [stats, setStats] = useState<ReviewStats | null>(null);
+    const { user, token } = useAuthStore();
+    const [reviews, setReviews] = useState<IRating[]>([]);
+    const [stats, setStats] = useState<RatingStatsType | null>(null);
     const [loading, setLoading] = useState(true);
-    const [page, setPage] = useState(1);
-    const [totalPages, setTotalPages] = useState(1);
     const [showForm, setShowForm] = useState(true);
     const [formRating, setFormRating] = useState(5);
     const [formComment, setFormComment] = useState('');
@@ -32,28 +35,27 @@ export default function ReviewSection({ targetType, targetId, canReview = true }
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
     const [reviewToDelete, setReviewToDelete] = useState<string | null>(null);
     const [deleting, setDeleting] = useState(false);
+    const [hasUserRated, setHasUserRated] = useState(false);
+    const [userRating, setUserRating] = useState<IRating | null>(null);
     const formRef = useRef<HTMLDivElement>(null);
 
-    const fetchData = async (p = 1) => {
+    const fetchData = async () => {
         setLoading(true);
         try {
-            const [res, my] = await Promise.all([
-                reviewApi.getByTarget(targetType, targetId, p, 5),
-                reviewApi.getMyReview(targetType, targetId)
-            ]);
-            setReviews(res.reviews);
-            setStats(res.stats);
-            setTotalPages(res.totalPages);
-            setPage(res.page);
+            const result = await ratingApi.getRatings(1, 20);
+            if (result.success && result.data) {
+                const ratingsData = result.data as IRating[];
+                setReviews(ratingsData);
 
-            // If user has own review, pre-fill form with it
-            if (my) {
-                setFormRating(my.rating);
-                setFormComment(my.comment);
-                setEditing(true);
-                setEditReviewId(my._id);
-            } else {
-                resetForm();
+                if (user?._id) {
+                    const userRatingData = ratingsData.find(r => r.userId?._id === user._id);
+                    setHasUserRated(!!userRatingData);
+                    setUserRating(userRatingData || null);
+                }
+
+                if (result.stats) {
+                    setStats(result.stats);
+                }
             }
         } catch (e) {
             console.error(e);
@@ -69,40 +71,56 @@ export default function ReviewSection({ targetType, targetId, canReview = true }
         setEditReviewId(null);
     };
 
-    useEffect(() => { fetchData(); }, [targetType, targetId]);
+    useEffect(() => { fetchData(); }, [targetType, targetId, user]);
 
     const handleSubmit = async () => {
         if (!formComment.trim()) { toast.error('Vui lòng nhập nội dung đánh giá'); return; }
+        if (!token) { toast.error('Vui lòng đăng nhập'); return; }
+        
         setSubmitting(true);
         try {
             if (editing && editReviewId) {
-                await reviewApi.update(editReviewId, { rating: formRating, comment: formComment.trim() });
-                toast.success('Đã cập nhật đánh giá');
+                const result = await ratingApi.updateRating(token, editReviewId, formRating, formComment.trim());
+                if (result.success) {
+                    toast.success('Đã cập nhật đánh giá');
+                    resetForm();
+                    fetchData();
+                } else {
+                    toast.error(result.message || 'Có lỗi xảy ra');
+                }
             } else {
-                await reviewApi.create({ targetType, targetId, rating: formRating, comment: formComment.trim() });
-                toast.success('Đã gửi đánh giá');
+                if (hasUserRated) { toast.error('Bạn đã đánh giá rồi!'); setSubmitting(false); return; }
+                const result = await ratingApi.createRating(token, formRating, formComment.trim());
+                if (result.success) {
+                    toast.success('Đã gửi đánh giá');
+                    resetForm();
+                    fetchData();
+                } else {
+                    toast.error(result.message || 'Có lỗi xảy ra');
+                }
             }
-            resetForm();
-            fetchData();
         } catch (e) {
-            const err = e as { response?: { data?: { message?: string } } };
-            toast.error(err?.response?.data?.message || 'Có lỗi xảy ra');
+            toast.error('Có lỗi xảy ra');
         } finally {
             setSubmitting(false);
         }
     };
 
     const handleDeleteConfirm = async () => {
-        if (!reviewToDelete) return;
+        if (!reviewToDelete || !token) return;
         setDeleting(true);
         try {
-            await reviewApi.delete(reviewToDelete);
-            toast.success('Đã xoá đánh giá');
-            setDeleteModalOpen(false);
-            setReviewToDelete(null);
-            resetForm();
-            setShowForm(true);
-            fetchData();
+            const result = await ratingApi.deleteRating(token, reviewToDelete);
+            if (result.success) {
+                toast.success('Đã xoá đánh giá');
+                setDeleteModalOpen(false);
+                setReviewToDelete(null);
+                resetForm();
+                setShowForm(true);
+                fetchData();
+            } else {
+                toast.error(result.message || 'Có lỗi xảy ra');
+            }
         } catch (e) {
             toast.error('Có lỗi xảy ra');
         } finally {
@@ -110,9 +128,9 @@ export default function ReviewSection({ targetType, targetId, canReview = true }
         }
     };
 
-    const handleEditClick = (review: Review) => {
+    const handleEditClick = (review: IRating) => {
         setFormRating(review.rating);
-        setFormComment(review.comment);
+        setFormComment(review.content);
         setEditing(true);
         setEditReviewId(review._id);
         setShowForm(true);
@@ -128,7 +146,7 @@ export default function ReviewSection({ targetType, targetId, canReview = true }
         return new Date(d).toLocaleDateString('vi-VN', { year: 'numeric', month: 'long', day: 'numeric' });
     };
 
-    const isOwner = (review: Review) => user?._id && review.userId?._id === user._id;
+    const isOwner = (review: IRating) => user?._id && review.userId?._id === user._id;
 
     const StarRating = ({ rating, interactive = false, size = 20 }: { rating: number; interactive?: boolean; size?: number }) => (
         <div className="flex items-center gap-0.5">
@@ -160,13 +178,13 @@ export default function ReviewSection({ targetType, targetId, canReview = true }
             {stats && stats.total > 0 && (
                 <div className="flex items-center gap-6 mb-8 p-6 bg-white rounded-2xl border border-gray-200">
                     <div className="text-center">
-                        <div className="text-4xl font-bold text-gray-900">{stats.average}</div>
+                        <div className="text-4xl font-bold text-gray-900">{stats.average.toFixed(1)}</div>
                         <StarRating rating={Math.round(stats.average)} size={16} />
                         <div className="text-sm text-gray-500 mt-1">{stats.total} đánh giá</div>
                     </div>
                     <div className="flex-1 space-y-1">
                         {[5, 4, 3, 2, 1].map((star) => {
-                            const count = stats.distribution[star as keyof typeof stats.distribution] || 0;
+                            const count = stats.distribution[star] || 0;
                             const pct = stats.total > 0 ? (count / stats.total) * 100 : 0;
                             return (
                                 <div key={star} className="flex items-center gap-2 text-sm">
@@ -256,23 +274,8 @@ export default function ReviewSection({ targetType, targetId, canReview = true }
                                     <StarRating rating={review.rating} size={14} />
                                 </div>
                             </div>
-                            <p className="text-sm text-gray-700">{review.comment}</p>
+                            <p className="text-sm text-gray-700">{review.content}</p>
                         </div>
-                    ))}
-                </div>
-            )}
-
-            {/* Pagination */}
-            {totalPages > 1 && (
-                <div className="flex items-center justify-center gap-2 mt-6">
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-                        <button
-                            key={p}
-                            onClick={() => fetchData(p)}
-                            className={`w-8 h-8 rounded-lg text-sm font-medium transition-colors ${p === page ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
-                        >
-                            {p}
-                        </button>
                     ))}
                 </div>
             )}

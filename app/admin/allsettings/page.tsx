@@ -36,19 +36,28 @@ const TABS: TabConfig[] = [
 
 const settingApi = {
     getAll: async (token: string): Promise<{ success: boolean; data?: Record<string, string>; message?: string }> => {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/settings`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/system-settings/settings`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         return response.json();
     },
     update: async (token: string, key: string, value: string): Promise<{ success: boolean; message?: string }> => {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/settings/${key}`, {
+        const keyToEndpoint = {
+            'about_us': 'gioi-thieu',
+            'terms_of_use': 'dieu-khoan-su-dung',
+            'security_policy': 'an-toan-bao-mat',
+            'warranty_policy': 'chinh-sach-bao-hanh',
+            'payment_guide': 'huong-dan-thanh-toan',
+            'usage_process': 'quy-trinh-su-dung'
+        };
+        const endpoint = keyToEndpoint[key as keyof typeof keyToEndpoint] || key;
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/system-settings/settings/${endpoint}`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
             },
-            body: JSON.stringify({ value })
+            body: JSON.stringify({ content: value })
         });
         return response.json();
     }

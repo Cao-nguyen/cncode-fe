@@ -97,7 +97,46 @@ export function MyLinksList() {
         return (
             <div className="space-y-4">
                 {[1, 2, 3].map((i) => (
-                    <div key={i} className="h-40 rounded-xl bg-gradient-to-r from-gray-100 via-gray-50 to-gray-100 animate-pulse" />
+                    <div key={i} className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
+                        <div className="flex items-start justify-between gap-3">
+                            <div className="flex-1 space-y-2">
+                                <div className="h-4 w-24 bg-gray-200 rounded animate-pulse" />
+                                <div className="h-5 w-48 bg-gray-200 rounded animate-pulse" />
+                                <div className="h-3 w-16 bg-gray-200 rounded animate-pulse" />
+                            </div>
+                            <div className="flex gap-2">
+                                <div className="w-9 h-9 bg-gray-200 rounded-lg animate-pulse" />
+                                <div className="w-9 h-9 bg-gray-200 rounded-lg animate-pulse" />
+                            </div>
+                        </div>
+                        <div className="p-3 rounded-lg bg-gray-50 space-y-2">
+                            <div className="h-3 w-20 bg-gray-200 rounded animate-pulse" />
+                            <div className="h-4 w-full bg-gray-200 rounded animate-pulse" />
+                        </div>
+                        <div className="grid grid-cols-3 gap-3">
+                            <div className="flex items-center gap-2 p-2 rounded-lg bg-blue-50">
+                                <div className="w-7 h-7 bg-gray-200 rounded-lg animate-pulse" />
+                                <div className="flex-1 space-y-1">
+                                    <div className="h-2 w-12 bg-gray-200 rounded animate-pulse" />
+                                    <div className="h-4 w-16 bg-gray-200 rounded animate-pulse" />
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2 p-2 rounded-lg bg-gray-50">
+                                <div className="w-7 h-7 bg-gray-200 rounded-lg animate-pulse" />
+                                <div className="flex-1 space-y-1">
+                                    <div className="h-2 w-12 bg-gray-200 rounded animate-pulse" />
+                                    <div className="h-4 w-16 bg-gray-200 rounded animate-pulse" />
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2 p-2 rounded-lg bg-gray-50">
+                                <div className="w-7 h-7 bg-gray-200 rounded-lg animate-pulse" />
+                                <div className="flex-1 space-y-1">
+                                    <div className="h-2 w-12 bg-gray-200 rounded animate-pulse" />
+                                    <div className="h-4 w-16 bg-gray-200 rounded animate-pulse" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 ))}
             </div>
         );
@@ -271,3 +310,4 @@ export function MyLinksList() {
         </div>
     );
 }
+

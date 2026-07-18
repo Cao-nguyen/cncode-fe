@@ -196,7 +196,7 @@ const menuItems = [
         listLink: [
             {
                 title: "Trung tâm trợ giúp",
-                link: "/admin/helpcenter",
+                link: "/admin/hotro",
                 icon: <Message size={18} variant="Outline" />,
             },
             {

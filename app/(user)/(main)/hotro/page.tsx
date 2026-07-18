@@ -5,7 +5,7 @@ import { useAuthStore } from '@/store/auth.store';
 import { ChevronDown, ChevronUp, Heart, Search, HelpCircle, User, CreditCard, GraduationCap, Wrench, MessageSquare } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
-import { helpCenterApi } from '@/lib/api/helpcenter.api';
+import { useHelpCenter } from '@/hooks/helpcenter/useHelpCenter';
 import type { HelpCenterFAQ } from '@/types/helpcenter.type';
 import { CustomInput } from '@/components/custom/CustomInput';
 import { CustomButton } from '@/components/custom/CustomButton';
@@ -22,8 +22,6 @@ const CATEGORIES = [
 
 export default function HelpCenterPage() {
     const { token } = useAuthStore();
-    const [faqs, setFaqs] = useState<HelpCenterFAQ[]>([]);
-    const [loading, setLoading] = useState(true);
     const [isMounted, setIsMounted] = useState(false); 
     const [expandedId, setExpandedId] = useState<string | null>(null);
     const [selectedCategory, setSelectedCategory] = useState('all');
@@ -33,29 +31,17 @@ export default function HelpCenterPage() {
     const [previewSrc, setPreviewSrc] = useState<string | null>(null);
     const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
+    const { faqs, loading, fetchFAQs, toggleHelpful } = useHelpCenter();
+
     useEffect(() => {
         setIsMounted(true);
     }, []);
 
-    const fetchFAQs = useCallback(async () => {
-        
-        if (faqs.length === 0) setLoading(true);
-
-        try {
-            const result = await helpCenterApi.getFAQs(selectedCategory, searchTerm, 1, 50, token);
-            if (result.success) {
-                setFaqs(result.data);
-            }
-        } catch (error) {
-            console.error('Fetch FAQs error:', error);
-        } finally {
-            setLoading(false);
-        }
-    }, [selectedCategory, searchTerm, token, faqs.length]); 
-
     useEffect(() => {
-        if (isMounted) fetchFAQs();
-    }, [fetchFAQs, isMounted]);
+        if (isMounted) {
+            fetchFAQs(selectedCategory, searchTerm);
+        }
+    }, [selectedCategory, searchTerm, isMounted, fetchFAQs]);
 
     const handleContentClick = (e: React.MouseEvent<HTMLDivElement>) => {
         const target = e.target as HTMLElement;
@@ -71,27 +57,14 @@ export default function HelpCenterPage() {
             return;
         }
         setLiking(id);
-        try {
-            const result = await helpCenterApi.toggleHelpful(id);
-            if (result.success) {
-                setFaqs(prev => prev.map(faq =>
-                    faq._id === id
-                        ? { ...faq, helpfulCount: result.data.helpfulCount, userLiked: result.data.userLiked }
-                        : faq
-                ));
-                toast.success(result.data.userLiked ? 'Cảm ơn bạn đã đánh giá!' : 'Đã bỏ đánh giá');
-            }
-        } catch (error) {
-            toast.error('Có lỗi xảy ra');
-        } finally {
-            setLiking(null);
-        }
+        await toggleHelpful(id);
+        setLiking(null);
     };
 
     if (!isMounted) return null;
 
     return (
-        <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white py-12">
+        <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white pt-16 pb-12 md:py-12">
             <div className="max-w-4xl mx-auto px-4">
                 <div className="text-center mb-12">
                     <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-100 rounded-full mb-4">

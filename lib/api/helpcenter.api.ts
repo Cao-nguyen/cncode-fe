@@ -78,7 +78,7 @@ export const helpCenterApi = {
                 return { success: false, message: 'Chưa đăng nhập' };
             }
 
-            let url = `${API_URL}/api/helpcenter/admin/all?page=${page}&limit=${limit}`;
+            let url = `${API_URL}/api/admin/helpcenter/all?page=${page}&limit=${limit}`;
             if (category !== 'all') url += `&category=${category}`;
             if (search) url += `&search=${encodeURIComponent(search)}`;
 
@@ -99,7 +99,7 @@ export const helpCenterApi = {
                 return { success: false, message: 'Chưa đăng nhập' };
             }
 
-            const response = await fetch(`${API_URL}/api/helpcenter/admin/stats`, {
+            const response = await fetch(`${API_URL}/api/admin/helpcenter/stats`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             return await response.json();
@@ -116,7 +116,7 @@ export const helpCenterApi = {
                 return { success: false, message: 'Chưa đăng nhập' };
             }
 
-            const response = await fetch(`${API_URL}/api/helpcenter/admin`, {
+            const response = await fetch(`${API_URL}/api/admin/helpcenter`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -138,7 +138,7 @@ export const helpCenterApi = {
                 return { success: false, message: 'Chưa đăng nhập' };
             }
 
-            const response = await fetch(`${API_URL}/api/helpcenter/admin/${id}`, {
+            const response = await fetch(`${API_URL}/api/admin/helpcenter/${id}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -160,7 +160,7 @@ export const helpCenterApi = {
                 return { success: false, message: 'Chưa đăng nhập' };
             }
 
-            const response = await fetch(`${API_URL}/api/helpcenter/admin/${id}`, {
+            const response = await fetch(`${API_URL}/api/admin/helpcenter/${id}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -178,7 +178,7 @@ export const helpCenterApi = {
                 return { success: false, message: 'Chưa đăng nhập' };
             }
 
-            const response = await fetch(`${API_URL}/api/helpcenter/admin/order`, {
+            const response = await fetch(`${API_URL}/api/admin/helpcenter/order`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',

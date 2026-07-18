@@ -40,7 +40,7 @@ const handleApiError = (error: unknown): never => {
 export const shortlinkApi = {
     create: async (payload: CreateShortLinkPayload): Promise<ShortLink> => {
         try {
-            const { data } = await authApi.post('/shorten', payload);
+            const { data } = await authApi.post('/shortlink/shorten', payload);
             if (!data.success) throw new Error('Tạo link thất bại');
             return data.data;
         } catch (error) {
@@ -64,7 +64,7 @@ export const shortlinkApi = {
         totalPages: number;
     }> => {
         try {
-            const response = await authApi.get('/my-links', { params: { page, limit } });
+            const response = await authApi.get('/shortlink/my-links', { params: { page, limit } });
             const data = response.data;
             if (!data.success) throw new Error('Lấy danh sách link thất bại');
             return data.data;
@@ -80,7 +80,7 @@ export const shortlinkApi = {
         totalPages: number;
     }> => {
         try {
-            const response = await authApi.get('/admin/all', { params: { page, limit, search } });
+            const response = await authApi.get('/admin/shortlink/all', { params: { page, limit, search } });
             const data = response.data;
             if (!data.success) throw new Error(data.message || 'Không thể tải danh sách link');
             return data.data;
@@ -91,7 +91,7 @@ export const shortlinkApi = {
 
     getStats: async (): Promise<ShortLinkStats> => {
         try {
-            const response = await authApi.get('/admin/stats');
+            const response = await authApi.get('/admin/shortlink/stats');
             const data = response.data;
             if (!data.success) throw new Error('Không thể tải thống kê');
             return data.data;
@@ -102,7 +102,7 @@ export const shortlinkApi = {
 
     update: async (shortCode: string, payload: UpdateShortLinkPayload): Promise<ShortLink> => {
         try {
-            const { data } = await authApi.put(`/${shortCode}`, payload);
+            const { data } = await authApi.put(`/shortlink/${shortCode}`, payload);
             if (!data.success) throw new Error('Cập nhật link thất bại');
             return data.data;
         } catch (error) {
@@ -112,7 +112,29 @@ export const shortlinkApi = {
 
     delete: async (shortCode: string): Promise<void> => {
         try {
-            await authApi.delete(`/${shortCode}`);
+            await authApi.delete(`/admin/shortlink/${shortCode}`);
+        } catch (error) {
+            throw handleApiError(error);
+        }
+    },
+
+    getLinkClickStats: async (shortCode: string, days = 30): Promise<Array<{ date: string; clicks: number }>> => {
+        try {
+            const response = await authApi.get(`/admin/shortlink/${shortCode}/stats`, { params: { days } });
+            const data = response.data;
+            if (!data.success) throw new Error('Không thể tải thống kê link');
+            return data.data;
+        } catch (error) {
+            throw handleApiError(error);
+        }
+    },
+
+    getUserLinkClickStats: async (shortCode: string, days = 30): Promise<Array<{ date: string; clicks: number }>> => {
+        try {
+            const response = await authApi.get(`/shortlink/${shortCode}/stats`, { params: { days } });
+            const data = response.data;
+            if (!data.success) throw new Error('Không thể tải thống kê link');
+            return data.data;
         } catch (error) {
             throw handleApiError(error);
         }

@@ -97,10 +97,10 @@ export default function NavAdmin({ open, onToggle }: NavAdminProps) {
                     { }
                     <button
                         onClick={() => router.push("/")}
-                        className={btnBase}
+                        className="relative p-1.5 lg:p-2 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gradient-to-br hover:from-blue-50 hover:to-indigo-50 dark:hover:from-blue-950/30 dark:hover:to-indigo-950/30 transition-all duration-200 group"
                         aria-label="Về trang chủ"
                     >
-                        <House size={18} />
+                        <House className="w-4 lg:w-5 h-4 lg:h-5 text-[var(--cn-text-sub)] group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors" />
                     </button>
 
                     { }

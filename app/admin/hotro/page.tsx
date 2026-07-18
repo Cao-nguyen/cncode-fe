@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import dynamic from 'next/dynamic';
-import { helpCenterApi } from '@/lib/api/helpcenter.api';
+import { useAdminHelpCenter } from '@/hooks/helpcenter/useAdminHelpCenter';
 import type { HelpCenterFAQ, HelpCenterStats } from '@/types/helpcenter.type';
 import type { CustomEditorRef } from '@/components/custom/CustomEditor';
 import { CustomInput } from '@/components/custom/CustomInput';
@@ -52,20 +52,28 @@ const CATEGORY_ICONS: Record<string, React.ReactNode> = {
     other: <MessageSquare size={14} />
 };
 
-export default function AdminHelpCenterPage() {
+export default function AdminHoTroPage() {
     const { token } = useAuthStore();
     const editorRef = useRef<CustomEditorRef | null>(null);
-    const [faqs, setFaqs] = useState<HelpCenterFAQ[]>([]);
-    const [tableLoading, setTableLoading] = useState(true);
     const [page, setPage] = useState(1);
-    const [totalPages, setTotalPages] = useState(1);
-    const [total, setTotal] = useState(0);
     const [selectedCategory, setSelectedCategory] = useState('all');
     const [searchInput, setSearchInput] = useState('');
     const [search, setSearch] = useState('');
-    const [stats, setStats] = useState<HelpCenterStats>({ total: 0, active: 0, inactive: 0, byCategory: {} });
     const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
     const isInitialMount = useRef(true);
+
+    const {
+        faqs,
+        stats,
+        loading,
+        error,
+        pagination,
+        fetchAllFAQs,
+        fetchStats,
+        createFAQ,
+        updateFAQ,
+        deleteFAQ
+    } = useAdminHelpCenter();
 
     const [showModal, setShowModal] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -80,48 +88,18 @@ export default function AdminHelpCenterPage() {
     });
     const [submitting, setSubmitting] = useState(false);
 
-    const fetchTableData = useCallback(async (currentPage: number, currentCategory: string, currentSearch: string) => {
-        if (!token) return;
-        setTableLoading(true);
-        try {
-            const faqsResult = await helpCenterApi.getAllFAQs(currentPage, 20, currentCategory, currentSearch);
-            if (faqsResult.success) {
-                setFaqs(faqsResult.data);
-                setTotalPages(faqsResult.pagination?.totalPages || 1);
-                setTotal(faqsResult.pagination?.total || 0);
-            }
-        } catch (error) {
-            console.error('Fetch FAQs error:', error);
-            toast.error('Không thể tải danh sách câu hỏi');
-        } finally {
-            setTableLoading(false);
-        }
-    }, [token]);
-
-    const fetchStatsData = useCallback(async () => {
-        if (!token) return;
-        try {
-            const statsResult = await helpCenterApi.getStats();
-            if (statsResult.success) {
-                setStats(statsResult.data);
-            }
-        } catch (error) {
-            console.error('Fetch stats error:', error);
-        }
-    }, [token]);
-
     useEffect(() => {
-        fetchStatsData();
-    }, [fetchStatsData]);
+        fetchStats();
+    }, [fetchStats]);
 
     useEffect(() => {
         if (isInitialMount.current) {
             isInitialMount.current = false;
-            fetchTableData(page, selectedCategory, search);
+            fetchAllFAQs(page, selectedCategory, search);
             return;
         }
-        fetchTableData(page, selectedCategory, search);
-    }, [page, selectedCategory, search, fetchTableData]);
+        fetchAllFAQs(page, selectedCategory, search);
+    }, [page, selectedCategory, search, fetchAllFAQs]);
 
     const handleSearchChange = (value: string) => {
         setSearchInput(value);
@@ -146,15 +124,13 @@ export default function AdminHelpCenterPage() {
         setSubmitting(true);
         try {
             const result = editingFaq
-                ? await helpCenterApi.updateFAQ(editingFaq._id, { ...formData, answer: answerContent })
-                : await helpCenterApi.createFAQ({ ...formData, answer: answerContent });
+                ? await updateFAQ(editingFaq._id, { ...formData, answer: answerContent })
+                : await createFAQ({ ...formData, answer: answerContent });
 
             if (result.success) {
                 toast.success(editingFaq ? 'Cập nhật thành công' : 'Tạo câu hỏi thành công');
                 setShowModal(false);
                 resetForm();
-                fetchTableData(page, selectedCategory, search);
-                fetchStatsData();
             } else {
                 toast.error(result.message || 'Thao tác thất bại');
             }
@@ -168,11 +144,9 @@ export default function AdminHelpCenterPage() {
     const handleDelete = async () => {
         if (!deletingId) return;
         try {
-            const result = await helpCenterApi.deleteFAQ(deletingId);
+            const result = await deleteFAQ(deletingId);
             if (result.success) {
                 toast.success('Xóa thành công');
-                fetchTableData(page, selectedCategory, search);
-                fetchStatsData();
             } else {
                 toast.error(result.message || 'Xóa thất bại');
             }
@@ -186,10 +160,9 @@ export default function AdminHelpCenterPage() {
 
     const handleToggleActive = async (faq: HelpCenterFAQ) => {
         try {
-            const result = await helpCenterApi.updateFAQ(faq._id, { isActive: !faq.isActive });
+            const result = await updateFAQ(faq._id, { isActive: !faq.isActive });
             if (result.success) {
                 toast.success(faq.isActive ? 'Đã ẩn câu hỏi' : 'Đã hiện câu hỏi');
-                fetchTableData(page, selectedCategory, search);
             } else {
                 toast.error(result.message || 'Cập nhật thất bại');
             }
@@ -231,7 +204,6 @@ export default function AdminHelpCenterPage() {
 
     return (
         <div className="space-y-6 pb-8 px-4">
-            { }
             <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-50 to-indigo-50/30 p-6 border border-blue-100">
                 <div className="absolute top-0 right-0 w-80 h-80 bg-gradient-to-br from-blue-200/30 to-transparent rounded-full blur-3xl" />
                 <div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -253,19 +225,18 @@ export default function AdminHelpCenterPage() {
                 </div>
             </div>
 
-            { }
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div className="bg-white rounded-xl p-4 border border-gray-200">
                     <p className="text-sm text-gray-500">Tổng số</p>
-                    <p className="text-2xl font-bold text-gray-800">{stats.total}</p>
+                    <p className="text-2xl font-bold text-gray-800">{stats?.total || 0}</p>
                 </div>
                 <div className="bg-white rounded-xl p-4 border border-green-200 bg-green-50">
                     <p className="text-sm text-green-600">Đang hiển thị</p>
-                    <p className="text-2xl font-bold text-green-700">{stats.active}</p>
+                    <p className="text-2xl font-bold text-green-700">{stats?.active || 0}</p>
                 </div>
                 <div className="bg-white rounded-xl p-4 border border-gray-200">
                     <p className="text-sm text-gray-500">Đã ẩn</p>
-                    <p className="text-2xl font-bold text-gray-800">{stats.inactive}</p>
+                    <p className="text-2xl font-bold text-gray-800">{stats?.inactive || 0}</p>
                 </div>
                 <div className="bg-white rounded-xl p-4 border border-gray-200">
                     <p className="text-sm text-gray-500">Lượt hữu ích</p>
@@ -275,7 +246,6 @@ export default function AdminHelpCenterPage() {
                 </div>
             </div>
 
-            { }
             <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
                 <div className="flex flex-wrap gap-3 items-center">
                     <div className="flex-1 min-w-[200px]">
@@ -297,11 +267,8 @@ export default function AdminHelpCenterPage() {
                 </div>
             </div>
 
-            { }
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden relative">
-
-                { }
-                {tableLoading && (
+                {loading && (
                     <div className="absolute top-0 left-0 w-full h-0.5 bg-blue-100 overflow-hidden z-20">
                         <div className="w-full h-full bg-blue-500 animate-[loading_1.5s_infinite_linear]" style={{
                             backgroundImage: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent)',
@@ -311,7 +278,7 @@ export default function AdminHelpCenterPage() {
                 )}
 
                 <div className="overflow-x-auto">
-                    <table className={`w-full min-w-[800px] transition-opacity duration-300 ${tableLoading ? 'opacity-50' : 'opacity-100'}`}>
+                    <table className={`w-full min-w-[800px] transition-opacity duration-300 ${loading ? 'opacity-50' : 'opacity-100'}`}>
                         <thead className="bg-gray-50 border-b border-gray-200">
                             <tr className="text-left">
                                 <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase w-[50px] text-center">STT</th>
@@ -367,16 +334,15 @@ export default function AdminHelpCenterPage() {
                     </table>
                 </div>
 
-                { }
-                {totalPages > 1 && (
+                {pagination.totalPages > 1 && (
                     <div className="border-t border-gray-200 px-4 py-3 flex items-center justify-between">
-                        <div className="text-sm text-gray-500">Tổng: {total} câu hỏi</div>
+                        <div className="text-sm text-gray-500">Tổng: {pagination.total} câu hỏi</div>
                         <div className="flex items-center gap-2">
                             <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="p-1.5 border border-gray-200 rounded-lg disabled:opacity-40 hover:bg-gray-50 transition">
                                 <ChevronLeft size={16} />
                             </button>
-                            <span className="px-2 text-sm font-medium text-gray-700">{page} / {totalPages}</span>
-                            <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} className="p-1.5 border border-gray-200 rounded-lg disabled:opacity-40 hover:bg-gray-50 transition">
+                            <span className="px-2 text-sm font-medium text-gray-700">{page} / {pagination.totalPages}</span>
+                            <button onClick={() => setPage(p => Math.min(pagination.totalPages, p + 1))} disabled={page === pagination.totalPages} className="p-1.5 border border-gray-200 rounded-lg disabled:opacity-40 hover:bg-gray-50 transition">
                                 <ChevronRight size={16} />
                             </button>
                         </div>
@@ -384,7 +350,6 @@ export default function AdminHelpCenterPage() {
                 )}
             </div>
 
-            { }
             {showModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowModal(false)}>
                     <div className="bg-white rounded-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto shadow-xl" onClick={(e) => e.stopPropagation()}>
@@ -427,7 +392,6 @@ export default function AdminHelpCenterPage() {
                 </div>
             )}
 
-            { }
             <ConfirmModalDelete
                 isOpen={showDeleteModal}
                 onClose={() => setShowDeleteModal(false)}

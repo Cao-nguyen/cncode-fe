@@ -3,9 +3,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuthStore } from '@/store/auth.store';
 import { useSocket } from '@/providers/socket.provider';
-import { ratingApi, IRating, IRatingStats } from '@/lib/api/rating.api';
+import { reviewApi } from '@/lib/api/review.api';
+import type { Review, ReviewStats } from '@/lib/api/review.api';
 import StarRating from '@/components/common/StarRating';
-import { Loader2, ChevronLeft, ChevronRight, Trash2, Star, Search, User, X } from 'lucide-react';
+import { CustomButton } from '@/components/custom/CustomButton';
+import { Loader2, ChevronLeft, ChevronRight, Eraser, Star, Search, User, X } from 'lucide-react';
 
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
@@ -21,14 +23,14 @@ interface AdminStatsType {
 export default function AdminRatingsPage() {
     const { token } = useAuthStore();
     const { socket, isConnected } = useSocket();
-    const [ratings, setRatings] = useState<IRating[]>([]);
+    const [ratings, setRatings] = useState<Review[]>([]);
     const [loading, setLoading] = useState(true);
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [total, setTotal] = useState(0);
     const [searchInput, setSearchInput] = useState('');
     const [deletingId, setDeletingId] = useState<string | null>(null);
-    const [selectedRating, setSelectedRating] = useState<IRating | null>(null);
+    const [selectedRating, setSelectedRating] = useState<Review | null>(null);
     const [showDetailModal, setShowDetailModal] = useState(false);
     const [stats, setStats] = useState<AdminStatsType>({
         average: 0,
@@ -41,36 +43,11 @@ export default function AdminRatingsPage() {
 
         try {
             setLoading(true);
-            const result = await ratingApi.getAllRatingsForAdmin(token, page, PAGE_SIZE, searchInput);
+            const result = await reviewApi.getAllReviews(page, PAGE_SIZE);
 
-            if (result.success && result.data) {
-                setRatings(result.data as IRating[]);
-                if (result.pagination) {
-                    setTotalPages(result.pagination.totalPages);
-                    setTotal(result.pagination.total);
-                }
-                if (result.stats) {
-                    setStats({
-                        average: result.stats.average,
-                        distribution: result.stats.distribution
-                    });
-                }
-            } else {
-                const errorMsg = result.message || 'Không thể lấy danh sách đánh giá';
-                toast.error(errorMsg);
-            }
-        } catch (error) {
-            console.error('Fetch ratings error:', error);
-            toast.error('Có lỗi xảy ra khi tải danh sách đánh giá');
-        } finally {
-            setLoading(false);
-        }
-    }, [token, page, searchInput]);
-
-    const fetchStats = useCallback(async () => {
-        if (!token) return;
-        try {
-            const result = await ratingApi.getAllRatingsForAdmin(token, 1, 1);
+            setRatings(result.reviews);
+            setTotalPages(result.totalPages);
+            setTotal(result.total);
             if (result.stats) {
                 setStats({
                     average: result.stats.average,
@@ -78,39 +55,54 @@ export default function AdminRatingsPage() {
                 });
             }
         } catch (error) {
+            console.error('Fetch ratings error:', error);
+            toast.error('Có lỗi xảy ra khi tải danh sách đánh giá');
+        } finally {
+            setLoading(false);
+        }
+    }, [token, page]);
+
+    const fetchStats = useCallback(async () => {
+        try {
+            const statsData = await reviewApi.getStats();
+            setStats({
+                average: statsData.average,
+                distribution: statsData.distribution
+            });
+        } catch (error) {
             console.error('Fetch stats error:', error);
         }
-    }, [token]);
+    }, []);
 
     useEffect(() => {
         if (!socket || !isConnected) return;
 
-        const handleRatingCreated = (newRating: IRating) => {
-            console.log('Admin real-time: new rating', newRating);
+        const handleReviewCreated = (newReview: Review) => {
+            console.log('Admin real-time: new review', newReview);
             if (page === 1) {
-                setRatings(prev => [newRating, ...prev]);
+                setRatings(prev => [newReview, ...prev]);
                 setTotal(prev => prev + 1);
             }
             fetchStats();
             fetchRatings();
         };
 
-        const handleRatingUpdated = (updatedRating: IRating) => {
-            console.log('Admin real-time: rating updated', updatedRating);
-            setRatings(prev => prev.map(r => r._id === updatedRating._id ? updatedRating : r));
+        const handleReviewUpdated = (updatedReview: Review) => {
+            console.log('Admin real-time: review updated', updatedReview);
+            setRatings(prev => prev.map(r => r._id === updatedReview._id ? updatedReview : r));
             fetchStats();
             fetchRatings();
         };
 
-        const handleRatingDeleted = (ratingId: string) => {
-            console.log('Admin real-time: rating deleted', ratingId);
-            setRatings(prev => prev.filter(r => r._id !== ratingId));
+        const handleReviewDeleted = (reviewId: string) => {
+            console.log('Admin real-time: review deleted', reviewId);
+            setRatings(prev => prev.filter(r => r._id !== reviewId));
             setTotal(prev => prev - 1);
             fetchStats();
             fetchRatings();
         };
 
-        const handleStatsUpdated = (newStats: IRatingStats) => {
+        const handleStatsUpdated = (newStats: ReviewStats) => {
             console.log('Admin real-time: stats updated', newStats);
             setStats({
                 average: newStats.average,
@@ -118,16 +110,16 @@ export default function AdminRatingsPage() {
             });
         };
 
-        socket.on('rating_created', handleRatingCreated);
-        socket.on('rating_updated', handleRatingUpdated);
-        socket.on('rating_deleted', handleRatingDeleted);
-        socket.on('rating_stats_updated', handleStatsUpdated);
+        socket.on('review_created', handleReviewCreated);
+        socket.on('review_updated', handleReviewUpdated);
+        socket.on('review_deleted', handleReviewDeleted);
+        socket.on('review_stats_updated', handleStatsUpdated);
 
         return () => {
-            socket.off('rating_created', handleRatingCreated);
-            socket.off('rating_updated', handleRatingUpdated);
-            socket.off('rating_deleted', handleRatingDeleted);
-            socket.off('rating_stats_updated', handleStatsUpdated);
+            socket.off('review_created', handleReviewCreated);
+            socket.off('review_updated', handleReviewUpdated);
+            socket.off('review_deleted', handleReviewDeleted);
+            socket.off('review_stats_updated', handleStatsUpdated);
         };
     }, [socket, isConnected, page, fetchStats, fetchRatings]);
 
@@ -145,19 +137,14 @@ export default function AdminRatingsPage() {
 
         try {
             setDeletingId(ratingId);
-            const result = await ratingApi.deleteRating(token, ratingId);
-            if (result.success) {
-                toast.success('Xóa đánh giá thành công');
-                setRatings(prev => prev.filter(r => r._id !== ratingId));
-                setTotal(prev => prev - 1);
-                if (ratings.length === 1 && page > 1) {
-                    setPage(page - 1);
-                } else {
-                    fetchRatings();
-                }
+            await reviewApi.delete(ratingId);
+            toast.success('Xóa đánh giá thành công');
+            setRatings(prev => prev.filter(r => r._id !== ratingId));
+            setTotal(prev => prev - 1);
+            if (ratings.length === 1 && page > 1) {
+                setPage(page - 1);
             } else {
-                const errorMsg = result.message || 'Xóa đánh giá thất bại';
-                toast.error(errorMsg);
+                fetchRatings();
             }
         } catch (error) {
             console.error('Delete rating error:', error);
@@ -173,7 +160,7 @@ export default function AdminRatingsPage() {
         fetchRatings();
     };
 
-    const openDetailModal = (rating: IRating) => {
+    const openDetailModal = (rating: Review) => {
         setSelectedRating(rating);
         setShowDetailModal(true);
     };
@@ -305,7 +292,7 @@ export default function AdminRatingsPage() {
                                             {deletingId === rating._id ? (
                                                 <Loader2 className="w-4 h-4 animate-spin" data-filled={true} />
                                             ) : (
-                                                <Trash2 size={14} data-filled={true} />
+                                                <Eraser size={14} data-filled={true} />
                                             )}
                                         </button>
                                     </div>
@@ -379,7 +366,7 @@ export default function AdminRatingsPage() {
                                                             {deletingId === rating._id ? (
                                                                 <Loader2 className="w-4 h-4 animate-spin" data-filled={true} />
                                                             ) : (
-                                                                <Trash2 size={16} data-filled={true} />
+                                                                <Eraser size={16} data-filled={true} />
                                                             )}
                                                         </button>
                                                     </div>
@@ -465,19 +452,22 @@ export default function AdminRatingsPage() {
                                 </p>
                             </div>
                             <div className="flex gap-3 pt-2">
-                                <button
+                                <CustomButton
                                     onClick={() => handleDeleteRating(selectedRating._id)}
                                     disabled={deletingId === selectedRating._id}
-                                    className="flex-1 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors disabled:opacity-50"
+                                    loading={deletingId === selectedRating._id}
+                                    variant="danger"
+                                    fullWidth
                                 >
-                                    {deletingId === selectedRating._id ? 'Đang xóa...' : 'Xóa đánh giá'}
-                                </button>
-                                <button
+                                    Xóa đánh giá
+                                </CustomButton>
+                                <CustomButton
                                     onClick={() => setShowDetailModal(false)}
-                                    className="flex-1 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                                    variant="outline"
+                                    fullWidth
                                 >
                                     Đóng
-                                </button>
+                                </CustomButton>
                             </div>
                         </div>
                     </div>

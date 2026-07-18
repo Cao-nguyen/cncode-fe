@@ -2,7 +2,7 @@
 
 import { useAuthStore } from '@/store/auth.store';
 import StarRating from '@/components/common/StarRating';
-import { Star, MessageCircle, CheckCircle, Pencil, Trash2 } from 'lucide-react';
+import { Star, MessageCircle, CheckCircle, Pencil, Trash } from 'lucide-react';
 
 interface RatingStatsType {
     average: number;
@@ -76,7 +76,7 @@ export default function RatingStats({
                                 className="p-2 text-red-500 hover:bg-red-50 rounded-[var(--cn-radius-sm)] transition-colors"
                                 title="Xóa đánh giá"
                             >
-                                <Trash2 size={16} />
+                                <Trash size={16} />
                             </button>
                         </div>
                     )}

@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import type { ShortLinkWithUser } from '@/types/shortlink.type';
 import { CreateShortLinkModal } from './CreateShortLinkModal';
 import { ConfirmModalDelete } from '@/components/custom/ConfirmationModal';
+import { LinkStatsModal } from './LinkStatsModal';
 
 export function AdminLinksTable() {
     const [links, setLinks] = useState<ShortLinkWithUser[]>([]);
@@ -26,6 +27,8 @@ export function AdminLinksTable() {
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
     const [pendingDeleteCode, setPendingDeleteCode] = useState<string | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [showChartModal, setShowChartModal] = useState(false);
+    const [selectedLinkForChart, setSelectedLinkForChart] = useState<string | null>(null);
     const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const fetchLinks = async (p: number, s: string) => {
@@ -335,6 +338,16 @@ export function AdminLinksTable() {
 
                                             {}
                                             <div className="flex flex-wrap items-center justify-end gap-2 pt-3 border-t border-gray-100">
+                                                <button
+                                                    onClick={() => {
+                                                        setSelectedLinkForChart(link.shortCode);
+                                                        setShowChartModal(true);
+                                                    }}
+                                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition-all duration-200"
+                                                >
+                                                    <BarChart3 size={14} />
+                                                    Xem thống kê
+                                                </button>
                                                 <a
                                                     href={link.originalUrl}
                                                     target="_blank"
@@ -427,6 +440,18 @@ export function AdminLinksTable() {
                     fetchLinks(page, search);
                 }}
             />
+
+            {}
+            {selectedLinkForChart && (
+                <LinkStatsModal
+                    isOpen={showChartModal}
+                    onClose={() => {
+                        setShowChartModal(false);
+                        setSelectedLinkForChart(null);
+                    }}
+                    shortCode={selectedLinkForChart}
+                />
+            )}
         </div>
     );
 }

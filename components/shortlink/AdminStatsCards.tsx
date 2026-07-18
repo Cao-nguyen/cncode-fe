@@ -16,7 +16,15 @@ export function AdminStatsCards() {
         return (
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                 {[1, 2, 3, 4].map((i) => (
-                    <div key={i} className="h-24 sm:h-28 rounded-[var(--cn-radius-md)] bg-[var(--cn-bg-section)] animate-pulse" />
+                    <div key={i} className="bg-[var(--cn-bg-card)] rounded-[var(--cn-radius-md)] p-3 sm:p-4 border border-[var(--cn-border)] space-y-3">
+                        <div className="flex items-start justify-between">
+                            <div className="flex-1 space-y-2">
+                                <div className="h-3 w-16 bg-gray-200 rounded animate-pulse" />
+                                <div className="h-7 w-24 bg-gray-200 rounded animate-pulse" />
+                            </div>
+                            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-gray-200 animate-pulse" />
+                        </div>
+                    </div>
                 ))}
             </div>
         );
@@ -79,3 +87,4 @@ export function AdminStatsCards() {
         </div>
     );
 }
+
