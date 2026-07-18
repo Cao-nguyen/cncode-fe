@@ -20,6 +20,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { ConfirmModalDelete } from '@/components/custom/ConfirmationModal';
 import { toast } from 'sonner';
+import { getImageUrl } from '@/lib/utils/imageUrl';
 
 const getUserId = (): string | null => {
     if (typeof window === 'undefined') return null;
@@ -402,7 +403,7 @@ export default function QuestionDetailPage() {
     const isQuestionOwner = currentUserId === question.userId?._id;
 
     return (
-        <div className="min-h-screen bg-gradient-to-b from-[var(--cn-bg-main)] to-[var(--cn-bg-section)] py-8 lg:py-12">
+        <div className="min-h-screen bg-gradient-to-b from-[var(--cn-bg-main)] to-[var(--cn-bg-section)] pt-14 pb-8 lg:pt-8 lg:py-12">
             <div className="container mx-auto px-4 max-w-4xl">
                 <Link href="/faq" className="inline-flex items-center gap-2 text-[var(--cn-text-muted)] hover:text-[var(--cn-primary)] mb-6 transition-colors group">
                     <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
@@ -420,8 +421,8 @@ export default function QuestionDetailPage() {
 
                     <div className="flex flex-wrap items-center justify-between gap-4 mb-5 pb-4 border-b border-[var(--cn-border)]">
                         <div className="flex items-center gap-3">
-                            <Avatar className="w-10 h-10 ring-2 ring-[var(--cn-primary)]/20">
-                                {!question.isAnonymous && question.userId?.avatar ? <AvatarImage src={question.userId.avatar} alt={displayName} /> : null}
+                            <Avatar className="w-10 h-10 ring-2 ring-[var(--cn-primary)]/20 border-2 border-gray-200">
+                                {!question.isAnonymous && question.userId?.avatar ? <AvatarImage src={getImageUrl(question.userId.avatar)} alt={displayName} /> : null}
                                 <AvatarFallback className={question.isAnonymous ? 'bg-gray-200 text-gray-500' : 'bg-gradient-to-br from-blue-500 to-blue-600 text-white'}>{question.isAnonymous ? '?' : displayName.charAt(0).toUpperCase()}</AvatarFallback>
                             </Avatar>
                             <div>
@@ -468,8 +469,8 @@ export default function QuestionDetailPage() {
                             <div key={answer._id} className={`bg-[var(--cn-bg-card)] rounded-xl border p-5 transition-all duration-300 ${answer.isBestAnswer ? 'border-green-500 bg-gradient-to-r from-green-50/50 to-transparent shadow-sm' : 'border-[var(--cn-border)] hover:shadow-md'}`}>
                                 <div className="flex items-center justify-between mb-3">
                                     <div className="flex items-center gap-3">
-                                        <Avatar className="w-10 h-10 flex-shrink-0">
-                                            {answer.userId?.avatar ? <AvatarImage src={answer.userId.avatar} alt={answerDisplayName} /> : null}
+                                        <Avatar className="w-10 h-10 flex-shrink-0 border-2 border-gray-200">
+                                            {answer.userId?.avatar ? <AvatarImage src={getImageUrl(answer.userId.avatar)} alt={answerDisplayName} /> : null}
                                             <AvatarFallback className="bg-gradient-to-br from-blue-500 to-blue-600 text-white">{answerDisplayName.charAt(0).toUpperCase()}</AvatarFallback>
                                         </Avatar>
                                         <div>

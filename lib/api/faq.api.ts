@@ -50,6 +50,14 @@ export const faqApi = {
         return response.data;
     },
 
+    adminGetStatistics: async () => {
+        const token = getToken();
+        const response = await axios.get<{ success: boolean; data: StatisticsData }>(`${API_URL}/api/admin/faq/statistics`, {
+            headers: token ? { Authorization: `Bearer ${token}` } : {}
+        });
+        return response.data;
+    },
+
     createQuestion: async (data: CreateQuestionDto) => {
         const response = await api.post<{ success: boolean; data: Question }>('/questions', data);
         return response.data;
@@ -101,12 +109,42 @@ export const faqApi = {
     },
 
     togglePinQuestion: async (id: string) => {
-        const response = await api.put<{ success: boolean; data: Question }>(`/admin/questions/${id}/pin`);
+        const token = getToken();
+        const response = await axios.put<{ success: boolean; data: Question }>(`${API_URL}/api/admin/faq/questions/${id}/pin`, {}, {
+            headers: token ? { Authorization: `Bearer ${token}` } : {}
+        });
         return response.data;
     },
 
     toggleLockQuestion: async (id: string) => {
-        const response = await api.put<{ success: boolean; data: Question }>(`/admin/questions/${id}/lock`);
+        const token = getToken();
+        const response = await axios.put<{ success: boolean; data: Question }>(`${API_URL}/api/admin/faq/questions/${id}/lock`, {}, {
+            headers: token ? { Authorization: `Bearer ${token}` } : {}
+        });
+        return response.data;
+    },
+
+    adminDeleteQuestion: async (id: string) => {
+        const token = getToken();
+        const response = await axios.delete<{ success: boolean; message: string }>(`${API_URL}/api/admin/faq/questions/${id}`, {
+            headers: token ? { Authorization: `Bearer ${token}` } : {}
+        });
+        return response.data;
+    },
+
+    adminDeleteAnswer: async (id: string) => {
+        const token = getToken();
+        const response = await axios.delete<{ success: boolean; message: string }>(`${API_URL}/api/admin/faq/answers/${id}`, {
+            headers: token ? { Authorization: `Bearer ${token}` } : {}
+        });
+        return response.data;
+    },
+
+    adminUpdateAnswer: async (id: string, content: string) => {
+        const token = getToken();
+        const response = await axios.put<{ success: boolean; data: Answer }>(`${API_URL}/api/admin/faq/answers/${id}`, { content }, {
+            headers: token ? { Authorization: `Bearer ${token}` } : {}
+        });
         return response.data;
     },
 };

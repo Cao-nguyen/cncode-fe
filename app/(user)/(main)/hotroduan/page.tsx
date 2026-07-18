@@ -13,6 +13,8 @@ import { CustomBadge } from '@/components/custom/CustomBadge';
 import { ConfirmModalDelete } from '@/components/custom/ConfirmationModal';
 import { toast } from 'sonner';
 import { Plus, Search, ChevronLeft, ChevronRight, Edit2, Trash2, MessageCircle, Folder } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { getImageUrl } from '@/lib/utils/imageUrl';
 
 type BadgeVariant = 'pending' | 'solved' | 'admin' | 'expert' | 'grade10' | 'grade11' | 'grade12' | 'other';
 
@@ -47,6 +49,10 @@ const ProjectCard = ({ project, onDelete }: ProjectCardProps) => {
         return `${diffDays} ngày trước`;
     };
 
+    const getUserInitial = (name: string): string => name?.charAt(0).toUpperCase() || '?';
+    const displayName = project.userId?.fullName || 'Người dùng';
+    const avatarUrl = project.userId?.avatar;
+
     return (
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition-all duration-300 group">
             <Link href={`/hotroduan/${project._id}`}>
@@ -69,6 +75,15 @@ const ProjectCard = ({ project, onDelete }: ProjectCardProps) => {
                     </div>
                 </div>
                 <div className="p-4">
+                    <div className="flex items-center gap-3 mb-3">
+                        <Avatar className="w-8 h-8 border-2 border-gray-200">
+                            {avatarUrl ? <AvatarImage src={getImageUrl(avatarUrl)} alt={displayName} /> : null}
+                            <AvatarFallback className="bg-blue-500 text-white text-xs">
+                                {getUserInitial(displayName)}
+                            </AvatarFallback>
+                        </Avatar>
+                        <span className="text-xs text-gray-500 truncate">{displayName}</span>
+                    </div>
                     <h3 className="font-semibold text-gray-800 line-clamp-1 mb-2 group-hover:text-blue-600 transition">
                         {project.title}
                     </h3>
@@ -163,7 +178,7 @@ export default function HelpProjectPage() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 py-8">
+        <div className="min-h-screen bg-gray-50 pt-14 pb-8 lg:pt-8">
             <div className="container mx-auto px-4 max-w-6xl">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
                     <div>

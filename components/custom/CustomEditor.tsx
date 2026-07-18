@@ -1285,16 +1285,16 @@ const CustomEditor = forwardRef<CustomEditorRef, CustomEditorProps>(({ initialVa
     }, [deleteTable, scheduleAutosave]);
 
     useEffect(() => {
-        if (editorRef.current && !hasInitialized.current) {
+        if (editorRef.current) {
             hasInitialized.current = true;
             editorRef.current.innerHTML = initialValue || '<p><br></p>';
             updateStatus();
             setTimeout(() => {
                 mountImageWidgets();
                 mountTableWidgets();
-            }, 0);
+            }, 100);
         }
-    }, []);
+    }, [initialValue, mountImageWidgets, mountTableWidgets, updateStatus]);
 
     useEffect(() => {
         if (!editorRef.current) return;
@@ -1320,8 +1320,9 @@ const CustomEditor = forwardRef<CustomEditorRef, CustomEditorProps>(({ initialVa
             return tempDiv.innerHTML;
         },
         setContent: (content: string) => {
+            console.log('CustomEditor setContent called with:', content);
             if (editorRef.current) {
-                editorRef.current.innerHTML = content;
+                editorRef.current.innerHTML = content || '<p><br></p>';
                 const rootsToClear = Array.from(mountedRoots.entries());
                 setTimeout(() => {
                     rootsToClear.forEach(([id, root]) => {
@@ -1331,7 +1332,7 @@ const CustomEditor = forwardRef<CustomEditorRef, CustomEditorProps>(({ initialVa
                     mountImageWidgets();
                     mountTableWidgets();
                     updateStatus();
-                }, 0);
+                }, 100);
             }
         }
     }), [mountImageWidgets, mountTableWidgets, updateStatus]);

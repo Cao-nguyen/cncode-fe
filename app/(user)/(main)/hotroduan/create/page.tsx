@@ -89,7 +89,7 @@ export default function CreateHelpProjectPage() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 py-8">
+        <div className="min-h-screen bg-gray-50 pt-14 pb-8 lg:pt-8">
             <div className="container mx-auto px-4 max-w-4xl">
                 <Link href="/hotroduan" className="inline-flex items-center gap-2 text-gray-500 hover:text-gray-700 mb-6">
                     <ArrowLeft className="w-4 h-4" /> Quay lại

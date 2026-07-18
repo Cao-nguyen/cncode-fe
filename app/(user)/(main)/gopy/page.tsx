@@ -252,7 +252,7 @@ export default function FeedbackPage() {
     const statusOrder = ['pending', 'viewed', 'approved', 'improving', 'completed', 'rejected'];
 
     return (
-        <div className="max-w-6xl mx-auto px-4 py-6 sm:py-8">
+        <div className="max-w-6xl mx-auto px-4 pt-14 pb-6 sm:py-8">
             { }
             <div className="text-center mb-8">
                 <h1 className="text-3xl font-bold text-gray-800">Góp ý & Phản hồi</h1>

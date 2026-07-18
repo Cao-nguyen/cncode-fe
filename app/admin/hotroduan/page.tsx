@@ -11,6 +11,7 @@ import { CustomEditorRef } from '@/components/custom/CustomEditor';
 import { ConfirmModalDelete } from '@/components/custom/ConfirmationModal';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast } from 'sonner';
+import { getImageUrl } from '@/lib/utils/imageUrl';
 import { Eye, MessageCircle, CheckCircle, Clock, ChevronLeft, ChevronRight, Search, ShieldCheck, Send, FileText, Trash2, X } from 'lucide-react';
 import StaticContent from '@/components/common/StaticContent';
 import CustomEditor from '@/components/custom/CustomEditor';
@@ -47,7 +48,7 @@ const ViewProjectModal = ({ isOpen, onClose, project }: { isOpen: boolean; onClo
 
     const getUserInitial = (name: string): string => name?.charAt(0).toUpperCase() || '?';
     const displayName = project.userId?.fullName || 'Người dùng';
-    const avatarUrl = project.userId?.avatar;
+    const avatarUrl = project.userId?.avatar ? getImageUrl(project.userId.avatar) : undefined;
 
     return (
         <>
@@ -68,7 +69,7 @@ const ViewProjectModal = ({ isOpen, onClose, project }: { isOpen: boolean; onClo
                         </div>
                         <h1 className="text-2xl font-bold text-gray-800 mb-4">{project.title}</h1>
                         <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-200">
-                            <Avatar className="w-10 h-10">
+                            <Avatar className="w-10 h-10 border-2 border-gray-200">
                                 {avatarUrl ? <AvatarImage src={avatarUrl} alt={displayName} /> : null}
                                 <AvatarFallback className="bg-blue-500 text-white">{getUserInitial(displayName)}</AvatarFallback>
                             </Avatar>
@@ -90,10 +91,10 @@ const ViewProjectModal = ({ isOpen, onClose, project }: { isOpen: boolean; onClo
                                     {project.replies.map((reply, idx) => {
                                         const isAdmin = reply.userId?.role === 'admin';
                                         const replyName = reply.userId?.fullName || (isAdmin ? 'Admin' : 'Người dùng');
-                                        const replyAvatar = reply.userId?.avatar;
+                                        const replyAvatar = reply.userId?.avatar ? getImageUrl(reply.userId.avatar) : undefined;
                                         return (
                                             <div key={idx} className={`flex gap-3 p-3 rounded-lg ${isAdmin ? 'bg-blue-50' : 'bg-gray-50'}`}>
-                                                <Avatar className="w-7 h-7">
+                                                <Avatar className="w-7 h-7 border-2 border-gray-200">
                                                     {replyAvatar ? <AvatarImage src={replyAvatar} alt={replyName} /> : null}
                                                     <AvatarFallback className={isAdmin ? 'bg-purple-500 text-white text-xs' : 'bg-gray-400 text-white text-xs'}>
                                                         {replyName.charAt(0).toUpperCase()}
@@ -283,10 +284,10 @@ const ViewRepliesModal = ({ isOpen, onClose, project, onSuccess }: { isOpen: boo
                                 {project.replies.map((reply, idx) => {
                                     const isAdmin = reply.userId?.role === 'admin';
                                     const displayName = reply.userId?.fullName || (isAdmin ? 'Admin' : 'Người dùng');
-                                    const avatarUrl = reply.userId?.avatar;
+                                    const avatarUrl = reply.userId?.avatar ? getImageUrl(reply.userId.avatar) : undefined;
                                     return (
                                         <div key={idx} className={`flex gap-3 p-4 rounded-lg ${isAdmin ? 'bg-blue-50' : 'bg-gray-50'}`}>
-                                            <Avatar className="w-8 h-8 flex-shrink-0">
+                                            <Avatar className="w-8 h-8 flex-shrink-0 border-2 border-gray-200">
                                                 {avatarUrl ? <AvatarImage src={avatarUrl} alt={displayName} /> : null}
                                                 <AvatarFallback className={isAdmin ? 'bg-purple-500 text-white' : 'bg-gray-400 text-white'}>
                                                     {getUserInitial(displayName)}
@@ -341,8 +342,8 @@ const AdminProjectRow = ({ project, onView, onViewReplies, onReply, onStatus, on
             </td>
             <td className="px-4 py-3">
                 <div className="flex items-center gap-2">
-                    <Avatar className="w-6 h-6">
-                        {project.userId?.avatar ? <AvatarImage src={project.userId.avatar} alt={project.userId?.fullName} /> : null}
+                    <Avatar className="w-6 h-6 border-2 border-gray-200">
+                        {project.userId?.avatar ? <AvatarImage src={getImageUrl(project.userId.avatar)} alt={project.userId?.fullName} /> : null}
                         <AvatarFallback className="bg-blue-500 text-white text-xs">{getUserInitial(project.userId?.fullName || '')}</AvatarFallback>
                     </Avatar>
                     <span className="text-sm text-gray-700">{project.userId?.fullName || 'Ẩn danh'}</span>
@@ -594,8 +595,8 @@ export default function AdminHelpProjectPage() {
                                     </div>
 
                                     <div className="flex items-center gap-2 text-sm">
-                                        <Avatar className="w-5 h-5">
-                                            {project.userId?.avatar ? <AvatarImage src={project.userId.avatar} alt={project.userId?.fullName} /> : null}
+                                        <Avatar className="w-5 h-5 border-2 border-gray-200">
+                                            {project.userId?.avatar ? <AvatarImage src={getImageUrl(project.userId.avatar)} alt={project.userId?.fullName} /> : null}
                                             <AvatarFallback className="bg-blue-500 text-white text-[10px]">{getUserInitial(project.userId?.fullName || '')}</AvatarFallback>
                                         </Avatar>
                                         <span className="text-xs text-gray-600">{project.userId?.fullName || 'Ẩn danh'}</span>

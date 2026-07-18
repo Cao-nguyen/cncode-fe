@@ -13,6 +13,7 @@ import Link from 'next/link';
 import { notificationApi } from '@/lib/api/notification.api';
 import type { INotification } from '@/types/notification.type';
 import { CustomButton } from '../custom/CustomButton';
+import { getImageUrl } from '@/lib/utils/imageUrl';
 import {
     subscribeToPushNotifications,
     isPushSubscribed,
@@ -148,12 +149,12 @@ function UserAvatar({ avatar, name }: { avatar?: string; name?: string }) {
         <div className="flex-shrink-0">
             {avatar ? (
                 <img
-                    src={avatar}
+                    src={getImageUrl(avatar)}
                     alt={name || 'Avatar'}
-                    className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover"
+                    className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover border-2 border-gray-200"
                 />
             ) : (
-                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[var(--cn-primary)] flex items-center justify-center text-white text-sm sm:text-base font-semibold">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[var(--cn-primary)] flex items-center justify-center text-white text-sm sm:text-base font-semibold border-2 border-gray-200">
                     {getInitials(name)}
                 </div>
             )}
@@ -476,8 +477,8 @@ export default function NotificationBell() {
                     className={`w-4 lg:w-5 h-4 lg:h-5 text-[var(--cn-text-sub)] group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors ${bellAnimation ? 'animate-[wiggle_0.5s_ease-in-out]' : ''}`}
                 />
                 {unreadCount > 0 && (
-                    <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-gradient-to-br from-red-500 to-rose-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 shadow-lg animate-[bounce_1s_ease-in-out_3]">
-                        {unreadCount > 99 ? '99+' : unreadCount}
+                    <span className="absolute -top-0.5 -right-0.5 min-w-[14px] h-[14px] sm:min-w-[18px] sm:h-[18px] bg-gradient-to-br from-red-500 to-rose-600 text-white text-[9px] sm:text-[10px] font-bold rounded-full flex items-center justify-center px-1 shadow-lg animate-[bounce_1s_ease-in-out_3]">
+                        {unreadCount > 9 ? '9+' : unreadCount}
                     </span>
                 )}
             </button>
@@ -511,10 +512,11 @@ export default function NotificationBell() {
                                 {unreadCount > 0 && (
                                     <button
                                         onClick={markAllAsRead}
-                                        className="hidden md:flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-lg transition-all duration-200"
+                                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-lg transition-all duration-200"
                                     >
                                         <CheckCheck className="w-3.5 h-3.5" />
-                                        <span>Đọc tất cả</span>
+                                        <span className="hidden sm:inline">Đọc tất cả</span>
+                                        <span className="sm:hidden">Đọc hết</span>
                                     </button>
                                 )}
                                 <button

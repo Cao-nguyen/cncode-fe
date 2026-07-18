@@ -49,7 +49,7 @@ export default function AskQuestionPage() {
     };
 
     return (
-        <div className="min-h-screen bg-[var(--cn-bg-main)] py-8">
+        <div className="min-h-screen bg-[var(--cn-bg-main)] pt-14 pb-8 lg:pt-8 lg:py-8">
             <div className="container mx-auto px-4 max-w-4xl">
                 <div className="flex items-center gap-4 mb-6">
                     <Link href="/faq" className="p-2 rounded-xl hover:bg-[var(--cn-hover)]"><ArrowLeft className="w-5 h-5" /></Link>

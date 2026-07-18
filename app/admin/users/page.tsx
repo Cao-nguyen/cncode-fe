@@ -31,6 +31,7 @@ import {
     Search,
     Settings,
     Flame,
+    Download,
 } from 'lucide-react';
 
 import { format } from 'date-fns';
@@ -125,6 +126,7 @@ function AdminUsersPageContent() {
     const [coinAmount, setCoinAmount] = useState(0);
     const [coinReason, setCoinReason] = useState('');
     const [actionLoading, setActionLoading] = useState<{ type: string; userId: string } | null>(null);
+    const [isExporting, setIsExporting] = useState(false);
 
     const initialFetchDone = useRef(false);
     const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -395,6 +397,7 @@ function AdminUsersPageContent() {
 
     const handleExportExcel = async () => {
         try {
+            setIsExporting(true);
             const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
             const response = await fetch(`${apiUrl}/api/users/admin/users/export`, {
                 headers: {
@@ -411,9 +414,12 @@ function AdminUsersPageContent() {
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
+            toast.success('Xuất Excel thành công');
         } catch (error) {
             console.error('Export error:', error);
             toast.error('Xuất Excel thất bại');
+        } finally {
+            setIsExporting(false);
         }
     };
 
@@ -638,12 +644,18 @@ function AdminUsersPageContent() {
                             placeholder="Chọn vai trò"
                         />
                     </div>
-                    <CustomButton
+                    <button
                         onClick={handleExportExcel}
-                        className="bg-green-500 hover:bg-green-600 text-white"
+                        disabled={isExporting}
+                        className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all duration-200 shadow-sm hover:shadow-md font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        Xuất Excel
-                    </CustomButton>
+                        {isExporting ? (
+                            <Loader2 size={16} className="animate-spin" />
+                        ) : (
+                            <Download size={16} />
+                        )}
+                        {isExporting ? 'Đang xuất...' : 'Xuất Excel'}
+                    </button>
                 </div>
             </div>
 

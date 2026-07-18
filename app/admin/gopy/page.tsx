@@ -17,6 +17,7 @@ import { CustomTextarea } from '@/components/custom/CustomTextarea';
 import { CustomInputSearch } from '@/components/custom/CustomInputSearch';
 import { CustomButton } from '@/components/custom/CustomButton';
 import { ConfirmModalDelete } from '@/components/custom/ConfirmationModal';
+import { getImageUrl } from '@/lib/utils/imageUrl';
 
 const PAGE_SIZE = 10;
 
@@ -282,9 +283,9 @@ export default function AdminFeedbackPage() {
                                         <tr key={feedback._id} className="hover:bg-gray-50 transition cursor-pointer group" onClick={() => openDetailModal(feedback)}>
                                             <td className="px-5 py-4">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center">
+                                                    <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center border-2 border-gray-200">
                                                         {getUserAvatar(feedback) ? (
-                                                            <img src={getUserAvatar(feedback)!} alt={getUserName(feedback)} width={36} height={36} className="w-full h-full rounded-full object-cover" />
+                                                            <img src={getImageUrl(getUserAvatar(feedback)!)} alt={getUserName(feedback)} width={36} height={36} className="w-full h-full rounded-full object-cover" />
                                                         ) : (
                                                             <span className="text-sm font-semibold text-blue-600">{getUserInitial(feedback)}</span>
                                                         )}
@@ -386,8 +387,12 @@ export default function AdminFeedbackPage() {
                         </div>
                         <div className="p-6 space-y-5">
                             <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl">
-                                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-xl font-bold shadow-sm">
-                                    {getUserInitial(selectedFeedback)}
+                                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-xl font-bold shadow-sm overflow-hidden border-2 border-gray-200">
+                                    {getUserAvatar(selectedFeedback) ? (
+                                        <img src={getImageUrl(getUserAvatar(selectedFeedback)!)} alt={getUserName(selectedFeedback)} width={56} height={56} className="w-full h-full object-cover" />
+                                    ) : (
+                                        <span>{getUserInitial(selectedFeedback)}</span>
+                                    )}
                                 </div>
                                 <div>
                                     <p className="font-semibold text-gray-800 text-lg">{getUserName(selectedFeedback)}</p>

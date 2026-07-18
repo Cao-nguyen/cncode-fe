@@ -11,6 +11,7 @@ import { CustomButton } from '@/components/custom/CustomButton';
 import { CustomSelect } from '@/components/custom/CustomSelect';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import { getImageUrl } from '@/lib/utils/imageUrl';
 
 const GRADE_LABELS: Record<string, string> = {
     grade10: 'Tin học 10',
@@ -50,9 +51,9 @@ const QuestionCard = ({ question, onLike, isLiked }: { question: Question; onLik
         <div className="bg-[var(--cn-bg-card)] rounded-xl border border-[var(--cn-border)] p-5 hover:shadow-md transition-all">
             {}
             <div className="flex items-center gap-3 mb-3">
-                <Avatar className="w-8 h-8">
+                <Avatar className="w-8 h-8 border-2 border-gray-200">
                     {!question.isAnonymous && question.userId?.avatar ? (
-                        <AvatarImage src={question.userId.avatar} alt={displayName} />
+                        <AvatarImage src={getImageUrl(question.userId.avatar)} alt={displayName} />
                     ) : null}
                     <AvatarFallback className={question.isAnonymous ? 'bg-gray-200 text-gray-500 text-xs' : 'bg-gradient-to-br from-blue-500 to-blue-600 text-white text-xs'}>
                         {question.isAnonymous ? '?' : displayName.charAt(0).toUpperCase()}
@@ -189,7 +190,7 @@ export default function FAQPage() {
     ];
 
     return (
-        <div className="min-h-screen bg-gradient-to-b from-[var(--cn-bg-main)] to-[var(--cn-bg-section)] py-8 lg:py-12">
+        <div className="min-h-screen bg-gradient-to-b from-[var(--cn-bg-main)] to-[var(--cn-bg-section)] pt-14 pb-8 lg:pt-8 lg:py-12">
             <div className="container mx-auto px-4 max-w-5xl">
                 {}
                 <div className="text-center mb-10">

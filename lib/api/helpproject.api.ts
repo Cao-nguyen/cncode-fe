@@ -25,7 +25,7 @@ const getAuthHeaders = (): HeadersInit => {
 
 export const helpProjectApi = {
     createProject: async (data: CreateHelpProjectDto) => {
-        const response = await fetch(`${API_URL}/api/help-project`, {
+        const response = await fetch(`${API_URL}/api/helpproject`, {
             method: 'POST',
             headers: getAuthHeaders(),
             body: JSON.stringify(data)
@@ -43,21 +43,21 @@ export const helpProjectApi = {
         if (params.status) query.append('status', params.status);
         if (params.search) query.append('search', params.search);
 
-        const url = `${API_URL}/api/help-project/my-projects${query.toString() ? `?${query}` : ''}`;
+        const url = `${API_URL}/api/helpproject/my-projects${query.toString() ? `?${query}` : ''}`;
 
         const response = await fetch(url, { headers: getAuthHeaders() });
         return response.json();
     },
 
     getProjectById: async (id: string) => {
-        const response = await fetch(`${API_URL}/api/help-project/${id}`, {
+        const response = await fetch(`${API_URL}/api/helpproject/${id}`, {
             headers: getAuthHeaders()
         });
         return response.json();
     },
 
     updateProject: async (id: string, data: UpdateHelpProjectDto) => {
-        const response = await fetch(`${API_URL}/api/help-project/${id}`, {
+        const response = await fetch(`${API_URL}/api/helpproject/${id}`, {
             method: 'PUT',
             headers: getAuthHeaders(),
             body: JSON.stringify(data)
@@ -66,7 +66,7 @@ export const helpProjectApi = {
     },
 
     deleteProject: async (id: string) => {
-        const response = await fetch(`${API_URL}/api/help-project/${id}`, {
+        const response = await fetch(`${API_URL}/api/helpproject/${id}`, {
             method: 'DELETE',
             headers: getAuthHeaders()
         });
@@ -80,20 +80,20 @@ export const helpProjectApi = {
         if (params.status) query.append('status', params.status);
         if (params.search) query.append('search', params.search);
 
-        const url = `${API_URL}/api/help-project/admin/list${query.toString() ? `?${query}` : ''}`;
+        const url = `${API_URL}/api/admin/helpproject/all${query.toString() ? `?${query}` : ''}`;
         const response = await fetch(url, { headers: getAuthHeaders() });
         return response.json();
     },
 
     getStatistics: async () => {
-        const response = await fetch(`${API_URL}/api/help-project/admin/statistics`, {
+        const response = await fetch(`${API_URL}/api/admin/helpproject/statistics`, {
             headers: getAuthHeaders()
         });
         return response.json();
     },
 
     addReply: async (id: string, content: string) => {
-        const response = await fetch(`${API_URL}/api/help-project/${id}/reply`, {
+        const response = await fetch(`${API_URL}/api/helpproject/${id}/reply`, {
             method: 'POST',
             headers: getAuthHeaders(),
             body: JSON.stringify({ content })
@@ -102,7 +102,7 @@ export const helpProjectApi = {
     },
 
     adminAddReply: async (id: string, content: string) => {
-        const response = await fetch(`${API_URL}/api/help-project/admin/${id}/reply`, {
+        const response = await fetch(`${API_URL}/api/helpproject/${id}/reply`, {
             method: 'POST',
             headers: getAuthHeaders(),
             body: JSON.stringify({ content })
@@ -111,7 +111,7 @@ export const helpProjectApi = {
     },
 
     updateStatus: async (id: string, status: string) => {
-        const response = await fetch(`${API_URL}/api/help-project/admin/${id}/status`, {
+        const response = await fetch(`${API_URL}/api/admin/helpproject/${id}/status`, {
             method: 'PUT',
             headers: getAuthHeaders(),
             body: JSON.stringify({ status })
@@ -120,7 +120,7 @@ export const helpProjectApi = {
     },
 
     adminDeleteProject: async (id: string) => {
-        const response = await fetch(`${API_URL}/api/help-project/admin/${id}`, {
+        const response = await fetch(`${API_URL}/api/admin/helpproject/${id}`, {
             method: 'DELETE',
             headers: getAuthHeaders()
         });

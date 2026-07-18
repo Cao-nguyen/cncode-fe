@@ -5,17 +5,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuthStore } from '@/store/auth.store';
 import { toast } from 'sonner';
 import { Loader2, Save, FileText, Shield, Wallet, Settings, Lock, Info } from 'lucide-react';
-import dynamic from 'next/dynamic';
-import type { CustomEditorRef } from '@/components/custom/CustomEditor';
-
-const CustomEditor = dynamic(() => import('@/components/custom/CustomEditor'), {
-    ssr: false,
-    loading: () => (
-        <div className="flex items-center justify-center h-[560px] bg-gray-100 rounded-xl">
-            <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-        </div>
-    )
-});
+import CustomEditor, { CustomEditorRef } from '@/components/custom/CustomEditor';
 
 interface TabConfig {
     id: string;
@@ -26,12 +16,12 @@ interface TabConfig {
 }
 
 const TABS: TabConfig[] = [
-    { id: 'about', label: 'Giới thiệu', key: 'about_us', icon: <Info size={18} />, description: 'Giới thiệu về CNcode, sứ mệnh và tầm nhìn' },
-    { id: 'warranty', label: 'Chính sách bảo hành', key: 'warranty_policy', icon: <Shield size={18} />, description: 'Quy định và điều kiện bảo hành' },
-    { id: 'payment', label: 'Hướng dẫn thanh toán', key: 'payment_guide', icon: <Wallet size={18} />, description: 'Các phương thức thanh toán và hướng dẫn' },
-    { id: 'usage', label: 'Quy trình sử dụng', key: 'usage_process', icon: <Settings size={18} />, description: 'Hướng dẫn sử dụng các tính năng' },
-    { id: 'security', label: 'An toàn bảo mật', key: 'security_policy', icon: <Lock size={18} />, description: 'Chính sách bảo mật thông tin' },
-    { id: 'terms', label: 'Điều khoản sử dụng', key: 'terms_of_use', icon: <FileText size={18} />, description: 'Điều khoản và điều kiện sử dụng dịch vụ' }
+    { id: 'about', label: 'Giới thiệu', key: 'gioiThieu', icon: <Info size={18} />, description: 'Giới thiệu về CNcode, sứ mệnh và tầm nhìn' },
+    { id: 'warranty', label: 'Chính sách bảo hành', key: 'chinhSachBaoHanh', icon: <Shield size={18} />, description: 'Quy định và điều kiện bảo hành' },
+    { id: 'payment', label: 'Hướng dẫn thanh toán', key: 'huongDanThanhToan', icon: <Wallet size={18} />, description: 'Các phương thức thanh toán và hướng dẫn' },
+    { id: 'usage', label: 'Quy trình sử dụng', key: 'quyTrinhSuDung', icon: <Settings size={18} />, description: 'Hướng dẫn sử dụng các tính năng' },
+    { id: 'security', label: 'An toàn bảo mật', key: 'anToanBaoMat', icon: <Lock size={18} />, description: 'Chính sách bảo mật thông tin' },
+    { id: 'terms', label: 'Điều khoản sử dụng', key: 'dieuKhoanSuDung', icon: <FileText size={18} />, description: 'Điều khoản và điều kiện sử dụng dịch vụ' }
 ];
 
 const settingApi = {
@@ -43,12 +33,12 @@ const settingApi = {
     },
     update: async (token: string, key: string, value: string): Promise<{ success: boolean; message?: string }> => {
         const keyToEndpoint = {
-            'about_us': 'gioi-thieu',
-            'terms_of_use': 'dieu-khoan-su-dung',
-            'security_policy': 'an-toan-bao-mat',
-            'warranty_policy': 'chinh-sach-bao-hanh',
-            'payment_guide': 'huong-dan-thanh-toan',
-            'usage_process': 'quy-trinh-su-dung'
+            'gioiThieu': 'gioi-thieu',
+            'dieuKhoanSuDung': 'dieu-khoan-su-dung',
+            'anToanBaoMat': 'an-toan-bao-mat',
+            'chinhSachBaoHanh': 'chinh-sach-bao-hanh',
+            'huongDanThanhToan': 'huong-dan-thanh-toan',
+            'quyTrinhSuDung': 'quy-trinh-su-dung'
         };
         const endpoint = keyToEndpoint[key as keyof typeof keyToEndpoint] || key;
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/system-settings/settings/${endpoint}`, {
@@ -72,7 +62,11 @@ export default function AdminAllSettingsPage() {
     const [savedTab, setSavedTab] = useState<string | null>(null);
     const editorRefs = useRef<Record<string, CustomEditorRef | null>>({});
 
-    const [editorKey, setEditorKey] = useState<number>(0);
+    const activeTabRef = useRef<string>(activeTab);
+
+    useEffect(() => {
+        activeTabRef.current = activeTab;
+    }, [activeTab]);
 
     const fetchSettings = useCallback(async () => {
         if (!token) return;
@@ -97,6 +91,8 @@ export default function AdminAllSettingsPage() {
     const currentTab = TABS.find(tab => tab.id === activeTab);
     const currentKey = currentTab?.key || '';
     const currentValue = settings[currentKey] || '';
+
+    console.log('Debug:', { activeTab, currentKey, currentValue, settings });
 
     const handleSave = async () => {
         if (!token) return;
@@ -126,15 +122,32 @@ export default function AdminAllSettingsPage() {
 
     const handleTabChange = (tabId: string) => {
         setActiveTab(tabId);
-        setEditorKey(prev => prev + 1);
     };
 
     const handleEditorRef = (el: CustomEditorRef | null) => {
         if (el) {
-            editorRefs.current[activeTab] = el;
-            // Không cần setContent vì đã có initialValue prop và key để force remount
+            editorRefs.current[activeTabRef.current] = el;
+            // Set content immediately when ref is set
+            setTimeout(() => {
+                const currentTab = TABS.find(tab => tab.id === activeTabRef.current);
+                const currentKey = currentTab?.key || '';
+                const currentValue = settings[currentKey] || '';
+                console.log('handleEditorRef setting content:', { activeTab: activeTabRef.current, currentValue });
+                el.setContent(currentValue);
+            }, 100);
         }
     };
+
+    useEffect(() => {
+        const editor = editorRefs.current[activeTab];
+        console.log('setContent useEffect:', { activeTab, editor, currentValue });
+        if (editor) {
+            setTimeout(() => {
+                console.log('Calling setContent with:', currentValue);
+                editor.setContent(currentValue);
+            }, 200);
+        }
+    }, [activeTab, currentValue]);
 
     if (loading) {
         return (
@@ -198,11 +211,9 @@ export default function AdminAllSettingsPage() {
                 </div>
 
                 <div className="p-4">
-                    { }
                     <CustomEditor
-                        key={`editor-${activeTab}-${editorKey}`}
+                        key={`editor-${activeTab}`}
                         ref={handleEditorRef}
-                        initialValue={currentValue}
                         uploading={false}
                     />
                 </div>

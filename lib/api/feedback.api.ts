@@ -130,7 +130,7 @@ export const feedbackApi = {
 
     getAllFeedbacksForAdmin: async (token: string, page = 1, limit = 20, status?: string, category?: string, search?: string) => {
         try {
-            let url = `${API_URL}/api/feedback/admin/all?page=${page}&limit=${limit}`;
+            let url = `${API_URL}/api/admin/feedback/all?page=${page}&limit=${limit}`;
             if (status && status !== 'all') url += `&status=${status}`;
             if (category && category !== 'all') url += `&category=${category}`;
             if (search) url += `&search=${encodeURIComponent(search)}`;
@@ -147,7 +147,7 @@ export const feedbackApi = {
 
     updateFeedbackStatus: async (token: string, feedbackId: string, status: string, adminResponse?: string) => {
         try {
-            const response = await fetch(`${API_URL}/api/feedback/admin/${feedbackId}/status`, {
+            const response = await fetch(`${API_URL}/api/admin/feedback/${feedbackId}/status`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -162,20 +162,62 @@ export const feedbackApi = {
         }
     },
 
-    updateFeedbackPriority: async (token: string, feedbackId: string, priority: string): Promise<{ success: boolean; message?: string; data?: IFeedback }> => {
+    togglePinFeedback: async (token: string, feedbackId: string) => {
         try {
-            const response = await fetch(`${API_URL}/api/feedback/admin/${feedbackId}/priority`, {
-                method: 'PUT',
+            const response = await fetch(`${API_URL}/api/admin/feedback/${feedbackId}/pin`, {
+                method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({})
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
             });
             return await response.json();
         } catch (error) {
-            console.error('Update feedback error:', error);
-            return { success: false, message: 'Không thể cập nhật độ ưu tiên' };
+            console.error('Toggle pin feedback error:', error);
+            return { success: false, message: 'Không thể ghim/bỏ ghim' };
+        }
+    },
+
+    toggleLockFeedback: async (token: string, feedbackId: string) => {
+        try {
+            const response = await fetch(`${API_URL}/api/admin/feedback/${feedbackId}/lock`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            return await response.json();
+        } catch (error) {
+            console.error('Toggle lock feedback error:', error);
+            return { success: false, message: 'Không thể khóa/mở khóa' };
+        }
+    },
+
+    adminDeleteFeedback: async (token: string, feedbackId: string) => {
+        try {
+            const response = await fetch(`${API_URL}/api/admin/feedback/${feedbackId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            return await response.json();
+        } catch (error) {
+            console.error('Delete feedback error:', error);
+            return { success: false, message: 'Không thể xóa góp ý' };
+        }
+    },
+
+    getAdminStats: async (token: string) => {
+        try {
+            const response = await fetch(`${API_URL}/api/admin/feedback/stats`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            return await response.json();
+        } catch (error) {
+            console.error('Get stats error:', error);
+            return { success: false, message: 'Không thể lấy thống kê' };
         }
     },
 };

@@ -398,7 +398,7 @@ export default function AdminSendMailPage() {
                             <label className="block text-sm font-bold text-gray-500 uppercase tracking-wider">
                                 Nội dung Email <span className="text-red-500">*</span>
                             </label>
-                            <div className="rounded-xl border border-gray-200 overflow-hidden shadow-inner min-h-[200px]">
+                            <div className="overflow-hidden min-h-[200px]">
                                 <CustomEditor ref={editorRef} />
                             </div>
                             {contentError && (

@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 import { ArrowLeft, Calendar, MessageCircle, Edit2, Trash2, Send } from 'lucide-react';
 import StaticContent from '@/components/common/StaticContent';
 import { ConfirmModalDelete } from '@/components/custom/ConfirmationModal';
+import { getImageUrl } from '@/lib/utils/imageUrl';
 
 const getUserInitial = (name: string): string => name?.charAt(0).toUpperCase() || '?';
 const formatDate = (date: string) => new Date(date).toLocaleDateString('vi-VN', {
@@ -27,8 +28,8 @@ const ReplyItem = ({ reply, isAdmin }: { reply: Reply; isAdmin: boolean }) => {
 
     return (
         <div className={`flex gap-3 ${isAdminReply ? 'bg-blue-50' : 'bg-gray-50'} p-4 rounded-lg`}>
-            <Avatar className="w-8 h-8">
-                {avatarUrl ? <AvatarImage src={avatarUrl} alt={displayName} /> : null}
+            <Avatar className="w-8 h-8 border-2 border-gray-200">
+                {avatarUrl ? <AvatarImage src={getImageUrl(avatarUrl)} alt={displayName} /> : null}
                 <AvatarFallback className={isAdminReply ? 'bg-purple-500 text-white' : 'bg-gray-400 text-white'}>
                     {getUserInitial(displayName)}
                 </AvatarFallback>
@@ -131,7 +132,7 @@ export default function HelpProjectDetailPage() {
     const avatarUrl = project.userId?.avatar;
 
     return (
-        <div className="min-h-screen bg-gray-50 py-8">
+        <div className="min-h-screen bg-gray-50 pt-14 pb-8 lg:pt-8">
             <div className="container mx-auto px-4 max-w-4xl">
                 <div className="flex items-center justify-between mb-6">
                     <Link href="/hotroduan" className="inline-flex items-center gap-2 text-gray-500 hover:text-gray-700 transition">
@@ -172,8 +173,8 @@ export default function HelpProjectDetailPage() {
 
                         <div className="flex items-center gap-4 mb-6 pb-4 border-b border-gray-200">
                             <div className="flex items-center gap-3">
-                                <Avatar className="w-10 h-10">
-                                    {avatarUrl ? <AvatarImage src={avatarUrl} alt={displayName} /> : null}
+                                <Avatar className="w-10 h-10 border-2 border-gray-200">
+                                    {avatarUrl ? <AvatarImage src={getImageUrl(avatarUrl)} alt={displayName} /> : null}
                                     <AvatarFallback className="bg-blue-500 text-white">{getUserInitial(displayName)}</AvatarFallback>
                                 </Avatar>
                                 <div>

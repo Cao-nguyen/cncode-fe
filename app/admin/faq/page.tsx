@@ -23,6 +23,7 @@ import { DashboardCard } from '@/components/custom/DashboardCard';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
+import { getImageUrl } from '@/lib/utils/imageUrl';
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
     ResponsiveContainer, PieChart, Pie, Cell
@@ -90,8 +91,8 @@ const ViewQuestionModal = ({ isOpen, onClose, question }: { isOpen: boolean; onC
                     <div className="p-6">
                         <div className="mb-8 pb-6 border-b border-[var(--cn-border)]">
                             <div className="flex items-center gap-3 mb-4">
-                                <Avatar className="w-12 h-12 border-2 border-[var(--cn-primary)]/10">
-                                    {!question.isAnonymous && question.userId?.avatar ? <AvatarImage src={question.userId.avatar} /> : null}
+                                <Avatar className="w-12 h-12 border-2 border-gray-200">
+                                    {!question.isAnonymous && question.userId?.avatar ? <AvatarImage src={getImageUrl(question.userId.avatar)} /> : null}
                                     <AvatarFallback className={question.isAnonymous ? 'bg-gray-100 text-gray-400' : 'bg-blue-600 text-white font-bold'}>{question.isAnonymous ? '?' : displayName.charAt(0).toUpperCase()}</AvatarFallback>
                                 </Avatar>
                                 <div>
@@ -231,7 +232,8 @@ const AdminQuestionRow = ({
             </td>
             <td className="px-5 py-4">
                 <div className="flex items-center gap-2">
-                    <Avatar className="w-8 h-8 border border-white shadow-sm">
+                    <Avatar className="w-8 h-8 border border-white shadow-sm border-2 border-gray-200">
+                        {!question.isAnonymous && question.userId?.avatar ? <AvatarImage src={getImageUrl(question.userId.avatar)} /> : null}
                         <AvatarFallback className="bg-[var(--cn-primary)]/10 text-[10px] font-bold">
                             {question.isAnonymous ? '?' : question.userId?.fullName?.charAt(0) || '?'}
                         </AvatarFallback>

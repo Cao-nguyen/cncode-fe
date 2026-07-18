@@ -11,6 +11,7 @@ import { CustomTextarea } from '@/components/custom/CustomTextarea';
 import { CustomSelect } from '@/components/custom/CustomSelect';
 import { toast } from 'sonner';
 import { feedbackApi } from '@/lib/api/feedback.api';
+import { getImageUrl } from '@/lib/utils/imageUrl';
 
 import { DeleteConfirmModal } from '@/components/common/DeleteConfirmModal';
 
@@ -227,10 +228,10 @@ export default function FeedbackCard({
                     { }
                     <div className="flex items-start justify-between gap-3 mb-3">
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center overflow-hidden flex-shrink-0">
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center overflow-hidden flex-shrink-0 border-2 border-gray-200">
                                 {getUserAvatar() ? (
                                     <img
-                                        src={getUserAvatar()!}
+                                        src={getImageUrl(getUserAvatar()!)}
                                         alt={getUserName()}
                                         width={40}
                                         height={40}
