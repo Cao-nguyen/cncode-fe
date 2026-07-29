@@ -206,7 +206,18 @@ export default function Review() {
                         />
                     </div>
                 </div>
-            ) : null}
+            ) : (
+                <div className="text-center py-12">
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 inline-block">
+                        <h3 className="text-lg font-semibold text-yellow-800 mb-2">
+                            Tính năng đánh giá đang bảo trì
+                        </h3>
+                        <p className="text-sm text-yellow-700">
+                            Chúng tôi đang nâng cấp hệ thống đánh giá. Vui lòng quay lại sau.
+                        </p>
+                    </div>
+                </div>
+            )}
 
             <RatingModal
                 isOpen={isModalOpen}
