@@ -42,8 +42,23 @@ export default function Review() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isEditMode, setIsEditMode] = useState(false);
     const [editRatingData, setEditRatingData] = useState<EditRatingData | null>(null);
+    const [apiAvailable, setApiAvailable] = useState(true);
 
     const hasUserRated = !!myReview;
+
+    useEffect(() => {
+        // Check if API is available
+        const checkApiAvailability = async () => {
+            try {
+                await fetchStats();
+                setApiAvailable(true);
+            } catch (err) {
+                console.error('Review API not available:', err);
+                setApiAvailable(false);
+            }
+        };
+        checkApiAvailability();
+    }, [fetchStats]);
 
     useEffect(() => {
         if (!socket || !isConnected) return;
@@ -159,37 +174,39 @@ export default function Review() {
 
     return (
         <>
-            <div>
-                <div className="text-center mb-8">
-                    <h2 className="text-2xl sm:text-3xl font-bold text-[var(--cn-text-main)]">
-                        Học viên nói gì về CNcode?
-                    </h2>
-                    <p className="text-sm text-[var(--cn-text-muted)] mt-2">Tham khảo đánh giá từ cộng đồng</p>
-                </div>
+            {apiAvailable ? (
+                <div>
+                    <div className="text-center mb-8">
+                        <h2 className="text-2xl sm:text-3xl font-bold text-[var(--cn-text-main)]">
+                            Học viên nói gì về CNcode?
+                        </h2>
+                        <p className="text-sm text-[var(--cn-text-muted)] mt-2">Tham khảo đánh giá từ cộng đồng</p>
+                    </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <RatingStats
-                        stats={stats || { average: 0, total: 0, distribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 } }}
-                        onOpenModal={handleOpenCreateModal}
-                        hasUserRated={hasUserRated}
-                        onEditRating={() => userRatingAsIRating && handleEditRating(userRatingAsIRating)}
-                        onDeleteRating={() => userRatingAsIRating && handleDeleteRating(userRatingAsIRating._id)}
-                    />
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <RatingStats
+                            stats={stats || { average: 0, total: 0, distribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 } }}
+                            onOpenModal={handleOpenCreateModal}
+                            hasUserRated={hasUserRated}
+                            onEditRating={() => userRatingAsIRating && handleEditRating(userRatingAsIRating)}
+                            onDeleteRating={() => userRatingAsIRating && handleDeleteRating(userRatingAsIRating._id)}
+                        />
 
-                    <RatingSlideshow
-                        ratings={ratingsAsIRating}
-                        loading={loading}
-                        onEdit={handleEditRating}
-                        onDelete={handleDeleteRating}
-                        currentUserId={user?._id}
-                        onRefresh={() => {
-                            fetchReviews(1);
-                            fetchStats();
-                            fetchMyReview();
-                        }}
-                    />
+                        <RatingSlideshow
+                            ratings={ratingsAsIRating}
+                            loading={loading}
+                            onEdit={handleEditRating}
+                            onDelete={handleDeleteRating}
+                            currentUserId={user?._id}
+                            onRefresh={() => {
+                                fetchReviews(1);
+                                fetchStats();
+                                fetchMyReview();
+                            }}
+                        />
+                    </div>
                 </div>
-            </div>
+            ) : null}
 
             <RatingModal
                 isOpen={isModalOpen}

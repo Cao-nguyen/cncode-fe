@@ -17,6 +17,7 @@ export const useAuthStore = create<AuthState>()(
         (set, get) => ({
             ...initialState,
 
+
             setHydrated: (state: boolean) => {
                 set({ _hasHydrated: state });
             },

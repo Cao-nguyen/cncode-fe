@@ -216,15 +216,27 @@ export default function LatestPosts() {
 
     const loopPosts = [...posts, ...posts];
 
+    const btnClass = 'flex w-10 h-10 flex-shrink-0 items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed hover:scale-110 border-2 border-[var(--cn-border)]';
+    const btnStyle = { backgroundColor: 'var(--cn-bg-card)', color: 'var(--cn-primary)', borderRadius: '50%' };
+
     const header = (
-        <div className="text-center mb-8">
-            <h2 className="text-2xl sm:text-3xl font-bold text-[var(--cn-text-main)]">Bài viết mới nhất</h2>
-            <p className="text-sm text-[var(--cn-text-muted)] mt-2">Khám phá kiến thức và kinh nghiệm từ cộng đồng</p>
+        <div className="flex items-center justify-between mb-8">
+            <div>
+                <h2 className="text-2xl sm:text-3xl font-bold text-[var(--cn-text-main)]">Bài viết mới nhất</h2>
+                <p className="text-sm text-[var(--cn-text-muted)] mt-2">Khám phá kiến thức và kinh nghiệm từ cộng đồng</p>
+            </div>
+            {isDesktop && (
+                <div className="flex gap-2">
+                    <button onClick={handlePrev} disabled={!canGoPrev} className={btnClass} style={btnStyle}>
+                        <ChevronLeft className="w-6 h-6" strokeWidth={2.5} />
+                    </button>
+                    <button onClick={handleNext} disabled={!canGoNext} className={btnClass} style={btnStyle}>
+                        <ChevronRight className="w-6 h-6" strokeWidth={2.5} />
+                    </button>
+                </div>
+            )}
         </div>
     );
-
-    const btnClass = 'flex w-10 h-10 flex-shrink-0 items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed hover:scale-110 border-2 border-[var(--cn-border)]';
-    const btnStyle = { backgroundColor: 'var(--cn-bg-card)', color: 'var(--cn-primary)', borderRadius: '8px' };
 
     if (loading) {
         return (
@@ -270,33 +282,23 @@ export default function LatestPosts() {
             {header}
 
             {isDesktop ? (
-                <div className="flex items-center gap-4">
-                    <button onClick={handlePrev} disabled={!canGoPrev} className={btnClass} style={btnStyle}>
-                        <ChevronLeft className="w-6 h-6" strokeWidth={2.5} />
-                    </button>
-
-                    <div className="flex-1 overflow-hidden">
-                        <div
-                            className="flex gap-6 transition-transform duration-500 ease-out"
-                            style={{ transform: `translateX(${translateX})` }}
-                        >
-                            {posts.map(blog => (
-                                <BlogCard
-                                    key={blog._id}
-                                    blog={blog}
-                                    hasImageError={imageErrors[blog._id]}
-                                    onImageError={() => handleImageError(blog._id)}
-                                    style={{
-                                        width: `calc((100% - ${(itemsPerView - 1) * gap}px) / ${itemsPerView})`,
-                                    }}
-                                />
-                            ))}
-                        </div>
+                <div className="overflow-hidden">
+                    <div
+                        className="flex gap-6 transition-transform duration-500 ease-out"
+                        style={{ transform: `translateX(${translateX})` }}
+                    >
+                        {posts.map(blog => (
+                            <BlogCard
+                                key={blog._id}
+                                blog={blog}
+                                hasImageError={imageErrors[blog._id]}
+                                onImageError={() => handleImageError(blog._id)}
+                                style={{
+                                    width: `calc((100% - ${(itemsPerView - 1) * gap}px) / ${itemsPerView})`,
+                                }}
+                            />
+                        ))}
                     </div>
-
-                    <button onClick={handleNext} disabled={!canGoNext} className={btnClass} style={btnStyle}>
-                        <ChevronRight className="w-6 h-6" strokeWidth={2.5} />
-                    </button>
                 </div>
             ) : (
                 <div
