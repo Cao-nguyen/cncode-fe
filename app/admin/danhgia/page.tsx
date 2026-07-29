@@ -43,7 +43,7 @@ export default function AdminRatingsPage() {
 
         try {
             setLoading(true);
-            const result = await reviewApi.getAllReviews(page, PAGE_SIZE);
+            const result = await reviewApi.adminGetAllReviews(page, PAGE_SIZE);
 
             setRatings(result.reviews);
             setTotalPages(result.totalPages);
@@ -137,7 +137,7 @@ export default function AdminRatingsPage() {
 
         try {
             setDeletingId(ratingId);
-            await reviewApi.delete(ratingId);
+            await reviewApi.adminDeleteReview(ratingId);
             toast.success('Xóa đánh giá thành công');
             setRatings(prev => prev.filter(r => r._id !== ratingId));
             setTotal(prev => prev - 1);

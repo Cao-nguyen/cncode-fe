@@ -14,13 +14,7 @@ export function useReview() {
 
     const limit = 10;
 
-    // Check if running on production
-    const isProduction = process.env.NEXT_PUBLIC_API_URL?.includes('cncode.io.vn') || 
-                        (typeof window !== 'undefined' && window.location.hostname.includes('cncode.io.vn'));
-
     const fetchReviews = useCallback(async (pageNum = 1) => {
-        if (isProduction) return;
-        
         try {
             setLoading(true);
             setError(null);
@@ -36,33 +30,27 @@ export function useReview() {
         } finally {
             setLoading(false);
         }
-    }, [limit, isProduction]);
+    }, [limit]);
 
     const fetchStats = useCallback(async () => {
-        if (isProduction) return;
-        
         try {
             const statsData = await reviewApi.getStats();
             setStats(statsData);
         } catch (err) {
             console.error('Error fetching stats:', err);
         }
-    }, [isProduction]);
+    }, []);
 
     const fetchMyReview = useCallback(async () => {
-        if (isProduction) return;
-        
         try {
             const myReviewData = await reviewApi.getMyReview();
             setMyReview(myReviewData);
         } catch (err) {
             console.error('Error fetching my review:', err);
         }
-    }, [isProduction]);
+    }, []);
 
     const createReview = useCallback(async (payload: { rating: number; content: string }) => {
-        if (isProduction) throw new Error('Review feature disabled on production');
-        
         try {
             const newReview = await reviewApi.create(payload);
             setMyReview(newReview);
@@ -74,11 +62,9 @@ export function useReview() {
             console.error('Error creating review:', err);
             throw err;
         }
-    }, [fetchReviews, fetchStats, isProduction]);
+    }, [fetchReviews, fetchStats]);
 
     const updateReview = useCallback(async (id: string, payload: { rating?: number; content?: string }) => {
-        if (isProduction) throw new Error('Review feature disabled on production');
-        
         try {
             const updatedReview = await reviewApi.update(id, payload);
             setMyReview(updatedReview);
@@ -90,11 +76,9 @@ export function useReview() {
             console.error('Error updating review:', err);
             throw err;
         }
-    }, [page, fetchReviews, fetchStats, isProduction]);
+    }, [page, fetchReviews, fetchStats]);
 
     const deleteReview = useCallback(async (id: string) => {
-        if (isProduction) throw new Error('Review feature disabled on production');
-        
         try {
             await reviewApi.delete(id);
             setMyReview(null);
@@ -105,23 +89,19 @@ export function useReview() {
             console.error('Error deleting review:', err);
             throw err;
         }
-    }, [page, fetchReviews, fetchStats, isProduction]);
+    }, [page, fetchReviews, fetchStats]);
 
     const loadMore = useCallback(() => {
-        if (page < totalPages && !isProduction) {
+        if (page < totalPages) {
             fetchReviews(page + 1);
         }
-    }, [page, totalPages, fetchReviews, isProduction]);
+    }, [page, totalPages, fetchReviews]);
 
     useEffect(() => {
-        if (!isProduction) {
-            fetchReviews(1);
-            fetchStats();
-            fetchMyReview();
-        } else {
-            setLoading(false);
-        }
-    }, [fetchReviews, fetchStats, fetchMyReview, isProduction]);
+        fetchReviews(1);
+        fetchStats();
+        fetchMyReview();
+    }, [fetchReviews, fetchStats, fetchMyReview]);
 
     return {
         reviews,

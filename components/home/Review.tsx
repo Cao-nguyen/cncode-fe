@@ -42,17 +42,10 @@ export default function Review() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isEditMode, setIsEditMode] = useState(false);
     const [editRatingData, setEditRatingData] = useState<EditRatingData | null>(null);
-    
-    // Check if running on production - disable review feature
-    const isProduction = process.env.NEXT_PUBLIC_API_URL?.includes('cncode.io.vn') || 
-                        typeof window !== 'undefined' && window.location.hostname.includes('cncode.io.vn');
 
     const hasUserRated = !!myReview;
 
-    // Don't fetch on production
     useEffect(() => {
-        if (isProduction) return;
-
         if (!socket || !isConnected) return;
 
         const handleReviewCreated = (newReview: Review) => {
@@ -92,7 +85,7 @@ export default function Review() {
             socket.off('review_deleted', handleReviewDeleted);
             socket.off('review_stats_updated', handleStatsUpdated);
         };
-    }, [socket, isConnected, fetchReviews, fetchStats, fetchMyReview, isProduction]);
+    }, [socket, isConnected, fetchReviews, fetchStats, fetchMyReview]);
 
     const handleSubmitRating = async (rating: number, content: string) => {
         if (!token) throw new Error('Vui lòng đăng nhập');
@@ -163,22 +156,6 @@ export default function Review() {
         createdAt: myReview.createdAt,
         updatedAt: myReview.updatedAt
     } : null;
-
-    // Disable on production
-    if (isProduction) {
-        return (
-            <div className="text-center py-12">
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 inline-block">
-                    <h3 className="text-lg font-semibold text-yellow-800 mb-2">
-                        Tính năng đánh giá đang bảo trì
-                    </h3>
-                    <p className="text-sm text-yellow-700">
-                        Chúng tôi đang nâng cấp hệ thống đánh giá. Vui lòng quay lại sau.
-                    </p>
-                </div>
-            </div>
-        );
-    }
 
     return (
         <>

@@ -25,6 +25,15 @@ api.interceptors.request.use((config) => {
     return config;
 });
 
+// Admin API - for admin panel
+const adminApi = axios.create({ baseURL: `${API_URL}/api/admin/reviews` });
+
+adminApi.interceptors.request.use((config) => {
+    const token = getToken();
+    if (token) config.headers.Authorization = `Bearer ${token}`;
+    return config;
+});
+
 export const reviewApi = {
     getAllReviews: async (page = 1, limit = 10): Promise<ReviewsResponse> => {
         const { data } = await api.get('/', { params: { page, limit } });
@@ -57,5 +66,15 @@ export const reviewApi = {
 
     delete: async (id: string): Promise<void> => {
         await api.delete(`/${id}`);
-    }
+    },
+
+    // Admin methods
+    adminGetAllReviews: async (page = 1, limit = 10, status?: string): Promise<ReviewsResponse> => {
+        const { data } = await adminApi.get('/', { params: { page, limit, status } });
+        return data;
+    },
+
+    adminDeleteReview: async (id: string): Promise<void> => {
+        await adminApi.delete(`/${id}`);
+    },
 };
