@@ -42,25 +42,17 @@ export default function Review() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isEditMode, setIsEditMode] = useState(false);
     const [editRatingData, setEditRatingData] = useState<EditRatingData | null>(null);
-    const [apiAvailable, setApiAvailable] = useState(true);
+    
+    // Check if running on production - disable review feature
+    const isProduction = process.env.NEXT_PUBLIC_API_URL?.includes('cncode.io.vn') || 
+                        typeof window !== 'undefined' && window.location.hostname.includes('cncode.io.vn');
 
     const hasUserRated = !!myReview;
 
+    // Don't fetch on production
     useEffect(() => {
-        // Check if API is available
-        const checkApiAvailability = async () => {
-            try {
-                await fetchStats();
-                setApiAvailable(true);
-            } catch (err) {
-                console.error('Review API not available:', err);
-                setApiAvailable(false);
-            }
-        };
-        checkApiAvailability();
-    }, [fetchStats]);
+        if (isProduction) return;
 
-    useEffect(() => {
         if (!socket || !isConnected) return;
 
         const handleReviewCreated = (newReview: Review) => {
@@ -100,7 +92,7 @@ export default function Review() {
             socket.off('review_deleted', handleReviewDeleted);
             socket.off('review_stats_updated', handleStatsUpdated);
         };
-    }, [socket, isConnected, fetchReviews, fetchStats, fetchMyReview]);
+    }, [socket, isConnected, fetchReviews, fetchStats, fetchMyReview, isProduction]);
 
     const handleSubmitRating = async (rating: number, content: string) => {
         if (!token) throw new Error('Vui lòng đăng nhập');
@@ -172,52 +164,55 @@ export default function Review() {
         updatedAt: myReview.updatedAt
     } : null;
 
+    // Disable on production
+    if (isProduction) {
+        return (
+            <div className="text-center py-12">
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 inline-block">
+                    <h3 className="text-lg font-semibold text-yellow-800 mb-2">
+                        Tính năng đánh giá đang bảo trì
+                    </h3>
+                    <p className="text-sm text-yellow-700">
+                        Chúng tôi đang nâng cấp hệ thống đánh giá. Vui lòng quay lại sau.
+                    </p>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <>
-            {apiAvailable ? (
-                <div>
-                    <div className="text-center mb-8">
-                        <h2 className="text-2xl sm:text-3xl font-bold text-[var(--cn-text-main)]">
-                            Học viên nói gì về CNcode?
-                        </h2>
-                        <p className="text-sm text-[var(--cn-text-muted)] mt-2">Tham khảo đánh giá từ cộng đồng</p>
-                    </div>
-
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <RatingStats
-                            stats={stats || { average: 0, total: 0, distribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 } }}
-                            onOpenModal={handleOpenCreateModal}
-                            hasUserRated={hasUserRated}
-                            onEditRating={() => userRatingAsIRating && handleEditRating(userRatingAsIRating)}
-                            onDeleteRating={() => userRatingAsIRating && handleDeleteRating(userRatingAsIRating._id)}
-                        />
-
-                        <RatingSlideshow
-                            ratings={ratingsAsIRating}
-                            loading={loading}
-                            onEdit={handleEditRating}
-                            onDelete={handleDeleteRating}
-                            currentUserId={user?._id}
-                            onRefresh={() => {
-                                fetchReviews(1);
-                                fetchStats();
-                                fetchMyReview();
-                            }}
-                        />
-                    </div>
+            <div>
+                <div className="text-center mb-8">
+                    <h2 className="text-2xl sm:text-3xl font-bold text-[var(--cn-text-main)]">
+                        Học viên nói gì về CNcode?
+                    </h2>
+                    <p className="text-sm text-[var(--cn-text-muted)] mt-2">Tham khảo đánh giá từ cộng đồng</p>
                 </div>
-            ) : (
-                <div className="text-center py-12">
-                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 inline-block">
-                        <h3 className="text-lg font-semibold text-yellow-800 mb-2">
-                            Tính năng đánh giá đang bảo trì
-                        </h3>
-                        <p className="text-sm text-yellow-700">
-                            Chúng tôi đang nâng cấp hệ thống đánh giá. Vui lòng quay lại sau.
-                        </p>
-                    </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <RatingStats
+                        stats={stats || { average: 0, total: 0, distribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 } }}
+                        onOpenModal={handleOpenCreateModal}
+                        hasUserRated={hasUserRated}
+                        onEditRating={() => userRatingAsIRating && handleEditRating(userRatingAsIRating)}
+                        onDeleteRating={() => userRatingAsIRating && handleDeleteRating(userRatingAsIRating._id)}
+                    />
+
+                    <RatingSlideshow
+                        ratings={ratingsAsIRating}
+                        loading={loading}
+                        onEdit={handleEditRating}
+                        onDelete={handleDeleteRating}
+                        currentUserId={user?._id}
+                        onRefresh={() => {
+                            fetchReviews(1);
+                            fetchStats();
+                            fetchMyReview();
+                        }}
+                    />
                 </div>
-            )}
+            </div>
 
             <RatingModal
                 isOpen={isModalOpen}
