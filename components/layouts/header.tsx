@@ -1149,7 +1149,7 @@ export default function Header() {
                                         <img
                                             src={iconSrc}
                                             alt={item.title}
-                                            className={`w-5 h-5 ${isActive ? "opacity-100" : "opacity-50"}`}
+                                            className={`w-4 h-4 ${isActive ? "opacity-100" : "opacity-50"}`}
                                             style={{
                                                 filter: isActive
                                                     ? 'brightness(0) saturate(100%) invert(27%) sepia(87%) saturate(2000%) hue-rotate(200deg) brightness(95%) contrast(90%)'
@@ -1160,7 +1160,7 @@ export default function Header() {
                                             <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
                                         )}
                                     </div>
-                                    <span className={`text-[10px] font-medium ${isActive ? "text-[var(--cn-primary)]" : "text-[var(--cn-text-muted)]"}`}>{item.title}</span>
+                                    <span className={`text-[9px] font-medium ${isActive ? "text-[var(--cn-primary)]" : "text-[var(--cn-text-muted)]"}`}>{item.title}</span>
                                 </Link>
                             </div>
                         );
