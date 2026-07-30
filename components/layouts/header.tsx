@@ -1149,7 +1149,7 @@ export default function Header() {
                                         <img
                                             src={iconSrc}
                                             alt={item.title}
-                                            className={`w-4 h-4 ${isActive ? "opacity-100" : "opacity-50"}`}
+                                            className={`w-[18px] h-[18px] ${isActive ? "opacity-100" : "opacity-50"}`}
                                             style={{
                                                 filter: isActive
                                                     ? 'brightness(0) saturate(100%) invert(27%) sepia(87%) saturate(2000%) hue-rotate(200deg) brightness(95%) contrast(90%)'
