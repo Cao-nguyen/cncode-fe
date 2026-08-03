@@ -14,6 +14,7 @@ export interface AIChat {
   lastMessageAt: string;
   createdAt: string;
   updatedAt: string;
+  isPinned: boolean;
 }
 
 export interface RateLimitInfo {
@@ -106,5 +107,29 @@ export const aitutorApi = {
       }
     });
     return handleResponse<{ success: boolean; data: RateLimitInfo }>(response);
+  },
+
+  pinChat: async (chatId: string, isPinned: boolean, token: string): Promise<{ success: boolean; data: AIChat }> => {
+    const response = await fetch(`${API_URL}/api/aitutor/chats/${chatId}/pin`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({ isPinned })
+    });
+    return handleResponse<{ success: boolean; data: AIChat }>(response);
+  },
+
+  renameChat: async (chatId: string, title: string, token: string): Promise<{ success: boolean; data: AIChat }> => {
+    const response = await fetch(`${API_URL}/api/aitutor/chats/${chatId}/rename`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({ title })
+    });
+    return handleResponse<{ success: boolean; data: AIChat }>(response);
   }
 };
