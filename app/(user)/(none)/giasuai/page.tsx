@@ -420,7 +420,6 @@ export default function AITutorPage() {
   // Auto-wrap math expressions in $...$ if AI forgot to wrap them
   const autoWrapMath = (text: string): string => {
     let result = text;
-    let inCodeBlock = false;
 
     // First, handle code blocks - don't process inside them
     const codeBlocks: string[] = [];
@@ -434,18 +433,23 @@ export default function AITutorPage() {
     result = result.replace(/\\\//g, '\\div ');
     result = result.replace(/\\_/g, '_');
 
-    // Detect and wrap math expressions
-    // Pattern 1: Equations with = and math symbols
-    result = result.replace(/([a-zA-ZΔα-ωΩ][a-zA-Z0-9]*\s*=\s*[^$\n]+)/g, '$$$1$$');
-    
-    // Pattern 2: Lines with math symbols and numbers
-    result = result.replace(/([a-zA-Z][a-zA-Z0-9]*\s*[\*\/\^]\s*[a-zA-Z0-9]+)/g, '$$$1$$');
-    
-    // Pattern 3: Numbers with units and operations
-    result = result.replace(/(\d+[\.,]?\d*\s*[\*\/\^]\s*\d+[\.,]?\d*)/g, '$$$1$$');
-    
-    // Pattern 4: Units like m/s, kg, N with numbers
-    result = result.replace(/(\d+[\.,]?\d*\s*(m\/s|kg|N))/g, '$$$1$$');
+    // Detect and wrap math expressions - very conservative patterns only
+    // Only process line by line to avoid breaking across lines
+    const lines = result.split('\n');
+    const processedLines = lines.map(line => {
+      // Skip if already has $ or is empty
+      if (line.includes('$') || !line.trim()) return line;
+
+      // Pattern 1: Simple number operations like "50 * 9.8" (single operation only)
+      line = line.replace(/(\d+[\.,]?\d*\s*[\*\/\^]\s*\d+[\.,]?\d*)/g, '$$$1$$');
+      
+      // Pattern 2: Simple variable equations like "F = ma" (short only)
+      line = line.replace(/\b([a-zA-Z]{1,4}\s*=\s*[a-zA-Z]{1,4})\b/g, '$$$1$$');
+
+      return line;
+    });
+
+    result = processedLines.join('\n');
 
     // Restore code blocks
     result = result.replace(/__CODE_BLOCK_(\d+)__/g, (_, index) => codeBlocks[parseInt(index)]);
