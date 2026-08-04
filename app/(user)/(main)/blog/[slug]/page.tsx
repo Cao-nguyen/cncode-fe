@@ -376,6 +376,26 @@ export default function BlogDetailPage() {
         return `${mins}:${secs.toString().padStart(2, '0')}`;
     };
 
+    const processBlogImages = (content: string): string => {
+        if (!content) return content;
+
+        // Create a temporary div to parse HTML
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = content;
+
+        // Find all img tags
+        const images = tempDiv.querySelectorAll('img');
+        images.forEach(img => {
+            const src = img.getAttribute('src');
+            if (src) {
+                // Process the image URL through getImageUrl
+                img.setAttribute('src', getImageUrl(src));
+            }
+        });
+
+        return tempDiv.innerHTML;
+    };
+
     if (loading) {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -473,7 +493,7 @@ export default function BlogDetailPage() {
 
                         <div className="mb-6">
                             <div className="prose prose-lg max-w-none">
-                                <StaticContent content={blog.content} />
+                                <StaticContent content={processBlogImages(blog.content)} />
                             </div>
                         </div>
 
