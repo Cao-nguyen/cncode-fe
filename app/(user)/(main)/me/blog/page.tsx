@@ -9,6 +9,7 @@ import { Plus, Edit, Eye, Heart, Clock, Loader2, Trash2, AlertCircle, RefreshCw,
 import { useAuthStore } from '@/store/auth.store';
 import { CustomButton } from '@/components/custom/CustomButton';
 import { ConfirmModalDelete } from '@/components/custom/ConfirmationModal';
+import { getImageUrl } from '@/lib/utils/imageUrl';
 
 const CATEGORIES = [
     { value: 'technology', label: 'Công nghệ' },
@@ -171,7 +172,7 @@ export default function MyBlogsPage() {
                                         <Link href={`/blog/${blog.slug}`}>
                                             <div className="w-full h-[200px] overflow-hidden relative" style={{ backgroundColor: 'var(--cn-bg-section)' }}>
                                                 <img
-                                                    src={blog.thumbnail}
+                                                    src={getImageUrl(blog.thumbnail)}
                                                     alt={blog.title}
                                                     className="w-full h-full object-cover group-hover:scale-105 transition"
                                                     style={{ aspectRatio: '1500/1000' }}
