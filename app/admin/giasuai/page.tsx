@@ -9,12 +9,14 @@ import {
   Clock,
   User,
   Loader2,
-  Shield
+  Shield,
+  Trash2
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { CustomInputSearch } from '@/components/custom/CustomInputSearch';
-import { DashboardCard } from '@/components/custom/DashboardCard';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { DeleteConfirmModal } from '@/components/common/DeleteConfirmModal';
 
 interface AdminChat {
   _id: string;
@@ -42,7 +44,12 @@ export default function AITutorAdminPage() {
   const [filteredMessages, setFilteredMessages] = useState<Array<{
     chat: AdminChat;
     message: { role: 'user' | 'assistant'; content: string; timestamp: string };
+    originalIndex: number;
   }>>([]);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
+  const [selectedMessageIndex, setSelectedMessageIndex] = useState<number | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     if (!token || user?.role !== 'admin') {
@@ -53,11 +60,11 @@ export default function AITutorAdminPage() {
   }, [token, user]);
 
   useEffect(() => {
-    // Flatten all user messages from all chats
+    // Flatten all user messages from all chats with their actual indices
     const allMessages = chats.flatMap(chat =>
       chat.messages
         .filter(m => m.role === 'user')
-        .map(msg => ({ chat, message: msg }))
+        .map((msg, originalIndex) => ({ chat, message: msg, originalIndex }))
     );
 
     if (searchTerm) {
@@ -98,6 +105,46 @@ export default function AITutorAdminPage() {
     return format(date, 'HH:mm - dd/MM/yyyy', { locale: vi });
   };
 
+  const deleteMessage = async (chatId: string, messageIndex: number) => {
+    setSelectedChatId(chatId);
+    setSelectedMessageIndex(messageIndex);
+    setDeleteModalOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!selectedChatId || selectedMessageIndex === null) return;
+
+    try {
+      setIsDeleting(true);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/aitutor/admin/chats/${selectedChatId}/messages/${selectedMessageIndex}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      const data = await response.json();
+      if (data.success) {
+        toast.success('Đã xóa tin nhắn');
+        // Update chat with the returned data (includes both user and assistant messages removed)
+        setChats(prev => prev.map(chat => {
+          if (chat._id === selectedChatId) {
+            return data.data;
+          }
+          return chat;
+        }));
+        setDeleteModalOpen(false);
+        setSelectedChatId(null);
+        setSelectedMessageIndex(null);
+      } else {
+        toast.error(data.message || 'Lỗi khi xóa tin nhắn');
+      }
+    } catch (error) {
+      toast.error('Lỗi khi xóa tin nhắn');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const stats = {
     totalChats: chats.length,
     totalMessages: chats.reduce((acc, chat) => acc + chat.messages.filter(m => m.role === 'user').length, 0),
@@ -129,27 +176,33 @@ export default function AITutorAdminPage() {
 
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-          <DashboardCard
-            title="Tổng cuộc trò chuyện"
-            value={stats.totalChats}
-            icon={<MessageSquare className="w-5 h-5" />}
-            iconBgColor="#EEF2FF"
-            iconColor="#4F46E5"
-          />
-          <DashboardCard
-            title="Tổng tin nhắn"
-            value={stats.totalMessages}
-            icon={<MessageSquare className="w-5 h-5" />}
-            iconBgColor="#ECFDF5"
-            iconColor="#059669"
-          />
-          <DashboardCard
-            title="Người dùng"
-            value={stats.totalUsers}
-            icon={<Users className="w-5 h-5" />}
-            iconBgColor="#E0F2FE"
-            iconColor="#0284C7"
-          />
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Tổng cuộc trò chuyện</CardTitle>
+              <MessageSquare className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.totalChats}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Tổng tin nhắn</CardTitle>
+              <MessageSquare className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.totalMessages}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Người dùng</CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.totalUsers}</div>
+            </CardContent>
+          </Card>
         </div>
 
       </div>
@@ -184,10 +237,11 @@ export default function AITutorAdminPage() {
                     <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Người dùng</th>
                     <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Tin nhắn</th>
                     <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Thời gian</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Hành động</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
-                  {filteredMessages.map(({ chat, message }, index) => (
+                  {filteredMessages.map(({ chat, message, originalIndex }, index) => (
                     <tr key={`${chat._id}-${index}`} className="hover:bg-gray-50 transition">
                       <td className="px-6 py-4">
                         <div>
@@ -201,6 +255,15 @@ export default function AITutorAdminPage() {
                       <td className="px-6 py-4 text-sm text-gray-600">
                         {formatMessageTime(message.timestamp)}
                       </td>
+                      <td className="px-6 py-4">
+                        <button
+                          onClick={() => deleteMessage(chat._id, originalIndex)}
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
+                          title="Xóa tin nhắn"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -209,6 +272,19 @@ export default function AITutorAdminPage() {
           </div>
         )}
       </div>
+
+      <DeleteConfirmModal
+        isOpen={deleteModalOpen}
+        onClose={() => {
+          setDeleteModalOpen(false);
+          setSelectedChatId(null);
+          setSelectedMessageIndex(null);
+        }}
+        onConfirm={handleDeleteConfirm}
+        isDeleting={isDeleting}
+        title="Xóa tin nhắn"
+        message="Bạn có chắc chắn muốn xóa tin nhắn này không?"
+      />
     </div>
   );
 }

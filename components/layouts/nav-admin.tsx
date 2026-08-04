@@ -26,6 +26,7 @@ const PAGE_TITLES: Record<string, string> = {
     "/admin/khoahoc": "Quản lý khoá học",
     "/admin/khampha": "Khám phá",
     "/admin/thongtin": "Thông tin",
+    "/admin/giasuai": "Gia sư AI",
 };
 
 interface NavAdminProps {

@@ -25,6 +25,7 @@ import {
     Target,
     Video,
     Trophy,
+    Bot,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -109,6 +110,11 @@ const menuItems = [
                 title: "Hướng nghiệp",
                 link: "/admin/huongnghiep",
                 icon: <Target size={18} />,
+            },
+            {
+                title: "Gia sư AI",
+                link: "/admin/giasuai",
+                icon: <Bot size={18} />,
             },
         ],
     },
