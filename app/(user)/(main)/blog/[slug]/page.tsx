@@ -9,6 +9,7 @@ import { Calendar, Eye, User, Loader2, Heart, Bookmark, MessageCircle, Tag, Fold
 import StaticContent from '@/components/common/StaticContent';
 import CommentSection from '@/components/comment/CommentSection';
 import { useAuthStore } from '@/store/auth.store';
+import { getImageUrl } from '@/lib/utils/imageUrl';
 import { SendGiftButton } from '@/components/gift/SendGiftButton';
 import { BlogGiftList } from '@/components/gift/BlogGiftList';
 
@@ -558,7 +559,7 @@ export default function BlogDetailPage() {
                                             <div className="flex gap-3">
                                                 {relatedBlog.thumbnail && (
                                                     <img
-                                                        src={relatedBlog.thumbnail}
+                                                        src={getImageUrl(relatedBlog.thumbnail)}
                                                         alt={relatedBlog.title}
                                                         className="w-20 h-20 object-cover rounded-lg flex-shrink-0"
                                                     />
