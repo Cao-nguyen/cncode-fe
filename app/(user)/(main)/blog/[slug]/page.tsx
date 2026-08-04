@@ -409,28 +409,30 @@ export default function BlogDetailPage() {
                 <div className="mb-6">
                     <h1 className="text-3xl font-bold text-gray-800 mb-4">{blog.title}</h1>
 
-                    {/* Tags & Category + Metadata on same row */}
-                    <div className="flex flex-wrap items-center gap-4 pb-4 border-b border-gray-200">
-                        <span className="px-3 py-1.5 bg-gradient-to-r from-purple-500 to-indigo-500 text-white rounded-lg text-sm font-medium shadow-sm">
-                            {categoryLabels[blog.category] || blog.category}
-                        </span>
-                        {blog.tags && blog.tags.length > 0 && blog.tags.map((tag, index) => (
-                            <span key={index} className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition">
-                                #{tag}
+                    {/* Tags & Category + Metadata */}
+                    <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3 sm:gap-4 pb-4 border-b border-gray-200">
+                        <div className="flex flex-wrap items-center gap-2">
+                            <span className="px-3 py-1.5 bg-gradient-to-r from-purple-500 to-indigo-500 text-white rounded-lg text-sm font-medium shadow-sm">
+                                {categoryLabels[blog.category] || blog.category}
                             </span>
-                        ))}
-                        <div className="flex items-center gap-4 text-sm text-gray-600">
-                            <div className="flex items-center gap-2">
-                                <Calendar className="w-4 h-4" />
-                                {formatDate(blog.publishedAt || blog.createdAt)}
+                            {blog.tags && blog.tags.length > 0 && blog.tags.map((tag, index) => (
+                                <span key={index} className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition">
+                                    #{tag}
+                                </span>
+                            ))}
+                        </div>
+                        <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs sm:text-sm text-gray-600">
+                            <div className="flex items-center gap-1.5 sm:gap-2">
+                                <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                                <span className="whitespace-nowrap">{formatDate(blog.publishedAt || blog.createdAt)}</span>
                             </div>
-                            <div className="flex items-center gap-2">
-                                <Eye className="w-4 h-4" />
-                                {blog.viewCount} lượt xem
+                            <div className="flex items-center gap-1.5 sm:gap-2">
+                                <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                                <span className="whitespace-nowrap">{blog.viewCount}</span>
                             </div>
-                            <div className="flex items-center gap-2">
-                                <Heart className="w-4 h-4" />
-                                {likeCount} lượt thích
+                            <div className="flex items-center gap-1.5 sm:gap-2">
+                                <Heart className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                                <span className="whitespace-nowrap">{likeCount}</span>
                             </div>
                         </div>
                     </div>
@@ -441,16 +443,16 @@ export default function BlogDetailPage() {
                     {/* Left: Blog Content */}
                     <div className="lg:col-span-2">
                         {/* Text-to-Speech Player */}
-                        <div className="mb-6 bg-white rounded-2xl border border-gray-200 p-3">
-                            <div className="flex items-center gap-4">
+                        <div className="mb-6 bg-white rounded-2xl border border-gray-200 p-3 sm:p-4">
+                            <div className="flex items-center gap-3 sm:gap-4">
                                 <button
                                     onClick={handlePlayPause}
-                                    className="w-10 h-10 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full flex items-center justify-center text-white hover:opacity-90 transition shrink-0"
+                                    className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full flex items-center justify-center text-white hover:opacity-90 transition shrink-0"
                                 >
-                                    {isPlaying ? <Pause className="w-4 h-4" data-filled={true} /> : <Play className="w-4 h-4 ml-0.5" data-filled={true} />}
+                                    {isPlaying ? <Pause className="w-4 h-4 sm:w-5 sm:h-5" data-filled={true} /> : <Play className="w-4 h-4 sm:w-5 sm:h-5 ml-0.5" data-filled={true} />}
                                 </button>
-                                <div className="text-base font-bold text-gray-800 shrink-0">Nghe đọc bài</div>
-                                <div className="flex-1 flex items-center gap-3">
+                                <div className="hidden sm:block text-base font-bold text-gray-800 shrink-0">Nghe đọc bài</div>
+                                <div className="flex-1 flex items-center gap-2 sm:gap-3">
                                     <input
                                         type="range"
                                         min="0"
@@ -463,7 +465,7 @@ export default function BlogDetailPage() {
                                             background: `linear-gradient(to right, #8b5cf6 0%, #6366f1 ${(currentTime / totalTime) * 100}%, #e5e7eb ${(currentTime / totalTime) * 100}%, #e5e7eb 100%)`
                                         }}
                                     />
-                                    <div className="text-sm text-gray-600 shrink-0">{formatTime(currentTime)}</div>
+                                    <div className="text-xs sm:text-sm text-gray-600 shrink-0 min-w-[3rem]">{formatTime(currentTime)}</div>
                                 </div>
                             </div>
                         </div>
@@ -486,35 +488,35 @@ export default function BlogDetailPage() {
 
                         {/* Like & Bookmark Actions */}
                         <div className="mb-6">
-                            <div className="flex items-center gap-4">
+                            <div className="flex flex-wrap items-center gap-2 sm:gap-4">
                                 <button
                                     onClick={handleLike}
-                                    className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition ${liked
+                                    className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg border transition ${liked
                                         ? 'border-red-200 bg-red-50 text-red-500'
                                         : 'border-gray-200 hover:bg-gray-50'
                                         }`}
                                 >
                                     <Heart
-                                        className="w-5 h-5"
+                                        className="w-4 h-4 sm:w-5 sm:h-5"
                                         data-filled={liked}
                                         fill={liked ? 'currentColor' : 'none'}
                                     />
-                                    <span className="text-sm font-medium">{likeCount}</span>
+                                    <span className="text-xs sm:text-sm font-medium">{likeCount}</span>
                                 </button>
 
                                 <button
                                     onClick={handleBookmark}
-                                    className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition ${bookmarked
+                                    className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg border transition ${bookmarked
                                         ? 'border-yellow-200 bg-yellow-50 text-yellow-500'
                                         : 'border-gray-200 hover:bg-gray-50'
                                         }`}
                                 >
                                     <Bookmark
-                                        className="w-5 h-5"
+                                        className="w-4 h-4 sm:w-5 sm:h-5"
                                         data-filled={bookmarked}
                                         fill={bookmarked ? 'currentColor' : 'none'}
                                     />
-                                    <span className="text-sm font-medium">Lưu</span>
+                                    <span className="text-xs sm:text-sm font-medium">Lưu</span>
                                 </button>
 
                                 <SendGiftButton
@@ -524,9 +526,9 @@ export default function BlogDetailPage() {
                                     targetId={blog._id}
                                 />
 
-                                <div className="flex items-center gap-2 px-4 py-2 text-gray-600">
-                                    <MessageCircle className="w-5 h-5" />
-                                    <span className="text-sm font-medium">{blog.commentCount} bình luận</span>
+                                <div className="flex items-center gap-2 px-3 sm:px-4 py-2 text-gray-600">
+                                    <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5" />
+                                    <span className="text-xs sm:text-sm font-medium">{blog.commentCount} bình luận</span>
                                 </div>
                             </div>
                         </div>

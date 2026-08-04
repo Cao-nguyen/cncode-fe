@@ -32,6 +32,8 @@ import {
     Settings,
     Flame,
     Download,
+    ChevronDown,
+    Check,
 } from 'lucide-react';
 
 import { format } from 'date-fns';
@@ -127,9 +129,12 @@ function AdminUsersPageContent() {
     const [coinReason, setCoinReason] = useState('');
     const [actionLoading, setActionLoading] = useState<{ type: string; userId: string } | null>(null);
     const [isExporting, setIsExporting] = useState(false);
+    const [isPerPageOpen, setIsPerPageOpen] = useState(false);
+    const PAGINATION_OPTIONS = [5, 10, 25, 50];
 
     const initialFetchDone = useRef(false);
     const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const perPageDropdownRef = useRef<HTMLDivElement>(null);
 
     // Responsive
     useEffect(() => {
@@ -141,6 +146,17 @@ function AdminUsersPageContent() {
         checkScreen();
         window.addEventListener('resize', checkScreen);
         return () => window.removeEventListener('resize', checkScreen);
+    }, []);
+
+    // Click outside handler for items per page dropdown
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (perPageDropdownRef.current && !perPageDropdownRef.current.contains(event.target as Node)) {
+                setIsPerPageOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
     const fetchUsers = useCallback(async (showLoading = true, keepExistingData = false) => {
@@ -430,26 +446,47 @@ function AdminUsersPageContent() {
 
     const getPageNumbers = () => {
         const pages: (number | string)[] = [];
-        const maxVisible = isMobile ? 3 : 5;
-        if (totalPages <= maxVisible) {
-            for (let i = 1; i <= totalPages; i++) pages.push(i);
+
+        if (totalPages <= 5) {
+            // Nếu có ≤ 5 trang, hiển thị tất cả
+            for (let i = 1; i <= totalPages; i++) {
+                pages.push(i);
+            }
         } else {
-            if (page <= (isMobile ? 2 : 3)) {
-                for (let i = 1; i <= maxVisible; i++) pages.push(i);
+            // Luôn có trang 1
+            pages.push(1);
+
+            if (page > 3) {
                 pages.push('...');
-                pages.push(totalPages);
-            } else if (page >= totalPages - (isMobile ? 1 : 2)) {
-                pages.push(1);
+            }
+
+            // Tính các trang ở giữa
+            let start = Math.max(2, page - 1);
+            let end = Math.min(totalPages - 1, page + 1);
+
+            // Điều chỉnh nếu ở đầu hoặc cuối
+            if (page <= 3) {
+                start = 2;
+                end = Math.min(4, totalPages - 1);
+            } else if (page >= totalPages - 2) {
+                start = Math.max(totalPages - 3, 2);
+                end = totalPages - 1;
+            }
+
+            for (let i = start; i <= end; i++) {
+                pages.push(i);
+            }
+
+            if (page < totalPages - 2) {
                 pages.push('...');
-                for (let i = totalPages - (maxVisible - 1); i <= totalPages; i++) pages.push(i);
-            } else {
-                pages.push(1);
-                pages.push('...');
-                for (let i = page - (isMobile ? 0 : 1); i <= page + (isMobile ? 0 : 1); i++) pages.push(i);
-                pages.push('...');
+            }
+
+            // Luôn có trang cuối
+            if (totalPages > 1) {
                 pages.push(totalPages);
             }
         }
+
         return pages;
     };
 
@@ -789,56 +826,105 @@ function AdminUsersPageContent() {
                 </div>
 
                 {/* Pagination */}
-                {activeTab === 'all' && totalPages > 1 && (
-                    <div className="border-t border-gray-200 px-5 py-4 flex items-center justify-between flex-wrap gap-3">
-                        <div className="text-sm text-gray-500">
-                            Hiển thị {(page - 1) * pageSize + 1} - {Math.min(page * pageSize, totalUsers)} trên {totalUsers}
+                {activeTab === 'all' && totalUsers > 0 && (
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 border-t border-gray-200 dark:border-gray-800">
+                        <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                            <span>Hiển thị</span>
+                            <div className="relative" ref={perPageDropdownRef}>
+                                <button
+                                    type="button"
+                                    onClick={() => setIsPerPageOpen(!isPerPageOpen)}
+                                    className="min-w-[60px] px-3 py-1 text-sm font-medium border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 transition-all duration-200 focus:outline-none cursor-pointer flex items-center justify-between gap-2 border-gray-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 dark:focus:border-blue-400"
+                                >
+                                    <span>{pageSize}</span>
+                                    <ChevronDown className={`w-3.5 h-3.5 text-gray-600 dark:text-gray-400 transition-transform duration-200 ${isPerPageOpen ? 'rotate-180' : ''}`} />
+                                </button>
+                                {isPerPageOpen && (
+                                    <div className="absolute z-[9999] w-full bottom-full mb-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg overflow-hidden">
+                                        {PAGINATION_OPTIONS.map((option) => (
+                                            <button
+                                                key={option}
+                                                type="button"
+                                                onClick={() => {
+                                                    setPageSize(option);
+                                                    setPage(1);
+                                                    setIsPerPageOpen(false);
+                                                }}
+                                                className="w-full px-3 py-2 text-sm text-left hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center justify-between transition-colors"
+                                            >
+                                                <span className="text-gray-900 dark:text-gray-100">{option}</span>
+                                                {pageSize === option && (
+                                                    <Check className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                                                )}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                            <span>{(page - 1) * pageSize + 1} - {Math.min(page * pageSize, totalUsers)} của {totalUsers} bản ghi</span>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1">
+                            {/* Về trang đầu */}
                             <button
                                 onClick={() => setPage(1)}
                                 disabled={page === 1}
-                                className="p-2 border border-gray-200 rounded-lg disabled:opacity-40 hover:bg-gray-50 transition"
+                                className="p-2 rounded-md border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                                title="Trang đầu"
                             >
-                                <ChevronsLeft size={16} />
+                                <ChevronsLeft className="w-4 h-4" />
                             </button>
+
+                            {/* Lùi 1 trang */}
                             <button
-                                onClick={() => setPage(p => Math.max(1, p - 1))}
+                                onClick={() => setPage(prev => Math.max(1, prev - 1))}
                                 disabled={page === 1}
-                                className="p-2 border border-gray-200 rounded-lg disabled:opacity-40 hover:bg-gray-50 transition"
+                                className="p-2 rounded-md border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
                             >
-                                <ChevronLeft size={16} />
+                                <ChevronLeft className="w-4 h-4" />
                             </button>
 
-                            {getPageNumbers().map((p, idx) => (
-                                <button
-                                    key={idx}
-                                    onClick={() => typeof p === 'number' && setPage(p)}
-                                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${page === p
-                                        ? 'bg-blue-500 text-white'
-                                        : typeof p === 'number'
-                                            ? 'border border-gray-200 hover:bg-gray-50 text-gray-700'
-                                            : 'text-gray-400 cursor-default'
-                                        }`}
-                                    disabled={typeof p !== 'number'}
-                                >
-                                    {p}
-                                </button>
-                            ))}
+                            {/* Các ô số trang */}
+                            <div className="flex items-center gap-1">
+                                {getPageNumbers().map((p, idx) =>
+                                    typeof p === 'number' ? (
+                                        <button
+                                            key={idx}
+                                            onClick={() => setPage(p)}
+                                            className={`px-3 py-1.5 text-sm font-medium rounded-md transition ${page === p
+                                                ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800'
+                                                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 border border-gray-300 dark:border-gray-700'
+                                                }`}
+                                        >
+                                            {p}
+                                        </button>
+                                    ) : (
+                                        <span
+                                            key={idx}
+                                            className="px-3 py-1.5 text-sm text-gray-400 dark:text-gray-600 select-none"
+                                        >
+                                            {p}
+                                        </span>
+                                    )
+                                )}
+                            </div>
 
+                            {/* Tới 1 trang */}
                             <button
-                                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                                onClick={() => setPage(prev => Math.min(totalPages, prev + 1))}
                                 disabled={page === totalPages}
-                                className="p-2 border border-gray-200 rounded-lg disabled:opacity-40 hover:bg-gray-50 transition"
+                                className="p-2 rounded-md border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
                             >
-                                <ChevronRight size={16} />
+                                <ChevronRight className="w-4 h-4" />
                             </button>
+
+                            {/* Về trang cuối */}
                             <button
                                 onClick={() => setPage(totalPages)}
                                 disabled={page === totalPages}
-                                className="p-2 border border-gray-200 rounded-lg disabled:opacity-40 hover:bg-gray-50 transition"
+                                className="p-2 rounded-md border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                                title="Trang cuối"
                             >
-                                <ChevronsRight size={16} />
+                                <ChevronsRight className="w-4 h-4" />
                             </button>
                         </div>
                     </div>

@@ -83,7 +83,7 @@ export default function BlogPage() {
         <div className="min-h-screen pt-16 md:pt-8 pb-8" style={{ backgroundColor: 'var(--cn-bg-main)' }}>
             <div className="container mx-auto px-4 max-w-7xl">
                 <div className="mb-8">
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                         <div>
                             <h1 className="text-3xl font-bold mb-2 flex items-center gap-2" style={{ color: 'var(--cn-text-main)' }}>
                                 <FileText className="w-8 h-8" style={{ color: 'var(--cn-primary)' }} />
@@ -110,12 +110,28 @@ export default function BlogPage() {
                                 size="medium"
                             />
                         </div>
-                        <div className="w-full md:w-48">
-                            <CustomSelect
-                                value={category}
-                                onChange={(value) => setCategory(value)}
-                                options={CATEGORIES}
-                            />
+                        <div className="p-1 rounded-lg overflow-x-auto" style={{ backgroundColor: 'var(--cn-bg-card)', border: '1px solid var(--cn-border)' }}>
+                            <div className="flex items-center gap-1 min-w-max">
+                                {CATEGORIES.map((cat) => (
+                                    <button
+                                        key={cat.value}
+                                        onClick={() => {
+                                            setCategory(cat.value);
+                                            setPage(1);
+                                        }}
+                                        className={`px-3 py-1.5 text-xs font-semibold transition-colors whitespace-nowrap rounded-md ${category === cat.value
+                                            ? 'text-blue-600 dark:text-blue-400'
+                                            : 'hover:bg-gray-50 dark:hover:bg-gray-900/30'
+                                            }`}
+                                        style={{
+                                            backgroundColor: category === cat.value ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
+                                            color: category === cat.value ? 'var(--cn-primary)' : 'var(--cn-text-sub)'
+                                        }}
+                                    >
+                                        {cat.label}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
                     </div>
                 </div>

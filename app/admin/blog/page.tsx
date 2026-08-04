@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { blogApi, Blog } from '@/lib/api/blog.api';
 import { commentApi } from '@/lib/api/comment.api';
 import { toast } from 'sonner';
-import { Plus, Edit2, Trash2, Eye, EyeOff, Loader2, FileText, TrendingUp, X, BarChart3, LineChart, Heart, MessageSquare, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import { Plus, Edit2, Trash2, Eye, EyeOff, Loader2, FileText, TrendingUp, X, BarChart3, LineChart, Heart, MessageSquare, CheckCircle, XCircle, AlertCircle, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ChevronDown, Check } from 'lucide-react';
 import { LineChart as RechartsLineChart, Line, BarChart as RechartsBarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, Legend } from 'recharts';
 import { CustomButton } from '@/components/custom/CustomButton';
 import { CustomInput } from '@/components/custom/CustomInput';
@@ -27,8 +27,8 @@ const CATEGORIES = [
 
 const FILTER_OPTIONS = [
     { value: 'all', label: 'Tất cả' },
-    { value: 'true', label: 'Đã xuất bản' },
-    { value: 'false', label: 'Bản nháp' }
+    { value: 'waiting', label: 'Chờ' },
+    { value: 'success', label: 'Thành công' }
 ];
 
 const STATUS_OPTIONS = [
@@ -58,6 +58,11 @@ function AdminBlogPageContent() {
     const [totalPages, setTotalPages] = useState(1);
     const [searchInput, setSearchInput] = useState('');
     const [filterPublished, setFilterPublished] = useState('all');
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(5);
+    const [isPerPageOpen, setIsPerPageOpen] = useState(false);
+    const PAGINATION_OPTIONS = [5, 10, 25, 50];
+    const perPageDropdownRef = useRef<HTMLDivElement>(null);
 
     const [showModal, setShowModal] = useState(false);
     const [editingBlog, setEditingBlog] = useState<Blog | null>(null);
@@ -102,6 +107,17 @@ function AdminBlogPageContent() {
         fetchCharts();
     }, []);
 
+    // Click outside handler for items per page dropdown
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (perPageDropdownRef.current && !perPageDropdownRef.current.contains(event.target as Node)) {
+                setIsPerPageOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
     // Client-side filtering with normalized search
     useEffect(() => {
         let filtered = [...blogs];
@@ -115,14 +131,24 @@ function AdminBlogPageContent() {
             );
         }
 
-        // Filter by published status
-        if (filterPublished !== 'all') {
-            const isPublished = filterPublished === 'true';
-            filtered = filtered.filter(blog => blog.isPublished === isPublished);
+        // Filter by status
+        if (filterPublished === 'waiting') {
+            // Show blogs that need review or are drafts
+            filtered = filtered.filter(blog => blog.needsReview || !blog.isPublished);
+        } else if (filterPublished === 'success') {
+            // Show successfully published blogs
+            filtered = filtered.filter(blog => blog.isPublished && !blog.needsReview);
         }
 
         setFilteredBlogs(filtered);
+        setCurrentPage(1); // Reset to page 1 when filters change
     }, [blogs, searchInput, filterPublished]);
+
+    // Pagination logic
+    const totalFilteredPages = Math.ceil(filteredBlogs.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const paginatedBlogs = filteredBlogs.slice(startIndex, endIndex);
 
     // Helper functions to update state without full reload
     const updateBlogInList = (updatedBlog: Blog) => {
@@ -458,16 +484,16 @@ function AdminBlogPageContent() {
             title: 'Tổng bài viết',
             value: stats.total,
             icon: <FileText className="w-4 h-4" />,
-            iconBgColor: '#EFF6FF',
-            iconColor: '#3B82F6',
+            iconBgColor: '#F3F4F6',
+            iconColor: '#6B7280',
         },
         {
             key: 'published',
             title: 'Đã xuất bản',
             value: stats.published,
             icon: <Eye className="w-4 h-4" />,
-            iconBgColor: '#DCFCE7',
-            iconColor: '#16A34A',
+            iconBgColor: '#ECFDF5',
+            iconColor: '#059669',
         },
         {
             key: 'draft',
@@ -490,7 +516,7 @@ function AdminBlogPageContent() {
     return (
         <div className="space-y-6 pb-8 px-4">
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
                     <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-gray-100">Quản lý Blog</h1>
                     <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Quản lý bài viết blog</p>
@@ -504,48 +530,57 @@ function AdminBlogPageContent() {
             {/* Stats Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {cardConfigs.map((card) => (
-                    <DashboardCard
+                    <div
                         key={card.key}
-                        title={card.title}
-                        value={card.value}
-                        icon={card.icon}
-                        iconBgColor={card.iconBgColor}
-                        iconColor={card.iconColor}
-                    />
+                        className="bg-white dark:bg-gray-950 rounded-lg border border-gray-200 dark:border-gray-800 p-6"
+                    >
+                        <div className="flex items-center gap-3">
+                            <div
+                                className="p-2.5 rounded-md"
+                                style={{ backgroundColor: card.iconBgColor }}
+                            >
+                                <div style={{ color: card.iconColor }}>{card.icon}</div>
+                            </div>
+                            <div>
+                                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{card.title}</p>
+                                <p className="text-2xl font-semibold text-gray-900 dark:text-gray-100">{card.value}</p>
+                            </div>
+                        </div>
+                    </div>
                 ))}
             </div>
 
             {/* Charts */}
             <div className="space-y-4 sm:space-y-6">
                 {/* Growth Chart - Line Chart */}
-                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 sm:p-6 w-full">
-                    <div className="flex items-center gap-2 mb-3 sm:mb-4">
-                        <LineChart className="w-4 h-4 sm:w-5 sm:h-5 text-blue-500 flex-shrink-0" />
-                        <h3 className="text-base sm:text-lg font-semibold text-gray-800 dark:text-gray-100">
+                <div className="bg-white dark:bg-gray-950 rounded-lg border border-gray-200 dark:border-gray-800 p-6 w-full">
+                    <div className="flex items-center gap-2 mb-4">
+                        <LineChart className="w-4 h-4 text-gray-500 dark:text-gray-400 flex-shrink-0" />
+                        <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">
                             Bài viết mới (10 ngày gần nhất)
                         </h3>
                     </div>
                     {growthData.length > 0 ? (
                         <ResponsiveContainer width="100%" height={250}>
                             <RechartsLineChart data={growthData}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.1} />
+                                <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" opacity={0.5} />
                                 <XAxis
                                     dataKey="date"
                                     stroke="#9CA3AF"
-                                    tick={{ fill: '#9CA3AF', fontSize: 11 }}
+                                    tick={{ fill: '#6B7280', fontSize: 12 }}
                                     tickFormatter={(value) => new Date(value).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })}
                                 />
                                 <YAxis
                                     stroke="#9CA3AF"
-                                    tick={{ fill: '#9CA3AF', fontSize: 11 }}
+                                    tick={{ fill: '#6B7280', fontSize: 12 }}
                                     allowDecimals={false}
                                 />
                                 <Tooltip
                                     contentStyle={{
-                                        backgroundColor: '#1F2937',
-                                        border: 'none',
-                                        borderRadius: '8px',
-                                        color: '#F9FAFB'
+                                        backgroundColor: '#FFFFFF',
+                                        border: '1px solid #E5E7EB',
+                                        borderRadius: '6px',
+                                        color: '#111827'
                                     }}
                                     labelFormatter={(value) => new Date(value).toLocaleDateString('vi-VN')}
                                     formatter={(value) => [value, 'Số bài viết']}
@@ -553,15 +588,15 @@ function AdminBlogPageContent() {
                                 <Line
                                     type="monotone"
                                     dataKey="count"
-                                    stroke="#3B82F6"
+                                    stroke="#6366F1"
                                     strokeWidth={2}
-                                    dot={{ fill: '#3B82F6', r: 4 }}
-                                    activeDot={{ r: 6 }}
+                                    dot={{ fill: '#6366F1', r: 3 }}
+                                    activeDot={{ r: 5 }}
                                 />
                             </RechartsLineChart>
                         </ResponsiveContainer>
                     ) : (
-                        <div className="flex items-center justify-center h-[250px] text-gray-400 dark:text-gray-500">
+                        <div className="flex items-center justify-center h-[250px] text-gray-400 dark:text-gray-600">
                             <div className="text-center">
                                 <BarChart3 className="w-12 h-12 mx-auto mb-2 opacity-50" />
                                 <p className="text-sm">Chưa có dữ liệu</p>
@@ -570,123 +605,148 @@ function AdminBlogPageContent() {
                     )}
                 </div>
 
-                {/* Top Viewed Chart - Vertical Bar */}
-                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 sm:p-6 w-full">
-                    <div className="flex items-center gap-2 mb-3 sm:mb-4">
-                        <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5 text-green-500 flex-shrink-0" />
-                        <h3 className="text-base sm:text-lg font-semibold text-gray-800 dark:text-gray-100">Top 5 lượt xem</h3>
+                {/* Top Viewed and Top Liked Charts - Same Row */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+                    {/* Top Viewed Chart */}
+                    <div className="bg-white dark:bg-gray-950 rounded-lg border border-gray-200 dark:border-gray-800 p-6 w-full">
+                        <div className="flex items-center gap-2 mb-4">
+                            <BarChart3 className="w-4 h-4 text-gray-500 dark:text-gray-400 flex-shrink-0" />
+                            <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">Top 5 lượt xem</h3>
+                        </div>
+                        <ResponsiveContainer width="100%" height={300}>
+                            <RechartsBarChart data={topViewedData}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" opacity={0.5} />
+                                <XAxis
+                                    dataKey="title"
+                                    stroke="#9CA3AF"
+                                    tick={{ fill: '#6B7280', fontSize: 11 }}
+                                    angle={-45}
+                                    textAnchor="end"
+                                    height={100}
+                                    interval={0}
+                                />
+                                <YAxis stroke="#9CA3AF" tick={{ fill: '#6B7280', fontSize: 12 }} />
+                                <Tooltip
+                                    contentStyle={{
+                                        backgroundColor: '#FFFFFF',
+                                        border: '1px solid #E5E7EB',
+                                        borderRadius: '6px',
+                                        color: '#111827'
+                                    }}
+                                    formatter={(value) => [value, 'Lượt xem']}
+                                />
+                                <Bar dataKey="viewCount" fill="#10B981" radius={[4, 4, 0, 0]} />
+                            </RechartsBarChart>
+                        </ResponsiveContainer>
                     </div>
-                    <ResponsiveContainer width="100%" height={300}>
-                        <RechartsBarChart data={topViewedData}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.1} />
-                            <XAxis
-                                dataKey="title"
-                                stroke="#9CA3AF"
-                                tick={{ fill: '#9CA3AF', fontSize: 10 }}
-                                angle={-45}
-                                textAnchor="end"
-                                height={100}
-                                interval={0}
-                            />
-                            <YAxis stroke="#9CA3AF" tick={{ fill: '#9CA3AF', fontSize: 11 }} />
-                            <Tooltip
-                                contentStyle={{
-                                    backgroundColor: '#1F2937',
-                                    border: 'none',
-                                    borderRadius: '8px',
-                                    color: '#F9FAFB'
-                                }}
-                                formatter={(value) => [value, 'Lượt xem']}
-                            />
-                            <Bar dataKey="viewCount" fill="#10B981" radius={[8, 8, 0, 0]} />
-                        </RechartsBarChart>
-                    </ResponsiveContainer>
-                </div>
 
-                {/* Top Liked Chart - Vertical Bar */}
-                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 sm:p-6 w-full">
-                    <div className="flex items-center gap-2 mb-3 sm:mb-4">
-                        <Heart data-filled={true} fill="#EC4899" className="w-4 h-4 sm:w-5 sm:h-5 text-pink-500 flex-shrink-0" />
-                        <h3 className="text-base sm:text-lg font-semibold text-gray-800 dark:text-gray-100">Top 5 yêu thích</h3>
+                    {/* Top Liked Chart */}
+                    <div className="bg-white dark:bg-gray-950 rounded-lg border border-gray-200 dark:border-gray-800 p-6 w-full">
+                        <div className="flex items-center gap-2 mb-4">
+                            <Heart data-filled={true} fill="#EC4899" className="w-4 h-4 text-gray-500 dark:text-gray-400 flex-shrink-0" />
+                            <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">Top 5 yêu thích</h3>
+                        </div>
+                        <ResponsiveContainer width="100%" height={300}>
+                            <RechartsBarChart data={topLikedData}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" opacity={0.5} />
+                                <XAxis
+                                    dataKey="title"
+                                    stroke="#9CA3AF"
+                                    tick={{ fill: '#6B7280', fontSize: 11 }}
+                                    angle={-45}
+                                    textAnchor="end"
+                                    height={100}
+                                    interval={0}
+                                />
+                                <YAxis stroke="#9CA3AF" tick={{ fill: '#6B7280', fontSize: 12 }} />
+                                <Tooltip
+                                    contentStyle={{
+                                        backgroundColor: '#FFFFFF',
+                                        border: '1px solid #E5E7EB',
+                                        borderRadius: '6px',
+                                        color: '#111827'
+                                    }}
+                                    formatter={(value) => [value, 'Lượt thích']}
+                                />
+                                <Bar dataKey="likeCount" fill="#EC4899" radius={[4, 4, 0, 0]} />
+                            </RechartsBarChart>
+                        </ResponsiveContainer>
                     </div>
-                    <ResponsiveContainer width="100%" height={300}>
-                        <RechartsBarChart data={topLikedData}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.1} />
-                            <XAxis
-                                dataKey="title"
-                                stroke="#9CA3AF"
-                                tick={{ fill: '#9CA3AF', fontSize: 10 }}
-                                angle={-45}
-                                textAnchor="end"
-                                height={100}
-                                interval={0}
-                            />
-                            <YAxis stroke="#9CA3AF" tick={{ fill: '#9CA3AF', fontSize: 11 }} />
-                            <Tooltip
-                                contentStyle={{
-                                    backgroundColor: '#1F2937',
-                                    border: 'none',
-                                    borderRadius: '8px',
-                                    color: '#F9FAFB'
-                                }}
-                                formatter={(value) => [value, 'Lượt thích']}
-                            />
-                            <Bar dataKey="likeCount" fill="#EC4899" radius={[8, 8, 0, 0]} />
-                        </RechartsBarChart>
-                    </ResponsiveContainer>
                 </div>
             </div>
 
             {/* Filters */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-                <div className="flex flex-col md:flex-row gap-3">
-                    <div className="flex-1 min-w-[280px]">
-                        <CustomInputSearch
-                            placeholder="Tìm kiếm bài viết..."
-                            value={searchInput}
-                            onChange={handleSearch}
-                            size="medium"
-                        />
-                    </div>
-                    <div className="w-full md:w-48">
-                        <CustomSelect
-                            value={filterPublished}
-                            onChange={(value) => setFilterPublished(value)}
-                            options={FILTER_OPTIONS}
-                        />
+            <div className="flex flex-col md:flex-row gap-3">
+                <div className="flex-1 min-w-[280px]">
+                    <CustomInputSearch
+                        placeholder="Tìm kiếm bài viết..."
+                        value={searchInput}
+                        onChange={handleSearch}
+                        size="medium"
+                    />
+                </div>
+                <div className="p-1 bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-lg">
+                    <div className="flex items-center gap-1">
+                        <button
+                            onClick={() => setFilterPublished('all')}
+                            className={`px-3 py-1.5 text-xs font-semibold transition-colors whitespace-nowrap rounded-md ${filterPublished === 'all'
+                                ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
+                                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900/30'
+                                }`}
+                        >
+                            Tất cả
+                        </button>
+                        <button
+                            onClick={() => setFilterPublished('waiting')}
+                            className={`px-3 py-1.5 text-xs font-semibold transition-colors whitespace-nowrap rounded-md ${filterPublished === 'waiting'
+                                ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
+                                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900/30'
+                                }`}
+                        >
+                            Chờ
+                        </button>
+                        <button
+                            onClick={() => setFilterPublished('success')}
+                            className={`px-3 py-1.5 text-xs font-semibold transition-colors whitespace-nowrap rounded-md ${filterPublished === 'success'
+                                ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
+                                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900/30'
+                                }`}
+                        >
+                            Thành công
+                        </button>
                     </div>
                 </div>
             </div>
 
             {/* Table */}
             {loading ? (
-                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+                <div className="bg-white dark:bg-gray-950 rounded-lg border border-gray-200 dark:border-gray-800 p-6">
                     <TableSkeleton rows={10} cols={6} />
                 </div>
             ) : (
-                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+                <div className="bg-white dark:bg-gray-950 rounded-lg border border-gray-200 dark:border-gray-800">
                     <div className="overflow-x-auto">
                         <table className="w-full min-w-[800px]">
-                            <thead className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
+                            <thead className="bg-gray-50 dark:bg-gray-900/50 border-b border-gray-200 dark:border-gray-800">
                                 <tr>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Ảnh</th>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Tiêu đề</th>
-                                    <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Trạng thái</th>
-                                    <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Lượt xem</th>
-                                    <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Tim</th>
-                                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Thao tác</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase" style={{ width: '100px' }}>Ảnh</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase" style={{ width: 'calc(100% - 100px - 120px - 100px - 80px - 120px)' }}>Tiêu đề</th>
+                                    <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase" style={{ width: '120px' }}>Trạng thái</th>
+                                    <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase" style={{ width: '100px' }}>Lượt xem</th>
+                                    <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase" style={{ width: '80px' }}>Tim</th>
+                                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase" style={{ width: '120px' }}>Thao tác</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                                {filteredBlogs.length === 0 ? (
+                            <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
+                                {paginatedBlogs.length === 0 ? (
                                     <tr>
                                         <td colSpan={6} className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
                                             Không tìm thấy bài viết nào
                                         </td>
                                     </tr>
                                 ) : (
-                                    filteredBlogs.map((blog) => (
-                                        <tr key={blog._id} className="hover:bg-gray-50 dark:hover:bg-gray-900/50">
+                                    paginatedBlogs.map((blog) => (
+                                        <tr key={blog._id} className="hover:bg-gray-50 dark:hover:bg-gray-900/30">
                                             <td className="px-4 py-3">
                                                 <div className="relative">
                                                     {blog.thumbnail && (
@@ -706,16 +766,16 @@ function AdminBlogPageContent() {
                                                                 return `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/upload/proxy/file/${blog.thumbnail}`;
                                                             })()}
                                                             alt=""
-                                                            className="w-16 h-16 rounded object-cover"
+                                                            className="w-16 h-16 rounded-md object-cover"
                                                         />
                                                     )}
                                                     {blog.needsReview && (
-                                                        <div className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full border-2 border-white dark:border-gray-800" title="Cần duyệt lại" />
+                                                        <div className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full border-2 border-white dark:border-gray-950" title="Cần duyệt lại" />
                                                     )}
                                                 </div>
                                             </td>
                                             <td className="px-4 py-3">
-                                                <div className="font-medium text-gray-800 dark:text-gray-200 text-sm">{blog.title}</div>
+                                                <div className="font-medium text-gray-900 dark:text-gray-100 text-sm">{blog.title}</div>
                                                 <div className="text-xs text-gray-500 dark:text-gray-400">{blog.author.fullName}</div>
                                             </td>
                                             <td className="px-4 py-3">
@@ -728,43 +788,43 @@ function AdminBlogPageContent() {
                                                         className="inline-flex items-center"
                                                     >
                                                         {blog.isPublished ? (
-                                                            <span className="px-3 py-1.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-full text-xs font-medium whitespace-nowrap">
+                                                            <span className="px-2.5 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-md text-xs font-medium whitespace-nowrap">
                                                                 Đã xuất bản
                                                             </span>
                                                         ) : (
-                                                            <span className="px-3 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full text-xs font-medium whitespace-nowrap">
+                                                            <span className="px-2.5 py-1 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-md text-xs font-medium whitespace-nowrap">
                                                                 Bản nháp
                                                             </span>
                                                         )}
                                                     </button>
                                                 </div>
                                             </td>
-                                            <td className="px-4 py-3 text-center text-sm text-gray-600 dark:text-gray-300">{blog.viewCount}</td>
+                                            <td className="px-4 py-3 text-center text-sm text-gray-600 dark:text-gray-400">{blog.viewCount}</td>
                                             <td className="px-4 py-3 text-center">
                                                 <div className="flex items-center justify-center gap-1">
                                                     <Heart className="w-4 h-4 text-red-500" data-filled={true} />
-                                                    <span className="text-sm text-gray-600 dark:text-gray-300">{blog.likeCount}</span>
+                                                    <span className="text-sm text-gray-600 dark:text-gray-400">{blog.likeCount}</span>
                                                 </div>
                                             </td>
                                             <td className="px-4 py-3">
                                                 <div className="flex items-center justify-end gap-1">
                                                     <button
                                                         onClick={() => setViewBlog(blog)}
-                                                        className="p-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg transition"
+                                                        className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-md transition"
                                                         title="Xem chi tiết"
                                                     >
                                                         <Eye className="w-4 h-4" />
                                                     </button>
                                                     <button
                                                         onClick={() => handleOpenModal(blog)}
-                                                        className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
+                                                        className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-md transition"
                                                         title="Chỉnh sửa"
                                                     >
                                                         <Edit2 className="w-4 h-4" />
                                                     </button>
                                                     <button
                                                         onClick={() => setDeleteConfirm(blog)}
-                                                        className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg transition"
+                                                        className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 rounded-md transition"
                                                         title="Xóa"
                                                     >
                                                         <Trash2 className="w-4 h-4" />
@@ -777,6 +837,102 @@ function AdminBlogPageContent() {
                             </tbody>
                         </table>
                     </div>
+
+                    {/* Pagination Controls */}
+                    {filteredBlogs.length > 0 && (
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 border-t border-gray-200 dark:border-gray-800">
+                            <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                                <span>Hiển thị</span>
+                                <div className="relative" ref={perPageDropdownRef}>
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsPerPageOpen(!isPerPageOpen)}
+                                        className="min-w-[60px] px-3 py-1 text-sm font-medium border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 transition-all duration-200 focus:outline-none cursor-pointer flex items-center justify-between gap-2 border-gray-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 dark:focus:border-blue-400"
+                                    >
+                                        <span>{itemsPerPage}</span>
+                                        <ChevronDown className={`w-3.5 h-3.5 text-gray-600 dark:text-gray-400 transition-transform duration-200 ${isPerPageOpen ? 'rotate-180' : ''}`} />
+                                    </button>
+                                    {isPerPageOpen && (
+                                        <div className="absolute z-[9999] w-full bottom-full mb-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg overflow-hidden">
+                                            {PAGINATION_OPTIONS.map((option) => (
+                                                <button
+                                                    key={option}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setItemsPerPage(option);
+                                                        setCurrentPage(1);
+                                                        setIsPerPageOpen(false);
+                                                    }}
+                                                    className="w-full px-3 py-2 text-sm text-left hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center justify-between transition-colors"
+                                                >
+                                                    <span className="text-gray-900 dark:text-gray-100">{option}</span>
+                                                    {itemsPerPage === option && (
+                                                        <Check className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                                                    )}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                                <span>{startIndex + 1} - {Math.min(endIndex, filteredBlogs.length)} của {filteredBlogs.length} bản ghi</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                {/* Về trang đầu */}
+                                <button
+                                    onClick={() => setCurrentPage(1)}
+                                    disabled={currentPage === 1}
+                                    className="p-2 rounded-md border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                                    title="Trang đầu"
+                                >
+                                    <ChevronsLeft className="w-4 h-4" />
+                                </button>
+
+                                {/* Lùi 1 trang */}
+                                <button
+                                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                    disabled={currentPage === 1}
+                                    className="p-2 rounded-md border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                                >
+                                    <ChevronLeft className="w-4 h-4" />
+                                </button>
+
+                                {/* Các ô số trang */}
+                                <div className="flex items-center gap-1">
+                                    {Array.from({ length: totalFilteredPages }, (_, i) => i + 1).map((pageNum) => (
+                                        <button
+                                            key={pageNum}
+                                            onClick={() => setCurrentPage(pageNum)}
+                                            className={`px-3 py-1.5 text-sm font-medium rounded-md transition ${currentPage === pageNum
+                                                ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800'
+                                                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 border border-gray-300 dark:border-gray-700'
+                                                }`}
+                                        >
+                                            {pageNum}
+                                        </button>
+                                    ))}
+                                </div>
+
+                                {/* Tới 1 trang */}
+                                <button
+                                    onClick={() => setCurrentPage(prev => Math.min(totalFilteredPages, prev + 1))}
+                                    disabled={currentPage === totalFilteredPages}
+                                    className="p-2 rounded-md border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                                >
+                                    <ChevronRight className="w-4 h-4" />
+                                </button>
+
+                                {/* Về trang cuối */}
+                                <button
+                                    onClick={() => setCurrentPage(totalFilteredPages)}
+                                    disabled={currentPage === totalFilteredPages}
+                                    className="p-2 rounded-md border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                                    title="Trang cuối"
+                                >
+                                    <ChevronsRight className="w-4 h-4" />
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
 
