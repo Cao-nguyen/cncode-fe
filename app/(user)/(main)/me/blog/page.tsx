@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { blogApi, Blog } from '@/lib/api/blog.api';
 import { toast } from 'sonner';
-import { Plus, Edit, Eye, Heart, Clock, Loader2, Trash2, AlertCircle, RefreshCw } from 'lucide-react';
+import { Plus, Edit, Eye, Heart, Clock, Loader2, Trash2, AlertCircle, RefreshCw, Home, ChevronRight } from 'lucide-react';
 import { useAuthStore } from '@/store/auth.store';
 import { CustomButton } from '@/components/custom/CustomButton';
 import { ConfirmModalDelete } from '@/components/custom/ConfirmationModal';
@@ -88,8 +88,18 @@ export default function MyBlogsPage() {
     };
 
     return (
-        <div className="min-h-screen py-8" style={{ backgroundColor: 'var(--cn-bg-main)' }}>
+        <div className="min-h-screen pt-16 md:pt-8 pb-8" style={{ backgroundColor: 'var(--cn-bg-main)' }}>
             <div className="container mx-auto px-4 max-w-7xl">
+                {/* Breadcrumb */}
+                <nav className="flex items-center gap-2 text-sm text-gray-600 mb-6">
+                    <Link href="/" className="flex items-center gap-1 hover:text-gray-900 transition">
+                        <Home className="w-4 h-4" />
+                        <span>Trang chủ</span>
+                    </Link>
+                    <ChevronRight className="w-4 h-4 text-gray-400" />
+                    <span className="text-gray-900 font-medium">Bài viết của tôi</span>
+                </nav>
+
                 <div className="mb-8">
                     <div className="flex items-center justify-between">
                         <div>

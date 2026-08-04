@@ -4,7 +4,7 @@ import React, { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { blogApi } from '@/lib/api/blog.api';
 import { toast } from 'sonner';
-import { ArrowLeft } from 'lucide-react';
+import { Home, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import CustomEditor, { CustomEditorRef } from '@/components/custom/CustomEditor';
 import { CustomInput } from '@/components/custom/CustomInput';
@@ -90,11 +90,19 @@ export default function CreateBlogPage() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 py-8">
+        <div className="min-h-screen bg-gray-50 pt-16 md:pt-8 pb-8">
             <div className="container mx-auto px-4 max-w-4xl">
-                <Link href="/me/blog" className="inline-flex items-center gap-2 text-gray-500 hover:text-gray-700 mb-6">
-                    <ArrowLeft className="w-4 h-4" /> Quay lại
-                </Link>
+                {/* Breadcrumb */}
+                <nav className="flex items-center gap-2 text-sm text-gray-600 mb-6">
+                    <Link href="/" className="flex items-center gap-1 hover:text-gray-900 transition">
+                        <Home className="w-4 h-4" />
+                        <span>Trang chủ</span>
+                    </Link>
+                    <ChevronRight className="w-4 h-4 text-gray-400" />
+                    <Link href="/me/blog" className="hover:text-gray-900 transition">Bài viết của tôi</Link>
+                    <ChevronRight className="w-4 h-4 text-gray-400" />
+                    <span className="text-gray-900 font-medium">Tạo bài viết mới</span>
+                </nav>
 
                 <div className="bg-white rounded-xl border border-gray-200 p-6">
                     <h1 className="text-2xl font-bold text-gray-800 mb-6">Tạo bài viết mới</h1>

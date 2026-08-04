@@ -78,24 +78,31 @@ export const blogApi = {
         return response.data;
     },
 
+    getLatestBlogs: async (limit?: number): Promise<BlogsResponse> => {
+        const queryParams = new URLSearchParams();
+        if (limit) queryParams.append('limit', limit.toString());
+        const response = await apiClient.get(`/blog?${queryParams.toString()}`);
+        return response.data;
+    },
+
     // Admin APIs
     getBlogStats: async (): Promise<ApiResponse<BlogStats>> => {
-        const response = await apiClient.get('/blog/admin/stats');
+        const response = await apiClient.get('/admin/blog/stats');
         return response.data;
     },
 
     getBlogGrowthChart: async (days?: number): Promise<ApiResponse<BlogGrowthData[]>> => {
-        const response = await apiClient.get(`/blog/admin/growth-chart${days ? `?days=${days}` : ''}`);
+        const response = await apiClient.get(`/admin/blog/growth-chart${days ? `?days=${days}` : ''}`);
         return response.data;
     },
 
     getTopViewedBlogs: async (limit?: number): Promise<ApiResponse<TopBlogData[]>> => {
-        const response = await apiClient.get(`/blog/admin/top-viewed${limit ? `?limit=${limit}` : ''}`);
+        const response = await apiClient.get(`/admin/blog/top-viewed${limit ? `?limit=${limit}` : ''}`);
         return response.data;
     },
 
     getTopLikedBlogs: async (limit?: number): Promise<ApiResponse<TopBlogData[]>> => {
-        const response = await apiClient.get(`/blog/admin/top-liked${limit ? `?limit=${limit}` : ''}`);
+        const response = await apiClient.get(`/admin/blog/top-liked${limit ? `?limit=${limit}` : ''}`);
         return response.data;
     },
 
@@ -107,17 +114,22 @@ export const blogApi = {
         if (params?.category) queryParams.append('category', params.category);
         if (params?.isPublished) queryParams.append('isPublished', params.isPublished);
 
-        const response = await apiClient.get(`/blog/admin/all?${queryParams.toString()}`);
+        const response = await apiClient.get(`/admin/blog/all?${queryParams.toString()}`);
         return response.data;
     },
 
     getBlogById: async (id: string): Promise<BlogResponse> => {
-        const response = await apiClient.get(`/blog/admin/${id}`);
+        const response = await apiClient.get(`/admin/blog/${id}`);
+        return response.data;
+    },
+
+    getMyBlogById: async (id: string): Promise<BlogResponse> => {
+        const response = await apiClient.get(`/blog/my/${id}`);
         return response.data;
     },
 
     createBlog: async (data: CreateBlogData): Promise<BlogResponse> => {
-        const response = await apiClient.post('/blog/admin', data);
+        const response = await apiClient.post('/admin/blog', data);
         return response.data;
     },
 
@@ -134,17 +146,17 @@ export const blogApi = {
     },
 
     updateBlog: async (id: string, data: UpdateBlogData): Promise<BlogResponse> => {
-        const response = await apiClient.put(`/blog/admin/${id}`, data);
+        const response = await apiClient.put(`/admin/blog/${id}`, data);
         return response.data;
     },
 
     deleteBlog: async (id: string): Promise<{ success: boolean; message: string }> => {
-        const response = await apiClient.delete(`/blog/admin/${id}`);
+        const response = await apiClient.delete(`/admin/blog/${id}`);
         return response.data;
     },
 
     togglePublish: async (id: string): Promise<BlogResponse> => {
-        const response = await apiClient.patch(`/blog/admin/${id}/publish`);
+        const response = await apiClient.patch(`/admin/blog/${id}/publish`);
         return response.data;
     },
 

@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { blogApi, Blog } from '@/lib/api/blog.api';
 import { toast } from 'sonner';
-import { ArrowLeft, Loader2, Trash2, AlertCircle } from 'lucide-react';
+import { Home, ChevronRight, Loader2, Trash2, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import CustomEditor, { CustomEditorRef } from '@/components/custom/CustomEditor';
 import { CustomInput } from '@/components/custom/CustomInput';
@@ -44,7 +44,7 @@ export default function EditBlogPage() {
         if (!token) return;
 
         try {
-            const res = await blogApi.getBlogById(params.id as string);
+            const res = await blogApi.getMyBlogById(params.id as string);
             if (res.success) {
                 setBlog(res.data);
                 setTitle(res.data.title);
@@ -152,11 +152,19 @@ export default function EditBlogPage() {
     if (!blog) return null;
 
     return (
-        <div className="min-h-screen bg-gray-50 py-8">
+        <div className="min-h-screen bg-gray-50 pt-16 md:pt-8 pb-8">
             <div className="container mx-auto px-4 max-w-4xl">
-                <Link href="/me/blog" className="inline-flex items-center gap-2 text-gray-500 hover:text-gray-700 mb-6">
-                    <ArrowLeft className="w-4 h-4" /> Quay lại
-                </Link>
+                {/* Breadcrumb */}
+                <nav className="flex items-center gap-2 text-sm text-gray-600 mb-6">
+                    <Link href="/" className="flex items-center gap-1 hover:text-gray-900 transition">
+                        <Home className="w-4 h-4" />
+                        <span>Trang chủ</span>
+                    </Link>
+                    <ChevronRight className="w-4 h-4 text-gray-400" />
+                    <Link href="/me/blog" className="hover:text-gray-900 transition">Bài viết của tôi</Link>
+                    <ChevronRight className="w-4 h-4 text-gray-400" />
+                    <span className="text-gray-900 font-medium">Chỉnh sửa bài viết</span>
+                </nav>
 
                 <div className="bg-white rounded-xl border border-gray-200 p-6">
                     <div className="flex items-center justify-between mb-6">

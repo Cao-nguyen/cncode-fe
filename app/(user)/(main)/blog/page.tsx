@@ -80,7 +80,7 @@ export default function BlogPage() {
     };
 
     return (
-        <div className="min-h-screen py-8" style={{ backgroundColor: 'var(--cn-bg-main)' }}>
+        <div className="min-h-screen pt-16 md:pt-8 pb-8" style={{ backgroundColor: 'var(--cn-bg-main)' }}>
             <div className="container mx-auto px-4 max-w-7xl">
                 <div className="mb-8">
                     <div className="flex items-center justify-between">
@@ -100,7 +100,7 @@ export default function BlogPage() {
                     </div>
                 </div>
 
-                <div className="rounded-xl p-4 mb-6" style={{ backgroundColor: 'var(--cn-bg-card)', border: '1px solid var(--cn-border)' }}>
+                <div className="rounded-xl mb-6">
                     <div className="flex flex-col md:flex-row gap-3">
                         <div className="flex-1">
                             <CustomInputSearch
