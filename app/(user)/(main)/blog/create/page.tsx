@@ -93,15 +93,16 @@ export default function CreateBlogPage() {
         <div className="min-h-screen bg-gray-50 pt-16 md:pt-8 pb-8">
             <div className="container mx-auto px-4 max-w-4xl">
                 {/* Breadcrumb */}
-                <nav className="flex items-center gap-2 text-sm text-gray-600 mb-6">
+                <nav className="flex items-center gap-2 text-xs md:text-sm text-gray-600 mb-6">
                     <Link href="/" className="flex items-center gap-1 hover:text-gray-900 transition">
-                        <Home className="w-4 h-4" />
-                        <span>Trang chủ</span>
+                        <Home className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                        <span className="hidden sm:inline">Trang chủ</span>
+                        <span className="sm:hidden">Home</span>
                     </Link>
-                    <ChevronRight className="w-4 h-4 text-gray-400" />
-                    <Link href="/me/blog" className="hover:text-gray-900 transition">Bài viết của tôi</Link>
-                    <ChevronRight className="w-4 h-4 text-gray-400" />
-                    <span className="text-gray-900 font-medium">Tạo bài viết mới</span>
+                    <ChevronRight className="w-3.5 h-3.5 md:w-4 md:h-4 text-gray-400" />
+                    <Link href="/me/blog" className="hover:text-gray-900 transition truncate max-w-[120px] sm:max-w-xs">Bài viết của tôi</Link>
+                    <ChevronRight className="w-3.5 h-3.5 md:w-4 md:h-4 text-gray-400" />
+                    <span className="text-gray-900 font-medium truncate max-w-[100px] sm:max-w-xs">Tạo bài viết mới</span>
                 </nav>
 
                 <div className="bg-white rounded-xl border border-gray-200 p-6">
