@@ -9,6 +9,9 @@ import { Send, Plus, Trash2, MessageSquare, Clock, Zap, ArrowLeft, Sparkles, Bot
 import { CustomButton } from '@/components/custom/CustomButton';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+import 'katex/dist/katex.min.css';
 
 export default function AITutorPage() {
   const router = useRouter();
@@ -146,8 +149,9 @@ export default function AITutorPage() {
         setChats(sortedChats);
         // Don't auto-select chat - only select if URL has ?id param
       }
-    } catch (error: any) {
-      toast.error(error.message || 'Lỗi khi tải danh sách cuộc trò chuyện');
+    } catch (error) {
+      const err = error as Error;
+      toast.error(err.message || 'Lỗi khi tải danh sách cuộc trò chuyện');
     } finally {
       setLoading(false);
     }
@@ -181,8 +185,9 @@ export default function AITutorPage() {
         // Update URL with new chatId
         router.push(`/giasuai?id=${res.data._id}`, { scroll: false });
       }
-    } catch (error: any) {
-      toast.error(error.message || 'Lỗi khi tạo cuộc trò chuyện mới');
+    } catch (error) {
+      const err = error as Error;
+      toast.error(err.message || 'Lỗi khi tạo cuộc trò chuyện mới');
     }
   };
 
@@ -196,8 +201,9 @@ export default function AITutorPage() {
         // Update URL with chatId
         router.push(`/giasuai?id=${chatId}`, { scroll: false });
       }
-    } catch (error: any) {
-      toast.error(error.message || 'Lỗi khi tải cuộc trò chuyện');
+    } catch (error) {
+      const err = error as Error;
+      toast.error(err.message || 'Lỗi khi tải cuộc trò chuyện');
     }
   };
 
@@ -216,8 +222,9 @@ export default function AITutorPage() {
         toast.success('Đã xóa cuộc trò chuyện');
         setActiveMenu(null);
       }
-    } catch (error: any) {
-      toast.error(error.message || 'Lỗi khi xóa cuộc trò chuyện');
+    } catch (error) {
+      const err = error as Error;
+      toast.error(err.message || 'Lỗi khi xóa cuộc trò chuyện');
     }
   };
 
@@ -241,8 +248,9 @@ export default function AITutorPage() {
         toast.success(isPinned ? 'Đã ghim cuộc trò chuyện' : 'Đã bỏ ghim cuộc trò chuyện');
         setActiveMenu(null);
       }
-    } catch (error: any) {
-      toast.error(error.message || 'Lỗi khi ghim cuộc trò chuyện');
+    } catch (error) {
+      const err = error as Error;
+      toast.error(err.message || 'Lỗi khi ghim cuộc trò chuyện');
     }
   };
 
@@ -267,8 +275,9 @@ export default function AITutorPage() {
         setSelectedChatForAction(null);
         setRenameTitle('');
       }
-    } catch (error: any) {
-      toast.error(error.message || 'Lỗi khi đổi tên cuộc trò chuyện');
+    } catch (error) {
+      const err = error as Error;
+      toast.error(err.message || 'Lỗi khi đổi tên cuộc trò chuyện');
     }
   };
 
@@ -312,14 +321,15 @@ export default function AITutorPage() {
           router.push(`/giasuai?id=${res.data.chat._id}`, { scroll: false });
         }
       }
-    } catch (error: any) {
+    } catch (error) {
       // Restore message to textarea on error
       setMessage(messageToSend);
-      if (error.message.includes('hôm nay')) {
-        toast.error(error.message);
+      const err = error as Error;
+      if (err.message.includes('hôm nay')) {
+        toast.error(err.message);
         await fetchRateLimit();
       } else {
-        toast.error(error.message || 'Lỗi khi gửi tin nhắn');
+        toast.error(err.message || 'Lỗi khi gửi tin nhắn');
       }
     } finally {
       setSending(false);
@@ -407,6 +417,42 @@ export default function AITutorPage() {
     toast.success('Đã sao chép code');
   };
 
+  // Auto-wrap math expressions in $...$ if AI forgot to wrap them
+  const autoWrapMath = (text: string): string => {
+    let result = text;
+    let inCodeBlock = false;
+
+    // First, handle code blocks - don't process inside them
+    const codeBlocks: string[] = [];
+    result = result.replace(/```[\s\S]*?```/g, (match) => {
+      codeBlocks.push(match);
+      return `__CODE_BLOCK_${codeBlocks.length - 1}__`;
+    });
+
+    // Replace escape characters with proper LaTeX
+    result = result.replace(/\\\*/g, '\\times ');
+    result = result.replace(/\\\//g, '\\div ');
+    result = result.replace(/\\_/g, '_');
+
+    // Detect and wrap math expressions
+    // Pattern 1: Equations with = and math symbols
+    result = result.replace(/([a-zA-ZΔα-ωΩ][a-zA-Z0-9]*\s*=\s*[^$\n]+)/g, '$$$1$$');
+    
+    // Pattern 2: Lines with math symbols and numbers
+    result = result.replace(/([a-zA-Z][a-zA-Z0-9]*\s*[\*\/\^]\s*[a-zA-Z0-9]+)/g, '$$$1$$');
+    
+    // Pattern 3: Numbers with units and operations
+    result = result.replace(/(\d+[\.,]?\d*\s*[\*\/\^]\s*\d+[\.,]?\d*)/g, '$$$1$$');
+    
+    // Pattern 4: Units like m/s, kg, N with numbers
+    result = result.replace(/(\d+[\.,]?\d*\s*(m\/s|kg|N))/g, '$$$1$$');
+
+    // Restore code blocks
+    result = result.replace(/__CODE_BLOCK_(\d+)__/g, (_, index) => codeBlocks[parseInt(index)]);
+
+    return result;
+  };
+
   // Bỏ phần resize khỏi onChange, chỉ còn cập nhật state để tránh
   // đọc/ghi DOM (layout thrashing) ngay trong sự kiện gõ phím.
   const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -439,7 +485,7 @@ export default function AITutorPage() {
   }
 
   return (
-    <div className="h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 flex flex-col md:flex-row overflow-hidden">
+    <div className="h-dvh bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 flex flex-col md:flex-row overflow-hidden">
       {/* Mobile Header */}
       <div className="md:hidden bg-white/80 backdrop-blur-lg border-b border-white/20 p-4 flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-3">
@@ -656,10 +702,13 @@ export default function AITutorPage() {
                       ) : (
                         <div className="prose prose-sm max-w-none text-sm md:text-base text-justify">
                           <ReactMarkdown
-                            remarkPlugins={[remarkGfm]}
+                            remarkPlugins={[remarkGfm, [remarkMath, { singleDollar: true, doubleDollar: true }]]}
+                            rehypePlugins={[rehypeKatex]}
                             components={{
-                              pre: ({ node, children, ...props }: any) => {
-                                const codeContent = typeof children === 'string' ? children : children?.props?.children || '';
+                              pre: ({ children, ...props }) => {
+                                const codeContent = typeof children === 'string'
+                                  ? children
+                                  : (React.isValidElement(children) && typeof (children as React.ReactElement<Record<string, unknown>>).props.children === 'string' ? (children as React.ReactElement<Record<string, unknown>>).props.children : '') || '';
                                 return (
                                   <div className="relative">
                                     <button
@@ -675,7 +724,7 @@ export default function AITutorPage() {
                                   </div>
                                 );
                               },
-                              code: ({ node, className, children, ...props }: any) => {
+                              code: ({ className, children, ...props }) => {
                                 const isInline = !className;
                                 return isInline ? (
                                   <code className="bg-indigo-50 text-indigo-700 px-2 py-1 rounded-lg text-sm font-medium" {...props}>
@@ -689,7 +738,7 @@ export default function AITutorPage() {
                               }
                             }}
                           >
-                            {msg.content}
+                            {autoWrapMath(msg.content)}
                           </ReactMarkdown>
                         </div>
                       )
