@@ -788,8 +788,8 @@ export default function Header() {
                     </div>
                     <nav className="flex h-full items-center gap-5">
                         {menuMobile.map((item) => {
-                            const isActive = item.link === '/' 
-                                ? pathname === item.link 
+                            const isActive = item.link === '/'
+                                ? pathname === item.link
                                 : item.link === '/forum'
                                     ? pathname.startsWith('/forum') || pathname === '/khampha' || pathname === '/contact' || pathname === '/forumset'
                                     : pathname.startsWith(item.link);
@@ -1133,10 +1133,10 @@ export default function Header() {
             {displayUser && <MobileUserSheet user={displayUser} onLogout={handleLogout} onClose={() => setSheetOpen(false)} open={sheetOpen} />}
 
             <div className="lg:hidden fixed bottom-0 left-0 w-full z-40">
-                <div className="w-full h-14 bg-[var(--cn-bg-card)] border-t border-[var(--cn-border)] rounded-t-2xl shadow-[0_-4px_20px_rgba(0,0,0,0.15)] flex items-center px-2">
+                <div className="w-full h-14 bg-[var(--cn-bg-card)] border-t border-[var(--cn-border)] flex items-center px-2">
                     {menuMobile.map((item) => {
-                        const isActive = item.link === '/' 
-                            ? pathname === item.link 
+                        const isActive = item.link === '/'
+                            ? pathname === item.link
                             : item.link === '/forum'
                                 ? pathname.startsWith('/forum') || pathname === '/khampha' || pathname === '/contact' || pathname === '/forumset'
                                 : pathname.startsWith(item.link);
