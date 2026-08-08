@@ -35,7 +35,8 @@ export function CreateShortLink() {
     const [customAlias, setCustomAlias] = useState('');
     const [expiresInDays, setExpiresInDays] = useState<number | undefined>(undefined);
     const [expiresInHours, setExpiresInHours] = useState<number | undefined>(undefined);
-    const [expiryUnit, setExpiryUnit] = useState<'days' | 'hours'>('days');
+    const [expiresInMinutes, setExpiresInMinutes] = useState<number | undefined>(undefined);
+    const [expiryUnit, setExpiryUnit] = useState<'days' | 'hours' | 'minutes'>('days');
     const [isCheckingAlias, setIsCheckingAlias] = useState(false);
 
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -144,12 +145,13 @@ export function CreateShortLink() {
         }
 
         try {
-            const expiryValue = expiryUnit === 'days' ? expiresInDays : expiresInHours;
+            const expiryValue = expiryUnit === 'days' ? expiresInDays : expiryUnit === 'hours' ? expiresInHours : expiresInMinutes;
             const link = await createLink({
                 originalUrl: normalizedUrl,
                 customAlias: useCustom && customAlias.trim() ? customAlias.trim() : undefined,
                 expiresInDays: expiryUnit === 'days' ? expiryValue : undefined,
                 expiresInHours: expiryUnit === 'hours' ? expiryValue : undefined,
+                expiresInMinutes: expiryUnit === 'minutes' ? expiryValue : undefined,
             });
             setCreatedLink(link);
 
@@ -157,6 +159,7 @@ export function CreateShortLink() {
             setCustomAlias('');
             setExpiresInDays(undefined);
             setExpiresInHours(undefined);
+            setExpiresInMinutes(undefined);
             setExpiryUnit('days');
             setUseCustom(false);
             setAliasState('idle');
@@ -295,21 +298,34 @@ export function CreateShortLink() {
                         >
                             Giờ
                         </button>
+                        <button
+                            type="button"
+                            onClick={() => setExpiryUnit('minutes')}
+                            className={`px-3 py-1.5 text-sm rounded-lg border transition-all ${
+                                expiryUnit === 'minutes'
+                                    ? 'bg-[var(--cn-primary)]/10 border-[var(--cn-primary)] text-[var(--cn-primary)]'
+                                    : 'bg-[var(--cn-bg-card)] border-[var(--cn-border)] text-[var(--cn-text-sub)] hover:bg-[var(--cn-bg-section)]'
+                            }`}
+                        >
+                            Phút
+                        </button>
                     </div>
                     <input
                         type="number"
                         min={1}
-                        max={expiryUnit === 'days' ? 365 : 24}
-                        value={expiryUnit === 'days' ? (expiresInDays || '') : (expiresInHours || '')}
+                        max={expiryUnit === 'days' ? 365 : expiryUnit === 'hours' ? 24 : 60}
+                        value={expiryUnit === 'days' ? (expiresInDays || '') : expiryUnit === 'hours' ? (expiresInHours || '') : (expiresInMinutes || '')}
                         onChange={(e) => {
                             const value = e.target.value ? Number(e.target.value) : undefined;
                             if (expiryUnit === 'days') {
                                 setExpiresInDays(value);
-                            } else {
+                            } else if (expiryUnit === 'hours') {
                                 setExpiresInHours(value);
+                            } else {
+                                setExpiresInMinutes(value);
                             }
                         }}
-                        placeholder={expiryUnit === 'days' ? 'Ví dụ: 30' : 'Ví dụ: 24'}
+                        placeholder={expiryUnit === 'days' ? 'Ví dụ: 30' : expiryUnit === 'hours' ? 'Ví dụ: 24' : 'Ví dụ: 60'}
                         className="w-full px-4 py-2 border border-[var(--cn-border)] rounded-[var(--cn-radius-sm)] bg-[var(--cn-bg-card)] text-[var(--cn-text-main)] placeholder:text-[var(--cn-text-muted)] focus:outline-none focus:border-[var(--cn-primary)] focus:ring-2 focus:ring-[var(--cn-primary)]/20 transition-all"
                     />
                 </div>

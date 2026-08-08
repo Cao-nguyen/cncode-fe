@@ -75,33 +75,10 @@ export interface IndustryDetail {
     group: string;
     overview?: {
         introduction?: string;
-        salaryMin?: string;
-        salaryMax?: string;
-        demandLevel?: string;
-        trainingDurationMin?: string;
-        trainingDurationMax?: string;
-        whatIndustryDoes?: string[];
+        careerPath?: string;
+        salary?: string;
     };
-    knowledge?: string[];
-    requirements?: string[];
-    skills?: string[];
     expertAdvice?: string;
-    jobOpportunities?: Array<{
-        name: string;
-        image?: string;
-        address: string;
-    }>;
-    trainingPlaces?: Array<{
-        name: string;
-        logo?: string;
-        location: string;
-        region: string;
-        type: string;
-        strengths?: string;
-        majorsCount: number;
-        tuitionMin?: string;
-        tuitionMax?: string;
-    }>;
     updatedAt: string;
 }
 

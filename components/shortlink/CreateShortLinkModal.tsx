@@ -35,7 +35,8 @@ export function CreateShortLinkModal({ isOpen, onClose, onSuccess }: CreateShort
     const [customAlias, setCustomAlias] = useState('');
     const [expiresInDays, setExpiresInDays] = useState<number | undefined>(undefined);
     const [expiresInHours, setExpiresInHours] = useState<number | undefined>(undefined);
-    const [expiryUnit, setExpiryUnit] = useState<'days' | 'hours'>('days');
+    const [expiresInMinutes, setExpiresInMinutes] = useState<number | undefined>(undefined);
+    const [expiryUnit, setExpiryUnit] = useState<'days' | 'hours' | 'minutes'>('days');
     const [isCheckingAlias, setIsCheckingAlias] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -141,12 +142,13 @@ export function CreateShortLinkModal({ isOpen, onClose, onSuccess }: CreateShort
 
         setIsSubmitting(true);
         try {
-            const expiryValue = expiryUnit === 'days' ? expiresInDays : expiresInHours;
+            const expiryValue = expiryUnit === 'days' ? expiresInDays : expiryUnit === 'hours' ? expiresInHours : expiresInMinutes;
             const link = await createLink({
                 originalUrl: normalizedUrl,
                 customAlias: useCustom && customAlias.trim() ? customAlias.trim() : undefined,
                 expiresInDays: expiryUnit === 'days' ? expiryValue : undefined,
                 expiresInHours: expiryUnit === 'hours' ? expiryValue : undefined,
+                expiresInMinutes: expiryUnit === 'minutes' ? expiryValue : undefined,
             });
 
             toast.success('Tạo link rút gọn thành công!');
@@ -159,6 +161,7 @@ export function CreateShortLinkModal({ isOpen, onClose, onSuccess }: CreateShort
             setCustomAlias('');
             setExpiresInDays(undefined);
             setExpiresInHours(undefined);
+            setExpiresInMinutes(undefined);
             setExpiryUnit('days');
             setUseCustom(false);
             setAliasState('idle');
@@ -336,22 +339,35 @@ export function CreateShortLinkModal({ isOpen, onClose, onSuccess }: CreateShort
                             >
                                 Giờ
                             </button>
+                            <button
+                                type="button"
+                                onClick={() => setExpiryUnit('minutes')}
+                                className={`px-3 py-1.5 text-sm rounded-lg border transition-all ${
+                                    expiryUnit === 'minutes'
+                                        ? 'bg-blue-50 border-blue-500 text-blue-600'
+                                        : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+                                }`}
+                            >
+                                Phút
+                            </button>
                         </div>
                         <div className="relative">
                             <input
                                 type="number"
                                 min={1}
-                                max={expiryUnit === 'days' ? 365 : 24}
-                                value={expiryUnit === 'days' ? (expiresInDays || '') : (expiresInHours || '')}
+                                max={expiryUnit === 'days' ? 365 : expiryUnit === 'hours' ? 24 : 60}
+                                value={expiryUnit === 'days' ? (expiresInDays || '') : expiryUnit === 'hours' ? (expiresInHours || '') : (expiresInMinutes || '')}
                                 onChange={(e) => {
                                     const value = e.target.value ? Number(e.target.value) : undefined;
                                     if (expiryUnit === 'days') {
                                         setExpiresInDays(value);
-                                    } else {
+                                    } else if (expiryUnit === 'hours') {
                                         setExpiresInHours(value);
+                                    } else {
+                                        setExpiresInMinutes(value);
                                     }
                                 }}
-                                placeholder={expiryUnit === 'days' ? 'Ví dụ: 30' : 'Ví dụ: 24'}
+                                placeholder={expiryUnit === 'days' ? 'Ví dụ: 30' : expiryUnit === 'hours' ? 'Ví dụ: 24' : 'Ví dụ: 60'}
                                 className="w-full px-4 py-2.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 placeholder:text-gray-400 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20 transition-all"
                             />
                         </div>

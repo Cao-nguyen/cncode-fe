@@ -9,6 +9,7 @@ import CustomEditor, { CustomEditorRef } from '@/components/custom/CustomEditor'
 import { huongnghiepApi, TrainingPlace, Industry } from '@/lib/api/huongnghiep.api';
 import { uploadApi } from '@/lib/upload';
 import { toast } from 'sonner';
+import { TableSkeleton, IndustryCardSkeleton } from '@/components/ui/skeleton';
 
 const PROVINCES = [
   { value: 'Hà Nội', label: 'Hà Nội' },
@@ -413,7 +414,7 @@ export default function HuongNghiepAdminPage() {
       {/* Create Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4 overflow-y-auto h-screen w-screen">
-          <div className="bg-white dark:bg-gray-950 rounded-lg max-w-lg w-full p-6 my-auto">
+          <div className="bg-white dark:bg-gray-950 rounded-lg max-w-lg w-full p-6 my-auto mx-auto">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">Chọn loại bản ghi</h2>
               <button
@@ -462,7 +463,7 @@ export default function HuongNghiepAdminPage() {
       {/* Training Place Modal */}
       {showTrainingPlaceModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4 overflow-y-auto h-screen w-screen">
-          <div className="bg-white dark:bg-gray-950 rounded-lg max-w-2xl w-full my-auto max-h-[90vh] flex flex-col">
+          <div className="bg-white dark:bg-gray-950 rounded-lg max-w-2xl w-full my-auto max-h-[90vh] flex flex-col mx-auto">
             <div className="flex justify-between items-center p-6 border-b border-gray-200 dark:border-gray-700">
               <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">{editingTrainingPlace ? 'Cập nhật nơi đào tạo' : 'Tạo nơi đào tạo'}</h2>
               <button
@@ -615,7 +616,7 @@ export default function HuongNghiepAdminPage() {
       {/* Industry Modal - Step by Step */}
       {showIndustryModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4 overflow-y-auto h-screen w-screen">
-          <div className="bg-white dark:bg-gray-950 rounded-lg max-w-3xl w-full my-auto max-h-[90vh] flex flex-col">
+          <div className="bg-white dark:bg-gray-950 rounded-lg max-w-3xl w-full my-auto max-h-[90vh] flex flex-col mx-auto">
             <div className="flex justify-between items-center p-6 border-b border-gray-200 dark:border-gray-700">
               <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">{editingIndustry ? 'Cập nhật ngành nghề' : 'Tạo ngành nghề'}</h2>
               <button
@@ -748,7 +749,7 @@ export default function HuongNghiepAdminPage() {
 
       {/* Tabs */}
       <div className="mb-6">
-        <div className="p-1 bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-lg inline-flex">
+        <div className="p-1 bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-lg inline-flex overflow-x-auto w-full">
           <button
             onClick={() => setActiveTab('all')}
             className={`px-3 py-1.5 text-xs font-semibold transition-colors whitespace-nowrap rounded-md ${activeTab === 'all'
@@ -786,20 +787,22 @@ export default function HuongNghiepAdminPage() {
           <div className="mb-8">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Ngành nghề</h2>
-              <CustomButton onClick={() => setShowIndustryModal(true)}>
-                <Plus className="w-4 h-4 mr-2" />
-                Thêm ngành nghề
-              </CustomButton>
+              <button
+                onClick={() => setActiveTab('industries')}
+                className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+              >
+                Xem tất cả
+              </button>
             </div>
             <div>
               {loading ? (
-                <div className="p-8 text-center text-gray-500 dark:text-gray-400">Đang tải...</div>
+                <IndustryCardSkeleton count={4} />
               ) : industries.length === 0 ? (
                 <div className="p-8 text-center text-gray-500 dark:text-gray-400">Chưa có ngành nghề nào</div>
               ) : (
                 <>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                    {paginatedIndustries.map((industry) => (
+                    {industries.slice(0, 4).map((industry) => (
                       <div key={industry._id} className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden hover:shadow-md transition">
                         <div className="aspect-[3/2] bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
                           {industry.image ? (
@@ -832,101 +835,6 @@ export default function HuongNghiepAdminPage() {
                       </div>
                     ))}
                   </div>
-
-                  {/* Industry Pagination */}
-                  {industries.length > 0 && (
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mt-4 p-4 border-t border-gray-200 dark:border-gray-800">
-                      <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                        <span>Hiển thị</span>
-                        <div className="relative" ref={industryPerPageDropdownRef}>
-                          <button
-                            type="button"
-                            onClick={() => setIsIndustryPerPageOpen(!isIndustryPerPageOpen)}
-                            className="min-w-[60px] px-3 py-1 text-sm font-medium border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 transition-all duration-200 focus:outline-none cursor-pointer flex items-center justify-between gap-2 border-gray-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 dark:focus:border-blue-400"
-                          >
-                            <span>{industryItemsPerPage}</span>
-                            <ChevronDown className={`w-3.5 h-3.5 text-gray-600 dark:text-gray-400 transition-transform duration-200 ${isIndustryPerPageOpen ? 'rotate-180' : ''}`} />
-                          </button>
-                          {isIndustryPerPageOpen && (
-                            <div className="absolute z-[9999] w-full bottom-full mb-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg overflow-hidden">
-                              {PAGINATION_OPTIONS.map((option) => (
-                                <button
-                                  key={option}
-                                  type="button"
-                                  onClick={() => {
-                                    handleIndustryItemsPerPageChange(option);
-                                    setIsIndustryPerPageOpen(false);
-                                  }}
-                                  className="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-between transition-colors"
-                                >
-                                  <span className="text-gray-900 dark:text-gray-100">{option}</span>
-                                  {industryItemsPerPage === option && (
-                                    <Check className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-                                  )}
-                                </button>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                        <span>{industryStartIndex + 1} - {Math.min(industryEndIndex, industries.length)} của {industries.length} bản ghi</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {/* Về trang đầu */}
-                        <button
-                          onClick={() => handleIndustryPageChange(1)}
-                          disabled={industryCurrentPage === 1}
-                          className="p-2 rounded-md border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                          title="Trang đầu"
-                        >
-                          <ChevronsLeft className="w-4 h-4" />
-                        </button>
-
-                        {/* Lùi 1 trang */}
-                        <button
-                          onClick={() => handleIndustryPageChange(Math.max(1, industryCurrentPage - 1))}
-                          disabled={industryCurrentPage === 1}
-                          className="p-2 rounded-md border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                        >
-                          <ChevronLeft className="w-4 h-4" />
-                        </button>
-
-                        {/* Các ô số trang */}
-                        <div className="flex items-center gap-1">
-                          {Array.from({ length: industryTotalPages }, (_, i) => i + 1).map((pageNum) => (
-                            <button
-                              key={pageNum}
-                              onClick={() => handleIndustryPageChange(pageNum)}
-                              className={`px-3 py-1.5 text-sm font-medium rounded-md transition ${industryCurrentPage === pageNum
-                                ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800'
-                                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 border border-gray-300 dark:border-gray-700'
-                                }`}
-                            >
-                              {pageNum}
-                            </button>
-                          ))}
-                        </div>
-
-                        {/* Tới 1 trang */}
-                        <button
-                          onClick={() => handleIndustryPageChange(Math.min(industryTotalPages, industryCurrentPage + 1))}
-                          disabled={industryCurrentPage === industryTotalPages}
-                          className="p-2 rounded-md border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                        >
-                          <ChevronRight className="w-4 h-4" />
-                        </button>
-
-                        {/* Về trang cuối */}
-                        <button
-                          onClick={() => handleIndustryPageChange(industryTotalPages)}
-                          disabled={industryCurrentPage === industryTotalPages}
-                          className="p-2 rounded-md border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                          title="Trang cuối"
-                        >
-                          <ChevronsRight className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  )}
                 </>
               )}
             </div>
@@ -936,14 +844,16 @@ export default function HuongNghiepAdminPage() {
           <div>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Nơi đào tạo</h2>
-              <CustomButton onClick={() => setShowCreateModal(true)}>
-                <Plus className="w-4 h-4 mr-2" />
-                Thêm nơi đào tạo
-              </CustomButton>
+              <button
+                onClick={() => setActiveTab('training')}
+                className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+              >
+                Xem tất cả
+              </button>
             </div>
             <div className="bg-white dark:bg-gray-950 rounded-lg border border-gray-200 dark:border-gray-800 overflow-hidden">
               {loading ? (
-                <div className="p-8 text-center text-gray-500 dark:text-gray-400">Đang tải...</div>
+                <TableSkeleton rows={5} cols={6} />
               ) : trainingPlaces.length === 0 ? (
                 <div className="p-8 text-center text-gray-500 dark:text-gray-400">Chưa có nơi đào tạo nào</div>
               ) : (
@@ -960,7 +870,7 @@ export default function HuongNghiepAdminPage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                      {paginatedPlaces.map((place) => (
+                      {trainingPlaces.slice(0, 5).map((place) => (
                         <tr key={place._id} className="hover:bg-gray-50 dark:hover:bg-gray-900/50">
                           <td className="px-4 py-3">
                             {place.logo ? (
@@ -975,7 +885,7 @@ export default function HuongNghiepAdminPage() {
                           <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{place.region}</td>
                           <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{place.province}</td>
                           <td className="px-4 py-3">
-                            <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${place.type === 'Công lập'
+                            <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full whitespace-nowrap ${place.type === 'Công lập'
                               ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
                               : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
                               }`}>
@@ -1014,101 +924,6 @@ export default function HuongNghiepAdminPage() {
                 </div>
               )}
             </div>
-
-            {/* Pagination */}
-            {trainingPlaces.length > 0 && (
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 border-t border-gray-200 dark:border-gray-800">
-                <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                  <span>Hiển thị</span>
-                  <div className="relative" ref={perPageDropdownRef}>
-                    <button
-                      type="button"
-                      onClick={() => setIsPerPageOpen(!isPerPageOpen)}
-                      className="min-w-[60px] px-3 py-1 text-sm font-medium border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 transition-all duration-200 focus:outline-none cursor-pointer flex items-center justify-between gap-2 border-gray-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 dark:focus:border-blue-400"
-                    >
-                      <span>{itemsPerPage}</span>
-                      <ChevronDown className={`w-3.5 h-3.5 text-gray-600 dark:text-gray-400 transition-transform duration-200 ${isPerPageOpen ? 'rotate-180' : ''}`} />
-                    </button>
-                    {isPerPageOpen && (
-                      <div className="absolute z-[9999] w-full bottom-full mb-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg overflow-hidden">
-                        {PAGINATION_OPTIONS.map((option) => (
-                          <button
-                            key={option}
-                            type="button"
-                            onClick={() => {
-                              handleItemsPerPageChange(option);
-                              setIsPerPageOpen(false);
-                            }}
-                            className="w-full px-3 py-2 text-sm text-left hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center justify-between transition-colors"
-                          >
-                            <span className="text-gray-900 dark:text-gray-100">{option}</span>
-                            {itemsPerPage === option && (
-                              <Check className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-                            )}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  <span>{startIndex + 1} - {Math.min(endIndex, trainingPlaces.length)} của {trainingPlaces.length} bản ghi</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  {/* Về trang đầu */}
-                  <button
-                    onClick={() => handlePageChange(1)}
-                    disabled={currentPage === 1}
-                    className="p-2 rounded-md border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                    title="Trang đầu"
-                  >
-                    <ChevronsLeft className="w-4 h-4" />
-                  </button>
-
-                  {/* Lùi 1 trang */}
-                  <button
-                    onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
-                    disabled={currentPage === 1}
-                    className="p-2 rounded-md border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                  </button>
-
-                  {/* Các ô số trang */}
-                  <div className="flex items-center gap-1">
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
-                      <button
-                        key={pageNum}
-                        onClick={() => handlePageChange(pageNum)}
-                        className={`px-3 py-1.5 text-sm font-medium rounded-md transition ${currentPage === pageNum
-                          ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800'
-                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 border border-gray-300 dark:border-gray-700'
-                          }`}
-                      >
-                        {pageNum}
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Tới 1 trang */}
-                  <button
-                    onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
-                    disabled={currentPage === totalPages}
-                    className="p-2 rounded-md border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                  >
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-
-                  {/* Về trang cuối */}
-                  <button
-                    onClick={() => handlePageChange(totalPages)}
-                    disabled={currentPage === totalPages}
-                    className="p-2 rounded-md border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                    title="Trang cuối"
-                  >
-                    <ChevronsRight className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            )}
           </div>
         </>
       )}
@@ -1117,15 +932,14 @@ export default function HuongNghiepAdminPage() {
         <>
           <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">Danh sách ngành nghề</h2>
           {/* Industries Grid */}
-          <div className="bg-white dark:bg-gray-950 rounded-lg border border-gray-200 dark:border-gray-800 overflow-hidden">
-            {loading ? (
-              <div className="p-8 text-center text-gray-500 dark:text-gray-400">Đang tải...</div>
-            ) : industries.length === 0 ? (
-              <div className="p-8 text-center text-gray-500 dark:text-gray-400">Chưa có ngành nghề nào</div>
-            ) : (
-              <>
-                <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                  {paginatedIndustries.map((industry) => (
+          {loading ? (
+            <IndustryCardSkeleton count={8} />
+          ) : industries.length === 0 ? (
+            <div className="p-8 text-center text-gray-500 dark:text-gray-400">Chưa có ngành nghề nào</div>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {paginatedIndustries.map((industry) => (
                     <div key={industry._id} className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden hover:shadow-md transition">
                       <div className="aspect-[3/2] bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
                         {industry.image ? (
@@ -1216,20 +1030,9 @@ export default function HuongNghiepAdminPage() {
                         <ChevronLeft className="w-4 h-4" />
                       </button>
 
-                      {/* Các ô số trang */}
-                      <div className="flex items-center gap-1">
-                        {Array.from({ length: industryTotalPages }, (_, i) => i + 1).map((pageNum) => (
-                          <button
-                            key={pageNum}
-                            onClick={() => handleIndustryPageChange(pageNum)}
-                            className={`px-3 py-1.5 text-sm font-medium rounded-md transition ${industryCurrentPage === pageNum
-                              ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800'
-                              : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 border border-gray-300 dark:border-gray-700'
-                              }`}
-                          >
-                            {pageNum}
-                          </button>
-                        ))}
+                      {/* Hiển thị trang hiện tại / tổng trang */}
+                      <div className="px-3 py-1.5 text-sm font-medium rounded-md bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800">
+                        {industryCurrentPage} / {industryTotalPages}
                       </div>
 
                       {/* Tới 1 trang */}
@@ -1255,89 +1058,85 @@ export default function HuongNghiepAdminPage() {
                 )}
               </>
             )}
-          </div>
         </>
-      )
-      }
+      )}
 
-      {
-        activeTab === 'training' && (
-          <>
-            <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">Danh sách nơi đào tạo</h2>
-            {/* Training Places List */}
-            <div className="bg-white dark:bg-gray-950 rounded-lg border border-gray-200 dark:border-gray-800 overflow-hidden">
-              {loading ? (
-                <div className="p-8 text-center text-gray-500 dark:text-gray-400">Đang tải...</div>
-              ) : trainingPlaces.length === 0 ? (
-                <div className="p-8 text-center text-gray-500 dark:text-gray-400">Chưa có nơi đào tạo nào</div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-gray-50 dark:bg-gray-900">
-                      <tr>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Logo</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Tên</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Khu vực</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Tỉnh/TP</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Loại hình</th>
-                        <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Hành động</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                      {paginatedPlaces.map((place) => (
-                        <tr key={place._id} className="hover:bg-gray-50 dark:hover:bg-gray-900/50">
-                          <td className="px-4 py-3">
-                            {place.logo ? (
-                              <img src={place.logo} alt={place.name} className="w-10 h-10 object-contain rounded" />
-                            ) : (
-                              <div className="w-10 h-10 bg-gray-200 dark:bg-gray-700 rounded flex items-center justify-center">
-                                <span className="text-xs text-gray-500 dark:text-gray-400">N/A</span>
-                              </div>
-                            )}
-                          </td>
-                          <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">{place.name}</td>
-                          <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{place.region}</td>
-                          <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{place.province}</td>
-                          <td className="px-4 py-3">
-                            <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${place.type === 'Công lập'
-                              ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
-                              : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                              }`}>
-                              {place.type}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3">
-                            <div className="flex items-center justify-center gap-2">
-                              <button
-                                onClick={() => setViewTrainingPlace(place)}
-                                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-md transition"
-                                title="Xem chi tiết"
-                              >
-                                <Eye className="w-4 h-4" />
-                              </button>
-                              <button
-                                onClick={() => handleEditTrainingPlace(place)}
-                                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-md transition"
-                                title="Chỉnh sửa"
-                              >
-                                <Edit2 className="w-4 h-4" />
-                              </button>
-                              <button
-                                onClick={() => setDeleteConfirm(place)}
-                                className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 rounded-md transition"
-                                title="Xóa"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
+      {activeTab === 'training' && (
+        <>
+          <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">Danh sách nơi đào tạo</h2>
+          {/* Training Places List */}
+          <div className="bg-white dark:bg-gray-950 rounded-lg border border-gray-200 dark:border-gray-800 overflow-hidden">
+            {loading ? (
+              <TableSkeleton rows={10} cols={6} />
+            ) : trainingPlaces.length === 0 ? (
+              <div className="p-8 text-center text-gray-500 dark:text-gray-400">Chưa có nơi đào tạo nào</div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50 dark:bg-gray-900">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Logo</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Tên</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Khu vực</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Tỉnh/TP</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Loại hình</th>
+                      <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Hành động</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                    {paginatedPlaces.map((place) => (
+                      <tr key={place._id} className="hover:bg-gray-50 dark:hover:bg-gray-900/50">
+                        <td className="px-4 py-3">
+                          {place.logo ? (
+                            <img src={place.logo} alt={place.name} className="w-10 h-10 object-contain rounded" />
+                          ) : (
+                            <div className="w-10 h-10 bg-gray-200 dark:bg-gray-700 rounded flex items-center justify-center">
+                              <span className="text-xs text-gray-500 dark:text-gray-400">N/A</span>
                             </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">{place.name}</td>
+                        <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{place.region}</td>
+                        <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{place.province}</td>
+                        <td className="px-4 py-3">
+                          <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full whitespace-nowrap ${place.type === 'Công lập'
+                            ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
+                            : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                            }`}>
+                            {place.type}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center justify-center gap-2">
+                            <button
+                              onClick={() => setViewTrainingPlace(place)}
+                              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-md transition"
+                              title="Xem chi tiết"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleEditTrainingPlace(place)}
+                              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-md transition"
+                              title="Chỉnh sửa"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => setDeleteConfirm(place)}
+                              className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 rounded-md transition"
+                              title="Xóa"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
 
             {/* Pagination */}
             {trainingPlaces.length > 0 && (
@@ -1396,20 +1195,9 @@ export default function HuongNghiepAdminPage() {
                     <ChevronLeft className="w-4 h-4" />
                   </button>
 
-                  {/* Các ô số trang */}
-                  <div className="flex items-center gap-1">
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
-                      <button
-                        key={pageNum}
-                        onClick={() => handlePageChange(pageNum)}
-                        className={`px-3 py-1.5 text-sm font-medium rounded-md transition ${currentPage === pageNum
-                          ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800'
-                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 border border-gray-300 dark:border-gray-700'
-                          }`}
-                      >
-                        {pageNum}
-                      </button>
-                    ))}
+                  {/* Hiển thị trang hiện tại / tổng trang */}
+                  <div className="px-3 py-1.5 text-sm font-medium rounded-md bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800">
+                    {currentPage} / {totalPages}
                   </div>
 
                   {/* Tới 1 trang */}
@@ -1433,13 +1221,12 @@ export default function HuongNghiepAdminPage() {
                 </div>
               </div>
             )}
-          </>
-        )
-      }
+          </div>
+        </>
+      )}
 
       {/* View Detail Modal */}
-      {
-        viewTrainingPlace && (
+      {viewTrainingPlace && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4 overflow-y-auto h-screen w-screen">
             <div className="bg-white dark:bg-gray-950 rounded-lg max-w-2xl w-full p-6 my-auto max-h-[90vh] overflow-y-auto">
               <div className="flex justify-between items-center mb-6">
@@ -1487,12 +1274,10 @@ export default function HuongNghiepAdminPage() {
               </div>
             </div>
           </div>
-        )
-      }
+        )}
 
       {/* Delete Confirmation Modal */}
-      {
-        deleteConfirm && (
+      {deleteConfirm && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4 overflow-y-auto h-screen w-screen">
             <div className="bg-white dark:bg-gray-950 rounded-lg max-w-md w-full p-6 my-auto">
               <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">Xác nhận xóa</h2>
@@ -1516,8 +1301,7 @@ export default function HuongNghiepAdminPage() {
               </div>
             </div>
           </div>
-        )
-      }
-    </div >
+        )}
+    </div>
   );
 }

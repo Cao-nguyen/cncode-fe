@@ -57,4 +57,23 @@ function ListSkeleton({ items = 5 }: { items?: number }) {
     );
 }
 
-export { Skeleton, TableSkeleton, CardSkeleton, ListSkeleton };
+function IndustryCardSkeleton({ count = 4 }: { count?: number }) {
+    return (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {Array.from({ length: count }).map((_, i) => (
+                <div key={i} className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                    <div className="aspect-[3/2] bg-gray-100 dark:bg-gray-800 animate-pulse" />
+                    <div className="p-4 space-y-3">
+                        <Skeleton className="h-5 w-3/4" />
+                        <div className="flex items-center justify-end gap-2">
+                            <Skeleton className="h-8 w-8 rounded-md" />
+                            <Skeleton className="h-8 w-8 rounded-md" />
+                        </div>
+                    </div>
+                </div>
+            ))}
+        </div>
+    );
+}
+
+export { Skeleton, TableSkeleton, CardSkeleton, ListSkeleton, IndustryCardSkeleton };

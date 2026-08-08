@@ -1,33 +1,62 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { huongnghiepApi, IndustryDetail } from '@/lib/api/huongnghiep.api';
+import { huongnghiepApi, IndustryDetail, TrainingPlace } from '@/lib/api/huongnghiep.api';
 import StaticContent from '@/components/common/StaticContent';
-import { ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { Briefcase, Home, Calendar, ChevronRight, X } from 'lucide-react';
+import Link from 'next/link';
 
 export default function IndustryDetailPage() {
   const params = useParams();
   const router = useRouter();
   const slug = params.slug as string;
   const [industry, setIndustry] = useState<IndustryDetail | null>(null);
+  const [allIndustries, setAllIndustries] = useState<IndustryDetail[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState(0);
-  const tabsRef = useRef<HTMLDivElement>(null);
-  const [showModal, setShowModal] = useState(false);
-  const [modalItem, setModalItem] = useState<any>(null);
-  const [modalType, setModalType] = useState<'workplace' | 'trainingPlace' | null>(null);
+  const [activeRegion, setActiveRegion] = useState('all');
+  const [trainingPlaces, setTrainingPlaces] = useState<TrainingPlace[]>([]);
 
   useEffect(() => {
     const loadIndustry = async () => {
       try {
         setLoading(true);
-        const response = await huongnghiepApi.getAllIndustryDetails({});
-        const foundIndustry = response.data?.find((ind: IndustryDetail) => ind.slug === slug);
+        // Use admin endpoint directly since public endpoint doesn't exist yet
+        const adminRes = await huongnghiepApi.getAllIndustries({ limit: 100 });
         
-        if (foundIndustry) {
-          setIndustry(foundIndustry);
+        if (adminRes.success) {
+          // Transform all industries
+          const transformed = adminRes.data.map((item: any) => ({
+            _id: item._id,
+            name: item.name,
+            slug: item._id,
+            group: 'Khác',
+            thumbnail: item.image,
+            overview: {
+              introduction: item.basicInfo,
+              careerPath: item.careerPath,
+              salary: item.salary,
+            },
+            expertAdvice: item.expertAdvice,
+            knowledge: [],
+            requirements: [],
+            skills: [],
+            jobOpportunities: [],
+            trainingPlaces: [],
+            updatedAt: item.updatedAt || new Date().toISOString(),
+          }));
+          setAllIndustries(transformed);
+          
+          // Find current industry
+          const foundIndustry = transformed.find((ind: any) => ind._id === slug);
+          
+          if (foundIndustry) {
+            setIndustry(foundIndustry);
+          } else {
+            setError('Không tìm thấy ngành nghề');
+          }
         } else {
           setError('Không tìm thấy ngành nghề');
         }
@@ -39,25 +68,116 @@ export default function IndustryDetailPage() {
       }
     };
 
+    const loadTrainingPlaces = async () => {
+      try {
+        const res = await huongnghiepApi.getAllTrainingPlaces({ limit: 100 });
+        if (res.success) {
+          setTrainingPlaces(res.data);
+        }
+      } catch (err) {
+        console.error('Error loading training places:', err);
+      }
+    };
+
     if (slug) {
       loadIndustry();
+      loadTrainingPlaces();
     }
   }, [slug]);
 
-  const scrollTabs = (direction: 'left' | 'right') => {
-    if (tabsRef.current) {
-      const scrollAmount = 200;
-      tabsRef.current.scrollBy({
-        left: direction === 'left' ? -scrollAmount : scrollAmount,
-        behavior: 'smooth',
-      });
-    }
-  };
-
   if (loading) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="text-center py-12 text-[var(--cn-text-muted)]">Đang tải...</div>
+      <div className="min-h-screen bg-gray-50 pt-16 md:pt-8 pb-8">
+        <div className="container mx-auto px-4 max-w-7xl">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+            {/* Left Column - Content Skeleton */}
+            <div className="lg:col-span-2">
+              {/* Breadcrumb Skeleton */}
+              <div className="mb-6 flex items-center gap-2">
+                <div className="h-4 w-20 bg-gray-200 rounded animate-pulse" />
+                <div className="h-4 w-4 bg-gray-200 rounded animate-pulse" />
+                <div className="h-4 w-24 bg-gray-200 rounded animate-pulse" />
+                <div className="h-4 w-4 bg-gray-200 rounded animate-pulse" />
+                <div className="h-4 w-32 bg-gray-200 rounded animate-pulse" />
+              </div>
+              
+              {/* Header Skeleton */}
+              <div className="mb-6">
+                <div className="h-8 w-3/4 bg-gray-200 rounded mb-4 animate-pulse" />
+                <div className="flex items-center gap-4 pb-4 border-b border-gray-200">
+                  <div className="h-4 w-24 bg-gray-200 rounded animate-pulse" />
+                </div>
+              </div>
+
+              {/* Tabs Skeleton */}
+              <div className="mb-6">
+                <div className="flex gap-4 border-b border-gray-200 pb-3">
+                  <div className="h-8 w-20 bg-gray-200 rounded animate-pulse" />
+                  <div className="h-8 w-20 bg-gray-200 rounded animate-pulse" />
+                  <div className="h-8 w-20 bg-gray-200 rounded animate-pulse" />
+                </div>
+              </div>
+
+              {/* Tab Content Skeleton */}
+              <div className="bg-white rounded-xl border border-gray-200 p-6">
+                <div className="space-y-4">
+                  <div className="h-4 w-full bg-gray-200 rounded animate-pulse" />
+                  <div className="h-4 w-5/6 bg-gray-200 rounded animate-pulse" />
+                  <div className="h-4 w-4/6 bg-gray-200 rounded animate-pulse" />
+                </div>
+              </div>
+
+              {/* Training Places Section Skeleton */}
+              <div className="mt-8">
+                <div className="h-6 w-32 bg-gray-200 rounded mb-4 animate-pulse" />
+                
+                {/* Region Tabs Skeleton */}
+                <div className="mb-6">
+                  <div className="p-1 bg-white border border-gray-200 rounded-lg">
+                    <div className="flex items-center gap-1">
+                      <div className="h-6 w-16 bg-gray-200 rounded animate-pulse" />
+                      <div className="h-6 w-12 bg-gray-200 rounded animate-pulse" />
+                      <div className="h-6 w-12 bg-gray-200 rounded animate-pulse" />
+                      <div className="h-6 w-12 bg-gray-200 rounded animate-pulse" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Training Places Grid Skeleton */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {[...Array(4)].map((_, i) => (
+                    <div key={i} className="bg-white border border-gray-200 rounded-lg p-4">
+                      <div className="flex items-start gap-3">
+                        <div className="w-16 h-16 bg-gray-200 rounded animate-pulse flex-shrink-0" />
+                        <div className="flex-1">
+                          <div className="h-4 w-3/4 bg-gray-200 rounded mb-2 animate-pulse" />
+                          <div className="h-3 w-1/2 bg-gray-200 rounded mb-2 animate-pulse" />
+                          <div className="h-5 w-16 bg-gray-200 rounded animate-pulse" />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Right Column - Sidebar Skeleton */}
+            <div className="space-y-6 sticky top-24 self-start">
+              <div className="h-6 w-40 bg-gray-200 rounded animate-pulse" />
+              <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-4">
+                {[...Array(4)].map((_, i) => (
+                  <div key={i} className="flex gap-3">
+                    <div className="w-20 h-20 bg-gray-200 rounded-lg animate-pulse" />
+                    <div className="flex-1">
+                      <div className="h-4 w-full bg-gray-200 rounded animate-pulse" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="h-4 w-20 bg-gray-200 rounded animate-pulse mx-auto" />
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -73,12 +193,9 @@ export default function IndustryDetailPage() {
   // Define tabs based on available content
   const availableTabs = [
     { id: 'overview', label: 'Tổng quan', hasContent: true },
-    { id: 'knowledge', label: 'Kiến thức', hasContent: industry.knowledge && industry.knowledge.length > 0 },
-    { id: 'requirements', label: 'Yêu cầu', hasContent: industry.requirements && industry.requirements.length > 0 },
-    { id: 'skills', label: 'Kỹ năng', hasContent: industry.skills && industry.skills.length > 0 },
+    { id: 'career', label: 'Công việc', hasContent: !!industry.overview?.careerPath },
+    { id: 'salary', label: 'Mức lương', hasContent: !!industry.overview?.salary },
     { id: 'advice', label: 'Lời khuyên', hasContent: !!industry.expertAdvice },
-    { id: 'opportunities', label: 'Việc làm', hasContent: industry.jobOpportunities && industry.jobOpportunities.length > 0 },
-    { id: 'training', label: 'Đào tạo', hasContent: industry.trainingPlaces && industry.trainingPlaces.length > 0 },
   ].filter(tab => tab.hasContent);
 
   const renderTabContent = () => {
@@ -87,153 +204,29 @@ export default function IndustryDetailPage() {
     switch (currentTab) {
       case 'overview':
         return (
-          <div className="space-y-6">
-            {industry.overview?.introduction && (
-              <div>
-                <h3 className="text-lg font-bold text-[var(--cn-text-main)] mb-3">Giới thiệu chung</h3>
-                <p className="text-[var(--cn-text-sub)] leading-relaxed">{industry.overview.introduction}</p>
-              </div>
-            )}
-
-            {/* 3-column grid for salary, demand, training duration */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {(industry.overview?.salaryMin || industry.overview?.salaryMax) && (
-                <div className="bg-[var(--cn-bg-section)] p-4 rounded-lg border border-[var(--cn-border)]">
-                  <p className="text-sm text-[var(--cn-text-muted)] mb-1">Mức lương</p>
-                  <p className="font-bold text-[var(--cn-text-main)]">
-                    {industry.overview.salaryMin && industry.overview.salaryMax
-                      ? `${industry.overview.salaryMin} - ${industry.overview.salaryMax} tr/tháng`
-                      : industry.overview.salaryMin
-                      ? `Từ ${industry.overview.salaryMin} tr/tháng`
-                      : industry.overview.salaryMax
-                      ? `Đến ${industry.overview.salaryMax} tr/tháng`
-                      : ''}
-                  </p>
-                </div>
-              )}
-              {industry.overview?.demandLevel && (
-                <div className="bg-[var(--cn-bg-section)] p-4 rounded-lg border border-[var(--cn-border)]">
-                  <p className="text-sm text-[var(--cn-text-muted)] mb-1">Nhu cầu tuyển dụng</p>
-                  <p className="font-bold text-[var(--cn-text-main)]">{industry.overview.demandLevel}</p>
-                </div>
-              )}
-              {(industry.overview?.trainingDurationMin || industry.overview?.trainingDurationMax) && (
-                <div className="bg-[var(--cn-bg-section)] p-4 rounded-lg border border-[var(--cn-border)]">
-                  <p className="text-sm text-[var(--cn-text-muted)] mb-1">Thời gian đào tạo</p>
-                  <p className="font-bold text-[var(--cn-text-main)]">
-                    {industry.overview.trainingDurationMin && industry.overview.trainingDurationMax
-                      ? `${industry.overview.trainingDurationMin} - ${industry.overview.trainingDurationMax} năm`
-                      : industry.overview.trainingDurationMin
-                      ? `Từ ${industry.overview.trainingDurationMin} năm`
-                      : industry.overview.trainingDurationMax
-                      ? `Đến ${industry.overview.trainingDurationMax} năm`
-                      : ''}
-                  </p>
-                </div>
-              )}
-            </div>
-
-            {industry.overview?.whatIndustryDoes && industry.overview.whatIndustryDoes.length > 0 && (
-              <div>
-                <h3 className="text-lg font-bold text-[var(--cn-text-main)] mb-3">Ngành học làm gì?</h3>
-                <ul className="space-y-2">
-                  {industry.overview.whatIndustryDoes.map((item, index) => (
-                    <li key={index} className="flex items-start gap-2 text-[var(--cn-text-sub)]">
-                      <span className="text-blue-500 mt-1">•</span>
-                      <span>{item}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
+          <div className="prose prose-gray max-w-none">
+            <StaticContent content={industry.overview?.introduction || ''} />
           </div>
         );
 
-      case 'knowledge':
+      case 'career':
         return (
-          <ul className="space-y-3">
-            {industry.knowledge?.map((item, index) => (
-              <li key={index} className="flex items-start gap-3 text-[var(--cn-text-sub)]">
-                <span className="text-green-500 mt-1">✓</span>
-                <span>{item}</span>
-              </li>
-            ))}
-          </ul>
+          <div className="prose prose-gray max-w-none">
+            <StaticContent content={industry.overview?.careerPath || ''} />
+          </div>
         );
 
-      case 'requirements':
+      case 'salary':
         return (
-          <ul className="space-y-3">
-            {industry.requirements?.map((item, index) => (
-              <li key={index} className="flex items-start gap-3 text-[var(--cn-text-sub)]">
-                <span className="text-orange-500 mt-1">•</span>
-                <span>{item}</span>
-              </li>
-            ))}
-          </ul>
-        );
-
-      case 'skills':
-        return (
-          <ul className="space-y-3">
-            {industry.skills?.map((item, index) => (
-              <li key={index} className="flex items-start gap-3 text-[var(--cn-text-sub)]">
-                <span className="text-purple-500 mt-1">★</span>
-                <span>{item}</span>
-              </li>
-            ))}
-          </ul>
+          <div className="prose prose-gray max-w-none">
+            <StaticContent content={industry.overview?.salary || ''} />
+          </div>
         );
 
       case 'advice':
-        return <StaticContent content={industry.expertAdvice || ''} className="text-[var(--cn-text-sub)]" />;
-
-      case 'opportunities':
         return (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {industry.jobOpportunities?.map((wp: any, index: number) => (
-              <div
-                key={index}
-                onClick={() => {
-                  setModalItem(wp);
-                  setModalType('workplace');
-                  setShowModal(true);
-                }}
-                className="flex items-center gap-3 p-4 bg-[var(--cn-bg-section)] rounded-lg border border-[var(--cn-border)] cursor-pointer hover:shadow-md transition-shadow"
-              >
-                {wp.image && <img src={wp.image} alt={wp.name} className="max-w-16 max-h-16 rounded object-contain" />}
-                <div className="flex-1">
-                  <p className="font-medium text-[var(--cn-text-main)]">{wp.name}</p>
-                  <p className="text-sm text-[var(--cn-text-muted)]">{wp.address}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        );
-
-      case 'training':
-        return (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {industry.trainingPlaces?.map((tp: any, index: number) => (
-              <div
-                key={index}
-                onClick={() => {
-                  setModalItem(tp);
-                  setModalType('trainingPlace');
-                  setShowModal(true);
-                }}
-                className="flex items-center gap-3 p-4 bg-[var(--cn-bg-section)] rounded-lg border border-[var(--cn-border)] cursor-pointer hover:shadow-md transition-shadow"
-              >
-                {tp.logo && <img src={tp.logo} alt={tp.name} className="max-w-16 max-h-16 rounded object-contain" />}
-                <div className="flex-1">
-                  <p className="font-medium text-[var(--cn-text-main)]">{tp.name}</p>
-                  <p className="text-sm text-[var(--cn-text-muted)]">{tp.location}</p>
-                  <span className="text-xs px-2 py-0.5 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
-                    {tp.type}
-                  </span>
-                </div>
-              </div>
-            ))}
+          <div className="text-gray-700 leading-relaxed">
+            <StaticContent content={industry.expertAdvice || ''} />
           </div>
         );
 
@@ -243,181 +236,177 @@ export default function IndustryDetailPage() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
-      {/* Header */}
-      <div className="mb-6">
-        <button
-          onClick={() => router.back()}
-          className="mb-4 text-sm text-[var(--cn-text-muted)] hover:text-[var(--cn-text-main)] transition-colors"
-        >
-          ← Quay lại
-        </button>
-        
-        {industry.thumbnail && (
-          <img
-            src={industry.thumbnail}
-            alt={industry.name}
-            className="w-full h-48 md:h-64 object-cover rounded-lg mb-4"
-          />
-        )}
-        
-        <h1 className="text-2xl md:text-3xl font-bold text-[var(--cn-text-main)] mb-2">{industry.name}</h1>
-        <div className="flex items-center gap-2 text-sm text-[var(--cn-text-muted)]">
-          <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded">
-            Nhóm {industry.group}
+    <div className="min-h-screen bg-gray-50 pt-16 md:pt-14 lg:pt-8 pb-8">
+      <div className="container mx-auto px-4 max-w-7xl">
+        {/* Breadcrumb */}
+        <nav className="flex items-center gap-2 text-xs md:text-sm text-gray-600 mb-6">
+          <Link href="/" className="flex items-center gap-1 hover:text-gray-900 transition">
+            <Home className="w-3.5 h-3.5 md:w-4 md:h-4" />
+            <span className="hidden sm:inline">Trang chủ</span>
+            <span className="sm:hidden">Home</span>
+          </Link>
+          <ChevronRight className="w-3.5 h-3.5 md:w-4 md:h-4 text-gray-400" />
+          <Link href="/huongnghiep" className="hover:text-gray-900 transition">
+            Hướng nghiệp
+          </Link>
+          <ChevronRight className="w-3.5 h-3.5 md:w-4 md:h-4 text-gray-400" />
+          <span className="text-gray-900 font-medium truncate max-w-[120px] sm:max-w-xs md:max-w-xs">
+            {industry?.name}
           </span>
-          <span>•</span>
-          <span>Cập nhật: {new Date(industry.updatedAt).toLocaleDateString('vi-VN')}</span>
+        </nav>
+
+        {/* Header Section */}
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold text-gray-800 mb-4">{industry?.name}</h1>
+
+          {/* Metadata */}
+          <div className="flex flex-wrap items-center gap-4 pb-4 border-b border-gray-200">
+            <div className="flex items-center gap-2 text-sm text-gray-600">
+              <Calendar className="w-4 h-4" />
+              <span>{new Date(industry?.updatedAt || '').toLocaleDateString('vi-VN')}</span>
+            </div>
+          </div>
         </div>
-      </div>
 
-      {/* Tabs Navigation */}
-      <div className="mb-6">
-        <div className="flex items-center gap-2">
-          {/* Left Arrow - Mobile/Tablet */}
-          <button
-            onClick={() => scrollTabs('left')}
-            className="md:hidden p-2 rounded-lg bg-[var(--cn-bg-card)] border border-[var(--cn-border)] hover:bg-[var(--cn-bg-section)] transition-colors flex-shrink-0"
-          >
-            <ChevronLeft size={20} className="text-[var(--cn-text-muted)]" />
-          </button>
-
-          {/* Tabs Container */}
-          <div className="flex-1 min-w-0">
-            <div
-              ref={tabsRef}
-              className="overflow-x-auto scrollbar-hide"
-              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-            >
-              <div className="flex pr-2">
-                {availableTabs.map((tab, index) => (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(index)}
-                    className={`px-4 py-3 font-medium whitespace-nowrap transition-colors border-b-2 ${
-                      activeTab === index
-                        ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                        : 'border-transparent text-[var(--cn-text-muted)] hover:text-[var(--cn-text-main)]'
-                    }`}
-                  >
-                    {tab.label}
-                  </button>
-                ))}
+        {/* Main Content with Sidebar */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+          {/* Left: Industry Content */}
+          <div className="lg:col-span-2">
+            {/* Tabs Navigation */}
+            <div className="mb-6">
+              <div className="p-1 bg-white border border-gray-200 rounded-lg">
+                <div className="flex items-center gap-1">
+                  {availableTabs.map((tab, index) => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(index)}
+                      className={`px-3 py-1.5 text-xs font-semibold transition-colors whitespace-nowrap rounded-md ${activeTab === index
+                        ? 'bg-blue-50 text-blue-600'
+                        : 'text-gray-600 hover:bg-gray-50'
+                        }`}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
-            {/* Full width border line */}
-            <div className="border-b border-[var(--cn-border)]"></div>
+
+            {/* Tab Content */}
+            <div className="bg-white rounded-xl border border-gray-200 p-6">
+              {renderTabContent()}
+            </div>
+
+            {/* Training Places Section */}
+            <div className="mt-8">
+              <h3 className="text-xl font-bold text-gray-800 mb-4">Nơi đào tạo</h3>
+              
+              {/* Region Tabs */}
+              <div className="mb-6">
+                <div className="p-1 bg-white border border-gray-200 rounded-lg">
+                  <div className="flex items-center gap-1">
+                    {[
+                      { id: 'all', label: 'Tất cả' },
+                      { id: 'Miền Bắc', label: 'Bắc' },
+                      { id: 'Miền Trung', label: 'Trung' },
+                      { id: 'Miền Nam', label: 'Nam' },
+                    ].map((region) => (
+                      <button
+                        key={region.id}
+                        onClick={() => setActiveRegion(region.id)}
+                        className={`px-3 py-1.5 text-xs font-semibold transition-colors whitespace-nowrap rounded-md ${activeRegion === region.id
+                          ? 'bg-blue-50 text-blue-600'
+                          : 'text-gray-600 hover:bg-gray-50'
+                          }`}
+                      >
+                        {region.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Training Places Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {trainingPlaces
+                  .filter(tp => activeRegion === 'all' || tp.region === activeRegion)
+                  .map((tp) => (
+                    <div key={tp._id} className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                      <div className="flex items-start gap-3">
+                        {tp.logo && (
+                          <img src={tp.logo} alt={tp.name} className="w-16 h-16 object-contain rounded flex-shrink-0" />
+                        )}
+                        <div className="flex-1">
+                          <h4 className="font-medium text-gray-800 mb-1">{tp.name}</h4>
+                          <p className="text-sm text-gray-600 mb-2">{tp.province}</p>
+                          <span className="text-xs px-2 py-0.5 rounded bg-blue-100 text-blue-600">
+                            {tp.type}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                {trainingPlaces.filter(tp => activeRegion === 'all' || tp.region === activeRegion).length === 0 && (
+                  <div className="col-span-2 text-center py-8 text-gray-500">
+                    Chưa có nơi đào tạo nào
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
 
-          {/* Right Arrow - Mobile/Tablet */}
-          <button
-            onClick={() => scrollTabs('right')}
-            className="md:hidden p-2 rounded-lg bg-[var(--cn-bg-card)] border border-[var(--cn-border)] hover:bg-[var(--cn-bg-section)] transition-colors flex-shrink-0"
-          >
-            <ChevronRight size={20} className="text-[var(--cn-text-muted)]" />
-          </button>
-        </div>
-      </div>
-
-      {/* Tab Content */}
-      <div className="bg-[var(--cn-bg-card)] rounded-lg p-6 border border-[var(--cn-border)]">
-        {renderTabContent()}
-      </div>
-
-      {/* Modal */}
-      {showModal && modalItem && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-[var(--cn-bg-card)] rounded-lg max-w-2xl w-full">
-            <div className="p-6">
-              <div className="flex justify-between items-start mb-4">
-                <h3 className="text-xl font-bold text-[var(--cn-text-main)]">
-                  {modalType === 'workplace' ? 'Thông tin nơi làm việc' : 'Thông tin nơi đào tạo'}
-                </h3>
-                <button
-                  onClick={() => setShowModal(false)}
-                  className="p-2 hover:bg-[var(--cn-bg-section)] rounded-lg transition-colors"
+          {/* Right: Sidebar */}
+          <div className="space-y-6 sticky top-24 self-start">
+            {/* Other Industries */}
+            <>
+              <h3 className="text-lg font-semibold text-gray-800 uppercase">CÁC NGÀNH KHÁC</h3>
+              <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-4">
+                {allIndustries.filter((ind) => ind._id !== industry?._id).length > 0 ? (
+                  allIndustries
+                    .filter((ind) => ind._id !== industry?._id)
+                    .slice(0, 4)
+                    .map((otherIndustry) => (
+                      <Link
+                        key={otherIndustry._id}
+                        href={`/huongnghiep/${otherIndustry.slug}`}
+                        className="block group"
+                      >
+                        <div className="flex gap-3">
+                          {otherIndustry.thumbnail ? (
+                            <img
+                              src={otherIndustry.thumbnail}
+                              alt={otherIndustry.name}
+                              className="w-20 h-20 object-cover rounded-lg flex-shrink-0"
+                            />
+                          ) : (
+                            <div className="w-20 h-20 bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-700 dark:to-gray-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                              <Briefcase className="w-8 h-8 text-blue-500" />
+                            </div>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <h4 className="text-sm font-medium text-gray-800 group-hover:text-blue-600 mb-1">
+                              {otherIndustry.name}
+                            </h4>
+                          </div>
+                        </div>
+                      </Link>
+                    ))
+                ) : (
+                  <p className="text-sm text-gray-600 text-center py-4">Chưa có ngành khác</p>
+                )}
+              </div>
+              {allIndustries.filter((ind) => ind._id !== industry?._id).length > 0 && (
+                <Link
+                  href="/huongnghiep"
+                  className="block text-center text-sm text-blue-600 hover:underline"
                 >
-                  <X size={20} className="text-[var(--cn-text-muted)]" />
-                </button>
-              </div>
-
-              {modalType === 'workplace' ? (
-                <div className="space-y-4">
-                  {modalItem.image && (
-                    <img
-                      src={modalItem.image}
-                      alt={modalItem.name}
-                      className="w-full h-48 object-cover rounded-lg"
-                    />
-                  )}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-sm text-[var(--cn-text-muted)] mb-1">Tên</p>
-                      <p className="font-medium text-[var(--cn-text-main)]">{modalItem.name}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-[var(--cn-text-muted)] mb-1">Địa chỉ</p>
-                      <p className="text-[var(--cn-text-sub)]">{modalItem.address}</p>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {modalItem.logo && (
-                    <img
-                      src={modalItem.logo}
-                      alt={modalItem.name}
-                      className="w-full h-48 object-contain rounded-lg"
-                    />
-                  )}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-sm text-[var(--cn-text-muted)] mb-1">Tên</p>
-                      <p className="font-medium text-[var(--cn-text-main)]">{modalItem.name}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-[var(--cn-text-muted)] mb-1">Địa điểm</p>
-                      <p className="text-[var(--cn-text-sub)]">{modalItem.location}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-[var(--cn-text-muted)] mb-1">Khu vực</p>
-                      <p className="text-[var(--cn-text-sub)]">{modalItem.region}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-[var(--cn-text-muted)] mb-1">Loại hình</p>
-                      <p className="text-[var(--cn-text-sub)]">{modalItem.type}</p>
-                    </div>
-                    {modalItem.strengths && (
-                      <div className="col-span-2">
-                        <p className="text-sm text-[var(--cn-text-muted)] mb-1">Điểm mạnh</p>
-                        <p className="text-[var(--cn-text-sub)]">{modalItem.strengths}</p>
-                      </div>
-                    )}
-                    <div>
-                      <p className="text-sm text-[var(--cn-text-muted)] mb-1">Số ngành</p>
-                      <p className="text-[var(--cn-text-sub)]">{modalItem.majorsCount} ngành</p>
-                    </div>
-                    {(modalItem.tuitionMin || modalItem.tuitionMax) && (
-                      <div>
-                        <p className="text-sm text-[var(--cn-text-muted)] mb-1">Học phí</p>
-                        <p className="text-[var(--cn-text-sub)]">
-                          {modalItem.tuitionMin && modalItem.tuitionMax
-                            ? `${modalItem.tuitionMin} - ${modalItem.tuitionMax} triệu/năm`
-                            : modalItem.tuitionMin
-                            ? `Từ ${modalItem.tuitionMin} triệu/năm`
-                            : modalItem.tuitionMax
-                            ? `Đến ${modalItem.tuitionMax} triệu/năm`
-                            : ''}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </div>
+                  Xem tất cả
+                </Link>
               )}
-            </div>
+            </>
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }

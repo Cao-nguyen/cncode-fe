@@ -407,7 +407,7 @@ export default function BlogDetailPage() {
     if (!blog) return null;
 
     return (
-        <div className="min-h-screen bg-gray-50 pt-16 md:pt-8 pb-8">
+        <div className="min-h-screen bg-gray-50 pt-16 md:pt-14 lg:pt-8 pb-8">
             <div className="container mx-auto px-4 max-w-7xl">
                 {/* Breadcrumb */}
                 <nav className="flex items-center gap-2 text-xs md:text-sm text-gray-600 mb-6">

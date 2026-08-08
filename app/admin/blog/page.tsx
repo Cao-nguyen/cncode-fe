@@ -896,20 +896,9 @@ function AdminBlogPageContent() {
                                     <ChevronLeft className="w-4 h-4" />
                                 </button>
 
-                                {/* Các ô số trang */}
-                                <div className="flex items-center gap-1">
-                                    {Array.from({ length: totalFilteredPages }, (_, i) => i + 1).map((pageNum) => (
-                                        <button
-                                            key={pageNum}
-                                            onClick={() => setCurrentPage(pageNum)}
-                                            className={`px-3 py-1.5 text-sm font-medium rounded-md transition ${currentPage === pageNum
-                                                ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800'
-                                                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 border border-gray-300 dark:border-gray-700'
-                                                }`}
-                                        >
-                                            {pageNum}
-                                        </button>
-                                    ))}
+                                {/* Hiển thị trang hiện tại / tổng trang */}
+                                <div className="px-3 py-1.5 text-sm font-medium rounded-md bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800">
+                                    {currentPage} / {totalFilteredPages}
                                 </div>
 
                                 {/* Tới 1 trang */}

@@ -89,7 +89,7 @@ export default function MyBlogsPage() {
     };
 
     return (
-        <div className="min-h-screen pt-16 md:pt-8 pb-8" style={{ backgroundColor: 'var(--cn-bg-main)' }}>
+        <div className="min-h-screen pt-16 md:pt-14 lg:pt-8 pb-8" style={{ backgroundColor: 'var(--cn-bg-main)' }}>
             <div className="container mx-auto px-4 max-w-7xl">
                 {/* Breadcrumb */}
                 <nav className="flex items-center gap-2 text-sm text-gray-600 mb-6">
@@ -178,7 +178,7 @@ export default function MyBlogsPage() {
                                                     style={{ aspectRatio: '1500/1000' }}
                                                 />
                                                 <div className="absolute top-3 right-3">
-                                                    <span className="px-3 py-1.5 rounded-full text-xs font-medium backdrop-blur-sm"
+                                                    <span className="px-3 py-1.5 rounded-full text-xs font-medium backdrop-blur-sm whitespace-nowrap"
                                                         style={{
                                                             backgroundColor: 'rgba(59, 130, 246, 0.9)',
                                                             color: 'white'

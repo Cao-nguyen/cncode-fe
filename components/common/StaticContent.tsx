@@ -169,8 +169,8 @@ const editorStyles = `
     font-size: 15px !important;
   }
 
-  .static-editor ul { margin: 0.5em 0 0.5em 1.6em !important; }
-  .static-editor ol { margin: 0.5em 0 0.5em 1.6em !important; }
+  .static-editor ul { margin: 0.5em 0 0.5em 1.6em !important; list-style: none !important; }
+  .static-editor ol { margin: 0.5em 0 0.5em 1.6em !important; list-style: none !important; }
   .static-editor li { margin: 0.2em 0 !important; line-height: 1.75 !important; }
 
   .static-editor ::selection { background: rgba(99,102,241,0.15); }
