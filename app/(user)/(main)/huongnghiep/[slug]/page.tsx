@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { huongnghiepApi, HuongNghiep } from '@/lib/api/huongnghiep.api';
+import { huongnghiepApi, IndustryDetail } from '@/lib/api/huongnghiep.api';
 import StaticContent from '@/components/common/StaticContent';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 
@@ -10,7 +10,7 @@ export default function IndustryDetailPage() {
   const params = useParams();
   const router = useRouter();
   const slug = params.slug as string;
-  const [industry, setIndustry] = useState<HuongNghiep | null>(null);
+  const [industry, setIndustry] = useState<IndustryDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState(0);
@@ -23,8 +23,8 @@ export default function IndustryDetailPage() {
     const loadIndustry = async () => {
       try {
         setLoading(true);
-        const response = await huongnghiepApi.getAllIndustries({ isPublished: true });
-        const foundIndustry = response.data?.find((ind: HuongNghiep) => ind.slug === slug);
+        const response = await huongnghiepApi.getAllIndustryDetails({});
+        const foundIndustry = response.data?.find((ind: IndustryDetail) => ind.slug === slug);
         
         if (foundIndustry) {
           setIndustry(foundIndustry);

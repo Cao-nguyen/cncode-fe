@@ -67,6 +67,44 @@ export interface Industry {
     updatedAt: string;
 }
 
+export interface IndustryDetail {
+    _id: string;
+    name: string;
+    slug: string;
+    thumbnail?: string;
+    group: string;
+    overview?: {
+        introduction?: string;
+        salaryMin?: string;
+        salaryMax?: string;
+        demandLevel?: string;
+        trainingDurationMin?: string;
+        trainingDurationMax?: string;
+        whatIndustryDoes?: string[];
+    };
+    knowledge?: string[];
+    requirements?: string[];
+    skills?: string[];
+    expertAdvice?: string;
+    jobOpportunities?: Array<{
+        name: string;
+        image?: string;
+        address: string;
+    }>;
+    trainingPlaces?: Array<{
+        name: string;
+        logo?: string;
+        location: string;
+        region: string;
+        type: string;
+        strengths?: string;
+        majorsCount: number;
+        tuitionMin?: string;
+        tuitionMax?: string;
+    }>;
+    updatedAt: string;
+}
+
 export interface CreateIndustryData {
     image?: string;
     name: string;
@@ -94,6 +132,12 @@ export interface IndustriesResponse {
         total: number;
         totalPages: number;
     };
+    message?: string;
+}
+
+export interface IndustryDetailResponse {
+    success: boolean;
+    data: IndustryDetail;
     message?: string;
 }
 
@@ -212,6 +256,26 @@ export const huongnghiepApi = {
 
     deleteIndustry: async (id: string): Promise<{ success: boolean; message: string }> => {
         const response = await apiClient.delete(`/admin/huongnghiep/industries/${id}`);
+        return response.data;
+    },
+
+    // Public APIs - Industry Details
+    getIndustryBySlug: async (slug: string): Promise<IndustryDetailResponse> => {
+        const response = await apiClient.get(`/huongnghiep/${slug}`);
+        return response.data;
+    },
+
+    getAllIndustryDetails: async (params?: {
+        page?: number;
+        limit?: number;
+        search?: string;
+    }): Promise<{ success: boolean; data: IndustryDetail[]; message?: string }> => {
+        const queryParams = new URLSearchParams();
+        if (params?.page) queryParams.append('page', params.page.toString());
+        if (params?.limit) queryParams.append('limit', params.limit.toString());
+        if (params?.search) queryParams.append('search', params.search);
+
+        const response = await apiClient.get(`/huongnghiep/all?${queryParams.toString()}`);
         return response.data;
     },
 };
