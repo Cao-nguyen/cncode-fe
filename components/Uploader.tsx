@@ -27,13 +27,21 @@ interface UploaderProps {
         video?: boolean;
         document?: boolean;
     };
+    uploadText?: string;
+    className?: string;
+    height?: string;
+    endpoint?: string;
 }
 
 const Uploader: React.FC<UploaderProps> = ({
     apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000',
     onUploadComplete,
     maxFiles = 10,
-    acceptedTypes = { image: true, video: true, document: true }
+    acceptedTypes = { image: true, video: true, document: true },
+    uploadText = 'Drop files here or click to upload',
+    className = '',
+    height = 'p-12',
+    endpoint = '/api/test-up/image'
 }) => {
     const [files, setFiles] = useState<UploadFile[]>([]);
     const [isDragging, setIsDragging] = useState(false);
@@ -115,21 +123,43 @@ const Uploader: React.FC<UploaderProps> = ({
         const formData = new FormData();
         formData.append('file', uploadFile.file);
 
-        const endpoint = uploadFile.type === 'image'
+        const uploadEndpoint = endpoint || (uploadFile.type === 'image'
             ? '/api/test-up/image'
             : uploadFile.type === 'video'
                 ? '/api/test-up/video'
-                : '/api/test-up/document';
+                : '/api/test-up/document');
 
         try {
             setFiles(prev => prev.map(f =>
                 f.id === uploadFile.id ? { ...f, status: 'uploading' } : f
             ));
 
-            const response = await fetch(`${apiUrl}${endpoint}`, {
+            // Get token from localStorage
+            const token = localStorage.getItem('auth-storage');
+            let authToken = null;
+            if (token) {
+                try {
+                    const parsed = JSON.parse(token);
+                    authToken = parsed?.state?.token;
+                } catch (e) {
+                    console.error('Error parsing auth storage:', e);
+                }
+            }
+
+            const headers: Record<string, string> = {};
+            if (authToken) {
+                headers['Authorization'] = `Bearer ${authToken}`;
+            }
+
+            const response = await fetch(`${apiUrl}${uploadEndpoint}`, {
                 method: 'POST',
-                body: formData
+                body: formData,
+                headers
             });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
 
             const data = await response.json();
 
@@ -199,7 +229,7 @@ const Uploader: React.FC<UploaderProps> = ({
     };
 
     return (
-        <div className="w-full max-w-4xl mx-auto p-6 space-y-4">
+        <div className={`w-full ${className}`}>
             {/* Upload Zone */}
             <div
                 onDragOver={handleDragOver}
@@ -207,16 +237,17 @@ const Uploader: React.FC<UploaderProps> = ({
                 onDrop={handleDrop}
                 onClick={() => fileInputRef.current?.click()}
                 className={`
-          border-2 border-dashed rounded-lg p-12 text-center cursor-pointer
+          border-2 border-dashed rounded-lg text-center cursor-pointer
           transition-all duration-200
           ${isDragging
                         ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
                         : 'border-gray-300 dark:border-gray-700 hover:border-blue-400'
                     }
+          ${height}
         `}
             >
                 <Upload className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-                <p className="text-lg font-medium mb-2">Drop files here or click to upload</p>
+                <p className="text-lg font-medium mb-2">{uploadText}</p>
                 <p className="text-sm text-gray-500">
                     {acceptedTypes.image && 'Images, '}
                     {acceptedTypes.video && 'Videos, '}

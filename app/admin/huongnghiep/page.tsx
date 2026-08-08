@@ -1,813 +1,1523 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Users, BarChart3, Plus, Search, Edit, Trash2, Eye, EyeOff, X, Building2, Image as ImageIcon, ImageOff, GraduationCap, Building } from 'lucide-react';
-import { huongnghiepApi, HuongNghiep, HuongNghiepStats, Workplace, TrainingPlace } from '@/lib/api/huongnghiep.api';
-import IndustryForm from '@/components/admin/huongnghiep/IndustryForm';
-import WorkplaceForm from '@/components/admin/huongnghiep/WorkplaceForm';
-import TrainingPlaceForm from '@/components/admin/huongnghiep/TrainingPlaceForm';
+import React, { useState, useRef, useEffect } from 'react';
+import { Plus, Briefcase, GraduationCap, X, Upload, X as XIcon, Edit2, Trash2, Eye, ChevronDown, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Check } from 'lucide-react';
 import { CustomButton } from '@/components/custom/CustomButton';
-import { DashboardCard } from '@/components/custom/DashboardCard';
-import { CustomInputSearch } from '@/components/custom/CustomInputSearch';
+import { CustomInput } from '@/components/custom/CustomInput';
 import { CustomSelect } from '@/components/custom/CustomSelect';
-import StaticContent from '@/components/common/StaticContent';
+import CustomEditor, { CustomEditorRef } from '@/components/custom/CustomEditor';
+import { huongnghiepApi, TrainingPlace, Industry } from '@/lib/api/huongnghiep.api';
+import { uploadApi } from '@/lib/upload';
+import { toast } from 'sonner';
+
+const PROVINCES = [
+  { value: 'Hà Nội', label: 'Hà Nội' },
+  { value: 'Hải Phòng', label: 'Hải Phòng' },
+  { value: 'Huế', label: 'Huế' },
+  { value: 'Đà Nẵng', label: 'Đà Nẵng' },
+  { value: 'Cần Thơ', label: 'Cần Thơ' },
+  { value: 'Thành phố Hồ Chí Minh', label: 'Thành phố Hồ Chí Minh' },
+  { value: 'Cao Bằng', label: 'Cao Bằng' },
+  { value: 'Tuyên Quang', label: 'Tuyên Quang' },
+  { value: 'Lào Cai', label: 'Lào Cai' },
+  { value: 'Điện Biên', label: 'Điện Biên' },
+  { value: 'Lai Châu', label: 'Lai Châu' },
+  { value: 'Sơn La', label: 'Sơn La' },
+  { value: 'Lạng Sơn', label: 'Lạng Sơn' },
+  { value: 'Thái Nguyên', label: 'Thái Nguyên' },
+  { value: 'Phú Thọ', label: 'Phú Thọ' },
+  { value: 'Bắc Ninh', label: 'Bắc Ninh' },
+  { value: 'Quảng Ninh', label: 'Quảng Ninh' },
+  { value: 'Hưng Yên', label: 'Hưng Yên' },
+  { value: 'Ninh Bình', label: 'Ninh Bình' },
+  { value: 'Thanh Hóa', label: 'Thanh Hóa' },
+  { value: 'Nghệ An', label: 'Nghệ An' },
+  { value: 'Hà Tĩnh', label: 'Hà Tĩnh' },
+  { value: 'Quảng Trị', label: 'Quảng Trị' },
+  { value: 'Quảng Ngãi', label: 'Quảng Ngãi' },
+  { value: 'Gia Lai', label: 'Gia Lai' },
+  { value: 'Đắk Lắk', label: 'Đắk Lắk' },
+  { value: 'Khánh Hòa', label: 'Khánh Hòa' },
+  { value: 'Lâm Đồng', label: 'Lâm Đồng' },
+  { value: 'Đồng Nai', label: 'Đồng Nai' },
+  { value: 'Tây Ninh', label: 'Tây Ninh' },
+  { value: 'Đồng Tháp', label: 'Đồng Tháp' },
+  { value: 'Vĩnh Long', label: 'Vĩnh Long' },
+  { value: 'Cà Mau', label: 'Cà Mau' },
+  { value: 'An Giang', label: 'An Giang' }
+];
+
+const REGION_OPTIONS = [
+  { value: 'Miền Bắc', label: 'Miền Bắc' },
+  { value: 'Miền Trung', label: 'Miền Trung' },
+  { value: 'Miền Nam', label: 'Miền Nam' },
+];
+
+const TYPE_OPTIONS = [
+  { value: 'Công lập', label: 'Công lập' },
+  { value: 'Tư thục', label: 'Tư thục' },
+];
+
+const PAGINATION_OPTIONS = [5, 10, 25, 50];
 
 export default function HuongNghiepAdminPage() {
-  const [stats, setStats] = useState<HuongNghiepStats>({
-    A: 0,
-    B: 0,
-    C: 0,
-    D: 0,
-    total: 0,
-  });
-  const [industries, setIndustries] = useState<HuongNghiep[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterGroup, setFilterGroup] = useState('all');
-
-  const GROUP_FILTER_OPTIONS = [
-    { value: 'all', label: 'Tất cả nhóm' },
-    { value: 'A', label: 'A - Công nghệ' },
-    { value: 'B', label: 'B - Sáng tạo' },
-    { value: 'C', label: 'C - Xã hội' },
-    { value: 'D', label: 'D - Kinh doanh' },
-  ];
+  const [activeTab, setActiveTab] = useState<'all' | 'industries' | 'training'>('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showWorkplaceModal, setShowWorkplaceModal] = useState(false);
   const [showTrainingPlaceModal, setShowTrainingPlaceModal] = useState(false);
-  const [selectedIndustry, setSelectedIndustry] = useState<HuongNghiep | null>(null);
-  const [isEditing, setIsEditing] = useState(false);
-  const [showPreviewModal, setShowPreviewModal] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [industryToDelete, setIndustryToDelete] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'industries' | 'workplaces' | 'trainingPlaces'>('industries');
-  const [workplaces, setWorkplaces] = useState<Workplace[]>([]);
+  const [showIndustryModal, setShowIndustryModal] = useState(false);
   const [trainingPlaces, setTrainingPlaces] = useState<TrainingPlace[]>([]);
-  const [selectedWorkplace, setSelectedWorkplace] = useState<Workplace | undefined>(undefined);
-  const [selectedTrainingPlace, setSelectedTrainingPlace] = useState<TrainingPlace | undefined>(undefined);
+  const [industries, setIndustries] = useState<Industry[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [isPerPageOpen, setIsPerPageOpen] = useState(false);
 
-  // Load industries data (only when on industries tab and filters change)
+  // Training place states
+  const [logo, setLogo] = useState('');
+  const [name, setName] = useState('');
+  const [region, setRegion] = useState('');
+  const [province, setProvince] = useState('');
+  const [type, setType] = useState('Công lập');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [editingTrainingPlace, setEditingTrainingPlace] = useState<TrainingPlace | null>(null);
+  const [viewTrainingPlace, setViewTrainingPlace] = useState<TrainingPlace | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<TrainingPlace | null>(null);
+
+  // Industry states
+  const [industryImage, setIndustryImage] = useState('');
+  const [industryName, setIndustryName] = useState('');
+  const [isIndustryUploading, setIsIndustryUploading] = useState(false);
+  const [isIndustrySubmitting, setIsIndustrySubmitting] = useState(false);
+  const [editingIndustry, setEditingIndustry] = useState<Industry | null>(null);
+  const [industryCurrentPage, setIndustryCurrentPage] = useState(1);
+  const [industryItemsPerPage, setIndustryItemsPerPage] = useState(8);
+  const [isIndustryPerPageOpen, setIsIndustryPerPageOpen] = useState(false);
+
+  const editorRef = useRef<CustomEditorRef>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const perPageDropdownRef = useRef<HTMLDivElement>(null);
+  const industryPerPageDropdownRef = useRef<HTMLDivElement>(null);
+  const industryFileInputRef = useRef<HTMLInputElement>(null);
+  const industryBasicInfoRef = useRef<CustomEditorRef>(null);
+  const industryCareerPathRef = useRef<CustomEditorRef>(null);
+  const industryExpertAdviceRef = useRef<CustomEditorRef>(null);
+  const industrySalaryRef = useRef<CustomEditorRef>(null);
+
+  // Fetch all training places once
   useEffect(() => {
-    const loadIndustriesData = async () => {
+    const fetchData = async () => {
+      setLoading(true);
       try {
-        setLoading(true);
-        const [statsData, industriesData] = await Promise.all([
-          huongnghiepApi.getStats(),
-          huongnghiepApi.getAllIndustries({
-            group: filterGroup === 'all' ? undefined : filterGroup,
-            search: searchTerm || undefined,
-          }),
-        ]);
-        setStats(statsData.data);
-        setIndustries(industriesData.data);
+        const res = await huongnghiepApi.getAllTrainingPlaces({});
+        if (res.success) {
+          setTrainingPlaces(res.data);
+        } else {
+          toast.error(res.message || 'Không thể tải danh sách');
+        }
       } catch (error) {
-        console.error('Error loading industries:', error);
+        console.error('Fetch training places error:', error);
+        toast.error('Không thể tải danh sách nơi đào tạo');
       } finally {
         setLoading(false);
       }
     };
 
-    if (activeTab === 'industries') {
-      loadIndustriesData();
-    }
-  }, [filterGroup, searchTerm]); // Remove activeTab from dependencies
+    fetchData();
+  }, []);
 
-  // Load workplaces data (only when on workplaces tab and not already loaded)
+  // Fetch all industries once
   useEffect(() => {
-    if (activeTab === 'workplaces' && workplaces.length === 0) {
-      const loadWorkplacesData = async () => {
-        try {
-          const workplacesData = await huongnghiepApi.getAllWorkplaces();
-          setWorkplaces(workplacesData.data || []);
-        } catch (error) {
-          console.error('Error loading workplaces:', error);
-          setWorkplaces([]);
+    const fetchIndustries = async () => {
+      try {
+        const res = await huongnghiepApi.getAllIndustries({});
+        if (res.success) {
+          setIndustries(res.data);
+        } else {
+          toast.error(res.message || 'Không thể tải danh sách ngành nghề');
         }
-      };
-      loadWorkplacesData();
-    }
-  }, [activeTab, workplaces.length]);
+      } catch (error) {
+        console.error('Fetch industries error:', error);
+        toast.error('Không thể tải danh sách ngành nghề');
+      }
+    };
 
-  // Load training places data (only when on training places tab and not already loaded)
-  useEffect(() => {
-    if (activeTab === 'trainingPlaces' && trainingPlaces.length === 0) {
-      const loadTrainingPlacesData = async () => {
-        try {
-          const trainingPlacesData = await huongnghiepApi.getAllTrainingPlaces();
-          setTrainingPlaces(trainingPlacesData.data || []);
-        } catch (error) {
-          console.error('Error loading training places:', error);
-          setTrainingPlaces([]);
-        }
-      };
-      loadTrainingPlacesData();
-    }
-  }, [activeTab, trainingPlaces.length]);
+    fetchIndustries();
+  }, []);
 
-  // Unified loadData function for refreshing data
-  const loadData = async (skipLoading = false) => {
-    if (activeTab === 'industries') {
-      try {
-        if (!skipLoading) setLoading(true);
-        const [statsData, industriesData] = await Promise.all([
-          huongnghiepApi.getStats(),
-          huongnghiepApi.getAllIndustries({
-            group: filterGroup === 'all' ? undefined : filterGroup,
-            search: searchTerm || undefined,
-          }),
-        ]);
-        setStats(statsData.data);
-        setIndustries(industriesData.data);
-      } catch (error) {
-        console.error('Error loading industries:', error);
-      } finally {
-        if (!skipLoading) setLoading(false);
-      }
-    } else if (activeTab === 'workplaces') {
-      try {
-        const workplacesData = await huongnghiepApi.getAllWorkplaces();
-        setWorkplaces(workplacesData.data || []);
-      } catch (error) {
-        console.error('Error loading workplaces:', error);
-        setWorkplaces([]);
-      }
-    } else if (activeTab === 'trainingPlaces') {
-      try {
-        const trainingPlacesData = await huongnghiepApi.getAllTrainingPlaces();
-        setTrainingPlaces(trainingPlacesData.data || []);
-      } catch (error) {
-        console.error('Error loading training places:', error);
-        setTrainingPlaces([]);
-      }
-    }
+  // Client-side pagination
+  const totalPages = Math.ceil(trainingPlaces.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedPlaces = trainingPlaces.slice(startIndex, endIndex);
+
+  // Industry pagination
+  const industryTotalPages = Math.ceil(industries.length / industryItemsPerPage);
+  const industryStartIndex = (industryCurrentPage - 1) * industryItemsPerPage;
+  const industryEndIndex = industryStartIndex + industryItemsPerPage;
+  const paginatedIndustries = industries.slice(industryStartIndex, industryEndIndex);
+
+  const handleItemsPerPageChange = (newItemsPerPage: number) => {
+    setItemsPerPage(newItemsPerPage);
+    setCurrentPage(1);
   };
 
-  const handleDelete = async () => {
-    if (!industryToDelete) return;
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage);
+  };
 
+  const handleIndustryItemsPerPageChange = (newItemsPerPage: number) => {
+    setIndustryItemsPerPage(newItemsPerPage);
+    setIndustryCurrentPage(1);
+  };
+
+  const handleIndustryPageChange = (newPage: number) => {
+    setIndustryCurrentPage(newPage);
+  };
+
+  const handleLogoUpload = async (file: File) => {
+    setIsUploading(true);
     try {
-      await huongnghiepApi.deleteIndustry(industryToDelete);
-      setShowDeleteModal(false);
-      setIndustryToDelete(null);
-      loadData(true);
+      // Convert file to base64
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      const result = await uploadApi.uploadImage(base64, 'huongnghiep');
+      if (result.success && result.url) {
+        setLogo(result.url);
+        toast.success('Upload logo thành công');
+      } else {
+        toast.error(result.message || 'Upload thất bại');
+      }
     } catch (error) {
-      console.error('Error deleting industry:', error);
+      console.error('Upload error:', error);
+      toast.error('Lỗi upload');
+    } finally {
+      setIsUploading(false);
     }
   };
 
-  const handleTogglePublish = async (id: string) => {
+  const handleSaveTrainingPlace = async () => {
+    console.log('Current values:', { name, region, province, type });
+
+    if (!name || !region || !province) {
+      toast.error('Vui lòng điền đầy đủ thông tin');
+      return;
+    }
+
+    const content = editorRef.current?.getContent() || '';
+    if (!content.trim() || content === '<p><br></p>') {
+      toast.error('Vui lòng nhập giới thiệu');
+      return;
+    }
+
+    setIsSubmitting(true);
     try {
-      await huongnghiepApi.togglePublish(id);
-      loadData(true);
+      const payload = {
+        logo,
+        name,
+        region: region as 'Miền Bắc' | 'Miền Trung' | 'Miền Nam',
+        province,
+        type: type as 'Công lập' | 'Tư thục',
+        description: content,
+      };
+      console.log('Sending payload:', payload);
+
+      if (editingTrainingPlace) {
+        const res = await huongnghiepApi.updateTrainingPlace(editingTrainingPlace._id, payload);
+        toast.success('Cập nhật nơi đào tạo thành công');
+        // Update local state
+        setTrainingPlaces(prev => prev.map(place =>
+          place._id === editingTrainingPlace._id ? res.data : place
+        ));
+      } else {
+        const res = await huongnghiepApi.createTrainingPlace(payload);
+        toast.success('Tạo nơi đào tạo thành công');
+        // Add to local state (prepend)
+        setTrainingPlaces(prev => [res.data, ...prev]);
+      }
+
+      setShowTrainingPlaceModal(false);
+      setEditingTrainingPlace(null);
+      // Reset form
+      setLogo('');
+      setName('');
+      setRegion('');
+      setProvince('');
+      setType('Công lập');
+      setTimeout(() => editorRef.current?.setContent(''), 100);
     } catch (error) {
-      console.error('Error toggling publish:', error);
+      console.error('Create training place error:', error);
+      toast.error('Không thể tạo nơi đào tạo');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-[var(--cn-text-muted)]">Đang tải...</div>
-      </div>
-    );
-  }
+  const handleEditTrainingPlace = (place: TrainingPlace) => {
+    setEditingTrainingPlace(place);
+    setLogo(place.logo);
+    setName(place.name);
+    setRegion(place.region);
+    setProvince(place.province);
+    setType(place.type);
+    setTimeout(() => editorRef.current?.setContent(place.description), 100);
+    setShowTrainingPlaceModal(true);
+  };
 
-  const cardConfigs = [
-    {
-      key: 'total',
-      title: 'Tổng ngành',
-      value: stats.total,
-      icon: <BarChart3 className="w-4 h-4" />,
-      iconBgColor: '#EFF6FF',
-      iconColor: '#3B82F6',
-    },
-    {
-      key: 'A',
-      title: 'Công nghệ',
-      value: stats.A,
-      icon: <span className="w-4 h-4 font-bold">A</span>,
-      iconBgColor: '#DCFCE7',
-      iconColor: '#16A34A',
-    },
-    {
-      key: 'B',
-      title: 'Sáng tạo',
-      value: stats.B,
-      icon: <span className="w-4 h-4 font-bold">B</span>,
-      iconBgColor: '#FEF3C7',
-      iconColor: '#D97706',
-    },
-    {
-      key: 'C',
-      title: 'Xã hội',
-      value: stats.C,
-      icon: <span className="w-4 h-4 font-bold">C</span>,
-      iconBgColor: '#FCE7F3',
-      iconColor: '#DB2777',
-    },
-    {
-      key: 'D',
-      title: 'Kinh doanh',
-      value: stats.D,
-      icon: <span className="w-4 h-4 font-bold">D</span>,
-      iconBgColor: '#E0E7FF',
-      iconColor: '#6366F1',
-    },
-  ];
+  const handleDeleteTrainingPlace = async () => {
+    if (!deleteConfirm) return;
+    try {
+      await huongnghiepApi.deleteTrainingPlace(deleteConfirm._id);
+      toast.success('Xóa nơi đào tạo thành công');
+      // Remove from local state
+      setTrainingPlaces(prev => prev.filter(place => place._id !== deleteConfirm._id));
+      setDeleteConfirm(null);
+    } catch (error) {
+      console.error('Delete training place error:', error);
+      toast.error('Không thể xóa nơi đào tạo');
+    }
+  };
+
+  const handleOpenCreateModal = () => {
+    setEditingTrainingPlace(null);
+    setLogo('');
+    setName('');
+    setRegion('');
+    setProvince('');
+    setType('Công lập');
+    setTimeout(() => editorRef.current?.setContent(''), 100);
+    setShowTrainingPlaceModal(true);
+  };
+
+  const handleOpenIndustryModal = () => {
+    setEditingIndustry(null);
+    setIndustryImage('');
+    setIndustryName('');
+    setShowIndustryModal(true);
+  };
+
+  const handleIndustryImageUpload = async (file: File) => {
+    setIsIndustryUploading(true);
+    try {
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      const result = await uploadApi.uploadImage(base64, 'huongnghiep');
+      if (result.success && result.url) {
+        setIndustryImage(result.url);
+        toast.success('Upload hình ảnh thành công');
+      } else {
+        toast.error(result.message || 'Upload thất bại');
+      }
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast.error('Lỗi upload');
+    } finally {
+      setIsIndustryUploading(false);
+    }
+  };
+
+  const handleIndustryNextStep = () => {
+    // Removed - no more steps
+  };
+
+  const handleIndustryPrevStep = () => {
+    // Removed - no more steps
+  };
+
+  const handleSaveIndustry = async () => {
+    setIsIndustrySubmitting(true);
+    try {
+      const payload = {
+        image: industryImage,
+        name: industryName,
+        basicInfo: industryBasicInfoRef.current?.getContent() || '',
+        careerPath: industryCareerPathRef.current?.getContent() || '',
+        expertAdvice: industryExpertAdviceRef.current?.getContent() || '',
+        salary: industrySalaryRef.current?.getContent() || '',
+      };
+
+      if (editingIndustry) {
+        const res = await huongnghiepApi.updateIndustry(editingIndustry._id, payload);
+        toast.success('Cập nhật ngành nghề thành công');
+        setIndustries(prev => prev.map(ind =>
+          ind._id === editingIndustry._id ? res.data : ind
+        ));
+      } else {
+        const res = await huongnghiepApi.createIndustry(payload);
+        toast.success('Tạo ngành nghề thành công');
+        setIndustries(prev => [res.data, ...prev]);
+      }
+
+      setShowIndustryModal(false);
+      setEditingIndustry(null);
+      setIndustryImage('');
+      setIndustryName('');
+    } catch (error) {
+      console.error('Create industry error:', error);
+      toast.error('Không thể tạo ngành nghề');
+    } finally {
+      setIsIndustrySubmitting(false);
+    }
+  };
+
+  const handleEditIndustry = (industry: Industry) => {
+    setEditingIndustry(industry);
+    setIndustryImage(industry.image || '');
+    setIndustryName(industry.name || '');
+    setTimeout(() => {
+      industryBasicInfoRef.current?.setContent(industry.basicInfo || '');
+      industryCareerPathRef.current?.setContent(industry.careerPath || '');
+      industryExpertAdviceRef.current?.setContent(industry.expertAdvice || '');
+      industrySalaryRef.current?.setContent(industry.salary || '');
+    }, 100);
+    setShowIndustryModal(true);
+  };
+
+  const handleDeleteIndustry = async (industry: Industry) => {
+    if (confirm(`Bạn có chắc muốn xóa ngành nghề "${industry.name}"?`)) {
+      try {
+        await huongnghiepApi.deleteIndustry(industry._id);
+        toast.success('Xóa ngành nghề thành công');
+        setIndustries(prev => prev.filter(ind => ind._id !== industry._id));
+      } catch (error) {
+        console.error('Delete industry error:', error);
+        toast.error('Không thể xóa ngành nghề');
+      }
+    }
+  };
 
   return (
     <div className="space-y-6 pb-8 px-4">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-gray-100">Quản lý Ngành Hướng nghiệp</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Quản lý thông tin ngành nghề</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-gray-100">Quản lý hướng nghiệp</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Quản lý ngành nghề và nơi đào tạo</p>
         </div>
-        <div className="flex flex-col sm:flex-row gap-2">
-          <CustomButton variant="outline" onClick={() => setShowWorkplaceModal(true)}>
-            <Plus className="w-4 h-4 mr-2" />
-            Tạo nơi làm việc
-          </CustomButton>
-          <CustomButton variant="outline" onClick={() => setShowTrainingPlaceModal(true)}>
-            <Plus className="w-4 h-4 mr-2" />
-            Tạo nơi đào tạo
-          </CustomButton>
-          <CustomButton onClick={() => setShowCreateModal(true)}>
-            <Plus className="w-4 h-4 mr-2" />
-            Tạo ngành mới
-          </CustomButton>
-        </div>
+        <CustomButton onClick={() => setShowCreateModal(true)}>
+          <Plus className="w-4 h-4 mr-2" />
+          Tạo bản ghi
+        </CustomButton>
       </div>
 
-      {/* Stats Cards */}
-      {activeTab === 'industries' && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-          {cardConfigs.map((card) => (
-            <DashboardCard
-              key={card.key}
-              title={card.title}
-              value={card.value}
-              icon={card.icon}
-              iconBgColor={card.iconBgColor}
-              iconColor={card.iconColor}
-            />
-          ))}
-        </div>
-      )}
-
-      {activeTab === 'workplaces' && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          <DashboardCard
-            title="Tổng số nơi làm việc"
-            value={workplaces.length}
-            icon={<Building2 size={20} />}
-            iconBgColor="#DBEAFE"
-            iconColor="#2563EB"
-          />
-          <DashboardCard
-            title="Có ảnh"
-            value={workplaces.filter(wp => wp.image).length}
-            icon={<ImageIcon size={20} />}
-            iconBgColor="#FCE7F3"
-            iconColor="#DB2777"
-          />
-          <DashboardCard
-            title="Chưa có ảnh"
-            value={workplaces.filter(wp => !wp.image).length}
-            icon={<ImageOff size={20} />}
-            iconBgColor="#F3F4F6"
-            iconColor="#6B7280"
-          />
-        </div>
-      )}
-
-      {activeTab === 'trainingPlaces' && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <DashboardCard
-            title="Tổng số nơi đào tạo"
-            value={trainingPlaces.length}
-            icon={<GraduationCap size={20} />}
-            iconBgColor="#DBEAFE"
-            iconColor="#2563EB"
-          />
-          <DashboardCard
-            title="Công lập"
-            value={trainingPlaces.filter(tp => tp.type === 'Công lập').length}
-            icon={<Building size={20} />}
-            iconBgColor="#D1FAE5"
-            iconColor="#059669"
-          />
-          <DashboardCard
-            title="Tư thục"
-            value={trainingPlaces.filter(tp => tp.type === 'Tư thục').length}
-            icon={<Building2 size={20} />}
-            iconBgColor="#FEF3C7"
-            iconColor="#D97706"
-          />
-          <DashboardCard
-            title="Có logo"
-            value={trainingPlaces.filter(tp => tp.logo).length}
-            icon={<ImageIcon size={20} />}
-            iconBgColor="#FCE7F3"
-            iconColor="#DB2777"
-          />
-        </div>
-      )}
-
-      {/* Tab Navigation */}
-      <div className="flex gap-2 border-b border-gray-200 dark:border-gray-700">
-        <button
-          onClick={() => setActiveTab('industries')}
-          className={`px-4 py-2 font-medium transition-colors ${
-            activeTab === 'industries'
-              ? 'text-blue-500 border-b-2 border-blue-500'
-              : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
-          }`}
-        >
-          Ngành nghề
-        </button>
-        <button
-          onClick={() => setActiveTab('workplaces')}
-          className={`px-4 py-2 font-medium transition-colors ${
-            activeTab === 'workplaces'
-              ? 'text-blue-500 border-b-2 border-blue-500'
-              : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
-          }`}
-        >
-          Nơi làm việc
-        </button>
-        <button
-          onClick={() => setActiveTab('trainingPlaces')}
-          className={`px-4 py-2 font-medium transition-colors ${
-            activeTab === 'trainingPlaces'
-              ? 'text-blue-500 border-b-2 border-blue-500'
-              : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
-          }`}
-        >
-          Nơi đào tạo
-        </button>
-      </div>
-
-      {/* Filters - Only show on industries tab */}
-      {activeTab === 'industries' && (
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1 sm:flex-[2]">
-              <CustomInputSearch
-                placeholder="Tìm kiếm ngành..."
-                value={searchTerm}
-                onChange={setSearchTerm}
-              />
+      {/* Create Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4 overflow-y-auto h-screen w-screen">
+          <div className="bg-white dark:bg-gray-950 rounded-lg max-w-lg w-full p-6 my-auto">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">Chọn loại bản ghi</h2>
+              <button
+                onClick={() => setShowCreateModal(false)}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
-            <div className="sm:w-48">
-              <CustomSelect
-                options={GROUP_FILTER_OPTIONS}
-                value={filterGroup}
-                onChange={setFilterGroup}
-              />
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Industry List */}
-      {activeTab === 'industries' && (
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
-        <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-          <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Danh sách ngành</h2>
-        </div>
-
-        {industries.length === 0 ? (
-          <div className="p-8 text-center text-gray-400 dark:text-gray-500">
-            Chưa có ngành nào
-          </div>
-        ) : (
-          <div className="divide-y divide-gray-200 dark:divide-gray-700">
-            {industries.map((industry) => (
-              <div key={industry._id} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div className="flex items-center gap-4 flex-1">
-                    {industry.thumbnail && (
-                      <img
-                        src={industry.thumbnail}
-                        alt={industry.name}
-                        className="w-16 h-16 rounded-lg object-cover flex-shrink-0"
-                      />
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <span className="text-sm font-bold px-2 py-0.5 rounded bg-blue-500 text-white">
-                          {industry.group}
-                        </span>
-                        <h3 className="font-bold text-gray-800 dark:text-gray-100">{industry.name}</h3>
-                        {!industry.isPublished && (
-                          <span className="text-xs px-2 py-0.5 rounded bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400">
-                            Nháp
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2">
-                        {industry.overview.introduction}
-                      </p>
-                      <div className="flex flex-wrap gap-4 mt-2 text-xs text-gray-500 dark:text-gray-400">
-                        <span>Lương: {industry.overview.salaryMin} - {industry.overview.salaryMax} triệu</span>
-                        <span>Nhu cầu: {industry.overview.demandLevel}</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => {
-                        setSelectedIndustry(industry);
-                        setShowPreviewModal(true);
-                      }}
-                      className="p-2 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 text-blue-500 transition-colors"
-                      title="Xem chi tiết"
-                    >
-                      <Eye size={18} />
-                    </button>
-                    <button
-                      onClick={() => {
-                        setSelectedIndustry(industry);
-                        setIsEditing(true);
-                        setShowCreateModal(true);
-                      }}
-                      className="p-2 rounded-lg hover:bg-green-50 dark:hover:bg-green-900/20 text-green-500 transition-colors"
-                      title="Sửa"
-                    >
-                      <Edit size={18} />
-                    </button>
-                    <button
-                      onClick={() => handleTogglePublish(industry._id)}
-                      className={`p-2 rounded-lg transition-colors ${
-                        industry.isPublished
-                          ? 'hover:bg-yellow-50 dark:hover:bg-yellow-900/20 text-yellow-500'
-                          : 'hover:bg-green-50 dark:hover:bg-green-900/20 text-green-500'
-                      }`}
-                      title={industry.isPublished ? 'Ẩn' : 'Xuất bản'}
-                    >
-                      {industry.isPublished ? <EyeOff size={18} /> : <Eye size={18} />}
-                    </button>
-                    <button
-                      onClick={() => {
-                        setIndustryToDelete(industry._id);
-                        setShowDeleteModal(true);
-                      }}
-                      className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-red-500 transition-colors"
-                      title="Xóa"
-                    >
-                      <Trash2 size={18} />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-      )}
-
-      {/* Workplace List */}
-      {activeTab === 'workplaces' && (
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
-          <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-            <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Danh sách nơi làm việc</h2>
-          </div>
-
-          {workplaces.length === 0 ? (
-            <div className="p-8 text-center text-gray-400 dark:text-gray-500">
-              Chưa có nơi làm việc nào
-            </div>
-          ) : (
-            <div className="divide-y divide-gray-200 dark:divide-gray-700">
-              {workplaces.map((workplace) => (
-                <div key={workplace._id} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div className="flex items-center gap-4 flex-1">
-                      {workplace.image && (
-                        <img
-                          src={workplace.image}
-                          alt={workplace.name}
-                          className="w-16 h-16 rounded-lg object-cover flex-shrink-0"
-                        />
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-bold text-gray-800 dark:text-gray-100">{workplace.name}</h3>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">{workplace.address}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => {
-                          setSelectedWorkplace(workplace);
-                          setShowWorkplaceModal(true);
-                        }}
-                        className="p-2 rounded-lg hover:bg-green-50 dark:hover:bg-green-900/20 text-green-500 transition-colors"
-                        title="Sửa"
-                      >
-                        <Edit size={18} />
-                      </button>
-                      <button
-                        onClick={async () => {
-                          if (confirm('Bạn có chắc chắn muốn xóa nơi làm việc này?')) {
-                            try {
-                              await huongnghiepApi.deleteWorkplace(workplace._id!);
-                              loadData();
-                            } catch (error) {
-                              console.error('Error deleting workplace:', error);
-                            }
-                          }
-                        }}
-                        className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-red-500 transition-colors"
-                        title="Xóa"
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Training Place List */}
-      {activeTab === 'trainingPlaces' && (
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
-          <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-            <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Danh sách nơi đào tạo</h2>
-          </div>
-
-          {trainingPlaces.length === 0 ? (
-            <div className="p-8 text-center text-gray-400 dark:text-gray-500">
-              Chưa có nơi đào tạo nào
-            </div>
-          ) : (
-            <div className="divide-y divide-gray-200 dark:divide-gray-700">
-              {trainingPlaces.map((place) => (
-                <div key={place._id} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div className="flex items-center gap-4 flex-1">
-                      {place.logo && (
-                        <img
-                          src={place.logo}
-                          alt={place.name}
-                          className="w-16 h-16 rounded-lg object-cover flex-shrink-0"
-                        />
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-bold text-gray-800 dark:text-gray-100">{place.name}</h3>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">{place.location} - {place.region}</p>
-                        <div className="flex gap-2 mt-1">
-                          <span className="text-xs px-2 py-0.5 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
-                            {place.type}
-                          </span>
-                          <span className="text-xs px-2 py-0.5 rounded bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400">
-                            {place.majorsCount} ngành
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => {
-                          setSelectedTrainingPlace(place);
-                          setShowTrainingPlaceModal(true);
-                        }}
-                        className="p-2 rounded-lg hover:bg-green-50 dark:hover:bg-green-900/20 text-green-500 transition-colors"
-                        title="Sửa"
-                      >
-                        <Edit size={18} />
-                      </button>
-                      <button
-                        onClick={async () => {
-                          if (confirm('Bạn có chắc chắn muốn xóa nơi đào tạo này?')) {
-                            try {
-                              await huongnghiepApi.deleteTrainingPlace(place._id!);
-                              loadData();
-                            } catch (error) {
-                              console.error('Error deleting training place:', error);
-                            }
-                          }
-                        }}
-                        className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-red-500 transition-colors"
-                        title="Xóa"
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Delete Confirmation Modal */}
-      {showDeleteModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4 border border-gray-200 dark:border-gray-700">
-            <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100 mb-4">Xác nhận xóa</h3>
-            <p className="text-gray-600 dark:text-gray-400 mb-6">
-              Bạn có chắc chắn muốn xóa ngành này? Hành động này không thể hoàn tác.
-            </p>
-            <div className="flex justify-end gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <button
                 onClick={() => {
-                  setShowDeleteModal(false);
-                  setIndustryToDelete(null);
+                  setShowCreateModal(false);
+                  handleOpenIndustryModal();
                 }}
-                className="px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                className="group p-6 border-2 border-gray-200 dark:border-gray-800 rounded-lg hover:border-blue-500 dark:hover:border-blue-500 transition-all hover:shadow-md"
               >
-                Hủy
+                <div className="flex flex-col items-center text-center">
+                  <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mb-3 group-hover:bg-blue-200 dark:group-hover:bg-blue-900/50 transition-colors">
+                    <Briefcase className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <h3 className="font-semibold text-gray-800 dark:text-gray-100 mb-1">Ngành nghề</h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Tạo thông tin về các ngành nghề</p>
+                </div>
               </button>
               <button
-                onClick={handleDelete}
-                className="px-4 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors"
+                onClick={() => {
+                  setShowCreateModal(false);
+                  handleOpenCreateModal();
+                }}
+                className="group p-6 border-2 border-gray-200 dark:border-gray-800 rounded-lg hover:border-green-500 dark:hover:border-green-500 transition-all hover:shadow-md"
               >
-                Xóa
+                <div className="flex flex-col items-center text-center">
+                  <div className="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mb-3 group-hover:bg-green-200 dark:group-hover:bg-green-900/50 transition-colors">
+                    <GraduationCap className="w-6 h-6 text-green-600 dark:text-green-400" />
+                  </div>
+                  <h3 className="font-semibold text-gray-800 dark:text-gray-100 mb-1">Nơi đào tạo</h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Tạo thông tin về nơi đào tạo</p>
+                </div>
               </button>
             </div>
           </div>
         </div>
-      )}
-
-      {/* Create/Edit Modal */}
-      {showCreateModal && (
-        <IndustryForm
-          onClose={() => {
-            setShowCreateModal(false);
-            setSelectedIndustry(null);
-            setIsEditing(false);
-          }}
-          onSuccess={() => {
-            loadData(true);
-            setShowCreateModal(false);
-            setSelectedIndustry(null);
-            setIsEditing(false);
-          }}
-          editData={isEditing ? selectedIndustry : undefined}
-        />
-      )}
-
-      {/* Preview Modal */}
-      {showPreviewModal && selectedIndustry && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-4xl max-h-[90vh] mx-4 flex flex-col border border-gray-200 dark:border-gray-700">
-            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-              <h2 className="text-lg font-bold text-gray-800 dark:text-gray-100">Chi tiết ngành: {selectedIndustry.name}</h2>
-              <button
-                onClick={() => setShowPreviewModal(false)}
-                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-              >
-                <X size={20} />
-              </button>
-            </div>
-            <div className="flex-1 overflow-y-auto p-6">
-              <div className="space-y-6">
-                <div className="flex items-center gap-4">
-                  {selectedIndustry.thumbnail && (
-                    <img src={selectedIndustry.thumbnail} alt={selectedIndustry.name} className="w-32 h-32 rounded-lg object-cover" />
-                  )}
-                  <div>
-                    <span className="text-sm font-bold px-2 py-0.5 rounded bg-blue-500 text-white">
-                      {selectedIndustry.group}
-                    </span>
-                    <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100 mt-2">{selectedIndustry.name}</h3>
-                  </div>
-                </div>
-
-                <div>
-                  <h4 className="font-semibold text-gray-800 dark:text-gray-100 mb-2">Giới thiệu</h4>
-                  <p className="text-gray-600 dark:text-gray-400">{selectedIndustry.overview.introduction}</p>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <h4 className="font-semibold text-gray-800 dark:text-gray-100 mb-2">Lương</h4>
-                    <p className="text-gray-600 dark:text-gray-400">{selectedIndustry.overview.salaryMin} - {selectedIndustry.overview.salaryMax} triệu</p>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-gray-800 dark:text-gray-100 mb-2">Nhu cầu</h4>
-                    <p className="text-gray-600 dark:text-gray-400">{selectedIndustry.overview.demandLevel}</p>
-                  </div>
-                </div>
-
-                <div>
-                  <h4 className="font-semibold text-gray-800 dark:text-gray-100 mb-2">Ngành học làm gì?</h4>
-                  <ul className="list-disc list-inside text-gray-600 dark:text-gray-400">
-                    {selectedIndustry.overview.whatIndustryDoes.map((item, index) => (
-                      <li key={index}>{item}</li>
-                    ))}
-                  </ul>
-                </div>
-
-                <div>
-                  <h4 className="font-semibold text-gray-800 dark:text-gray-100 mb-2">Kiến thức</h4>
-                  <ul className="list-disc list-inside text-gray-600 dark:text-gray-400">
-                    {selectedIndustry.knowledge.map((item, index) => (
-                      <li key={index}>{item}</li>
-                    ))}
-                  </ul>
-                </div>
-
-                <div>
-                  <h4 className="font-semibold text-gray-800 dark:text-gray-100 mb-2">Yêu cầu</h4>
-                  <ul className="list-disc list-inside text-gray-600 dark:text-gray-400">
-                    {selectedIndustry.requirements.map((item, index) => (
-                      <li key={index}>{item}</li>
-                    ))}
-                  </ul>
-                </div>
-
-                <div>
-                  <h4 className="font-semibold text-gray-800 dark:text-gray-100 mb-2">Kỹ năng</h4>
-                  <ul className="list-disc list-inside text-gray-600 dark:text-gray-400">
-                    {selectedIndustry.skills.map((item, index) => (
-                      <li key={index}>{item}</li>
-                    ))}
-                  </ul>
-                </div>
-
-                {selectedIndustry.expertAdvice && (
-                  <div>
-                    <h4 className="font-semibold text-gray-800 dark:text-gray-100 mb-2">Lời khuyên của chuyên gia</h4>
-                    <StaticContent content={selectedIndustry.expertAdvice} className="text-gray-600 dark:text-gray-400" />
-                  </div>
-                )}
-
-                {selectedIndustry.jobOpportunities && selectedIndustry.jobOpportunities.length > 0 && (
-                  <div>
-                    <h4 className="font-semibold text-gray-800 dark:text-gray-100 mb-2">Cơ hội việc làm</h4>
-                    <div className="space-y-2">
-                      {selectedIndustry.jobOpportunities.map((wp: any, index: number) => (
-                        <div key={index} className="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-700 rounded">
-                          {wp.image && <img src={wp.image} alt={wp.name} className="w-12 h-12 rounded object-cover" />}
-                          <div>
-                            <p className="font-medium text-gray-800 dark:text-gray-100">{wp.name}</p>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">{wp.address}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {selectedIndustry.trainingPlaces && selectedIndustry.trainingPlaces.length > 0 && (
-                  <div>
-                    <h4 className="font-semibold text-gray-800 dark:text-gray-100 mb-2">Nơi đào tạo</h4>
-                    <div className="space-y-2">
-                      {selectedIndustry.trainingPlaces.map((tp: any, index: number) => (
-                        <div key={index} className="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-700 rounded">
-                          {tp.logo && <img src={tp.logo} alt={tp.name} className="w-12 h-12 rounded object-cover" />}
-                          <div>
-                            <p className="font-medium text-gray-800 dark:text-gray-100">{tp.name}</p>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">{tp.location} - {tp.region}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Workplace Modal */}
-      {showWorkplaceModal && (
-        <WorkplaceForm
-          onClose={() => {
-            setShowWorkplaceModal(false);
-            setSelectedWorkplace(undefined);
-          }}
-          onSuccess={() => {
-            setShowWorkplaceModal(false);
-            setSelectedWorkplace(undefined);
-            loadData(true);
-          }}
-          editData={selectedWorkplace}
-        />
       )}
 
       {/* Training Place Modal */}
       {showTrainingPlaceModal && (
-        <TrainingPlaceForm
-          onClose={() => {
-            setShowTrainingPlaceModal(false);
-            setSelectedTrainingPlace(undefined);
-          }}
-          onSuccess={() => {
-            setShowTrainingPlaceModal(false);
-            setSelectedTrainingPlace(undefined);
-            loadData(true);
-          }}
-          editData={selectedTrainingPlace}
-        />
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4 overflow-y-auto h-screen w-screen">
+          <div className="bg-white dark:bg-gray-950 rounded-lg max-w-2xl w-full my-auto max-h-[90vh] flex flex-col">
+            <div className="flex justify-between items-center p-6 border-b border-gray-200 dark:border-gray-700">
+              <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">{editingTrainingPlace ? 'Cập nhật nơi đào tạo' : 'Tạo nơi đào tạo'}</h2>
+              <button
+                onClick={() => {
+                  setShowTrainingPlaceModal(false);
+                  setEditingTrainingPlace(null);
+                }}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-6">
+              <div className="space-y-4">
+                {/* Logo */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Logo nơi đào tạo
+                  </label>
+                  <div className="w-full">
+                    {logo ? (
+                      <div className="relative w-full h-32 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
+                        <img
+                          src={logo}
+                          alt="Logo"
+                          className="w-full h-full object-contain bg-gray-50 dark:bg-gray-800"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setLogo('')}
+                          className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition"
+                        >
+                          <XIcon className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <div
+                        onClick={() => fileInputRef.current?.click()}
+                        className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center cursor-pointer hover:border-blue-500 dark:hover:border-blue-400 transition"
+                      >
+                        <Upload className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                          {isUploading ? 'Đang upload...' : 'Tải lên logo nơi đào tạo'}
+                        </p>
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) handleLogoUpload(file);
+                          }}
+                          className="hidden"
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Tên nơi đào tạo */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Tên nơi đào tạo
+                  </label>
+                  <CustomInput
+                    placeholder="Nhập tên nơi đào tạo"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                  />
+                </div>
+
+                {/* Khu vực */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Khu vực
+                  </label>
+                  <CustomSelect
+                    placeholder="Chọn khu vực"
+                    value={region}
+                    onChange={setRegion}
+                    options={REGION_OPTIONS}
+                  />
+                </div>
+
+                {/* Loại hình */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Loại hình
+                  </label>
+                  <CustomSelect
+                    placeholder="Chọn loại hình"
+                    value={type}
+                    onChange={(value) => {
+                      console.log('Type changed:', value);
+                      setType(value);
+                    }}
+                    options={TYPE_OPTIONS}
+                  />
+                </div>
+
+                {/* Tỉnh/TP */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Tỉnh/Thành phố
+                  </label>
+                  <CustomSelect
+                    placeholder="Chọn tỉnh/thành phố"
+                    value={province}
+                    onChange={setProvince}
+                    options={PROVINCES}
+                    searchable
+                  />
+                </div>
+
+                {/* Giới thiệu */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Giới thiệu chung về nơi đào tạo
+                  </label>
+                  <CustomEditor ref={editorRef} />
+                </div>
+              </div>
+            </div>
+
+            {/* Buttons - Fixed at bottom */}
+            <div className="flex gap-3 p-6 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-950 rounded-b-lg">
+              <CustomButton
+                onClick={handleSaveTrainingPlace}
+                disabled={isSubmitting}
+                className="flex-1"
+              >
+                {isSubmitting ? 'Đang lưu...' : (editingTrainingPlace ? 'Cập nhật' : 'Lưu')}
+              </CustomButton>
+              <CustomButton
+                onClick={() => {
+                  setShowTrainingPlaceModal(false);
+                  setEditingTrainingPlace(null);
+                }}
+                variant="outline"
+                className="flex-1"
+                disabled={isSubmitting}
+              >
+                Hủy
+              </CustomButton>
+            </div>
+          </div>
+        </div>
       )}
-    </div>
+
+      {/* Industry Modal - Step by Step */}
+      {showIndustryModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4 overflow-y-auto h-screen w-screen">
+          <div className="bg-white dark:bg-gray-950 rounded-lg max-w-3xl w-full my-auto max-h-[90vh] flex flex-col">
+            <div className="flex justify-between items-center p-6 border-b border-gray-200 dark:border-gray-700">
+              <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">{editingIndustry ? 'Cập nhật ngành nghề' : 'Tạo ngành nghề'}</h2>
+              <button
+                onClick={() => {
+                  setShowIndustryModal(false);
+                  setEditingIndustry(null);
+                }}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-6">
+              <div className="space-y-4">
+                {/* Hình ảnh */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Hình ảnh ngành nghề
+                  </label>
+                  <div className="w-full">
+                    {industryImage ? (
+                      <div className="relative w-full h-48 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
+                        <img
+                          src={industryImage}
+                          alt="Industry"
+                          className="w-full h-full object-contain bg-gray-50 dark:bg-gray-800"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setIndustryImage('')}
+                          className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition"
+                        >
+                          <XIcon className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <div
+                        onClick={() => industryFileInputRef.current?.click()}
+                        className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center cursor-pointer hover:border-blue-500 dark:hover:border-blue-400 transition"
+                      >
+                        <Upload className="w-12 h-12 mx-auto mb-3 text-gray-400" />
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                          {isIndustryUploading ? 'Đang upload...' : 'Tải lên hình ảnh ngành nghề'}
+                        </p>
+                        <input
+                          ref={industryFileInputRef}
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) handleIndustryImageUpload(file);
+                          }}
+                          className="hidden"
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Tên ngành nghề */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Tên ngành nghề
+                  </label>
+                  <CustomInput
+                    placeholder="Nhập tên ngành nghề"
+                    value={industryName}
+                    onChange={(e) => setIndustryName(e.target.value)}
+                  />
+                </div>
+
+                {/* Cơ bản về ngành nghề */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Cơ bản về ngành nghề
+                  </label>
+                  <CustomEditor ref={industryBasicInfoRef} />
+                </div>
+
+                {/* Học xong làm gì */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Học xong làm gì?
+                  </label>
+                  <CustomEditor ref={industryCareerPathRef} />
+                </div>
+
+                {/* Lời khuyên từ chuyên gia */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Lời khuyên từ chuyên gia
+                  </label>
+                  <CustomEditor ref={industryExpertAdviceRef} />
+                </div>
+
+                {/* Mức lương */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Mức lương
+                  </label>
+                  <CustomEditor ref={industrySalaryRef} />
+                </div>
+              </div>
+            </div>
+
+            {/* Buttons - Fixed at bottom */}
+            <div className="flex gap-3 p-6 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-950 rounded-b-lg">
+              <CustomButton
+                onClick={() => {
+                  setShowIndustryModal(false);
+                  setEditingIndustry(null);
+                }}
+                variant="outline"
+                className="flex-1"
+              >
+                Hủy
+              </CustomButton>
+              <CustomButton
+                onClick={handleSaveIndustry}
+                disabled={isIndustrySubmitting}
+                className="flex-1"
+              >
+                {isIndustrySubmitting ? 'Đang lưu...' : 'Lưu'}
+              </CustomButton>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tabs */}
+      <div className="mb-6">
+        <div className="p-1 bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-lg inline-flex">
+          <button
+            onClick={() => setActiveTab('all')}
+            className={`px-3 py-1.5 text-xs font-semibold transition-colors whitespace-nowrap rounded-md ${activeTab === 'all'
+              ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
+              : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900/30'
+              }`}
+          >
+            Tất cả
+          </button>
+          <button
+            onClick={() => setActiveTab('industries')}
+            className={`px-3 py-1.5 text-xs font-semibold transition-colors whitespace-nowrap rounded-md ${activeTab === 'industries'
+              ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
+              : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900/30'
+              }`}
+          >
+            Ngành nghề
+          </button>
+          <button
+            onClick={() => setActiveTab('training')}
+            className={`px-3 py-1.5 text-xs font-semibold transition-colors whitespace-nowrap rounded-md ${activeTab === 'training'
+              ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
+              : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900/30'
+              }`}
+          >
+            Nơi đào tạo
+          </button>
+        </div>
+      </div>
+
+      {/* Tab Content */}
+      {activeTab === 'all' && (
+        <>
+          {/* Industries Section */}
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Ngành nghề</h2>
+              <CustomButton onClick={() => setShowIndustryModal(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                Thêm ngành nghề
+              </CustomButton>
+            </div>
+            <div>
+              {loading ? (
+                <div className="p-8 text-center text-gray-500 dark:text-gray-400">Đang tải...</div>
+              ) : industries.length === 0 ? (
+                <div className="p-8 text-center text-gray-500 dark:text-gray-400">Chưa có ngành nghề nào</div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {paginatedIndustries.map((industry) => (
+                      <div key={industry._id} className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden hover:shadow-md transition">
+                        <div className="aspect-[3/2] bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                          {industry.image ? (
+                            <img src={industry.image} alt={industry.name} className="w-full h-full object-contain" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <span className="text-sm text-gray-500 dark:text-gray-400">N/A</span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="p-4">
+                          <h3 className="font-medium text-gray-900 dark:text-gray-100 mb-3 line-clamp-2">{industry.name}</h3>
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              onClick={() => handleEditIndustry(industry)}
+                              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-md transition"
+                              title="Chỉnh sửa"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteIndustry(industry)}
+                              className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 rounded-md transition"
+                              title="Xóa"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Industry Pagination */}
+                  {industries.length > 0 && (
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mt-4 p-4 border-t border-gray-200 dark:border-gray-800">
+                      <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                        <span>Hiển thị</span>
+                        <div className="relative" ref={industryPerPageDropdownRef}>
+                          <button
+                            type="button"
+                            onClick={() => setIsIndustryPerPageOpen(!isIndustryPerPageOpen)}
+                            className="min-w-[60px] px-3 py-1 text-sm font-medium border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 transition-all duration-200 focus:outline-none cursor-pointer flex items-center justify-between gap-2 border-gray-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 dark:focus:border-blue-400"
+                          >
+                            <span>{industryItemsPerPage}</span>
+                            <ChevronDown className={`w-3.5 h-3.5 text-gray-600 dark:text-gray-400 transition-transform duration-200 ${isIndustryPerPageOpen ? 'rotate-180' : ''}`} />
+                          </button>
+                          {isIndustryPerPageOpen && (
+                            <div className="absolute z-[9999] w-full bottom-full mb-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg overflow-hidden">
+                              {PAGINATION_OPTIONS.map((option) => (
+                                <button
+                                  key={option}
+                                  type="button"
+                                  onClick={() => {
+                                    handleIndustryItemsPerPageChange(option);
+                                    setIsIndustryPerPageOpen(false);
+                                  }}
+                                  className="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-between transition-colors"
+                                >
+                                  <span className="text-gray-900 dark:text-gray-100">{option}</span>
+                                  {industryItemsPerPage === option && (
+                                    <Check className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                                  )}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        <span>{industryStartIndex + 1} - {Math.min(industryEndIndex, industries.length)} của {industries.length} bản ghi</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {/* Về trang đầu */}
+                        <button
+                          onClick={() => handleIndustryPageChange(1)}
+                          disabled={industryCurrentPage === 1}
+                          className="p-2 rounded-md border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                          title="Trang đầu"
+                        >
+                          <ChevronsLeft className="w-4 h-4" />
+                        </button>
+
+                        {/* Lùi 1 trang */}
+                        <button
+                          onClick={() => handleIndustryPageChange(Math.max(1, industryCurrentPage - 1))}
+                          disabled={industryCurrentPage === 1}
+                          className="p-2 rounded-md border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                        >
+                          <ChevronLeft className="w-4 h-4" />
+                        </button>
+
+                        {/* Các ô số trang */}
+                        <div className="flex items-center gap-1">
+                          {Array.from({ length: industryTotalPages }, (_, i) => i + 1).map((pageNum) => (
+                            <button
+                              key={pageNum}
+                              onClick={() => handleIndustryPageChange(pageNum)}
+                              className={`px-3 py-1.5 text-sm font-medium rounded-md transition ${industryCurrentPage === pageNum
+                                ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800'
+                                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 border border-gray-300 dark:border-gray-700'
+                                }`}
+                            >
+                              {pageNum}
+                            </button>
+                          ))}
+                        </div>
+
+                        {/* Tới 1 trang */}
+                        <button
+                          onClick={() => handleIndustryPageChange(Math.min(industryTotalPages, industryCurrentPage + 1))}
+                          disabled={industryCurrentPage === industryTotalPages}
+                          className="p-2 rounded-md border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                        >
+                          <ChevronRight className="w-4 h-4" />
+                        </button>
+
+                        {/* Về trang cuối */}
+                        <button
+                          onClick={() => handleIndustryPageChange(industryTotalPages)}
+                          disabled={industryCurrentPage === industryTotalPages}
+                          className="p-2 rounded-md border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                          title="Trang cuối"
+                        >
+                          <ChevronsRight className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Training Places Section */}
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Nơi đào tạo</h2>
+              <CustomButton onClick={() => setShowCreateModal(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                Thêm nơi đào tạo
+              </CustomButton>
+            </div>
+            <div className="bg-white dark:bg-gray-950 rounded-lg border border-gray-200 dark:border-gray-800 overflow-hidden">
+              {loading ? (
+                <div className="p-8 text-center text-gray-500 dark:text-gray-400">Đang tải...</div>
+              ) : trainingPlaces.length === 0 ? (
+                <div className="p-8 text-center text-gray-500 dark:text-gray-400">Chưa có nơi đào tạo nào</div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50 dark:bg-gray-900">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Logo</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Tên</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Khu vực</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Tỉnh/TP</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Loại hình</th>
+                        <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Hành động</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                      {paginatedPlaces.map((place) => (
+                        <tr key={place._id} className="hover:bg-gray-50 dark:hover:bg-gray-900/50">
+                          <td className="px-4 py-3">
+                            {place.logo ? (
+                              <img src={place.logo} alt={place.name} className="w-10 h-10 object-contain rounded" />
+                            ) : (
+                              <div className="w-10 h-10 bg-gray-200 dark:bg-gray-700 rounded flex items-center justify-center">
+                                <span className="text-xs text-gray-500 dark:text-gray-400">N/A</span>
+                              </div>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">{place.name}</td>
+                          <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{place.region}</td>
+                          <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{place.province}</td>
+                          <td className="px-4 py-3">
+                            <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${place.type === 'Công lập'
+                              ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
+                              : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                              }`}>
+                              {place.type}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center justify-center gap-2">
+                              <button
+                                onClick={() => setViewTrainingPlace(place)}
+                                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-md transition"
+                                title="Xem chi tiết"
+                              >
+                                <Eye className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleEditTrainingPlace(place)}
+                                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-md transition"
+                                title="Chỉnh sửa"
+                              >
+                                <Edit2 className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => setDeleteConfirm(place)}
+                                className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 rounded-md transition"
+                                title="Xóa"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            {/* Pagination */}
+            {trainingPlaces.length > 0 && (
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 border-t border-gray-200 dark:border-gray-800">
+                <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                  <span>Hiển thị</span>
+                  <div className="relative" ref={perPageDropdownRef}>
+                    <button
+                      type="button"
+                      onClick={() => setIsPerPageOpen(!isPerPageOpen)}
+                      className="min-w-[60px] px-3 py-1 text-sm font-medium border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 transition-all duration-200 focus:outline-none cursor-pointer flex items-center justify-between gap-2 border-gray-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 dark:focus:border-blue-400"
+                    >
+                      <span>{itemsPerPage}</span>
+                      <ChevronDown className={`w-3.5 h-3.5 text-gray-600 dark:text-gray-400 transition-transform duration-200 ${isPerPageOpen ? 'rotate-180' : ''}`} />
+                    </button>
+                    {isPerPageOpen && (
+                      <div className="absolute z-[9999] w-full bottom-full mb-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg overflow-hidden">
+                        {PAGINATION_OPTIONS.map((option) => (
+                          <button
+                            key={option}
+                            type="button"
+                            onClick={() => {
+                              handleItemsPerPageChange(option);
+                              setIsPerPageOpen(false);
+                            }}
+                            className="w-full px-3 py-2 text-sm text-left hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center justify-between transition-colors"
+                          >
+                            <span className="text-gray-900 dark:text-gray-100">{option}</span>
+                            {itemsPerPage === option && (
+                              <Check className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <span>{startIndex + 1} - {Math.min(endIndex, trainingPlaces.length)} của {trainingPlaces.length} bản ghi</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  {/* Về trang đầu */}
+                  <button
+                    onClick={() => handlePageChange(1)}
+                    disabled={currentPage === 1}
+                    className="p-2 rounded-md border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                    title="Trang đầu"
+                  >
+                    <ChevronsLeft className="w-4 h-4" />
+                  </button>
+
+                  {/* Lùi 1 trang */}
+                  <button
+                    onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
+                    disabled={currentPage === 1}
+                    className="p-2 rounded-md border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+
+                  {/* Các ô số trang */}
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                      <button
+                        key={pageNum}
+                        onClick={() => handlePageChange(pageNum)}
+                        className={`px-3 py-1.5 text-sm font-medium rounded-md transition ${currentPage === pageNum
+                          ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800'
+                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 border border-gray-300 dark:border-gray-700'
+                          }`}
+                      >
+                        {pageNum}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Tới 1 trang */}
+                  <button
+                    onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
+                    disabled={currentPage === totalPages}
+                    className="p-2 rounded-md border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+
+                  {/* Về trang cuối */}
+                  <button
+                    onClick={() => handlePageChange(totalPages)}
+                    disabled={currentPage === totalPages}
+                    className="p-2 rounded-md border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                    title="Trang cuối"
+                  >
+                    <ChevronsRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
+      {activeTab === 'industries' && (
+        <>
+          <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">Danh sách ngành nghề</h2>
+          {/* Industries Grid */}
+          <div className="bg-white dark:bg-gray-950 rounded-lg border border-gray-200 dark:border-gray-800 overflow-hidden">
+            {loading ? (
+              <div className="p-8 text-center text-gray-500 dark:text-gray-400">Đang tải...</div>
+            ) : industries.length === 0 ? (
+              <div className="p-8 text-center text-gray-500 dark:text-gray-400">Chưa có ngành nghề nào</div>
+            ) : (
+              <>
+                <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {paginatedIndustries.map((industry) => (
+                    <div key={industry._id} className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden hover:shadow-md transition">
+                      <div className="aspect-[3/2] bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                        {industry.image ? (
+                          <img src={industry.image} alt={industry.name} className="w-full h-full object-contain" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <span className="text-sm text-gray-500 dark:text-gray-400">N/A</span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="p-4">
+                        <h3 className="font-medium text-gray-900 dark:text-gray-100 mb-3 line-clamp-2">{industry.name}</h3>
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => handleEditIndustry(industry)}
+                            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-md transition"
+                            title="Chỉnh sửa"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteIndustry(industry)}
+                            className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 rounded-md transition"
+                            title="Xóa"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Industry Pagination */}
+                {industries.length > 0 && (
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 border-t border-gray-200 dark:border-gray-800">
+                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                      <span>Hiển thị</span>
+                      <div className="relative" ref={industryPerPageDropdownRef}>
+                        <button
+                          type="button"
+                          onClick={() => setIsIndustryPerPageOpen(!isIndustryPerPageOpen)}
+                          className="min-w-[60px] px-3 py-1 text-sm font-medium border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 transition-all duration-200 focus:outline-none cursor-pointer flex items-center justify-between gap-2 border-gray-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 dark:focus:border-blue-400"
+                        >
+                          <span>{industryItemsPerPage}</span>
+                          <ChevronDown className={`w-3.5 h-3.5 text-gray-600 dark:text-gray-400 transition-transform duration-200 ${isIndustryPerPageOpen ? 'rotate-180' : ''}`} />
+                        </button>
+                        {isIndustryPerPageOpen && (
+                          <div className="absolute z-[9999] w-full bottom-full mb-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg overflow-hidden">
+                            {PAGINATION_OPTIONS.map((option) => (
+                              <button
+                                key={option}
+                                type="button"
+                                onClick={() => {
+                                  handleIndustryItemsPerPageChange(option);
+                                  setIsIndustryPerPageOpen(false);
+                                }}
+                                className="w-full px-3 py-2 text-sm text-left hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center justify-between transition-colors"
+                              >
+                                <span className="text-gray-900 dark:text-gray-100">{option}</span>
+                                {industryItemsPerPage === option && (
+                                  <Check className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                                )}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      <span>{industryStartIndex + 1} - {Math.min(industryEndIndex, industries.length)} của {industries.length} bản ghi</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {/* Về trang đầu */}
+                      <button
+                        onClick={() => handleIndustryPageChange(1)}
+                        disabled={industryCurrentPage === 1}
+                        className="p-2 rounded-md border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                        title="Trang đầu"
+                      >
+                        <ChevronsLeft className="w-4 h-4" />
+                      </button>
+
+                      {/* Lùi 1 trang */}
+                      <button
+                        onClick={() => handleIndustryPageChange(Math.max(1, industryCurrentPage - 1))}
+                        disabled={industryCurrentPage === 1}
+                        className="p-2 rounded-md border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                      </button>
+
+                      {/* Các ô số trang */}
+                      <div className="flex items-center gap-1">
+                        {Array.from({ length: industryTotalPages }, (_, i) => i + 1).map((pageNum) => (
+                          <button
+                            key={pageNum}
+                            onClick={() => handleIndustryPageChange(pageNum)}
+                            className={`px-3 py-1.5 text-sm font-medium rounded-md transition ${industryCurrentPage === pageNum
+                              ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800'
+                              : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 border border-gray-300 dark:border-gray-700'
+                              }`}
+                          >
+                            {pageNum}
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* Tới 1 trang */}
+                      <button
+                        onClick={() => handleIndustryPageChange(Math.min(industryTotalPages, industryCurrentPage + 1))}
+                        disabled={industryCurrentPage === industryTotalPages}
+                        className="p-2 rounded-md border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                      >
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+
+                      {/* Về trang cuối */}
+                      <button
+                        onClick={() => handleIndustryPageChange(industryTotalPages)}
+                        disabled={industryCurrentPage === industryTotalPages}
+                        className="p-2 rounded-md border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                        title="Trang cuối"
+                      >
+                        <ChevronsRight className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </>
+      )
+      }
+
+      {
+        activeTab === 'training' && (
+          <>
+            <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">Danh sách nơi đào tạo</h2>
+            {/* Training Places List */}
+            <div className="bg-white dark:bg-gray-950 rounded-lg border border-gray-200 dark:border-gray-800 overflow-hidden">
+              {loading ? (
+                <div className="p-8 text-center text-gray-500 dark:text-gray-400">Đang tải...</div>
+              ) : trainingPlaces.length === 0 ? (
+                <div className="p-8 text-center text-gray-500 dark:text-gray-400">Chưa có nơi đào tạo nào</div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50 dark:bg-gray-900">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Logo</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Tên</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Khu vực</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Tỉnh/TP</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Loại hình</th>
+                        <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Hành động</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                      {paginatedPlaces.map((place) => (
+                        <tr key={place._id} className="hover:bg-gray-50 dark:hover:bg-gray-900/50">
+                          <td className="px-4 py-3">
+                            {place.logo ? (
+                              <img src={place.logo} alt={place.name} className="w-10 h-10 object-contain rounded" />
+                            ) : (
+                              <div className="w-10 h-10 bg-gray-200 dark:bg-gray-700 rounded flex items-center justify-center">
+                                <span className="text-xs text-gray-500 dark:text-gray-400">N/A</span>
+                              </div>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">{place.name}</td>
+                          <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{place.region}</td>
+                          <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{place.province}</td>
+                          <td className="px-4 py-3">
+                            <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${place.type === 'Công lập'
+                              ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
+                              : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                              }`}>
+                              {place.type}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center justify-center gap-2">
+                              <button
+                                onClick={() => setViewTrainingPlace(place)}
+                                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-md transition"
+                                title="Xem chi tiết"
+                              >
+                                <Eye className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleEditTrainingPlace(place)}
+                                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-md transition"
+                                title="Chỉnh sửa"
+                              >
+                                <Edit2 className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => setDeleteConfirm(place)}
+                                className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 rounded-md transition"
+                                title="Xóa"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            {/* Pagination */}
+            {trainingPlaces.length > 0 && (
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 border-t border-gray-200 dark:border-gray-800">
+                <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                  <span>Hiển thị</span>
+                  <div className="relative" ref={perPageDropdownRef}>
+                    <button
+                      type="button"
+                      onClick={() => setIsPerPageOpen(!isPerPageOpen)}
+                      className="min-w-[60px] px-3 py-1 text-sm font-medium border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 transition-all duration-200 focus:outline-none cursor-pointer flex items-center justify-between gap-2 border-gray-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 dark:focus:border-blue-400"
+                    >
+                      <span>{itemsPerPage}</span>
+                      <ChevronDown className={`w-3.5 h-3.5 text-gray-600 dark:text-gray-400 transition-transform duration-200 ${isPerPageOpen ? 'rotate-180' : ''}`} />
+                    </button>
+                    {isPerPageOpen && (
+                      <div className="absolute z-[9999] w-full bottom-full mb-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg overflow-hidden">
+                        {PAGINATION_OPTIONS.map((option) => (
+                          <button
+                            key={option}
+                            type="button"
+                            onClick={() => {
+                              handleItemsPerPageChange(option);
+                              setIsPerPageOpen(false);
+                            }}
+                            className="w-full px-3 py-2 text-sm text-left hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center justify-between transition-colors"
+                          >
+                            <span className="text-gray-900 dark:text-gray-100">{option}</span>
+                            {itemsPerPage === option && (
+                              <Check className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <span>{startIndex + 1} - {Math.min(endIndex, trainingPlaces.length)} của {trainingPlaces.length} bản ghi</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  {/* Về trang đầu */}
+                  <button
+                    onClick={() => handlePageChange(1)}
+                    disabled={currentPage === 1}
+                    className="p-2 rounded-md border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                    title="Trang đầu"
+                  >
+                    <ChevronsLeft className="w-4 h-4" />
+                  </button>
+
+                  {/* Lùi 1 trang */}
+                  <button
+                    onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
+                    disabled={currentPage === 1}
+                    className="p-2 rounded-md border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+
+                  {/* Các ô số trang */}
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                      <button
+                        key={pageNum}
+                        onClick={() => handlePageChange(pageNum)}
+                        className={`px-3 py-1.5 text-sm font-medium rounded-md transition ${currentPage === pageNum
+                          ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800'
+                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 border border-gray-300 dark:border-gray-700'
+                          }`}
+                      >
+                        {pageNum}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Tới 1 trang */}
+                  <button
+                    onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
+                    disabled={currentPage === totalPages}
+                    className="p-2 rounded-md border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+
+                  {/* Về trang cuối */}
+                  <button
+                    onClick={() => handlePageChange(totalPages)}
+                    disabled={currentPage === totalPages}
+                    className="p-2 rounded-md border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                    title="Trang cuối"
+                  >
+                    <ChevronsRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
+        )
+      }
+
+      {/* View Detail Modal */}
+      {
+        viewTrainingPlace && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4 overflow-y-auto h-screen w-screen">
+            <div className="bg-white dark:bg-gray-950 rounded-lg max-w-2xl w-full p-6 my-auto max-h-[90vh] overflow-y-auto">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">Chi tiết nơi đào tạo</h2>
+                <button
+                  onClick={() => setViewTrainingPlace(null)}
+                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="space-y-4">
+                {viewTrainingPlace.logo && (
+                  <div className="flex justify-center">
+                    <img src={viewTrainingPlace.logo} alt={viewTrainingPlace.name} className="max-w-full h-48 object-contain rounded-lg" />
+                  </div>
+                )}
+                <div>
+                  <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Tên nơi đào tạo</label>
+                  <p className="text-gray-900 dark:text-gray-100">{viewTrainingPlace.name}</p>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Khu vực</label>
+                    <p className="text-gray-900 dark:text-gray-100">{viewTrainingPlace.region}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Tỉnh/Thành phố</label>
+                    <p className="text-gray-900 dark:text-gray-100">{viewTrainingPlace.province}</p>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Loại hình</label>
+                  <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${viewTrainingPlace.type === 'Công lập'
+                    ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
+                    : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                    }`}>
+                    {viewTrainingPlace.type}
+                  </span>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Giới thiệu</label>
+                  <div className="prose dark:prose-invert max-w-none text-gray-900 dark:text-gray-100" dangerouslySetInnerHTML={{ __html: viewTrainingPlace.description }} />
+                </div>
+              </div>
+            </div>
+          </div>
+        )
+      }
+
+      {/* Delete Confirmation Modal */}
+      {
+        deleteConfirm && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4 overflow-y-auto h-screen w-screen">
+            <div className="bg-white dark:bg-gray-950 rounded-lg max-w-md w-full p-6 my-auto">
+              <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">Xác nhận xóa</h2>
+              <p className="text-gray-600 dark:text-gray-400 mb-6">
+                Bạn có chắc chắn muốn xóa nơi đào tạo "{deleteConfirm.name}"?
+              </p>
+              <div className="flex gap-3">
+                <CustomButton
+                  onClick={handleDeleteTrainingPlace}
+                  className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                >
+                  Xóa
+                </CustomButton>
+                <CustomButton
+                  onClick={() => setDeleteConfirm(null)}
+                  variant="outline"
+                  className="flex-1"
+                >
+                  Hủy
+                </CustomButton>
+              </div>
+            </div>
+          </div>
+        )
+      }
+    </div >
   );
 }
