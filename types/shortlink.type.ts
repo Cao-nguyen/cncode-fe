@@ -22,9 +22,7 @@ export interface ShortLinkWithUser extends ShortLink {
 export interface CreateShortLinkPayload {
     originalUrl: string;
     customAlias?: string;
-    expiresInDays?: number;
-    expiresInHours?: number;
-    expiresInMinutes?: number;
+    expiresAt?: string;
 }
 
 export interface UpdateShortLinkPayload {

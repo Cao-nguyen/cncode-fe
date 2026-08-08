@@ -333,6 +333,29 @@ export const userApi = {
         });
         return handleResponse<{ streak: number; coins: number }>(response);
     },
+
+    generateApiKey: async (token: string): Promise<IApiResponse<{ apiKey: string }>> => {
+        const response = await fetch(`${API_URL}/api/users/generate-api-key`, {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            credentials: 'include'
+        });
+        return handleResponse<{ apiKey: string }>(response);
+    },
+
+    getApiKey: async (token: string): Promise<IApiResponse<{ apiKey: string }>> => {
+        const response = await fetch(`${API_URL}/api/users/api-key`, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            credentials: 'include'
+        });
+        return handleResponse<{ apiKey: string }>(response);
+    },
 };
 
 // Search users by username or email
