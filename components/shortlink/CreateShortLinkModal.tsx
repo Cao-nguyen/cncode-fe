@@ -34,6 +34,8 @@ export function CreateShortLinkModal({ isOpen, onClose, onSuccess }: CreateShort
     const [useCustom, setUseCustom] = useState(false);
     const [customAlias, setCustomAlias] = useState('');
     const [expiresInDays, setExpiresInDays] = useState<number | undefined>(undefined);
+    const [expiresInHours, setExpiresInHours] = useState<number | undefined>(undefined);
+    const [expiryUnit, setExpiryUnit] = useState<'days' | 'hours'>('days');
     const [isCheckingAlias, setIsCheckingAlias] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -139,10 +141,12 @@ export function CreateShortLinkModal({ isOpen, onClose, onSuccess }: CreateShort
 
         setIsSubmitting(true);
         try {
+            const expiryValue = expiryUnit === 'days' ? expiresInDays : expiresInHours;
             const link = await createLink({
                 originalUrl: normalizedUrl,
                 customAlias: useCustom && customAlias.trim() ? customAlias.trim() : undefined,
-                expiresInDays: expiresInDays,
+                expiresInDays: expiryUnit === 'days' ? expiryValue : undefined,
+                expiresInHours: expiryUnit === 'hours' ? expiryValue : undefined,
             });
 
             toast.success('Tạo link rút gọn thành công!');
@@ -154,6 +158,8 @@ export function CreateShortLinkModal({ isOpen, onClose, onSuccess }: CreateShort
             setOriginalUrl('');
             setCustomAlias('');
             setExpiresInDays(undefined);
+            setExpiresInHours(undefined);
+            setExpiryUnit('days');
             setUseCustom(false);
             setAliasState('idle');
             setCheckedAlias('');
@@ -304,17 +310,48 @@ export function CreateShortLinkModal({ isOpen, onClose, onSuccess }: CreateShort
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1.5">
                             <Calendar size={14} className="inline mr-1 text-gray-400" />
-                            Hết hạn sau (ngày)
+                            Hết hạn sau
                             <span className="text-gray-400 font-normal ml-1">(để trống = vĩnh viễn)</span>
                         </label>
+                        <div className="flex gap-2 mb-2">
+                            <button
+                                type="button"
+                                onClick={() => setExpiryUnit('days')}
+                                className={`px-3 py-1.5 text-sm rounded-lg border transition-all ${
+                                    expiryUnit === 'days'
+                                        ? 'bg-blue-50 border-blue-500 text-blue-600'
+                                        : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+                                }`}
+                            >
+                                Ngày
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setExpiryUnit('hours')}
+                                className={`px-3 py-1.5 text-sm rounded-lg border transition-all ${
+                                    expiryUnit === 'hours'
+                                        ? 'bg-blue-50 border-blue-500 text-blue-600'
+                                        : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+                                }`}
+                            >
+                                Giờ
+                            </button>
+                        </div>
                         <div className="relative">
                             <input
                                 type="number"
                                 min={1}
-                                max={365}
-                                value={expiresInDays || ''}
-                                onChange={(e) => setExpiresInDays(e.target.value ? Number(e.target.value) : undefined)}
-                                placeholder="Ví dụ: 30"
+                                max={expiryUnit === 'days' ? 365 : 24}
+                                value={expiryUnit === 'days' ? (expiresInDays || '') : (expiresInHours || '')}
+                                onChange={(e) => {
+                                    const value = e.target.value ? Number(e.target.value) : undefined;
+                                    if (expiryUnit === 'days') {
+                                        setExpiresInDays(value);
+                                    } else {
+                                        setExpiresInHours(value);
+                                    }
+                                }}
+                                placeholder={expiryUnit === 'days' ? 'Ví dụ: 30' : 'Ví dụ: 24'}
                                 className="w-full px-4 py-2.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 placeholder:text-gray-400 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20 transition-all"
                             />
                         </div>

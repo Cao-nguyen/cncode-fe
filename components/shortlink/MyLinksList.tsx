@@ -57,7 +57,12 @@ export function MyLinksList() {
         if (!expiresAt) return { label: 'Vĩnh viễn', color: 'text-emerald-600', bg: 'bg-emerald-50', icon: Crown };
         const isExpired = new Date(expiresAt) < new Date();
         if (isExpired) return { label: 'Đã hết hạn', color: 'text-red-600', bg: 'bg-red-50', icon: XCircle };
-        const daysLeft = Math.ceil((new Date(expiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+        
+        const timeLeft = new Date(expiresAt).getTime() - Date.now();
+        const hoursLeft = Math.ceil(timeLeft / (1000 * 60 * 60));
+        const daysLeft = Math.ceil(timeLeft / (1000 * 60 * 60 * 24));
+        
+        if (hoursLeft <= 24) return { label: `Còn ${hoursLeft} giờ`, color: 'text-red-600', bg: 'bg-red-50', icon: Clock };
         if (daysLeft <= 7) return { label: `Còn ${daysLeft} ngày`, color: 'text-amber-600', bg: 'bg-amber-50', icon: Clock };
         return { label: formatDate(expiresAt) || '', color: 'text-slate-600', bg: 'bg-slate-100', icon: Calendar };
     };

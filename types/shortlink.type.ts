@@ -23,6 +23,7 @@ export interface CreateShortLinkPayload {
     originalUrl: string;
     customAlias?: string;
     expiresInDays?: number;
+    expiresInHours?: number;
 }
 
 export interface UpdateShortLinkPayload {
