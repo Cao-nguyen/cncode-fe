@@ -147,13 +147,13 @@ export function ApiKeySection() {
                                         <div>
                                             <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Lấy danh sách link:</p>
                                             <code className="block text-xs text-[var(--cn-primary)] bg-white dark:bg-gray-900 p-2 rounded">
-                                                GET /api/rutgonlink/links?apiKey={apiKey}
+                                                GET https://api.cncode.io.vn/api/rutgonlink/links?apiKey={apiKey}
                                             </code>
                                         </div>
                                         <div>
                                             <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Tạo link mới:</p>
                                             <code className="block text-xs text-[var(--cn-primary)] bg-white dark:bg-gray-900 p-2 rounded">
-                                                POST /api/rutgonlink/batch?apiKey={apiKey}
+                                                POST https://api.cncode.io.vn/api/rutgonlink/batch?apiKey={apiKey}
                                             </code>
                                         </div>
                                     </div>
@@ -202,7 +202,7 @@ export function ApiKeySection() {
                                 </div>
 
                                 <div>
-                                    <p className="font-medium text-gray-700 dark:text-gray-300 mb-2">� Bước 2: Tạo function rút gọn link</p>
+                                    <p className="font-medium text-gray-700 dark:text-gray-300 mb-2">📝 Bước 2: Tạo function rút gọn link</p>
                                     <pre className="text-xs text-gray-600 dark:text-gray-400 whitespace-pre-wrap bg-white dark:bg-gray-900 p-3 rounded">
 {`// Thay YOUR_API_KEY bằng API Key của bạn
 const API_KEY = '${apiKey}';
@@ -210,7 +210,7 @@ const API_KEY = '${apiKey}';
 async function createShortLink(url, alias, hours = 24) {
   try {
     const response = await fetch(
-      'https://cncode.io.vn/api/rutgonlink/batch?apiKey=' + API_KEY,
+      'https://api.cncode.io.vn/api/rutgonlink/batch?apiKey=' + API_KEY,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -289,7 +289,7 @@ const API_KEY = '${apiKey}';
 async function createShortLink(url, alias, hours = 24) {
   try {
     const response = await axios.post(
-      'https://cncode.io.vn/api/rutgonlink/batch',
+      'https://api.cncode.io.vn/api/rutgonlink/batch',
       {
         links: [{ originalUrl: url, customAlias: alias }],
         expiresInHours: hours
@@ -354,7 +354,7 @@ async function batchShortenLinks(urls) {
   }));
   
   const response = await axios.post(
-    'https://cncode.io.vn/api/rutgonlink/batch',
+    'https://api.cncode.io.vn/api/rutgonlink/batch',
     { links, expiresInHours: 24 },
     { params: { apiKey: API_KEY } }
   );
