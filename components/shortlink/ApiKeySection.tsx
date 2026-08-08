@@ -183,7 +183,7 @@ export function ApiKeySection() {
   "failed": 0,
   "results": [
     {
-      "shortUrl": "https://cncode.io.vn/rutgonlink/my-link"
+      "shortUrl": "https://cncode.io.vn/s/my-link"
     }
   ]
 }`}
