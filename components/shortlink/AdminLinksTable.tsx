@@ -15,6 +15,13 @@ import { CreateShortLinkModal } from './CreateShortLinkModal';
 import { ConfirmModalDelete } from '@/components/custom/ConfirmationModal';
 import { LinkStatsModal } from './LinkStatsModal';
 
+function formatCountdown(timeLeft: number): string {
+    const hours = Math.floor(timeLeft / (1000 * 60 * 60));
+    const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+}
+
 export function AdminLinksTable() {
     const [links, setLinks] = useState<ShortLinkWithUser[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -29,6 +36,7 @@ export function AdminLinksTable() {
     const [isDeleting, setIsDeleting] = useState(false);
     const [showChartModal, setShowChartModal] = useState(false);
     const [selectedLinkForChart, setSelectedLinkForChart] = useState<string | null>(null);
+    const [now, setNow] = useState(Date.now());
     const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const fetchLinks = async (p: number, s: string) => {
@@ -52,6 +60,13 @@ export function AdminLinksTable() {
     useEffect(() => {
         fetchLinks(page, search);
     }, [page, search]);
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setNow(Date.now());
+        }, 1000);
+        return () => clearInterval(interval);
+    }, []);
 
     const handleSearchChange = (value: string) => {
         setSearchInput(value);
@@ -99,11 +114,11 @@ export function AdminLinksTable() {
         const isExpired = new Date(expiresAt) < new Date();
         if (isExpired) return { label: 'Đã hết hạn', color: 'text-red-600', bg: 'bg-red-50', icon: XCircle };
         
-        const timeLeft = new Date(expiresAt).getTime() - Date.now();
-        const hoursLeft = Math.ceil(timeLeft / (1000 * 60 * 60));
-        const daysLeft = Math.ceil(timeLeft / (1000 * 60 * 60 * 24));
+        const timeLeft = new Date(expiresAt).getTime() - now;
+        const hoursLeft = Math.floor(timeLeft / (1000 * 60 * 60));
+        const daysLeft = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
         
-        if (hoursLeft <= 24) return { label: `Còn ${hoursLeft} giờ`, color: 'text-red-600', bg: 'bg-red-50', icon: Clock };
+        if (hoursLeft < 24) return { label: formatCountdown(timeLeft), color: 'text-red-600', bg: 'bg-red-50', icon: Clock };
         if (daysLeft <= 7) return { label: `Còn ${daysLeft} ngày`, color: 'text-amber-600', bg: 'bg-amber-50', icon: Clock };
         return { label: formatDate(expiresAt) || '', color: 'text-slate-600', bg: 'bg-slate-100', icon: Calendar };
     };

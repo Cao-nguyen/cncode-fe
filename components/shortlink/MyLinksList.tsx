@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { toast } from 'sonner';
 import {
     Link2, MousePointerClick, Calendar, Trash2, ExternalLink,
@@ -12,15 +12,30 @@ import { useShortLinkStore } from '@/store/shortlink.store';
 import { ConfirmModalDelete } from '@/components/custom/ConfirmationModal';
 import type { ShortLink } from '@/types/shortlink.type';
 
+function formatCountdown(timeLeft: number): string {
+    const hours = Math.floor(timeLeft / (1000 * 60 * 60));
+    const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+}
+
 export function MyLinksList() {
     const { links, isLoading, currentPage, totalPages, fetchMyLinks, deleteLink } = useShortLinkStore();
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
     const [pendingDeleteCode, setPendingDeleteCode] = useState<string | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [now, setNow] = useState(Date.now());
 
     useEffect(() => {
         fetchMyLinks(1);
     }, [fetchMyLinks]);
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setNow(Date.now());
+        }, 1000);
+        return () => clearInterval(interval);
+    }, []);
 
     const handleDeleteClick = (shortCode: string) => {
         setPendingDeleteCode(shortCode);
@@ -58,11 +73,11 @@ export function MyLinksList() {
         const isExpired = new Date(expiresAt) < new Date();
         if (isExpired) return { label: 'Đã hết hạn', color: 'text-red-600', bg: 'bg-red-50', icon: XCircle };
         
-        const timeLeft = new Date(expiresAt).getTime() - Date.now();
-        const hoursLeft = Math.ceil(timeLeft / (1000 * 60 * 60));
-        const daysLeft = Math.ceil(timeLeft / (1000 * 60 * 60 * 24));
+        const timeLeft = new Date(expiresAt).getTime() - now;
+        const hoursLeft = Math.floor(timeLeft / (1000 * 60 * 60));
+        const daysLeft = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
         
-        if (hoursLeft <= 24) return { label: `Còn ${hoursLeft} giờ`, color: 'text-red-600', bg: 'bg-red-50', icon: Clock };
+        if (hoursLeft < 24) return { label: formatCountdown(timeLeft), color: 'text-red-600', bg: 'bg-red-50', icon: Clock };
         if (daysLeft <= 7) return { label: `Còn ${daysLeft} ngày`, color: 'text-amber-600', bg: 'bg-amber-50', icon: Clock };
         return { label: formatDate(expiresAt) || '', color: 'text-slate-600', bg: 'bg-slate-100', icon: Calendar };
     };
