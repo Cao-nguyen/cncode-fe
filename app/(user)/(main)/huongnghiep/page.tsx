@@ -28,8 +28,9 @@ export default function HuongNghiepPage() {
           group: 'Khác',
           thumbnail: item.image,
           overview: {
-            salaryMin: item.salary,
-            salaryMax: item.salary,
+            introduction: item.basicInfo || '',
+            careerPath: item.careerPath || '',
+            salary: item.salary || '',
           },
           trainingPlaces: [],
           jobOpportunities: [],
