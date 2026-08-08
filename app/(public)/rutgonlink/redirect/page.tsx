@@ -8,7 +8,7 @@ import { CustomButton } from '@/components/custom/CustomButton';
 export default function RedirectPage() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const [countdown, setCountdown] = useState(10);
+    const [countdown, setCountdown] = useState(3);
     const [isValid, setIsValid] = useState(true);
     const [loading, setLoading] = useState(true);
 
