@@ -8,7 +8,7 @@ import { CustomButton } from '@/components/custom/CustomButton';
 export default function RedirectPage() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const [countdown, setCountdown] = useState(5);
+    const [countdown, setCountdown] = useState(10);
     const [isValid, setIsValid] = useState(true);
     const [loading, setLoading] = useState(true);
 
@@ -77,7 +77,7 @@ export default function RedirectPage() {
                     {/* Header */}
                     <div className="text-center mb-8">
                         <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                            CNCode
+                            CNcode
                         </h1>
                         <p className="text-gray-600 dark:text-gray-400">
                             Nền tảng học tập & chia sẻ kiến thức
@@ -174,7 +174,7 @@ export default function RedirectPage() {
 
                     {/* Footer */}
                     <div className="text-center mt-8 text-sm text-gray-600 dark:text-gray-400">
-                        <p>© 2024 CNCode. Tất cả quyền được bảo lưu.</p>
+                        <p>© 2024 CNcode. Tất cả quyền được bảo lưu.</p>
                         <CustomButton
                             onClick={() => router.push('/')}
                             variant="outline"
