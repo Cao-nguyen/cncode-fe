@@ -29,11 +29,16 @@ export default function LinkExpiredPage() {
                             </div>
                         </div>
                         <h2 className="text-2xl font-bold text-gray-900 dark:text-white text-center mb-2">
-                            Link đã hết hạn
+                            Link không khả dụng
                         </h2>
                         <p className="text-gray-600 dark:text-gray-400 text-center mb-6">
-                            Link rút gọn này đã hết hạn hoặc không còn tồn tại. Vui lòng liên hệ người chia sẻ link để lấy link mới.
+                            Link rút gọn này không khả dụng vì một trong các lý do sau:
                         </p>
+                        <ul className="text-gray-600 dark:text-gray-400 text-center mb-6 space-y-2">
+                            <li>• Đã hết hạn thời gian sử dụng</li>
+                            <li>• Đã vượt quá giới hạn lượt truy cập</li>
+                            <li>• Link đã bị xóa hoặc không tồn tại</li>
+                        </ul>
                         <div className="flex justify-center">
                             <CustomButton onClick={() => router.push('/')} variant="primary">
                                 <Home size={18} />

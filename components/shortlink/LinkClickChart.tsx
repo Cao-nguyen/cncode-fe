@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { shortlinkApi } from '@/lib/api/shortlink.api';
 import { BarChart3, Loader2 } from 'lucide-react';
+import { CustomSelect } from '@/components/custom/CustomSelect';
 
 interface LinkClickChartProps {
     shortCode: string;
@@ -23,10 +24,11 @@ export function LinkClickChart({ shortCode }: LinkClickChartProps) {
         const fetchData = async () => {
             setIsLoading(true);
             try {
-                const stats = await shortlinkApi.getLinkClickStats(shortCode, days);
-                setData(stats);
+                const stats = await shortlinkApi.getUserLinkClickStats(shortCode, days);
+                setData(Array.isArray(stats) ? stats : []);
             } catch (error) {
                 console.error('Fetch link click stats error:', error);
+                setData([]);
             } finally {
                 setIsLoading(false);
             }
@@ -42,8 +44,22 @@ export function LinkClickChart({ shortCode }: LinkClickChartProps) {
 
     if (isLoading) {
         return (
-            <div className="h-64 flex items-center justify-center bg-gray-50 rounded-lg">
-                <Loader2 className="w-6 h-6 text-gray-400 animate-spin" />
+            <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                    <div className="h-5 w-48 bg-gray-200 rounded animate-pulse" />
+                    <div className="h-8 w-24 bg-gray-200 rounded animate-pulse" />
+                </div>
+                <div className="h-64 bg-gray-50 rounded-lg">
+                    <div className="h-full flex items-center justify-center">
+                        <div className="w-full h-full space-y-2 p-4">
+                            <div className="h-4 w-full bg-gray-200 rounded animate-pulse" />
+                            <div className="h-4 w-3/4 bg-gray-200 rounded animate-pulse" />
+                            <div className="h-4 w-1/2 bg-gray-200 rounded animate-pulse" />
+                            <div className="h-4 w-2/3 bg-gray-200 rounded animate-pulse" />
+                            <div className="h-4 w-1/3 bg-gray-200 rounded animate-pulse" />
+                        </div>
+                    </div>
+                </div>
             </div>
         );
     }
@@ -61,15 +77,18 @@ export function LinkClickChart({ shortCode }: LinkClickChartProps) {
         <div className="space-y-4">
             <div className="flex items-center justify-between">
                 <h3 className="text-sm font-semibold text-gray-700">Thống kê lượt click theo ngày</h3>
-                <select
-                    value={days}
-                    onChange={(e) => setDays(Number(e.target.value))}
-                    className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                    <option value={7}>7 ngày</option>
-                    <option value={30}>30 ngày</option>
-                    <option value={90}>90 ngày</option>
-                </select>
+                <div className="min-w-[120px]">
+                    <CustomSelect
+                        options={[
+                            { value: '7', label: '7 ngày' },
+                            { value: '30', label: '30 ngày' },
+                            { value: '90', label: '90 ngày' }
+                        ]}
+                        value={String(days)}
+                        onChange={(value) => setDays(Number(value))}
+                        placeholder="30 ngày"
+                    />
+                </div>
             </div>
             
             <div className="h-64">

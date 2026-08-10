@@ -1,4 +1,3 @@
-
 import { create } from 'zustand';
 import { shortlinkApi } from '@/lib/api/shortlink.api';
 import type { ShortLink, CreateShortLinkPayload, UpdateShortLinkPayload, ShortLinkStats } from '@/types/shortlink.type';
@@ -19,6 +18,7 @@ interface ShortLinkState {
     deleteLink: (shortCode: string) => Promise<void>;
     fetchStats: () => Promise<void>;
     clearLinks: () => void;
+    updateLinkClicks: (shortCode: string, clicks: number) => void;
 }
 
 export const useShortLinkStore = create<ShortLinkState>((set, get) => ({
@@ -95,4 +95,14 @@ export const useShortLinkStore = create<ShortLinkState>((set, get) => ({
     },
 
     clearLinks: () => set({ links: [], currentPage: 1, totalPages: 1, total: 0, stats: null }),
+
+    updateLinkClicks: (shortCode, clicks) => {
+        set((state) => ({
+            links: state.links.map((link) => 
+                link.shortCode === shortCode 
+                    ? { ...link, clicks } 
+                    : link
+            ),
+        }));
+    },
 }));

@@ -1,15 +1,19 @@
 
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { toast } from 'sonner';
 import {
     Link2, MousePointerClick, Calendar, Trash2, ExternalLink,
     Copy, ChevronLeft, ChevronRight, MoreHorizontal, Clock,
-    Crown, XCircle, Star, ArrowUpRight, Globe
+    Crown, XCircle, Star, ArrowUpRight, Globe, Search, ChevronDown, MoreVertical,
+    BarChart3, Edit, Settings, QrCode, Share2
 } from 'lucide-react';
 import { useShortLinkStore } from '@/store/shortlink.store';
 import { ConfirmModalDelete } from '@/components/custom/ConfirmationModal';
+import { LinkStatsModal } from '@/components/shortlink/LinkStatsModal';
+import { CustomInput } from '@/components/custom/CustomInput';
+import { CustomSelect } from '@/components/custom/CustomSelect';
 import type { ShortLink } from '@/types/shortlink.type';
 
 function formatCountdown(timeLeft: number): string {
@@ -20,11 +24,16 @@ function formatCountdown(timeLeft: number): string {
 }
 
 export function MyLinksList() {
-    const { links, isLoading, currentPage, totalPages, fetchMyLinks, deleteLink } = useShortLinkStore();
+    const { links, isLoading, currentPage, totalPages, fetchMyLinks, deleteLink, updateLinkClicks } = useShortLinkStore();
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
     const [pendingDeleteCode, setPendingDeleteCode] = useState<string | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
     const [now, setNow] = useState(Date.now());
+    const [searchQuery, setSearchQuery] = useState('');
+    const [filterOption, setFilterOption] = useState<'all' | 'active' | 'expired'>('all');
+    const [menuOpen, setMenuOpen] = useState<string | null>(null);
+    const [statsModalOpen, setStatsModalOpen] = useState(false);
+    const [selectedShortCode, setSelectedShortCode] = useState<string | null>(null);
 
     useEffect(() => {
         fetchMyLinks(1);
@@ -37,9 +46,43 @@ export function MyLinksList() {
         return () => clearInterval(interval);
     }, []);
 
+    // Listen for realtime click updates
+    useEffect(() => {
+        const handleShortlinkClicked = (event: CustomEvent) => {
+            const { shortCode, clicks } = event.detail;
+            console.log('[MyLinksList] Received click update:', shortCode, clicks);
+            
+            // Update local state to reflect new click count
+            updateLinkClicks(shortCode, clicks);
+        };
+
+        window.addEventListener('shortlink:clicked', handleShortlinkClicked as EventListener);
+        
+        return () => {
+            window.removeEventListener('shortlink:clicked', handleShortlinkClicked as EventListener);
+        };
+    }, [updateLinkClicks]);
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (!menuOpen) return;
+            const target = event.target as HTMLElement;
+            if (target.closest('[data-menu-container]')) return;
+            setMenuOpen(null);
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [menuOpen]);
+
     const handleDeleteClick = (shortCode: string) => {
         setPendingDeleteCode(shortCode);
         setDeleteModalOpen(true);
+    };
+
+    const handleStatsClick = (shortCode: string) => {
+        setSelectedShortCode(shortCode);
+        setStatsModalOpen(true);
+        setMenuOpen(null);
     };
 
     const handleConfirmDelete = async () => {
@@ -57,15 +100,39 @@ export function MyLinksList() {
         }
     };
 
-    const copyToClipboard = async (text: string) => {
-        await navigator.clipboard.writeText(text);
-        toast.success('Đã sao chép link');
+    const copyToClipboard = async (text: string, type: 'short' | 'original' = 'short') => {
+        try {
+            await navigator.clipboard.writeText(text);
+            const message = type === 'short' ? 'Đã sao chép link rút gọn' : 'Đã sao chép link gốc';
+            toast.success(message);
+        } catch (error) {
+            // Fallback for older browsers or when clipboard API fails
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            textArea.style.position = 'fixed';
+            textArea.style.left = '-999999px';
+            textArea.style.top = '-999999px';
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                const message = type === 'short' ? 'Đã sao chép link rút gọn' : 'Đã sao chép link gốc';
+                toast.success(message);
+            } catch (err) {
+                toast.error('Không thể sao chép link');
+            }
+            document.body.removeChild(textArea);
+        }
     };
 
     const formatDate = (date: string | null) => {
         if (!date) return null;
         const d = new Date(date);
-        return d.toLocaleDateString('vi-VN');
+        const day = String(d.getDate()).padStart(2, '0');
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const year = d.getFullYear();
+        return `${day}/${month}/${year}`;
     };
 
     const getExpiryStatus = (expiresAt: string | null) => {
@@ -112,6 +179,30 @@ export function MyLinksList() {
         if (url.length <= maxLength) return url;
         return url.substring(0, maxLength) + '...';
     };
+
+    // Filter and search links
+    const filteredLinks = useMemo(() => {
+        let filtered = [...links];
+
+        // Apply filter
+        if (filterOption === 'active') {
+            filtered = filtered.filter(link => !link.expiresAt || new Date(link.expiresAt) > new Date());
+        } else if (filterOption === 'expired') {
+            filtered = filtered.filter(link => link.expiresAt && new Date(link.expiresAt) < new Date());
+        }
+
+        // Apply search
+        if (searchQuery.trim()) {
+            const query = searchQuery.toLowerCase();
+            filtered = filtered.filter(link =>
+                link.shortUrl.toLowerCase().includes(query) ||
+                link.originalUrl.toLowerCase().includes(query) ||
+                link.shortCode.toLowerCase().includes(query)
+            );
+        }
+
+        return filtered;
+    }, [links, filterOption, searchQuery]);
 
     if (isLoading) {
         return (
@@ -177,91 +268,308 @@ export function MyLinksList() {
     }
 
     return (
-        <div className="space-y-5">
-            {}
-            <div className="grid grid-cols-1 gap-4">
-                {links.map((link: ShortLink) => {
+        <div className="space-y-4">
+            {/* Search and Filter Bar */}
+            <div className="flex flex-col sm:flex-row gap-3">
+                <div className="flex-[2]">
+                    <CustomInput
+                        type="text"
+                        placeholder="Tìm kiếm link..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        icon={<Search size={15} />}
+                    />
+                </div>
+                <div className="flex-1 min-w-[155px]">
+                    <CustomSelect
+                        options={[
+                            { value: 'all', label: 'Tất cả' },
+                            { value: 'active', label: 'Đang hoạt động' },
+                            { value: 'expired', label: 'Đã hết hạn' }
+                        ]}
+                        value={filterOption}
+                        onChange={(value) => setFilterOption(value as 'all' | 'active' | 'expired')}
+                        placeholder="Tất cả"
+                    />
+                </div>
+            </div>
+            
+            {/* Empty state for filtered results */}
+            {filteredLinks.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 gap-3 bg-gray-50 dark:bg-gray-900 rounded-lg border-2 border-dashed border-gray-200 dark:border-gray-700">
+                    <div className="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                        <Search size={24} className="text-gray-400" />
+                    </div>
+                    <div className="text-center">
+                        <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Không tìm thấy kết quả</p>
+                        <p className="text-xs text-gray-400 mt-1">Thử tìm kiếm với từ khóa khác</p>
+                    </div>
+                </div>
+            ) : (
+            <div className="grid grid-cols-1 gap-3">
+                {filteredLinks.map((link: ShortLink) => {
                     const expiry = getExpiryStatus(link.expiresAt);
                     const ExpiryIcon = expiry.icon;
 
                     return (
                         <div
                             key={link.shortCode}
-                            className="bg-white rounded-xl border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all duration-300 overflow-hidden"
+                            className="bg-[var(--cn-bg-card)] rounded-[var(--cn-radius-md)] border border-[var(--cn-border)] hover:border-[var(--cn-primary)] hover:shadow-sm transition-all duration-200"
                         >
-                            <div className="p-5">
-                                {}
-                                <div className="flex items-start justify-between gap-3 mb-3">
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2 flex-wrap mb-1">
-                                            <span className="text-xs font-semibold text-gray-400 uppercase">SHORT LINK</span>
+                            <div className="p-4">
+                                {/* Mobile + MD Layout */}
+                                <div className="flex flex-col gap-3 lg:hidden">
+                                    {/* URLs + Actions Row - MD: horizontal */}
+                                    <div className="flex items-start gap-3">
+                                        {/* URLs Section */}
+                                        <div className="flex-1 min-w-0 max-w-[calc(100%-15px)]">
                                             <a
                                                 href={link.shortUrl}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                className="text-sm font-semibold text-blue-600 hover:underline flex items-center gap-1"
+                                                className="text-sm font-semibold text-[var(--cn-primary)] hover:underline flex items-center gap-1 mb-1 truncate"
                                             >
-                                                {link.shortUrl}
+                                                {truncateUrl(link.shortUrl, 50)}
                                                 <ArrowUpRight size={12} />
                                             </a>
-                                            {link.isCustom && (
-                                                <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-medium flex items-center gap-1">
-                                                    <Star size={10} /> Custom
-                                                </span>
-                                            )}
+                                            <div className="flex items-center gap-1.5">
+                                                <Globe size={10} className="text-[var(--cn-text-muted)]" />
+                                                <a
+                                                    href={link.originalUrl}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="text-xs text-[var(--cn-text-sub)] hover:text-[var(--cn-primary)] break-all flex items-center gap-1 max-w-[285px]"
+                                                >
+                                                    {truncateUrl(link.originalUrl, 30)}
+                                                    <ExternalLink size={10} className="flex-shrink-0" />
+                                                </a>
+                                            </div>
                                         </div>
-                                        <p className="text-xs text-gray-400">Mã: {link.shortCode}</p>
+
+                                        {/* Actions - Visible on Mobile and MD */}
+                                        <div className="flex items-center gap-1 relative flex-shrink-0">
+                                            <button
+                                                onClick={() => copyToClipboard(link.shortUrl, 'short')}
+                                                className="p-1.5 rounded-lg bg-[var(--cn-bg-section)] hover:bg-[var(--cn-primary)]/10 transition-all duration-200"
+                                                title="Sao chép"
+                                            >
+                                                <Copy size={15} className="text-[var(--cn-text-muted)] hover:text-[var(--cn-primary)]" />
+                                            </button>
+                                            <div className="relative">
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setMenuOpen(menuOpen === link.shortCode ? null : link.shortCode);
+                                                    }}
+                                                    className="p-1.5 rounded-lg bg-[var(--cn-bg-section)] hover:bg-[var(--cn-bg-section)] transition-all duration-200"
+                                                >
+                                                    <MoreVertical size={15} className="text-[var(--cn-text-muted)]" />
+                                                </button>
+
+                                                {/* Dropdown Menu */}
+                                                {menuOpen === link.shortCode && (
+                                                    <div
+                                                        data-menu-container
+                                                        className="absolute right-0 top-full mt-2 w-40 bg-[var(--cn-bg-card)] border border-[var(--cn-border)] rounded-lg shadow-lg z-10"
+                                                    >
+                                                        <div className="py-1">
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    copyToClipboard(link.shortUrl, 'short');
+                                                                    setMenuOpen(null);
+                                                                }}
+                                                                className="w-full px-4 py-2 text-left text-sm text-[var(--cn-text-main)] hover:bg-[var(--cn-hover)] flex items-center gap-3"
+                                                            >
+                                                                <Copy size={14} className="text-[var(--cn-text-muted)]" />
+                                                                Link rút gọn
+                                                            </button>
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    copyToClipboard(link.originalUrl, 'original');
+                                                                    setMenuOpen(null);
+                                                                }}
+                                                                className="w-full px-4 py-2 text-left text-sm text-[var(--cn-text-main)] hover:bg-[var(--cn-hover)] flex items-center gap-3"
+                                                            >
+                                                                <Copy size={14} className="text-[var(--cn-text-muted)]" />
+                                                                Link gốc
+                                                            </button>
+                                                            <button
+                                                                onClick={() => {
+                                                                    handleStatsClick(link.shortCode);
+                                                                }}
+                                                                className="w-full px-4 py-2 text-left text-sm text-[var(--cn-text-main)] hover:bg-[var(--cn-hover)] flex items-center gap-3"
+                                                            >
+                                                                <BarChart3 size={14} className="text-[var(--cn-text-muted)]" />
+                                                                Thống kê
+                                                            </button>
+                                                        </div>
+                                                        <div className="border-t border-[var(--cn-border)]"></div>
+                                                        <div className="py-1">
+                                                            <button
+                                                                onClick={() => {
+                                                                    handleDeleteClick(link.shortCode);
+                                                                    setMenuOpen(null);
+                                                                }}
+                                                                className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-3"
+                                                            >
+                                                                <Trash2 size={14} className="text-red-500" />
+                                                                Xoá link
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div className="flex items-center gap-1">
+
+                                    {/* Stats Section - MD: horizontal row */}
+                                    <div className="flex flex-row md:flex-row gap-3 md:gap-4">
+                                        {/* Clicks */}
+                                        <div className="flex flex-col gap-0.5 min-w-[70px]">
+                                            <span className="text-sm font-medium text-[var(--cn-text-main)] leading-tight">
+                                                {link.clicks.toLocaleString('vi-VN')}
+                                            </span>
+                                            <span className="text-xs text-[var(--cn-text-muted)] leading-tight">Clicks</span>
+                                        </div>
+
+                                        {/* Expiry & Created */}
+                                        <div className="flex flex-col gap-1 min-w-[100px]">
+                                            <div className={`flex items-center gap-1.5 ${expiry.color}`}>
+                                                <ExpiryIcon size={13} />
+                                                <span className="text-xs font-medium leading-tight">{expiry.label}</span>
+                                            </div>
+                                            <div className="flex items-center gap-1.5 text-[var(--cn-text-muted)]">
+                                                <Calendar size={13} />
+                                                <span className="text-xs leading-tight">{formatDate(link.createdAt) || 'N/A'}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Desktop Layout - Only visible on LG */}
+                                <div className="hidden lg:flex lg:items-center lg:gap-4">
+                                    {/* URLs Section */}
+                                    <div className="flex-1 min-w-0">
+                                        <a
+                                            href={link.shortUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-sm font-semibold text-[var(--cn-primary)] hover:underline flex items-center gap-1 mb-1 truncate"
+                                        >
+                                            {truncateUrl(link.shortUrl, 50)}
+                                            <ArrowUpRight size={12} />
+                                        </a>
+                                        <div className="flex items-center gap-1.5">
+                                            <Globe size={10} className="text-[var(--cn-text-muted)]" />
+                                            <a
+                                                href={link.originalUrl}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="text-xs text-[var(--cn-text-sub)] hover:text-[var(--cn-primary)] break-all flex items-center gap-1 max-w-[285px]"
+                                            >
+                                                {truncateUrl(link.originalUrl, 30)}
+                                                <ExternalLink size={10} className="flex-shrink-0" />
+                                            </a>
+                                        </div>
+                                    </div>
+
+                                    {/* Clicks */}
+                                    <div className="flex flex-col gap-0.5 min-w-[80px]">
+                                        <span className="text-sm font-medium text-[var(--cn-text-main)] leading-tight">
+                                            {link.clicks.toLocaleString('vi-VN')}
+                                        </span>
+                                        <span className="text-xs text-[var(--cn-text-muted)] leading-tight">Clicks</span>
+                                    </div>
+
+                                    {/* Expiry & Created */}
+                                    <div className="flex flex-col gap-1 min-w-[120px]">
+                                        <div className={`flex items-center gap-1.5 ${expiry.color}`}>
+                                            <ExpiryIcon size={13} />
+                                            <span className="text-xs font-medium leading-tight">{expiry.label}</span>
+                                        </div>
+                                        <div className="flex items-center gap-1.5 text-[var(--cn-text-muted)]">
+                                            <Calendar size={13} />
+                                            <span className="text-xs leading-tight">{formatDate(link.createdAt) || 'N/A'}</span>
+                                        </div>
+                                    </div>
+
+                                    {/* Actions */}
+                                    <div className="flex items-center gap-2 relative flex-shrink-0">
                                         <button
-                                            onClick={() => copyToClipboard(link.shortUrl)}
-                                            className="p-2 rounded-lg bg-gray-50 hover:bg-blue-50 transition-all duration-200"
+                                            onClick={() => copyToClipboard(link.shortUrl, 'short')}
+                                            className="p-2 rounded-lg bg-[var(--cn-bg-section)] hover:bg-[var(--cn-primary)]/10 transition-all duration-200"
                                             title="Sao chép"
                                         >
-                                            <Copy size={15} className="text-gray-500 hover:text-blue-500" />
+                                            <Copy size={15} className="text-[var(--cn-text-muted)] hover:text-[var(--cn-primary)]" />
                                         </button>
-                                        <button
-                                            onClick={() => handleDeleteClick(link.shortCode)}
-                                            className="p-2 rounded-lg bg-gray-50 hover:bg-red-50 transition-all duration-200"
-                                            title="Xóa"
-                                        >
-                                            <Trash2 size={15} className="text-gray-500 hover:text-red-500" />
-                                        </button>
-                                    </div>
-                                </div>
+                                        <div className="relative">
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setMenuOpen(menuOpen === link.shortCode ? null : link.shortCode);
+                                                }}
+                                                className="p-2 rounded-lg bg-[var(--cn-bg-section)] hover:bg-[var(--cn-bg-section)] transition-all duration-200"
+                                            >
+                                                <MoreVertical size={15} className="text-[var(--cn-text-muted)]" />
+                                            </button>
 
-                                {}
-                                <div className="mb-3 p-2 rounded-lg bg-gray-50">
-                                    <div className="flex items-center gap-1.5 mb-1">
-                                        <Globe size={11} className="text-gray-400" />
-                                        <span className="text-[10px] font-medium text-gray-400 uppercase">URL GỐC</span>
-                                    </div>
-                                    <a
-                                        href={link.originalUrl}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="text-xs text-gray-600 hover:text-blue-600 break-all flex items-center gap-1"
-                                    >
-                                        {truncateUrl(link.originalUrl, 80)}
-                                        <ExternalLink size={10} className="flex-shrink-0" />
-                                    </a>
-                                </div>
-
-                                {}
-                                <div className="flex flex-wrap items-center gap-4">
-                                    <div className="flex items-center gap-1.5">
-                                        <MousePointerClick size={13} className="text-blue-500" />
-                                        <span className="text-sm font-medium text-gray-700">
-                                            {link.clicks.toLocaleString('vi-VN')} clicks
-                                        </span>
-                                    </div>
-                                    <div className={`flex items-center gap-1.5 ${expiry.color}`}>
-                                        <ExpiryIcon size={13} />
-                                        <span className="text-sm font-medium">{expiry.label}</span>
-                                    </div>
-                                    <div className="flex items-center gap-1.5 text-gray-500">
-                                        <Calendar size={13} />
-                                        <span className="text-xs">{formatDate(link.createdAt) || 'N/A'}</span>
+                                            {/* Dropdown Menu */}
+                                            {menuOpen === link.shortCode && (
+                                                <div
+                                                    data-menu-container
+                                                    className="absolute right-0 top-full mt-2 w-40 bg-[var(--cn-bg-card)] border border-[var(--cn-border)] rounded-lg shadow-lg z-10"
+                                                >
+                                                    <div className="py-1">
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                copyToClipboard(link.shortUrl, 'short');
+                                                                setMenuOpen(null);
+                                                            }}
+                                                            className="w-full px-4 py-2 text-left text-sm text-[var(--cn-text-main)] hover:bg-[var(--cn-hover)] flex items-center gap-3"
+                                                        >
+                                                            <Copy size={14} className="text-[var(--cn-text-muted)]" />
+                                                            Link rút gọn
+                                                        </button>
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                copyToClipboard(link.originalUrl, 'original');
+                                                                setMenuOpen(null);
+                                                            }}
+                                                            className="w-full px-4 py-2 text-left text-sm text-[var(--cn-text-main)] hover:bg-[var(--cn-hover)] flex items-center gap-3"
+                                                        >
+                                                            <Copy size={14} className="text-[var(--cn-text-muted)]" />
+                                                            Link gốc
+                                                        </button>
+                                                        <button
+                                                            onClick={() => {
+                                                                handleStatsClick(link.shortCode);
+                                                            }}
+                                                            className="w-full px-4 py-2 text-left text-sm text-[var(--cn-text-main)] hover:bg-[var(--cn-hover)] flex items-center gap-3"
+                                                        >
+                                                            <BarChart3 size={14} className="text-[var(--cn-text-muted)]" />
+                                                            Thống kê
+                                                        </button>
+                                                    </div>
+                                                    <div className="border-t border-[var(--cn-border)]"></div>
+                                                    <div className="py-1">
+                                                        <button
+                                                            onClick={() => {
+                                                                handleDeleteClick(link.shortCode);
+                                                                setMenuOpen(null);
+                                                            }}
+                                                            className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-3"
+                                                        >
+                                                            <Trash2 size={14} className="text-red-500" />
+                                                            Xoá link
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -269,8 +577,8 @@ export function MyLinksList() {
                     );
                 })}
             </div>
+            )}
 
-            {}
             {totalPages > 1 && (
                 <div className="flex items-center justify-center gap-2 pt-4">
                     <button
@@ -326,6 +634,14 @@ export function MyLinksList() {
                 title="Xóa link rút gọn"
                 message="Bạn có chắc chắn muốn xóa link này không?"
                 warning="Link đã xóa sẽ không thể khôi phục."
+            />
+            <LinkStatsModal
+                isOpen={statsModalOpen}
+                onClose={() => {
+                    setStatsModalOpen(false);
+                    setSelectedShortCode(null);
+                }}
+                shortCode={selectedShortCode || ''}
             />
         </div>
     );

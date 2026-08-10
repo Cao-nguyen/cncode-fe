@@ -147,6 +147,16 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
             setOnlineUsers(users || []);
         });
 
+        // Xử lý shortlink:clicked event
+        newSocket.on('shortlink:clicked', (data: {
+            shortCode: string;
+            clicks: number;
+        }) => {
+            console.log('[SOCKET] Received shortlink:clicked:', data);
+            // Emit custom event for components to listen
+            window.dispatchEvent(new CustomEvent('shortlink:clicked', { detail: data }));
+        });
+
         // Cleanup: Xóa TẤT CẢ listeners khi unmount để tránh duplicate
         return () => {
             console.log('[SOCKET] Cleaning up socket connection');
@@ -156,6 +166,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
             newSocket.off('new_message');
             newSocket.off('conversation_read');
             newSocket.off('online_users');
+            newSocket.off('shortlink:clicked');
             newSocket.close();
         };
     }, []); // Chỉ chạy 1 lần khi mount

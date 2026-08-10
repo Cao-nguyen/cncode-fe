@@ -23,6 +23,9 @@ export interface CreateShortLinkPayload {
     originalUrl: string;
     customAlias?: string;
     expiresAt?: string;
+    clickLimit?: number;
+    password?: string;
+    geoRestrictVietnam?: boolean;
 }
 
 export interface UpdateShortLinkPayload {
