@@ -1,9 +1,9 @@
-
 'use client';
 
 import { useEffect } from 'react';
 import { Link2, MousePointerClick, Sparkles, TrendingUp } from 'lucide-react';
 import { useShortLinkStore } from '@/store/shortlink.store';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 
 export function AdminStatsCards() {
     const { stats, isStatsLoading, fetchStats } = useShortLinkStore();
@@ -16,15 +16,17 @@ export function AdminStatsCards() {
         return (
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                 {[1, 2, 3, 4].map((i) => (
-                    <div key={i} className="bg-[var(--cn-bg-card)] rounded-[var(--cn-radius-md)] p-3 sm:p-4 border border-[var(--cn-border)] space-y-3">
-                        <div className="flex items-start justify-between">
-                            <div className="flex-1 space-y-2">
-                                <div className="h-3 w-16 bg-gray-200 rounded animate-pulse" />
-                                <div className="h-7 w-24 bg-gray-200 rounded animate-pulse" />
+                    <Card key={i}>
+                        <CardHeader className="pb-3">
+                            <div className="flex items-start justify-between">
+                                <div className="flex-1 space-y-2">
+                                    <div className="h-3 w-16 bg-gray-200 rounded animate-pulse" />
+                                    <div className="h-7 w-24 bg-gray-200 rounded animate-pulse" />
+                                </div>
+                                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-gray-200 animate-pulse" />
                             </div>
-                            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-gray-200 animate-pulse" />
-                        </div>
-                    </div>
+                        </CardHeader>
+                    </Card>
                 ))}
             </div>
         );
@@ -64,27 +66,27 @@ export function AdminStatsCards() {
     return (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             {cards.map((card, idx) => (
-                <div
-                    key={idx}
-                    className="bg-[var(--cn-bg-card)] rounded-[var(--cn-radius-md)] p-3 sm:p-4 border border-[var(--cn-border)] hover:shadow-[var(--cn-shadow-sm)] transition-all"
-                >
-                    <div className="flex items-start justify-between">
-                        <div>
-                            <p className="text-[10px] sm:text-xs text-[var(--cn-text-muted)]">{card.title}</p>
-                            <p className="text-lg sm:text-xl font-bold text-[var(--cn-text-main)] mt-1">
-                                {card.value.toLocaleString('vi-VN')}
-                            </p>
+                <Card key={idx} className="hover:shadow-md transition-shadow">
+                    <CardHeader className="pb-3">
+                        <div className="flex items-start justify-between">
+                            <div>
+                                <CardTitle className="text-[10px] sm:text-xs text-[var(--cn-text-muted)] font-normal">
+                                    {card.title}
+                                </CardTitle>
+                                <p className="text-2xl sm:text-3xl font-bold text-[var(--cn-text-main)] mt-1">
+                                    {card.value.toLocaleString('vi-VN')}
+                                </p>
+                            </div>
+                            <div
+                                className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                                style={{ backgroundColor: card.iconBg, color: card.iconColor }}
+                            >
+                                {card.icon}
+                            </div>
                         </div>
-                        <div
-                            className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-                            style={{ backgroundColor: card.iconBg, color: card.iconColor }}
-                        >
-                            {card.icon}
-                        </div>
-                    </div>
-                </div>
+                    </CardHeader>
+                </Card>
             ))}
         </div>
     );
 }
-

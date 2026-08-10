@@ -22,6 +22,12 @@ export function LinkClickChart({ shortCode }: LinkClickChartProps) {
 
     useEffect(() => {
         const fetchData = async () => {
+            if (!shortCode) {
+                setData([]);
+                setIsLoading(false);
+                return;
+            }
+
             setIsLoading(true);
             try {
                 const stats = await shortlinkApi.getUserLinkClickStats(shortCode, days);
