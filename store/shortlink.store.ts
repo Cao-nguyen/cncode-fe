@@ -11,12 +11,20 @@ interface ShortLinkState {
     total: number;
     stats: ShortLinkStats | null;
     isStatsLoading: boolean;
+    userStats: {
+        totalLinks: number;
+        totalClicks: number;
+        expiredLinks: number;
+        activeLinks: number;
+    } | null;
+    isUserStatsLoading: boolean;
 
     fetchMyLinks: (page?: number) => Promise<void>;
     createLink: (payload: CreateShortLinkPayload) => Promise<ShortLink>;
     updateLink: (shortCode: string, payload: UpdateShortLinkPayload) => Promise<void>;
     deleteLink: (shortCode: string) => Promise<void>;
     fetchStats: () => Promise<void>;
+    fetchUserStats: () => Promise<void>;
     clearLinks: () => void;
     updateLinkClicks: (shortCode: string, clicks: number) => void;
 }
@@ -30,6 +38,8 @@ export const useShortLinkStore = create<ShortLinkState>((set, get) => ({
     total: 0,
     stats: null,
     isStatsLoading: false,
+    userStats: null,
+    isUserStatsLoading: false,
 
     fetchMyLinks: async (page = 1) => {
         set({ isLoading: true });
@@ -95,6 +105,18 @@ export const useShortLinkStore = create<ShortLinkState>((set, get) => ({
     },
 
     clearLinks: () => set({ links: [], currentPage: 1, totalPages: 1, total: 0, stats: null }),
+
+    fetchUserStats: async () => {
+        set({ isUserStatsLoading: true });
+        try {
+            const stats = await shortlinkApi.getUserStats();
+            set({ userStats: stats });
+        } catch (error) {
+            console.error('Fetch user stats error:', error);
+        } finally {
+            set({ isUserStatsLoading: false });
+        }
+    },
 
     updateLinkClicks: (shortCode, clicks) => {
         set((state) => ({

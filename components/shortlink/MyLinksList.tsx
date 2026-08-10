@@ -7,7 +7,7 @@ import {
     Link2, MousePointerClick, Calendar, Trash2, ExternalLink,
     Copy, ChevronLeft, ChevronRight, MoreHorizontal, Clock,
     Crown, XCircle, Star, ArrowUpRight, Globe, Search, ChevronDown, MoreVertical,
-    BarChart3, Edit, Settings, QrCode, Share2
+    BarChart3, Edit, Settings, QrCode, Share2, ChevronsLeft, ChevronsRight
 } from 'lucide-react';
 import { useShortLinkStore } from '@/store/shortlink.store';
 import { ConfirmModalDelete } from '@/components/custom/ConfirmationModal';
@@ -24,7 +24,7 @@ function formatCountdown(timeLeft: number): string {
 }
 
 export function MyLinksList() {
-    const { links, isLoading, currentPage, totalPages, fetchMyLinks, deleteLink, updateLinkClicks } = useShortLinkStore();
+    const { links, isLoading, fetchMyLinks, deleteLink, updateLinkClicks } = useShortLinkStore();
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
     const [pendingDeleteCode, setPendingDeleteCode] = useState<string | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
@@ -34,6 +34,8 @@ export function MyLinksList() {
     const [menuOpen, setMenuOpen] = useState<string | null>(null);
     const [statsModalOpen, setStatsModalOpen] = useState(false);
     const [selectedShortCode, setSelectedShortCode] = useState<string | null>(null);
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 5;
 
     useEffect(() => {
         fetchMyLinks(1);
@@ -149,32 +151,6 @@ export function MyLinksList() {
         return { label: formatDate(expiresAt) || '', color: 'text-slate-600', bg: 'bg-slate-100', icon: Calendar };
     };
 
-    const getPageNumbers = () => {
-        const pages: (number | string)[] = [];
-        const maxVisible = 5;
-
-        if (totalPages <= maxVisible) {
-            for (let i = 1; i <= totalPages; i++) pages.push(i);
-        } else {
-            if (currentPage <= 3) {
-                for (let i = 1; i <= 4; i++) pages.push(i);
-                pages.push('...');
-                pages.push(totalPages);
-            } else if (currentPage >= totalPages - 2) {
-                pages.push(1);
-                pages.push('...');
-                for (let i = totalPages - 3; i <= totalPages; i++) pages.push(i);
-            } else {
-                pages.push(1);
-                pages.push('...');
-                for (let i = currentPage - 1; i <= currentPage + 1; i++) pages.push(i);
-                pages.push('...');
-                pages.push(totalPages);
-            }
-        }
-        return pages;
-    };
-
     const truncateUrl = (url: string, maxLength: number = 80) => {
         if (url.length <= maxLength) return url;
         return url.substring(0, maxLength) + '...';
@@ -204,47 +180,82 @@ export function MyLinksList() {
         return filtered;
     }, [links, filterOption, searchQuery]);
 
+    // Client-side pagination
+    const totalPages = Math.ceil(filteredLinks.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const paginatedLinks = filteredLinks.slice(startIndex, endIndex);
+
+    // Reset to page 1 when filter/search changes
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchQuery, filterOption]);
+
     if (isLoading) {
         return (
             <div className="space-y-4">
-                {[1, 2, 3].map((i) => (
-                    <div key={i} className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
-                        <div className="flex items-start justify-between gap-3">
-                            <div className="flex-1 space-y-2">
-                                <div className="h-4 w-24 bg-gray-200 rounded animate-pulse" />
-                                <div className="h-5 w-48 bg-gray-200 rounded animate-pulse" />
-                                <div className="h-3 w-16 bg-gray-200 rounded animate-pulse" />
+                {[1, 2, 3, 4, 5].map((i) => (
+                    <div key={i} className="bg-[var(--cn-bg-card)] rounded-[var(--cn-radius-md)] border border-[var(--cn-border)] p-4">
+                        {/* Mobile + MD Layout Skeleton */}
+                        <div className="flex flex-col gap-3 lg:hidden">
+                            {/* URLs + Actions Row */}
+                            <div className="flex items-start gap-3">
+                                {/* URLs Section */}
+                                <div className="flex-1 min-w-0 max-w-[calc(100%-15px)] space-y-2">
+                                    <div className="h-4 w-40 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-3 h-3 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse" />
+                                        <div className="h-3 w-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                                    </div>
+                                </div>
+
+                                {/* Actions */}
+                                <div className="flex items-center gap-1 flex-shrink-0">
+                                    <div className="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse" />
+                                    <div className="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse" />
+                                </div>
                             </div>
-                            <div className="flex gap-2">
-                                <div className="w-9 h-9 bg-gray-200 rounded-lg animate-pulse" />
-                                <div className="w-9 h-9 bg-gray-200 rounded-lg animate-pulse" />
+
+                            {/* Stats Section */}
+                            <div className="flex flex-row gap-3">
+                                <div className="flex flex-col gap-0.5 min-w-[70px]">
+                                    <div className="h-4 w-12 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                                    <div className="h-3 w-10 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                                </div>
+                                <div className="flex flex-col gap-1 min-w-[100px]">
+                                    <div className="h-3 w-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                                    <div className="h-3 w-20 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                                </div>
                             </div>
                         </div>
-                        <div className="p-3 rounded-lg bg-gray-50 space-y-2">
-                            <div className="h-3 w-20 bg-gray-200 rounded animate-pulse" />
-                            <div className="h-4 w-full bg-gray-200 rounded animate-pulse" />
-                        </div>
-                        <div className="grid grid-cols-3 gap-3">
-                            <div className="flex items-center gap-2 p-2 rounded-lg bg-blue-50">
-                                <div className="w-7 h-7 bg-gray-200 rounded-lg animate-pulse" />
-                                <div className="flex-1 space-y-1">
-                                    <div className="h-2 w-12 bg-gray-200 rounded animate-pulse" />
-                                    <div className="h-4 w-16 bg-gray-200 rounded animate-pulse" />
+
+                        {/* Desktop Layout Skeleton */}
+                        <div className="hidden lg:flex lg:items-center lg:gap-4">
+                            {/* URLs Section */}
+                            <div className="flex-1 min-w-0 space-y-2">
+                                <div className="h-4 w-48 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                                <div className="flex items-center gap-2">
+                                    <div className="w-3 h-3 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse" />
+                                    <div className="h-3 w-40 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
                                 </div>
                             </div>
-                            <div className="flex items-center gap-2 p-2 rounded-lg bg-gray-50">
-                                <div className="w-7 h-7 bg-gray-200 rounded-lg animate-pulse" />
-                                <div className="flex-1 space-y-1">
-                                    <div className="h-2 w-12 bg-gray-200 rounded animate-pulse" />
-                                    <div className="h-4 w-16 bg-gray-200 rounded animate-pulse" />
-                                </div>
+
+                            {/* Clicks */}
+                            <div className="flex flex-col gap-0.5 min-w-[80px]">
+                                <div className="h-4 w-12 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                                <div className="h-3 w-10 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
                             </div>
-                            <div className="flex items-center gap-2 p-2 rounded-lg bg-gray-50">
-                                <div className="w-7 h-7 bg-gray-200 rounded-lg animate-pulse" />
-                                <div className="flex-1 space-y-1">
-                                    <div className="h-2 w-12 bg-gray-200 rounded animate-pulse" />
-                                    <div className="h-4 w-16 bg-gray-200 rounded animate-pulse" />
-                                </div>
+
+                            {/* Expiry & Created */}
+                            <div className="flex flex-col gap-1 min-w-[120px]">
+                                <div className="h-3 w-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                                <div className="h-3 w-20 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                            </div>
+
+                            {/* Actions */}
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                                <div className="w-9 h-9 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse" />
+                                <div className="w-9 h-9 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse" />
                             </div>
                         </div>
                     </div>
@@ -307,7 +318,7 @@ export function MyLinksList() {
                 </div>
             ) : (
             <div className="grid grid-cols-1 gap-3">
-                {filteredLinks.map((link: ShortLink) => {
+                {paginatedLinks.map((link: ShortLink) => {
                     const expiry = getExpiryStatus(link.expiresAt);
                     const ExpiryIcon = expiry.icon;
 
@@ -579,48 +590,59 @@ export function MyLinksList() {
             </div>
             )}
 
-            {totalPages > 1 && (
-                <div className="flex items-center justify-center gap-2 pt-4">
+            <div className="flex items-center justify-between pt-4">
+                <div className="text-sm text-gray-600 dark:text-gray-400">
+                    {filteredLinks.length > 0 && (
+                        <span>
+                            {startIndex + 1} - {Math.min(endIndex, filteredLinks.length)} của {filteredLinks.length} bản ghi
+                        </span>
+                    )}
+                </div>
+                <div className="flex items-center gap-2">
+                    {/* Về trang đầu */}
                     <button
-                        onClick={() => fetchMyLinks(currentPage - 1)}
+                        onClick={() => setCurrentPage(1)}
                         disabled={currentPage === 1}
-                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-gray-200 text-sm text-gray-600 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 transition-all"
+                        className="p-2 rounded-md border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                        title="Trang đầu"
                     >
-                        <ChevronLeft size={14} />
-                        <span>Trước</span>
+                        <ChevronsLeft className="w-4 h-4" />
                     </button>
 
-                    <div className="flex gap-1">
-                        {getPageNumbers().map((pageNum, idx) => (
-                            pageNum === '...' ? (
-                                <span key={`dots-${idx}`} className="px-2 py-1.5 text-sm text-gray-400">
-                                    <MoreHorizontal size={14} />
-                                </span>
-                            ) : (
-                                <button
-                                    key={pageNum}
-                                    onClick={() => fetchMyLinks(pageNum as number)}
-                                    className={`min-w-[34px] px-2 py-1.5 rounded-lg text-sm font-medium transition-all ${currentPage === pageNum
-                                        ? 'bg-blue-500 text-white shadow-sm'
-                                        : 'border border-gray-200 text-gray-600 hover:bg-gray-50'
-                                        }`}
-                                >
-                                    {pageNum}
-                                </button>
-                            )
-                        ))}
+                    {/* Lùi 1 trang */}
+                    <button
+                        onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                        disabled={currentPage === 1}
+                        className="p-2 rounded-md border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                    >
+                        <ChevronLeft className="w-4 h-4" />
+                    </button>
+
+                    {/* Hiển thị trang hiện tại / tổng trang */}
+                    <div className="px-3 py-1.5 text-sm font-medium rounded-md bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800">
+                        {currentPage} / {totalPages}
                     </div>
 
+                    {/* Tới 1 trang */}
                     <button
-                        onClick={() => fetchMyLinks(currentPage + 1)}
+                        onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                         disabled={currentPage === totalPages}
-                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-gray-200 text-sm text-gray-600 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 transition-all"
+                        className="p-2 rounded-md border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
                     >
-                        <span>Sau</span>
-                        <ChevronRight size={14} />
+                        <ChevronRight className="w-4 h-4" />
+                    </button>
+
+                    {/* Về trang cuối */}
+                    <button
+                        onClick={() => setCurrentPage(totalPages)}
+                        disabled={currentPage === totalPages}
+                        className="p-2 rounded-md border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                        title="Trang cuối"
+                    >
+                        <ChevronsRight className="w-4 h-4" />
                     </button>
                 </div>
-            )}
+            </div>
 
             {}
             <ConfirmModalDelete

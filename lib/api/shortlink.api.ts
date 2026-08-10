@@ -57,7 +57,7 @@ export const shortlinkApi = {
         }
     },
 
-    getMyLinks: async (page = 1, limit = 20): Promise<{
+    getMyLinks: async (page = 1, limit = 1000): Promise<{
         links: ShortLink[];
         total: number;
         page: number;
@@ -134,6 +134,22 @@ export const shortlinkApi = {
             const response = await authApi.get(`/shortlink/${shortCode}/stats`, { params: { days } });
             const data = response.data;
             if (!data.success) throw new Error('Không thể tải thống kê link');
+            return data.data;
+        } catch (error) {
+            throw handleApiError(error);
+        }
+    },
+
+    getUserStats: async (): Promise<{
+        totalLinks: number;
+        totalClicks: number;
+        expiredLinks: number;
+        activeLinks: number;
+    }> => {
+        try {
+            const response = await authApi.get('/shortlink/my-stats');
+            const data = response.data;
+            if (!data.success) throw new Error('Không thể tải thống kê');
             return data.data;
         } catch (error) {
             throw handleApiError(error);

@@ -5,20 +5,35 @@ import { useShortLinkStore } from '@/store/shortlink.store';
 import { Link2, MousePointerClick, Clock, CheckCircle } from 'lucide-react';
 
 export function UserStatsOverview() {
-    const { links, fetchMyLinks } = useShortLinkStore();
+    const { userStats, isUserStatsLoading, fetchUserStats } = useShortLinkStore();
 
     useEffect(() => {
-        fetchMyLinks(1);
-    }, [fetchMyLinks]);
+        fetchUserStats();
+    }, [fetchUserStats]);
 
-    const totalLinks = links.length;
-    const totalClicks = links.reduce((sum, link) => sum + link.clicks, 0);
-    const expiredLinks = links.filter(link => link.expiresAt && new Date(link.expiresAt) < new Date()).length;
-    const activeLinks = totalLinks - expiredLinks;
+    if (isUserStatsLoading) {
+        return (
+            <div className="space-y-4">
+                <h2 className="text-sm sm:text-base font-semibold text-[var(--cn-text-main)]">
+                    Thống kê tổng quan
+                </h2>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    {[1, 2, 3, 4].map((i) => (
+                        <div key={i} className="bg-[var(--cn-bg-card)] rounded-[var(--cn-radius-md)] border border-[var(--cn-border)] p-4">
+                            <div className="h-4 w-20 bg-gray-200 rounded animate-pulse mb-2" />
+                            <div className="h-8 w-12 bg-gray-200 rounded animate-pulse" />
+                        </div>
+                    ))}
+                </div>
+            </div>
+        );
+    }
 
-    if (links.length === 0) {
+    if (!userStats) {
         return null;
     }
+
+    const { totalLinks, totalClicks, expiredLinks, activeLinks } = userStats;
 
     return (
         <div className="space-y-4">
