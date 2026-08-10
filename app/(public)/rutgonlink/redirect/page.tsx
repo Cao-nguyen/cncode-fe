@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ArrowRight, ExternalLink, Shield, Zap, Users, CheckCircle, AlertTriangle, Book, Star, Sparkles } from 'lucide-react';
+import { ArrowRight, ExternalLink, Shield, Zap, Users, CheckCircle, AlertTriangle, Book, Star, Sparkles, ArrowUpRight } from 'lucide-react';
 import { CustomButton } from '@/components/custom/CustomButton';
 
 export default function RedirectPage() {
@@ -11,6 +11,7 @@ export default function RedirectPage() {
     const [countdown, setCountdown] = useState(3);
     const [isValid, setIsValid] = useState(true);
     const [loading, setLoading] = useState(true);
+    const [progress, setProgress] = useState(100);
 
     const shortCode = searchParams.get('code');
     const originalUrl = searchParams.get('url');
@@ -24,7 +25,7 @@ export default function RedirectPage() {
 
         setLoading(false);
 
-        // Countdown auto-redirect - TEMPORARILY DISABLED FOR UI FIXING
+        // Countdown auto-redirect - TEMPORARILY DISABLED
         // const timer = setInterval(() => {
         //     setCountdown((prev) => {
         //         if (prev <= 1) {
@@ -36,7 +37,21 @@ export default function RedirectPage() {
         //     });
         // }, 1000);
 
-        // return () => clearInterval(timer);
+        // Circular progress animation
+        const progressInterval = setInterval(() => {
+            setProgress((prev) => {
+                if (prev <= 0) {
+                    clearInterval(progressInterval);
+                    return 0;
+                }
+                return prev - (100 / 30); // 30 steps for smooth animation over 3 seconds
+            });
+        }, 100);
+
+        return () => {
+            // clearInterval(timer);
+            clearInterval(progressInterval);
+        };
     }, [shortCode, originalUrl]);
 
     const handleContinue = () => {
@@ -88,9 +103,9 @@ export default function RedirectPage() {
                     </div>
 
                     {/* Info Card */}
-                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-8">
-                        <div className="flex items-center gap-4">
-                            <div className="flex-shrink-0 relative">
+                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 sm:p-6 mb-8">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                            <div className="flex-shrink-0 relative mx-auto sm:mx-0">
                                 {/* Decorative stars */}
                                 <div className="absolute -top-1 -left-1">
                                     <Star className="w-3 h-3 text-yellow-400 fill-yellow-400 animate-pulse" />
@@ -107,15 +122,15 @@ export default function RedirectPage() {
                                     <Book className="w-6 h-6 text-blue-600 dark:text-blue-300" />
                                 </div>
                             </div>
-                            <div className="flex-1">
-                                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
+                            <div className="flex-1 text-center sm:text-left">
+                                <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-1">
                                     CNcode - Kết nối tri thức
                                 </h3>
-                                <p className="text-sm text-gray-600 dark:text-gray-400">
+                                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
                                     CNcode là nền tảng học công nghệ và đổi mới sáng tạo dành cho học sinh và nhiều người học khác với nhiều tính năng và cách giảng dạy hiện đại.
                                 </p>
                             </div>
-                            <div className="flex-shrink-0">
+                            <div className="flex-shrink-0 flex justify-center sm:justify-end">
                                 <CustomButton
                                     onClick={() => router.push('/')}
                                     variant="primary"
@@ -131,31 +146,52 @@ export default function RedirectPage() {
                     {/* Redirect Card */}
                     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
                         <div className="flex items-start gap-6">
-                            <div className="flex-shrink-0">
+                            <div className="flex-shrink-0 w-32">
                                 <img 
                                     src="/images/redirect.png" 
                                     alt="Redirect" 
-                                    className="w-20 h-20 object-contain"
+                                    className="w-28 h-28 object-contain"
                                 />
                             </div>
-                            <div className="flex-1">
+                            <div className="flex-1 min-w-0">
                                 <div className="flex items-center justify-between mb-4">
-                                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex-1">
                                         Bạn đang được chuyển đến link đích
                                     </h2>
-                                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                                        <span>Tự động chuyển sau</span>
-                                        <span className="bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 px-3 py-1 rounded-full font-bold">
+                                    <div className="relative w-12 h-12 flex items-center justify-center flex-shrink-0 ml-4">
+                                        <svg className="absolute inset-0 transform -rotate-90" width="48" height="48">
+                                            <circle
+                                                cx="24"
+                                                cy="24"
+                                                r="20"
+                                                stroke="currentColor"
+                                                strokeWidth="4"
+                                                fill="none"
+                                                className="text-gray-200 dark:text-gray-700"
+                                            />
+                                            <circle
+                                                cx="24"
+                                                cy="24"
+                                                r="20"
+                                                stroke="url(#gradient)"
+                                                strokeWidth="4"
+                                                fill="none"
+                                                strokeLinecap="round"
+                                                strokeDasharray={`${2 * Math.PI * 20}`}
+                                                strokeDashoffset={`${2 * Math.PI * 20 * (1 - progress / 100)}`}
+                                                className="transition-all duration-100 ease-linear"
+                                            />
+                                            <defs>
+                                                <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                                    <stop offset="0%" stopColor="#3B82F6" />
+                                                    <stop offset="100%" stopColor="#93C5FD" />
+                                                </linearGradient>
+                                            </defs>
+                                        </svg>
+                                        <span className="relative z-10 text-sm font-bold text-blue-600 dark:text-blue-300">
                                             {countdown}s
                                         </span>
                                     </div>
-                                </div>
-
-                                <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-6">
-                                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Link đích:</p>
-                                    <p className="text-sm text-gray-700 dark:text-gray-300 break-all">
-                                        {originalUrl}
-                                    </p>
                                 </div>
 
                                 <CustomButton

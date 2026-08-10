@@ -1,114 +1,107 @@
+
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { Shield, Zap, Users, CheckCircle, AlertTriangle, Home } from 'lucide-react';
+import { ArrowRight, AlertTriangle, Book, Star, Sparkles, Home } from 'lucide-react';
 import { CustomButton } from '@/components/custom/CustomButton';
 
 export default function LinkExpiredPage() {
     const router = useRouter();
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
-            <div className="container mx-auto px-4 py-8">
-                <div className="max-w-4xl mx-auto">
-                    {/* Header */}
-                    <div className="text-center mb-8">
-                        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                            CNcode
-                        </h1>
-                        <p className="text-gray-600 dark:text-gray-400">
-                            Nền tảng học tập & chia sẻ kiến thức
-                        </p>
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center px-4">
+            <div className="max-w-4xl w-full">
+                {/* Header */}
+                <div className="text-center mb-8">
+                    <div className="flex items-center justify-center mb-2">
+                        <img 
+                            src="/images/logo.png" 
+                            alt="CNcode Logo" 
+                            className="h-16 w-auto"
+                        />
                     </div>
+                    <p className="text-gray-600 dark:text-gray-400">
+                        Nền tảng học công nghệ và đổi mới sáng tạo
+                    </p>
+                </div>
 
-                    {/* Error Card */}
-                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 mb-8">
-                        <div className="flex items-center justify-center mb-6">
-                            <div className="w-20 h-20 bg-red-100 dark:bg-red-900 rounded-full flex items-center justify-center">
+                {/* Info Card */}
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 sm:p-6 mb-8">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                        <div className="flex-shrink-0 relative mx-auto sm:mx-0">
+                            {/* Decorative stars */}
+                            <div className="absolute -top-1 -left-1">
+                                <Star className="w-3 h-3 text-yellow-400 fill-yellow-400 animate-pulse" />
+                            </div>
+                            <div className="absolute -top-2 -right-2">
+                                <Sparkles className="w-3 h-3 text-yellow-300 fill-yellow-300 animate-pulse" style={{ animationDelay: '0.5s' }} />
+                            </div>
+                            <div className="absolute -bottom-1 -left-2">
+                                <Star className="w-2 h-2 text-yellow-400 fill-yellow-400 animate-pulse" style={{ animationDelay: '1s' }} />
+                            </div>
+                            
+                            {/* Book icon */}
+                            <div className="w-12 h-12 bg-gradient-to-br from-blue-100 to-blue-200 dark:from-blue-900 dark:to-blue-800 rounded-lg flex items-center justify-center shadow-lg relative z-10">
+                                <Book className="w-6 h-6 text-blue-600 dark:text-blue-300" />
+                            </div>
+                        </div>
+                        <div className="flex-1 text-center sm:text-left">
+                            <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-1">
+                                CNcode - Kết nối tri thức
+                            </h3>
+                            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+                                CNcode là nền tảng học công nghệ và đổi mới sáng tạo dành cho học sinh và nhiều người học khác với nhiều tính năng và cách giảng dạy hiện đại.
+                            </p>
+                        </div>
+                        <div className="flex-shrink-0 flex justify-center sm:justify-end">
+                            <CustomButton
+                                onClick={() => router.push('/')}
+                                variant="primary"
+                                className="px-3 py-2 text-sm"
+                            >
+                                Khám phá CNcode
+                                <ArrowRight size={16} />
+                            </CustomButton>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Error Card */}
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+                    <div className="flex items-start gap-6">
+                        <div className="flex-shrink-0 w-24">
+                            <div className="w-20 h-20 bg-red-100 dark:bg-red-900 rounded-full flex items-center justify-center mx-auto">
                                 <AlertTriangle className="w-10 h-10 text-red-600 dark:text-red-300" />
                             </div>
                         </div>
-                        <h2 className="text-2xl font-bold text-gray-900 dark:text-white text-center mb-2">
-                            Link không khả dụng
-                        </h2>
-                        <p className="text-gray-600 dark:text-gray-400 text-center mb-6">
-                            Link rút gọn này không khả dụng vì một trong các lý do sau:
-                        </p>
-                        <ul className="text-gray-600 dark:text-gray-400 text-center mb-6 space-y-2">
-                            <li>• Đã hết hạn thời gian sử dụng</li>
-                            <li>• Đã vượt quá giới hạn lượt truy cập</li>
-                            <li>• Link đã bị xóa hoặc không tồn tại</li>
-                        </ul>
-                        <div className="flex justify-center">
-                            <CustomButton onClick={() => router.push('/')} variant="primary">
+                        <div className="flex-1 min-w-0">
+                            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                                Link không khả dụng
+                            </h2>
+                            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                                Link rút gọn này không khả dụng vì một trong các lý do sau:
+                            </p>
+                            <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-2 mb-6">
+                                <li>• Đã hết hạn thời gian sử dụng</li>
+                                <li>• Đã vượt quá giới hạn lượt truy cập</li>
+                                <li>• Link đã bị xóa hoặc không tồn tại</li>
+                            </ul>
+                            <CustomButton
+                                onClick={() => router.push('/')}
+                                variant="primary"
+                                className="w-full"
+                                size="large"
+                            >
                                 <Home size={18} />
                                 Về trang chủ
                             </CustomButton>
                         </div>
                     </div>
+                </div>
 
-                    <div className="grid md:grid-cols-2 gap-6 mb-8">
-                        {/* Info Cards */}
-                        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-                            <div className="flex items-center gap-3 mb-4">
-                                <Shield className="w-6 h-6 text-blue-600" />
-                                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                                    An toàn & Bảo mật
-                                </h2>
-                            </div>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">
-                                Tất cả link rút gọn đều được kiểm tra và bảo mật. Bạn có thể tin tưởng sử dụng dịch vụ của chúng tôi.
-                            </p>
-                        </div>
-
-                        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-                            <div className="flex items-center gap-3 mb-4">
-                                <Zap className="w-6 h-6 text-yellow-600" />
-                                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                                    Nhanh chóng
-                                </h2>
-                            </div>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">
-                                Link rút gọn giúp chia sẻ URL dài một cách nhanh chóng và dễ nhớ hơn.
-                            </p>
-                        </div>
-
-                        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-                            <div className="flex items-center gap-3 mb-4">
-                                <Users className="w-6 h-6 text-green-600" />
-                                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                                    Cộng đồng lớn
-                                </h2>
-                            </div>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">
-                                Tham gia cộng đồng học tập với hàng ngàn người dùng trên toàn quốc.
-                            </p>
-                        </div>
-
-                        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-                            <div className="flex items-center gap-3 mb-4">
-                                <CheckCircle className="w-6 h-6 text-purple-600" />
-                                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                                    Miễn phí
-                                </h2>
-                            </div>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">
-                                Dịch vụ rút gọn link hoàn toàn miễn phí cho tất cả người dùng.
-                            </p>
-                        </div>
-                    </div>
-
-                    {/* Footer */}
-                    <div className="text-center mt-8 text-sm text-gray-600 dark:text-gray-400">
-                        <p>© 2024 CNcode. Tất cả quyền được bảo lưu.</p>
-                        <CustomButton
-                            onClick={() => router.push('/')}
-                            variant="outline"
-                            className="mt-2"
-                        >
-                            Về trang chủ
-                        </CustomButton>
-                    </div>
+                {/* Footer */}
+                <div className="text-center mt-8 text-sm text-gray-600 dark:text-gray-400">
+                    <p>© 2026 CNcode. Tất cả quyền được bảo lưu.</p>
                 </div>
             </div>
         </div>
