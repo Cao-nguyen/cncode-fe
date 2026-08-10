@@ -25,17 +25,17 @@ export default function RedirectPage() {
 
         setLoading(false);
 
-        // Countdown auto-redirect - TEMPORARILY DISABLED
-        // const timer = setInterval(() => {
-        //     setCountdown((prev) => {
-        //         if (prev <= 1) {
-        //             clearInterval(timer);
-        //             window.location.href = originalUrl;
-        //             return 0;
-        //         }
-        //         return prev - 1;
-        //     });
-        // }, 1000);
+        // Countdown auto-redirect
+        const timer = setInterval(() => {
+            setCountdown((prev) => {
+                if (prev <= 1) {
+                    clearInterval(timer);
+                    window.location.href = originalUrl;
+                    return 0;
+                }
+                return prev - 1;
+            });
+        }, 1000);
 
         // Circular progress animation
         const progressInterval = setInterval(() => {
@@ -49,7 +49,7 @@ export default function RedirectPage() {
         }, 100);
 
         return () => {
-            // clearInterval(timer);
+            clearInterval(timer);
             clearInterval(progressInterval);
         };
     }, [shortCode, originalUrl]);
