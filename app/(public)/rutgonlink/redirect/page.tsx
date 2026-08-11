@@ -89,15 +89,15 @@ export default function RedirectPage() {
         <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center px-4">
             <div className="max-w-4xl w-full">
                     {/* Header */}
-                    <div className="text-center mb-8">
+                    <div className="text-center mb-6 sm:mb-8">
                         <div className="flex items-center justify-center mb-2">
                             <img 
                                 src="/images/logo.png" 
                                 alt="CNcode Logo" 
-                                className="h-16 w-auto"
+                                className="h-12 sm:h-16 w-auto"
                             />
                         </div>
-                        <p className="text-gray-600 dark:text-gray-400">
+                        <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
                             Nền tảng học công nghệ và đổi mới sáng tạo
                         </p>
                     </div>
@@ -144,41 +144,41 @@ export default function RedirectPage() {
                     </div>
 
                     {/* Redirect Card */}
-                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-                        <div className="flex items-start gap-6">
-                            <div className="flex-shrink-0 w-32">
+                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 sm:p-6">
+                        <div className="flex flex-col sm:flex-row sm:items-start gap-4 sm:gap-6">
+                            <div className="flex-shrink-0 w-24 sm:w-32 mx-auto sm:mx-0">
                                 <img 
                                     src="/images/redirect.png" 
                                     alt="Redirect" 
-                                    className="w-28 h-28 object-contain"
+                                    className="w-20 h-20 sm:w-28 sm:h-28 object-contain"
                                 />
                             </div>
-                            <div className="flex-1 min-w-0">
-                                <div className="flex items-center justify-between mb-4">
-                                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex-1">
+                            <div className="flex-1 min-w-0 text-center sm:text-left">
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-3">
+                                    <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white flex-1">
                                         Bạn đang được chuyển đến link đích
                                     </h2>
-                                    <div className="relative w-12 h-12 flex items-center justify-center flex-shrink-0 ml-4">
-                                        <svg className="absolute inset-0 transform -rotate-90" width="48" height="48">
+                                    <div className="relative w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center flex-shrink-0 mx-auto sm:ml-4">
+                                        <svg className="absolute inset-0 transform -rotate-90" width="40" height="40" viewBox="0 0 40 40">
                                             <circle
-                                                cx="24"
-                                                cy="24"
-                                                r="20"
+                                                cx="20"
+                                                cy="20"
+                                                r="16"
                                                 stroke="currentColor"
                                                 strokeWidth="4"
                                                 fill="none"
                                                 className="text-gray-200 dark:text-gray-700"
                                             />
                                             <circle
-                                                cx="24"
-                                                cy="24"
-                                                r="20"
+                                                cx="20"
+                                                cy="20"
+                                                r="16"
                                                 stroke="url(#gradient)"
                                                 strokeWidth="4"
                                                 fill="none"
                                                 strokeLinecap="round"
-                                                strokeDasharray={`${2 * Math.PI * 20}`}
-                                                strokeDashoffset={`${2 * Math.PI * 20 * (1 - progress / 100)}`}
+                                                strokeDasharray={`${2 * Math.PI * 16}`}
+                                                strokeDashoffset={`${2 * Math.PI * 16 * (1 - progress / 100)}`}
                                                 className="transition-all duration-100 ease-linear"
                                             />
                                             <defs>
@@ -188,7 +188,7 @@ export default function RedirectPage() {
                                                 </linearGradient>
                                             </defs>
                                         </svg>
-                                        <span className="relative z-10 text-sm font-bold text-blue-600 dark:text-blue-300">
+                                        <span className="relative z-10 text-xs sm:text-sm font-bold text-blue-600 dark:text-blue-300">
                                             {countdown}s
                                         </span>
                                     </div>
@@ -198,14 +198,14 @@ export default function RedirectPage() {
                                     onClick={handleContinue}
                                     variant="primary"
                                     className="w-full"
-                                    size="large"
+                                    size="medium"
                                 >
-                                    <ExternalLink size={18} />
+                                    <ExternalLink size={16} />
                                     Tiếp tục đến link đích
-                                    <ArrowRight size={18} />
+                                    <ArrowRight size={16} />
                                 </CustomButton>
 
-                                <p className="text-xs text-gray-500 dark:text-gray-400 text-center mt-4">
+                                <p className="text-xs text-gray-500 dark:text-gray-400 text-center mt-3 sm:mt-4">
                                     Nếu không tự động chuyển, hãy bấm nút ở trên
                                 </p>
                             </div>

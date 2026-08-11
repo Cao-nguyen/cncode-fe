@@ -12,15 +12,15 @@ export default function LinkExpiredPage() {
         <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center px-4">
             <div className="max-w-4xl w-full">
                 {/* Header */}
-                <div className="text-center mb-8">
+                <div className="text-center mb-6 sm:mb-8">
                     <div className="flex items-center justify-center mb-2">
                         <img 
                             src="/images/logo.png" 
                             alt="CNcode Logo" 
-                            className="h-16 w-auto"
+                            className="h-12 sm:h-16 w-auto"
                         />
                     </div>
-                    <p className="text-gray-600 dark:text-gray-400">
+                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
                         Nền tảng học công nghệ và đổi mới sáng tạo
                     </p>
                 </div>
@@ -67,21 +67,21 @@ export default function LinkExpiredPage() {
                 </div>
 
                 {/* Error Card */}
-                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-                    <div className="flex items-start gap-6">
-                        <div className="flex-shrink-0 w-24">
-                            <div className="w-20 h-20 bg-red-100 dark:bg-red-900 rounded-full flex items-center justify-center mx-auto">
-                                <AlertTriangle className="w-10 h-10 text-red-600 dark:text-red-300" />
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 sm:p-6">
+                    <div className="flex flex-col sm:flex-row sm:items-start gap-4 sm:gap-6">
+                        <div className="flex-shrink-0 w-20 sm:w-24 mx-auto sm:mx-0">
+                            <div className="w-16 h-16 sm:w-20 sm:h-20 bg-red-100 dark:bg-red-900 rounded-full flex items-center justify-center">
+                                <AlertTriangle className="w-8 h-8 sm:w-10 sm:h-10 text-red-600 dark:text-red-300" />
                             </div>
                         </div>
-                        <div className="flex-1 min-w-0">
-                            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                        <div className="flex-1 min-w-0 text-center sm:text-left">
+                            <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-2">
                                 Link không khả dụng
                             </h2>
-                            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-3 sm:mb-4">
                                 Link rút gọn này không khả dụng vì một trong các lý do sau:
                             </p>
-                            <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-2 mb-6">
+                            <ul className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 space-y-1.5 sm:space-y-2 mb-4 sm:mb-6">
                                 <li>• Đã hết hạn thời gian sử dụng</li>
                                 <li>• Đã vượt quá giới hạn lượt truy cập</li>
                                 <li>• Link đã bị xóa hoặc không tồn tại</li>
@@ -90,9 +90,9 @@ export default function LinkExpiredPage() {
                                 onClick={() => router.push('/')}
                                 variant="primary"
                                 className="w-full"
-                                size="large"
+                                size="medium"
                             >
-                                <Home size={18} />
+                                <Home size={16} />
                                 Về trang chủ
                             </CustomButton>
                         </div>
