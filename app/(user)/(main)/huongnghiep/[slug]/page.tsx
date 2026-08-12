@@ -25,7 +25,7 @@ export default function IndustryDetailPage() {
         setLoading(true);
         // Use admin endpoint directly since public endpoint doesn't exist yet
         const adminRes = await huongnghiepApi.getAllIndustries({ limit: 100 });
-        
+
         if (adminRes.success) {
           // Transform all industries
           const transformed = adminRes.data.map((item: any) => ({
@@ -48,12 +48,14 @@ export default function IndustryDetailPage() {
             updatedAt: item.updatedAt || new Date().toISOString(),
           }));
           setAllIndustries(transformed);
-          
+
           // Find current industry
           const foundIndustry = transformed.find((ind: any) => ind._id === slug);
-          
+
           if (foundIndustry) {
             setIndustry(foundIndustry);
+            // Update document title dynamically
+            document.title = `${foundIndustry.name} - Hướng nghiệp - CNcode`;
           } else {
             setError('Không tìm thấy ngành nghề');
           }

@@ -10,6 +10,8 @@ import StaticContent from '@/components/common/StaticContent';
 import CommentSection from '@/components/comment/CommentSection';
 import { useAuthStore } from '@/store/auth.store';
 import { getImageUrl } from '@/lib/utils/imageUrl';
+import { SendGiftButton } from '@/components/gift/SendGiftButton';
+import { BlogGiftList } from '@/components/gift/BlogGiftList';
 
 export default function BlogDetailPage() {
     const params = useParams();
@@ -538,6 +540,13 @@ export default function BlogDetailPage() {
                                     <span className="text-xs sm:text-sm font-medium">Lưu</span>
                                 </button>
 
+                                <SendGiftButton
+                                    recipientId={blog.author._id}
+                                    recipientName={blog.author.fullName}
+                                    targetType="post"
+                                    targetId={blog._id}
+                                />
+
                                 <div className="flex items-center gap-2 px-3 sm:px-4 py-2 text-gray-600">
                                     <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5" />
                                     <span className="text-xs sm:text-sm font-medium">{blog.commentCount} bình luận</span>
@@ -548,6 +557,7 @@ export default function BlogDetailPage() {
                         {/* Comment Section */}
                         <div className="bg-white rounded-xl border border-gray-200 p-8 mb-6">
                             <CommentSection targetType="blog" targetId={blog._id} />
+                            <BlogGiftList blogId={blog._id} />
                         </div>
                     </div>
 
