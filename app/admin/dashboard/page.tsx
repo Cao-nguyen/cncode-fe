@@ -61,6 +61,28 @@ interface DashboardStats extends ComprehensiveStats {
     };
 }
 
+type OnlineStats = DashboardStats['online'];
+
+function normalizeOnlineStats(payload: unknown, fallback: OnlineStats): OnlineStats {
+    const raw =
+        payload &&
+        typeof payload === 'object' &&
+        'data' in payload &&
+        (payload as { data?: unknown }).data &&
+        typeof (payload as { data?: unknown }).data === 'object'
+            ? (payload as { data: Record<string, unknown> }).data
+            : payload;
+
+    if (!raw || typeof raw !== 'object') return fallback;
+
+    const obj = raw as Record<string, unknown>;
+    return {
+        total: typeof obj.total === 'number' ? obj.total : fallback.total,
+        users: typeof obj.users === 'number' ? obj.users : fallback.users,
+        guests: typeof obj.guests === 'number' ? obj.guests : fallback.guests,
+    };
+}
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
 const getToken = (): string | null => {
@@ -187,7 +209,7 @@ function AdminDashboardContent() {
                     thisMonth: visitsData.data.todayVisits || 0,
                     weeklyData,
                 } : stats.visits,
-                online: onlineData?.data || onlineData || stats.online
+                online: normalizeOnlineStats(onlineData, stats.online)
             });
         } catch (error) {
             console.error('Error fetching dashboard stats:', error);
@@ -200,7 +222,10 @@ function AdminDashboardContent() {
         try {
             const res = await fetch(`${API_URL}/api/statistic/online`);
             const data = await res.json();
-            setStats(prev => ({ ...prev, online: data?.data || data || prev.online }));
+            setStats(prev => ({
+                ...prev,
+                online: normalizeOnlineStats(data, prev.online),
+            }));
         } catch (error) {
             console.error('Error fetching online stats:', error);
         }
