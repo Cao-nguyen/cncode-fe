@@ -14,7 +14,14 @@ import {
     getNotesByLesson
 } from '@/lib/api/khoahoc.api';
 import { Lesson, Progress, Exercise, ChapterWithLessons, ExerciseAnswer } from '@/types/khoahoc.type';
-import { setCourseLastLesson } from '@/lib/localProgress';
+import { setCourseLastLesson, removeCourseLastLesson } from '@/lib/localProgress';
+import {
+    clampWatchTime,
+    getAnsweredQuizTimes,
+    getEarliestPendingQuiz,
+    getQuizToShowAtTime,
+    markQuizAnswered,
+} from '@/lib/lessonQuizProgress';
 import {
     Loader2, Play, CheckCircle2, ChevronLeft, ChevronRight,
     AlertCircle, ChevronDown, ChevronUp, HelpCircle, MessageSquare, X, FileText, Lock, StickyNote
@@ -105,6 +112,12 @@ const lessonCache = new Map<string, LessonWithExercise>();
 const chaptersCache = new Map<string, ChapterWithLessons[]>();
 const progressCache = new Map<string, Progress>();
 const prefetchSet = new Set<string>();
+const notFoundLessonIds = new Set<string>();
+const fetchInFlight = new Map<string, Promise<{
+    lesson: LessonWithExercise | null;
+    progress: Progress | null;
+    error?: string;
+}>>();
 
 // ─── Pure helpers ─────────────────────────────────────────────────────────────
 
@@ -159,40 +172,75 @@ function buildVideoUrl(videoFileId: string): string {
 
 // Fetch lesson + progress + exercise song song, dùng cache nếu có
 async function fetchLessonData(lessonId: string): Promise<{
-    lesson: LessonWithExercise;
+    lesson: LessonWithExercise | null;
     progress: Progress | null;
+    error?: string;
 }> {
-    const [lessonResult, progressResult, exerciseResult] = await Promise.allSettled([
-        lessonCache.has(lessonId)
-            ? Promise.resolve(lessonCache.get(lessonId)!)
-            : getLessonDetail(lessonId).then(data => {
+    if (!lessonId || lessonId === 'undefined' || lessonId === 'null') {
+        return { lesson: null, progress: null, error: 'invalid-lesson-id' };
+    }
+
+    if (notFoundLessonIds.has(lessonId)) {
+        return { lesson: null, progress: null, error: 'not-found' };
+    }
+
+    const inFlight = fetchInFlight.get(lessonId);
+    if (inFlight) return inFlight;
+
+    const promise = (async () => {
+        const [lessonResult, progressResult, exerciseResult] = await Promise.allSettled([
+            getLessonDetail(lessonId).then(data => {
+                if (!data) return null;
                 const l = data as LessonWithExercise;
                 lessonCache.set(lessonId, l);
                 return l;
             }),
-        progressCache.has(lessonId)
-            ? Promise.resolve(progressCache.get(lessonId)!)
-            : getProgress(lessonId).then(p => {
-                const prog = p as Progress;
-                progressCache.set(lessonId, prog);
-                return prog;
-            }).catch(() => null),
-        getExerciseByLessonId(lessonId),
-    ]);
+            progressCache.has(lessonId)
+                ? Promise.resolve(progressCache.get(lessonId)!)
+                : getProgress(lessonId).then(p => {
+                    const prog = p as Progress;
+                    progressCache.set(lessonId, prog);
+                    return prog;
+                }).catch(() => null),
+            getExerciseByLessonId(lessonId),
+        ]);
 
-    if (lessonResult.status === 'rejected') throw new Error('Lesson fetch failed');
+        if (lessonResult.status === 'rejected') {
+            console.error('[fetchLessonData] lesson fetch rejected:', lessonResult.reason);
+            return {
+                lesson: null,
+                progress: null,
+                error: 'network',
+            };
+        }
 
-    const lesson = lessonResult.value;
-    // Attach exercise data if exists
-    if (exerciseResult.status === 'fulfilled' && exerciseResult.value) {
-        lesson.exercise = exerciseResult.value;
-        lessonCache.set(lessonId, lesson);
+        const lesson = lessonResult.value;
+        if (!lesson) {
+            notFoundLessonIds.add(lessonId);
+            const staleCourseId = lessonCache.get(lessonId)?.courseId;
+            lessonCache.delete(lessonId);
+            progressCache.delete(lessonId);
+            if (staleCourseId) removeCourseLastLesson(staleCourseId);
+            return { lesson: null, progress: null, error: 'not-found' };
+        }
+
+        if (exerciseResult.status === 'fulfilled' && exerciseResult.value) {
+            lesson.exercise = exerciseResult.value;
+            lessonCache.set(lessonId, lesson);
+        }
+
+        return {
+            lesson,
+            progress: progressResult.status === 'fulfilled' ? progressResult.value : null,
+        };
+    })();
+
+    fetchInFlight.set(lessonId, promise);
+    try {
+        return await promise;
+    } finally {
+        fetchInFlight.delete(lessonId);
     }
-
-    return {
-        lesson,
-        progress: progressResult.status === 'fulfilled' ? progressResult.value : null,
-    };
 }
 
 // Fetch chapters, cache vĩnh viễn trong session
@@ -246,6 +294,8 @@ export default function LearnPage() {
 
     // Chỉ show spinner lần đầu tiên mở app (cache còn rỗng)
     const [initialLoading, setInitialLoading] = useState(!lessonCache.has(lessonId));
+    const [loadError, setLoadError] = useState<'not-found' | 'network' | 'invalid-lesson-id' | null>(null);
+    const [failedCourseId, setFailedCourseId] = useState<string | null>(null);
 
     // Video loading state riêng để tránh màn hình đen khi chuyển bài học
     const [videoLoading, setVideoLoading] = useState(false);
@@ -303,6 +353,11 @@ export default function LearnPage() {
     const [quizAnswered, setQuizAnswered] = useState(false);
     const [quizCorrect, setQuizCorrect] = useState<boolean | null>(null);
     const answeredQuizIds = useRef<Set<number>>(new Set());
+    const quizQuestionsRef = useRef<QuizQuestion[]>([]);
+
+    useEffect(() => {
+        quizQuestionsRef.current = quizQuestions;
+    }, [quizQuestions]);
 
     // ─── Navigation helpers ───────────────────────────────────────────────────
 
@@ -322,7 +377,8 @@ export default function LearnPage() {
 
     // ─── Apply lesson vào state ───────────────────────────────────────────────
 
-    const applyLesson = useCallback((lessonData: LessonWithExercise) => {
+    const applyLesson = useCallback((lessonData: LessonWithExercise | null | undefined) => {
+        if (!lessonData?._id) return;
         setLesson(lessonData);
 
         // Load quiz questions from lesson
@@ -366,77 +422,7 @@ export default function LearnPage() {
             setExercise(null);
             setCurrentQuestion(null);
         }
-    }, [videoUrl]);
-
-    // ─── Save unanswered quizzes to localStorage ──────────────────────────────
-
-    useEffect(() => {
-        if (!lesson || !quizQuestions.length) return;
-
-        // Save all unanswered quiz times to localStorage
-        const unansweredQuizzes = quizQuestions
-            .filter(q => !answeredQuizIds.current.has(q.time))
-            .map(q => q.time);
-
-        if (unansweredQuizzes.length > 0) {
-            const quizData = {
-                lessonId,
-                unansweredTimes: unansweredQuizzes,
-                timestamp: Date.now()
-            };
-            localStorage.setItem(`quizProgress_${lessonId}`, JSON.stringify(quizData));
-        } else {
-            localStorage.removeItem(`quizProgress_${lessonId}`);
-        }
-    }, [lesson, quizQuestions, lessonId]);
-
-    // ─── Check unanswered quizzes from localStorage ───────────────────────────
-
-    useEffect(() => {
-        if (!lesson || !quizQuestions.length || showQuizPopup) return;
-
-        const quizDataStr = localStorage.getItem(`quizProgress_${lessonId}`);
-        if (!quizDataStr) return;
-
-        try {
-            const quizData = JSON.parse(quizDataStr);
-
-            // Check if data is not too old (within 24 hours)
-            const dayInMs = 24 * 60 * 60 * 1000;
-            if (Date.now() - quizData.timestamp > dayInMs) {
-                localStorage.removeItem(`quizProgress_${lessonId}`);
-                return;
-            }
-
-            // Check if there are any unanswered quizzes that user has passed
-            const unansweredPassed = quizData.unansweredTimes.find((time: number) =>
-                currentVideoTime >= time && !answeredQuizIds.current.has(time)
-            );
-
-            if (unansweredPassed !== undefined) {
-                // Find the question
-                const question = quizQuestions.find(q => q.time === unansweredPassed);
-                if (question) {
-                    console.log('[Quiz Enforcement] User passed unanswered quiz at', unansweredPassed);
-
-                    // Pause video
-                    if (isYouTubeVideo && youtubePlayerRef.current) {
-                        youtubePlayerRef.current.pauseVideo();
-                    }
-
-                    // Show quiz popup
-                    setCurrentQuizQuestion(question);
-                    setShowQuizPopup(true);
-                    setQuizAnswer(null);
-                    setQuizAnswered(false);
-                    setQuizCorrect(null);
-                }
-            }
-        } catch (err) {
-            console.error('Failed to parse quiz progress:', err);
-            localStorage.removeItem(`quizProgress_${lessonId}`);
-        }
-    }, [lesson, quizQuestions, lessonId, currentVideoTime, showQuizPopup, isYouTubeVideo]);
+    }, []);
 
     // ─── Main fetch effect ────────────────────────────────────────────────────
 
@@ -444,27 +430,47 @@ export default function LearnPage() {
         if (!lessonId) return;
 
         // Reset states khi chuyển lesson
+        setLoadError(null);
+        setFailedCourseId(null);
         setQuizSelected(null);
         setTfSelected({});
         setShortAnswerText('');
         setExerciseResult(null);
+        setShowQuizPopup(false);
+        setCurrentQuizQuestion(null);
+        setQuizAnswer(null);
+        setQuizAnswered(false);
+        setQuizCorrect(null);
+        answeredQuizIds.current = getAnsweredQuizTimes(lessonId);
+        lastValidTimeRef.current = 0;
         watchedSecondsRef.current = 0;
         initialSeekDone.current = null;
 
-        // Nếu đã cache → render ngay, không chờ
+        // Hiển thị cache tạm nếu có (chờ API xác nhận lại)
         const cachedLesson = lessonCache.get(lessonId);
         const cachedProgress = progressCache.get(lessonId);
         if (cachedLesson) {
             applyLesson(cachedLesson);
             setProgress(cachedProgress ?? null);
             watchedSecondsRef.current = cachedProgress?.watchedSeconds ?? 0;
-            setInitialLoading(false);
         }
 
-        // Fetch ngầm (hoặc fetch lần đầu nếu chưa cache)
+        // Luôn fetch lại từ API để tránh cache/localStorage cũ
         const load = async () => {
             try {
-                const { lesson: lessonData, progress: prog } = await fetchLessonData(lessonId);
+                const { lesson: lessonData, progress: prog, error } = await fetchLessonData(lessonId);
+
+                if (!lessonData) {
+                    const staleCourseId = cachedLesson?.courseId || lessonCache.get(lessonId)?.courseId || lesson?.courseId;
+                    if (staleCourseId) {
+                        removeCourseLastLesson(staleCourseId);
+                        setFailedCourseId(staleCourseId);
+                    }
+                    setLoadError(error ?? 'not-found');
+                    setLesson(null);
+                    setVideoLoading(false);
+                    return;
+                }
 
                 applyLesson(lessonData);
                 // Video loading sẽ được set false trong applyLesson hoặc khi video ready
@@ -512,18 +518,28 @@ export default function LearnPage() {
     // ─── YouTube Player handlers ──────────────────────────────────────────────
 
     const handlePlayerReady = useCallback((event: YTPlayerEvent) => {
-        console.log('[YouTube] Player ready');
-        // Seek to saved progress
-        if (watchedSecondsRef.current > 0 && initialSeekDone.current !== lessonId) {
-            event.target.seekTo(watchedSecondsRef.current, true);
-            // Update lastValidTimeRef to prevent anti-skip from triggering on restore
-            lastValidTimeRef.current = watchedSecondsRef.current;
+        const questions = quizQuestionsRef.current;
+        const answered = answeredQuizIds.current;
+        const savedTime = watchedSecondsRef.current;
+        const clamped = clampWatchTime(savedTime, questions, answered);
+        const pending = getEarliestPendingQuiz(questions, answered, savedTime);
+
+        if (savedTime > 0 && initialSeekDone.current !== lessonId) {
+            event.target.seekTo(clamped, true);
+            lastValidTimeRef.current = clamped;
+            setCurrentVideoTime(clamped);
             initialSeekDone.current = lessonId;
         }
-        // Video is ready, turn off loading
+
         setVideoLoading(false);
-        // Don't autoplay - let user click play button
-        console.log('[YouTube] Player ready, waiting for user to play');
+
+        if (pending && savedTime >= pending.time) {
+            setCurrentQuizQuestion(pending);
+            setShowQuizPopup(true);
+            setQuizAnswer(null);
+            setQuizAnswered(false);
+            setQuizCorrect(null);
+        }
     }, [lessonId]);
 
     const handleStateChange = useCallback((event: YTPlayerEvent) => {
@@ -544,12 +560,29 @@ export default function LearnPage() {
 
             // Start new interval to track time from YouTube player
             videoTimeIntervalRef.current = setInterval(() => {
-                const currentTime = Math.floor(player.getCurrentTime());
+                const rawTime = Math.floor(player.getCurrentTime());
+                const questions = quizQuestionsRef.current;
+                const answered = answeredQuizIds.current;
+                const pending = getEarliestPendingQuiz(questions, answered, rawTime);
+
+                if (pending && rawTime > pending.time) {
+                    player.seekTo(pending.time, true);
+                    lastValidTimeRef.current = pending.time;
+                    setCurrentVideoTime(pending.time);
+                    setCurrentQuizQuestion(pending);
+                    setShowQuizPopup(true);
+                    setQuizAnswer(null);
+                    setQuizAnswered(false);
+                    setQuizCorrect(null);
+                    player.pauseVideo();
+                    return;
+                }
+
+                const currentTime = rawTime;
                 const timeDiff = currentTime - lastValidTimeRef.current;
 
                 // Check if user seeked forward more than 30 seconds
                 if (timeDiff > 30) {
-                    // Seek back to last valid position
                     player.seekTo(lastValidTimeRef.current, true);
                     toast.error('Không thể tua bài học! Bạn cần xem từ đầu.', {
                         duration: 3000,
@@ -557,15 +590,15 @@ export default function LearnPage() {
                     return;
                 }
 
-                // Update last valid time
                 lastValidTimeRef.current = currentTime;
                 setCurrentVideoTime(currentTime);
 
                 if (currentTime > 0 && currentTime % 10 === 0 && currentTime !== watchedSecondsRef.current) {
-                    watchedSecondsRef.current = currentTime;
+                    const savableTime = clampWatchTime(currentTime, questions, answered);
+                    watchedSecondsRef.current = savableTime;
                     const duration = lesson?.duration || player.getDuration() || 0;
-                    const isCompleted = duration > 0 && currentTime >= (duration - 10);
-                    const update = { watchedSeconds: currentTime, isCompleted };
+                    const isCompleted = duration > 0 && savableTime >= (duration - 10);
+                    const update = { watchedSeconds: savableTime, isCompleted };
                     progressCache.set(lessonId, { ...progressCache.get(lessonId), ...update } as Progress);
                     saveProgress(lessonId, update).catch(console.error);
 
@@ -593,10 +626,11 @@ export default function LearnPage() {
 
             // Save progress on pause/end
             if (event.data === window.YT!.PlayerState.PAUSED || event.data === window.YT!.PlayerState.ENDED) {
-                const currentTime = Math.floor(player.getCurrentTime());
+                const rawTime = Math.floor(player.getCurrentTime());
+                const savableTime = clampWatchTime(rawTime, quizQuestionsRef.current, answeredQuizIds.current);
                 const duration = lesson?.duration || player.getDuration() || 0;
-                const isCompleted = event.data === window.YT!.PlayerState.ENDED || (duration > 0 && currentTime >= (duration - 10));
-                const update = { watchedSeconds: currentTime, isCompleted };
+                const isCompleted = event.data === window.YT!.PlayerState.ENDED || (duration > 0 && savableTime >= (duration - 10));
+                const update = { watchedSeconds: savableTime, isCompleted };
                 saveProgress(lessonId, update).catch(console.error);
             }
         }
@@ -718,10 +752,11 @@ export default function LearnPage() {
                 setCurrentVideoTime(prev => {
                     const newTime = prev + 1;
                     if (newTime > 0 && newTime % 10 === 0 && newTime !== watchedSecondsRef.current) {
-                        watchedSecondsRef.current = newTime;
+                        const savableTime = clampWatchTime(newTime, quizQuestionsRef.current, answeredQuizIds.current);
+                        watchedSecondsRef.current = savableTime;
                         const duration = lesson.duration || 0;
-                        const isCompleted = duration > 0 && newTime >= (duration - 10);
-                        const update = { watchedSeconds: newTime, isCompleted };
+                        const isCompleted = duration > 0 && savableTime >= (duration - 10);
+                        const update = { watchedSeconds: savableTime, isCompleted };
                         progressCache.set(lessonId, { ...progressCache.get(lessonId), ...update } as Progress);
                         saveProgress(lessonId, update).catch(console.error);
 
@@ -769,34 +804,59 @@ export default function LearnPage() {
 
     // ─── Quiz popup logic ─────────────────────────────────────────────────────
 
-    // Check time and show quiz popup if needed
     useEffect(() => {
-        // Skip if no quiz questions or popup is already showing
         if (!quizQuestions.length || showQuizPopup) return;
 
-        // Debug logs
-        console.log('[Quiz Debug] Current time:', currentVideoTime);
-        console.log('[Quiz Debug] Quiz questions:', quizQuestions);
-        console.log('[Quiz Debug] Answered IDs:', Array.from(answeredQuizIds.current));
+        const question = getQuizToShowAtTime(quizQuestions, answeredQuizIds.current, currentVideoTime);
+        if (!question) return;
 
-        const question = quizQuestions.find(q => {
-            const match = q.time === currentVideoTime && !answeredQuizIds.current.has(q.time);
-            if (match) {
-                console.log('[Quiz Debug] Found matching question:', q);
+        if (currentVideoTime > question.time) {
+            if (isYouTubeVideo && youtubePlayerRef.current) {
+                youtubePlayerRef.current.seekTo(question.time, true);
+            } else if (videoRef.current) {
+                videoRef.current.currentTime = question.time;
             }
-            return match;
-        });
-
-        if (question) {
-            console.log('[Quiz Debug] Showing popup for question at time:', question.time);
-            setCurrentQuizQuestion(question);
-            setShowQuizPopup(true);
-            setQuizAnswer(null);
-            setQuizAnswered(false);
-            setQuizCorrect(null);
-            pauseVideo();
+            lastValidTimeRef.current = question.time;
+            setCurrentVideoTime(question.time);
         }
-    }, [currentVideoTime, quizQuestions, showQuizPopup, pauseVideo]);
+
+        setCurrentQuizQuestion(question);
+        setShowQuizPopup(true);
+        setQuizAnswer(null);
+        setQuizAnswered(false);
+        setQuizCorrect(null);
+        pauseVideo();
+    }, [currentVideoTime, quizQuestions, showQuizPopup, pauseVideo, isYouTubeVideo]);
+
+    // Sau reload: nếu tiến độ đã vượt câu hỏi chưa trả lời thì ép hiện popup ngay
+    useEffect(() => {
+        if (!lesson || !quizQuestions.length || showQuizPopup) return;
+
+        answeredQuizIds.current = getAnsweredQuizTimes(lessonId);
+        const savedTime = progress?.watchedSeconds ?? watchedSecondsRef.current;
+        if (savedTime <= 0) return;
+
+        const pending = getEarliestPendingQuiz(quizQuestions, answeredQuizIds.current, savedTime);
+        if (!pending) return;
+
+        const clamped = pending.time;
+        watchedSecondsRef.current = clamped;
+        lastValidTimeRef.current = clamped;
+        setCurrentVideoTime(clamped);
+
+        if (isYouTubeVideo && youtubePlayerRef.current && typeof youtubePlayerRef.current.seekTo === 'function') {
+            youtubePlayerRef.current.seekTo(clamped, true);
+        } else if (videoRef.current) {
+            videoRef.current.currentTime = clamped;
+        }
+
+        setCurrentQuizQuestion(pending);
+        setShowQuizPopup(true);
+        setQuizAnswer(null);
+        setQuizAnswered(false);
+        setQuizCorrect(null);
+        pauseVideo();
+    }, [quizQuestions, lessonId, lesson, showQuizPopup, isYouTubeVideo, pauseVideo, progress?.watchedSeconds]);
 
     // ─── Notes ───────────────────────────────────────────────────────────────
 
@@ -948,6 +1008,7 @@ export default function LearnPage() {
     const handleQuizContinue = useCallback(() => {
         if (currentQuizQuestion) {
             answeredQuizIds.current.add(currentQuizQuestion.time);
+            markQuizAnswered(lessonId, currentQuizQuestion.time);
         }
         setShowQuizPopup(false);
         setCurrentQuizQuestion(null);
@@ -955,7 +1016,7 @@ export default function LearnPage() {
         setQuizAnswered(false);
         setQuizCorrect(null);
         playVideo();
-    }, [currentQuizQuestion, playVideo]);
+    }, [currentQuizQuestion, playVideo, lessonId]);
 
     // ─── Exercise submit ──────────────────────────────────────────────────────
 
@@ -1036,6 +1097,33 @@ export default function LearnPage() {
     }, [chapters, lessonId]);
 
     // ─── Render ───────────────────────────────────────────────────────────────
+
+    if (!initialLoading && loadError) {
+        const errorMessage =
+            loadError === 'network'
+                ? 'Không thể kết nối máy chủ. Hãy bật backend (port 5000) và thử lại.'
+                : 'Bài học này không tồn tại hoặc đã bị xóa. Có thể link cũ trong trình duyệt không còn hợp lệ.';
+
+        return (
+            <div className="flex flex-col h-screen bg-gray-50 items-center justify-center px-6 text-center">
+                <AlertCircle className="w-12 h-12 text-amber-500 mb-4" />
+                <h1 className="text-lg font-semibold text-gray-900 mb-2">Không tải được bài học</h1>
+                <p className="text-sm text-gray-600 mb-2 max-w-md">{errorMessage}</p>
+                <p className="text-xs text-gray-400 mb-6 font-mono">{lessonId}</p>
+                <div className="flex flex-wrap gap-3 justify-center">
+                    <CustomButton onClick={handleBackToCourses}>Danh sách khoá học</CustomButton>
+                    {failedCourseId && (
+                        <CustomButton
+                            variant="outline"
+                            onClick={() => router.push('/me/khoahoc')}
+                        >
+                            Khoá học của tôi
+                        </CustomButton>
+                    )}
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="flex flex-col h-screen bg-gray-50 text-gray-900 overflow-hidden">
@@ -1143,22 +1231,58 @@ export default function LearnPage() {
                                     controls
                                     className="w-full h-full"
                                     onLoadedMetadata={() => {
-                                        if (videoRef.current && watchedSecondsRef.current > 0) {
-                                            videoRef.current.currentTime = watchedSecondsRef.current;
+                                        if (!videoRef.current) return;
+
+                                        const questions = quizQuestionsRef.current;
+                                        const answered = answeredQuizIds.current;
+                                        const savedTime = watchedSecondsRef.current;
+                                        const clamped = clampWatchTime(savedTime, questions, answered);
+                                        const pending = getEarliestPendingQuiz(questions, answered, savedTime);
+
+                                        if (savedTime > 0) {
+                                            videoRef.current.currentTime = clamped;
+                                            lastValidTimeRef.current = clamped;
+                                            setCurrentVideoTime(clamped);
+                                        }
+
+                                        if (pending && savedTime >= pending.time) {
+                                            setCurrentQuizQuestion(pending);
+                                            setShowQuizPopup(true);
+                                            setQuizAnswer(null);
+                                            setQuizAnswered(false);
+                                            setQuizCorrect(null);
                                         }
                                     }}
                                     onTimeUpdate={() => {
-                                        // Only update currentVideoTime when video is playing
                                         if (videoRef.current && isVideoPlaying) {
-                                            const currentTime = Math.floor(videoRef.current.currentTime);
-                                            setCurrentVideoTime(currentTime);
+                                            const rawTime = Math.floor(videoRef.current.currentTime);
+                                            const questions = quizQuestionsRef.current;
+                                            const answered = answeredQuizIds.current;
+                                            const pending = getEarliestPendingQuiz(questions, answered, rawTime);
 
-                                            // Save progress every 10 seconds
+                                            if (pending && rawTime > pending.time) {
+                                                videoRef.current.currentTime = pending.time;
+                                                lastValidTimeRef.current = pending.time;
+                                                setCurrentVideoTime(pending.time);
+                                                setCurrentQuizQuestion(pending);
+                                                setShowQuizPopup(true);
+                                                setQuizAnswer(null);
+                                                setQuizAnswered(false);
+                                                setQuizCorrect(null);
+                                                videoRef.current.pause();
+                                                return;
+                                            }
+
+                                            const currentTime = rawTime;
+                                            setCurrentVideoTime(currentTime);
+                                            lastValidTimeRef.current = currentTime;
+
                                             if (currentTime > 0 && currentTime % 10 === 0 && currentTime !== watchedSecondsRef.current) {
-                                                watchedSecondsRef.current = currentTime;
+                                                const savableTime = clampWatchTime(currentTime, questions, answered);
+                                                watchedSecondsRef.current = savableTime;
                                                 const duration = lesson.duration || 0;
-                                                const isCompleted = duration > 0 && currentTime >= (duration - 10);
-                                                const update = { watchedSeconds: currentTime, isCompleted };
+                                                const isCompleted = duration > 0 && savableTime >= (duration - 10);
+                                                const update = { watchedSeconds: savableTime, isCompleted };
                                                 progressCache.set(lessonId, { ...progressCache.get(lessonId), ...update } as Progress);
                                                 saveProgress(lessonId, update).catch(console.error);
 
@@ -1199,9 +1323,29 @@ export default function LearnPage() {
                                         }
                                     }}
                                     onSeeked={() => {
-                                        // Sync currentVideoTime after seek completes
-                                        if (videoRef.current) {
-                                            setCurrentVideoTime(Math.floor(videoRef.current.currentTime));
+                                        if (!videoRef.current) return;
+
+                                        const rawTime = Math.floor(videoRef.current.currentTime);
+                                        const questions = quizQuestionsRef.current;
+                                        const answered = answeredQuizIds.current;
+                                        const clamped = clampWatchTime(rawTime, questions, answered);
+
+                                        if (clamped !== rawTime) {
+                                            videoRef.current.currentTime = clamped;
+                                            toast.error('Bạn cần trả lời câu hỏi trong video trước khi tiếp tục.', { duration: 3000 });
+                                        }
+
+                                        lastValidTimeRef.current = clamped;
+                                        setCurrentVideoTime(clamped);
+
+                                        const pending = getEarliestPendingQuiz(questions, answered, Math.max(rawTime, clamped));
+                                        if (pending && !showQuizPopup) {
+                                            setCurrentQuizQuestion(pending);
+                                            setShowQuizPopup(true);
+                                            setQuizAnswer(null);
+                                            setQuizAnswered(false);
+                                            setQuizCorrect(null);
+                                            videoRef.current.pause();
                                         }
                                     }}
                                     onEnded={() => {

@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { getCourseBySlug, getEnrollmentStatus, enrollPayOS, enrollCoin } from '@/lib/api/khoahoc.api';
 import ReviewSection from '@/components/common/ReviewSection';
 import { Course, Enrollment, ChapterWithLessons } from '@/types/khoahoc.type';
-import { getCourseLastLesson } from '@/lib/localProgress';
+import { getCourseLastLesson, removeCourseLastLesson } from '@/lib/localProgress';
 import { Loader2, PlayCircle, BookOpen, Clock, Award, Shield, Check, Lock, ChevronDown, ChevronUp, Users } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
@@ -167,11 +167,15 @@ export default function CourseDetailPage() {
     const getStartLessonId = (): string => {
         if (!course?._id || !chapters.length) return '';
 
-        // Try to get saved lesson from localStorage
         const savedLessonId = getCourseLastLesson(course._id);
-        if (savedLessonId) return savedLessonId;
+        if (savedLessonId) {
+            const stillExists = chapters.some(ch =>
+                ch.lessons?.some(lesson => lesson._id === savedLessonId)
+            );
+            if (stillExists) return savedLessonId;
+            removeCourseLastLesson(course._id);
+        }
 
-        // No saved progress, return first lesson
         const firstChapter = chapters[0];
         const firstLesson = firstChapter?.lessons?.[0];
         return firstLesson?._id || '';
