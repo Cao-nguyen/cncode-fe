@@ -1,6 +1,16 @@
-
 import axios from 'axios';
-import { Question, Answer, CreateQuestionDto, CreateAnswerDto, StatisticsData } from '@/types/faq.type';
+import {
+    Question,
+    Answer,
+    CreateQuestionDto,
+    CreateAnswerDto,
+    FaqListResponse,
+    FaqDetailResponse,
+    FaqPublicMeta,
+    FaqStatistics,
+    LikeActionResult,
+    ViewCountResult,
+} from '@/types/faq.type';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
@@ -9,143 +19,145 @@ const getToken = (): string | null => {
     try {
         const raw = localStorage.getItem('auth-storage');
         if (!raw) return null;
-        const parsed = JSON.parse(raw);
-        return parsed?.state?.token ?? null;
+        return JSON.parse(raw)?.state?.token ?? null;
     } catch {
         return null;
     }
 };
 
-const api = axios.create({
-    baseURL: `${API_URL}/api/faq`,
+const apiClient = axios.create({
+    baseURL: `${API_URL}/api`,
+    headers: { 'Content-Type': 'application/json' },
 });
 
-api.interceptors.request.use((config) => {
+apiClient.interceptors.request.use((config) => {
     const token = getToken();
-    if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-    }
+    if (token) config.headers.Authorization = `Bearer ${token}`;
     return config;
 });
 
+export interface FaqListParams {
+    page?: number;
+    limit?: number;
+    grade?: string;
+    status?: string;
+    search?: string;
+}
+
 export const faqApi = {
-
-    getQuestions: async (params?: { page?: number; limit?: number; grade?: string; status?: string; search?: string }) => {
-        const response = await api.get<{ success: boolean; questions: Question[]; total: number; totalPages: number }>('/', { params });
-        return response.data;
+    getQuestions: async (params: FaqListParams = {}): Promise<FaqListResponse> => {
+        const res = await apiClient.get<FaqListResponse>('/faq', { params });
+        return res.data;
     },
 
-    getQuestionBySlug: async (slug: string) => {
-        const response = await api.get<{ success: boolean; data: { question: Question; answers: Answer[]; isLiked: boolean } }>(`/${slug}`);
-        return response.data;
+    getQuestionBySlug: async (slug: string): Promise<FaqDetailResponse> => {
+        const res = await apiClient.get<FaqDetailResponse>(`/faq/${encodeURIComponent(slug)}`);
+        return res.data;
     },
 
-    incrementViewCount: async (slug: string) => {
-        const response = await api.post<{ success: boolean; viewCount: number }>(`/increment-view/${slug}`);
-        return response.data;
+    getPublicMeta: async (slug: string): Promise<{ success: boolean; data: FaqPublicMeta }> => {
+        const res = await apiClient.get<{ success: boolean; data: FaqPublicMeta }>(`/faq/public/${encodeURIComponent(slug)}`);
+        return res.data;
     },
 
-    getStatistics: async () => {
-        const response = await api.get<{ success: boolean; data: StatisticsData }>('/statistics');
-        return response.data;
+    incrementView: async (slug: string, guestId?: string): Promise<{ success: boolean; data: ViewCountResult }> => {
+        const res = await apiClient.post<{ success: boolean; data: ViewCountResult }>(
+            `/faq/increment-view/${encodeURIComponent(slug)}`,
+            guestId ? { guestId } : {},
+        );
+        return res.data;
     },
 
-    adminGetStatistics: async () => {
-        const token = getToken();
-        const response = await axios.get<{ success: boolean; data: StatisticsData }>(`${API_URL}/api/admin/faq/statistics`, {
-            headers: token ? { Authorization: `Bearer ${token}` } : {}
-        });
-        return response.data;
+    getStatistics: async (): Promise<{ success: boolean; data: FaqStatistics }> => {
+        const res = await apiClient.get<{ success: boolean; data: FaqStatistics }>('/faq/statistics');
+        return res.data;
     },
 
-    createQuestion: async (data: CreateQuestionDto) => {
-        const response = await api.post<{ success: boolean; data: Question }>('/questions', data);
-        return response.data;
+    createQuestion: async (data: CreateQuestionDto): Promise<{ success: boolean; data: Question }> => {
+        const res = await apiClient.post<{ success: boolean; data: Question }>('/faq/questions', data);
+        return res.data;
     },
 
-    updateQuestion: async (id: string, data: { title: string; content: string }) => {
-        const response = await api.put<{ success: boolean; data: Question }>(`/questions/${id}`, data);
-        return response.data;
+    updateQuestion: async (id: string, data: { title: string; content: string }): Promise<{ success: boolean; data: Question }> => {
+        const res = await apiClient.put<{ success: boolean; data: Question }>(`/faq/questions/${id}`, data);
+        return res.data;
     },
 
-    deleteQuestion: async (id: string) => {
-        const response = await api.delete<{ success: boolean; message: string }>(`/questions/${id}`);
-        return response.data;
+    deleteQuestion: async (id: string): Promise<{ success: boolean; message: string }> => {
+        const res = await apiClient.delete<{ success: boolean; message: string }>(`/faq/questions/${id}`);
+        return res.data;
     },
 
-    toggleLikeQuestion: async (id: string) => {
-        const response = await api.post<{ success: boolean; action: 'added' | 'removed'; likeCount: number }>(`/questions/${id}/like`);
-        return response.data;
+    toggleLikeQuestion: async (id: string): Promise<{ success: boolean; data: LikeActionResult }> => {
+        const res = await apiClient.post<{ success: boolean; data: LikeActionResult }>(`/faq/questions/${id}/like`);
+        return res.data;
     },
 
-    createAnswer: async (data: CreateAnswerDto) => {
-        const response = await api.post<{ success: boolean; data: Answer }>('/answers', data);
-        return response.data;
+    createAnswer: async (data: CreateAnswerDto): Promise<{ success: boolean; data: Answer }> => {
+        const res = await apiClient.post<{ success: boolean; data: Answer }>('/faq/answers', data);
+        return res.data;
     },
 
-    updateAnswer: async (id: string, content: string) => {
-        const response = await api.put<{ success: boolean; data: Answer }>(`/answers/${id}`, { content });
-        return response.data;
+    markBestAnswer: async (answerId: string, questionId: string): Promise<{ success: boolean; data: Answer }> => {
+        const res = await apiClient.put<{ success: boolean; data: Answer }>('/faq/answers/best', { answerId, questionId });
+        return res.data;
     },
 
-    deleteAnswer: async (id: string) => {
-        const response = await api.delete<{ success: boolean; message: string }>(`/answers/${id}`);
-        return response.data;
+    toggleLikeAnswer: async (id: string): Promise<{ success: boolean; data: LikeActionResult }> => {
+        const res = await apiClient.post<{ success: boolean; data: LikeActionResult }>(`/faq/answers/${id}/like`);
+        return res.data;
     },
 
-    markBestAnswer: async (answerId: string, questionId: string) => {
-        const response = await api.post<{ success: boolean; data: Answer }>('/answers/best', { answerId, questionId });
-        return response.data;
-    },
-
-    toggleLikeAnswer: async (id: string) => {
-        const response = await api.post<{ success: boolean; action: 'added' | 'removed'; likeCount: number }>(`/answers/${id}/like`);
-        return response.data;
+    deleteAnswer: async (id: string): Promise<{ success: boolean; message: string }> => {
+        const res = await apiClient.delete<{ success: boolean; message: string }>(`/faq/answers/${id}`);
+        return res.data;
     },
 
     report: async (type: 'question' | 'answer', targetId: string, reason: string, description: string) => {
-        const response = await api.post<{ success: boolean; message: string }>('/report', { type, targetId, reason, description });
-        return response.data;
+        const res = await apiClient.post<{ success: boolean; message: string }>('/faq/report', {
+            type, targetId, reason, description,
+        });
+        return res.data;
     },
 
-    togglePinQuestion: async (id: string) => {
-        const token = getToken();
-        const response = await axios.put<{ success: boolean; data: Question }>(`${API_URL}/api/admin/faq/questions/${id}/pin`, {}, {
-            headers: token ? { Authorization: `Bearer ${token}` } : {}
-        });
-        return response.data;
+    adminGetQuestions: async (params: FaqListParams = {}): Promise<FaqListResponse> => {
+        const res = await apiClient.get<FaqListResponse>('/admin/faq', { params });
+        return res.data;
     },
 
-    toggleLockQuestion: async (id: string) => {
-        const token = getToken();
-        const response = await axios.put<{ success: boolean; data: Question }>(`${API_URL}/api/admin/faq/questions/${id}/lock`, {}, {
-            headers: token ? { Authorization: `Bearer ${token}` } : {}
-        });
-        return response.data;
+    adminGetStatistics: async (): Promise<{ success: boolean; data: FaqStatistics }> => {
+        const res = await apiClient.get<{ success: boolean; data: FaqStatistics }>('/admin/faq/statistics');
+        return res.data;
     },
 
-    adminDeleteQuestion: async (id: string) => {
-        const token = getToken();
-        const response = await axios.delete<{ success: boolean; message: string }>(`${API_URL}/api/admin/faq/questions/${id}`, {
-            headers: token ? { Authorization: `Bearer ${token}` } : {}
-        });
-        return response.data;
+    adminGetQuestionBySlug: async (slug: string): Promise<FaqDetailResponse> => {
+        const res = await apiClient.get<FaqDetailResponse>(`/admin/faq/${encodeURIComponent(slug)}`);
+        return res.data;
     },
 
-    adminDeleteAnswer: async (id: string) => {
-        const token = getToken();
-        const response = await axios.delete<{ success: boolean; message: string }>(`${API_URL}/api/admin/faq/answers/${id}`, {
-            headers: token ? { Authorization: `Bearer ${token}` } : {}
-        });
-        return response.data;
+    adminUpdateAnswer: async (id: string, content: string): Promise<{ success: boolean; data: Answer }> => {
+        const res = await apiClient.put<{ success: boolean; data: Answer }>(`/admin/faq/answers/${id}`, { content });
+        return res.data;
     },
 
-    adminUpdateAnswer: async (id: string, content: string) => {
-        const token = getToken();
-        const response = await axios.put<{ success: boolean; data: Answer }>(`${API_URL}/api/admin/faq/answers/${id}`, { content }, {
-            headers: token ? { Authorization: `Bearer ${token}` } : {}
-        });
-        return response.data;
+    adminTogglePin: async (id: string): Promise<{ success: boolean; data: Question }> => {
+        const res = await apiClient.put<{ success: boolean; data: Question }>(`/admin/faq/questions/${id}/pin`);
+        return res.data;
+    },
+
+    adminToggleLock: async (id: string): Promise<{ success: boolean; data: Question }> => {
+        const res = await apiClient.put<{ success: boolean; data: Question }>(`/admin/faq/questions/${id}/lock`);
+        return res.data;
+    },
+
+    adminDeleteQuestion: async (id: string): Promise<{ success: boolean; message: string }> => {
+        const res = await apiClient.delete<{ success: boolean; message: string }>(`/admin/faq/questions/${id}`);
+        return res.data;
+    },
+
+    adminDeleteAnswer: async (id: string): Promise<{ success: boolean; message: string }> => {
+        const res = await apiClient.delete<{ success: boolean; message: string }>(`/admin/faq/answers/${id}`);
+        return res.data;
     },
 };
 

@@ -147,7 +147,6 @@ export default function BlogDetailPage() {
             if (res.success) {
                 setLiked(res.liked);
                 setLikeCount(prev => res.liked ? prev + 1 : prev - 1);
-                toast.success(res.message);
             }
         } catch (error) {
             toast.error('Có lỗi xảy ra');
@@ -165,7 +164,6 @@ export default function BlogDetailPage() {
             const res = await blogApi.toggleBookmark(blog._id);
             if (res.success) {
                 setBookmarked(res.bookmarked);
-                toast.success(res.message);
             }
         } catch (error) {
             toast.error('Có lỗi xảy ra');

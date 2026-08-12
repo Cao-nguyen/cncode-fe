@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { ImagePreviewModal } from '@/components/custom/ImagePreviewModal';
+import { sanitizeCommentHtml } from '@/lib/comment-content';
 
 interface StaticContentProps {
   content: string;
@@ -31,9 +32,46 @@ const editorStyles = `
     line-height: 1.75 !important;
     color: #111827;
     box-sizing: border-box;
-    padding: 5px 0;
+    padding: 0;
     user-select: text;
     -webkit-user-select: text;
+  }
+
+  .static-editor > *:first-child {
+    margin-top: 0 !important;
+  }
+
+  .static-editor > *:last-child {
+    margin-bottom: 0 !important;
+  }
+
+  .static-editor hr {
+    border: none;
+    border-top: 1px solid #e5e7eb;
+    height: 0;
+    margin: 0.75em 0 !important;
+  }
+
+  .static-editor hr + p,
+  .static-editor hr + h1,
+  .static-editor hr + h2,
+  .static-editor hr + h3 {
+    margin-top: 0 !important;
+  }
+
+  .static-editor p + hr,
+  .static-editor h1 + hr,
+  .static-editor h2 + hr,
+  .static-editor h3 + hr {
+    margin-top: 0 !important;
+  }
+
+  .static-editor p:empty,
+  .static-editor p:has(> br:only-child) {
+    display: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    height: 0 !important;
   }
 
   .static-editor * {
@@ -257,6 +295,7 @@ const editorStyles = `
 export default function StaticContent({ content, className, compact = false }: StaticContentProps) {
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const safeContent = sanitizeCommentHtml(content);
 
   const handleClick = (e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
@@ -277,7 +316,7 @@ export default function StaticContent({ content, className, compact = false }: S
       <style jsx global>{editorStyles}</style>
       <div
         className={`static-editor${compact ? ' static-editor-compact' : ''}${className ? ` ${className}` : ''}`}
-        dangerouslySetInnerHTML={{ __html: content }}
+        dangerouslySetInnerHTML={{ __html: safeContent }}
         onClick={handleClick}
       />
 
