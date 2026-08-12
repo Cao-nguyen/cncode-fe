@@ -8,7 +8,7 @@ import { CustomButton } from '@/components/custom/CustomButton';
 import { CustomInput } from '@/components/custom/CustomInput';
 import { toast } from 'sonner';
 import type { LuyentapFolder } from '@/types/luyentap.type';
-import { luyentapApi } from '@/lib/api/luyentap.api';
+import { luyentapApi, type Exercise, type Question } from '@/lib/api/luyentap.api';
 import CustomEditorContest, { type TrueFalseScale } from '@/components/custom/CustomEditorContest';
 import LuyentapExerciseConfigOverlay, { type ExerciseConfigForm } from '@/components/luyentap/LuyentapExerciseConfigOverlay';
 import LuyentapExerciseSettingsOverlay from '@/components/luyentap/LuyentapExerciseSettingsOverlay';
@@ -48,61 +48,6 @@ interface EditorQuestion {
     algoInputDesc?: string;
     algoOutputDesc?: string;
     webRequirements?: WebRequirement[];
-}
-
-interface Question {
-    _id?: string;
-    type: 'multiple-choice' | 'multiple-select' | 'true-false' | 'matching' | 'short-answer' | 'essay' | 'code';
-    question: string;
-    groupTitle?: string;
-    explanation?: string;
-    points?: number;
-    options?: Array<{ _id?: string; text: string; isCorrect: boolean }>;
-    trueFalseOptions?: Array<{ text: string; isCorrect: boolean }>;
-    leftItems?: Array<{ text: string }>;
-    rightItems?: Array<{ text: string }>;
-    matchingPairs?: Array<{ leftIndex: number; rightIndex: number }>;
-    correctAnswer?: string;
-    codeMode?: 'algorithm' | 'web';
-    language?: string;
-    testCases?: Array<{ input?: string; expectedOutput?: string; isSample?: boolean }>;
-    webRequirements?: WebRequirement[];
-}
-
-interface Exercise {
-    _id: string;
-    title: string;
-    slug: string;
-    description?: string;
-    grade?: string;
-    examPurpose?: string;
-    deliveryFrom?: string;
-    deliveryTo?: string;
-    examPassword?: string;
-    proctoring?: 'off' | 'tab-switch';
-    verifyStudentInfo?: boolean;
-    studentInfoFields?: {
-        fullName?: boolean;
-        className?: boolean;
-        custom?: Array<{ label: string; required?: boolean }>;
-    };
-    shuffleQuestions?: boolean;
-    shuffleAnswers?: boolean;
-    essayKeyboard?: 'basic' | 'math' | 'editor';
-    showScoreWhen?: 'never' | 'after-submit' | 'after-expiry';
-    showAnswersWhen?: 'never' | 'after-submit' | 'after-expiry';
-    hideLeaderboard?: boolean;
-    preExamNoticeEnabled?: boolean;
-    preExamNotice?: string;
-    thumbnail?: string;
-    duration: number;
-    difficulty?: ExerciseSettingsForm['difficulty'];
-    folderId?: string | null | { _id?: string; name?: string };
-    questions: Question[];
-    totalPoints: number;
-    status: 'draft' | 'pending' | 'published';
-    maxAttempts: number;
-    trueFalseScale?: TrueFalseScale;
 }
 
 const convertDbQuestionsToMarkdown = (questions: Question[]): string => {

@@ -29,6 +29,10 @@ interface CustomInputProps {
     min?: number;
     max?: number;
     className?: string;
+    autoFocus?: boolean;
+    readOnly?: boolean;
+    id?: string;
+    onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
 }
 
 export const CustomInput = forwardRef<HTMLInputElement, CustomInputProps>(({
@@ -55,6 +59,10 @@ export const CustomInput = forwardRef<HTMLInputElement, CustomInputProps>(({
     min,
     max,
     className = '',
+    autoFocus = false,
+    readOnly = false,
+    id,
+    onKeyDown,
 }, ref) => {
     const [showPassword, setShowPassword] = useState(false);
     const [charCount, setCharCount] = useState(String(value || '').length);
@@ -105,20 +113,25 @@ export const CustomInput = forwardRef<HTMLInputElement, CustomInputProps>(({
                 )}
                 {textarea ? (
                     <textarea
+                        id={id}
                         name={name}
                         placeholder={placeholder}
                         value={value}
                         onChange={handleChange}
                         onBlur={onBlur}
                         onKeyPress={onKeyPress}
+                        onKeyDown={onKeyDown}
                         rows={rows}
                         maxLength={maxLength}
                         disabled={disabled}
+                        readOnly={readOnly}
+                        autoFocus={autoFocus}
                         className={`${baseClasses} resize-none`}
                     />
                 ) : (
                     <input
                         ref={ref}
+                        id={id}
                         name={name}
                         type={inputType}
                         placeholder={placeholder}
@@ -126,7 +139,10 @@ export const CustomInput = forwardRef<HTMLInputElement, CustomInputProps>(({
                         onChange={handleChange}
                         onBlur={onBlur}
                         onKeyPress={onKeyPress}
+                        onKeyDown={onKeyDown}
                         disabled={disabled}
+                        readOnly={readOnly}
+                        autoFocus={autoFocus}
                         min={min}
                         max={max}
                         className={baseClasses}

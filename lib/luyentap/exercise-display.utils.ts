@@ -23,7 +23,7 @@ export function formatScoreScaleLabel(
 }
 
 export function resolveAttemptScore(
-    entry: { totalScore?: number; percentage?: number },
+    entry: { totalScore?: number | null; percentage?: number | null },
     totalPoints: number,
 ): number | null {
     if (entry.totalScore != null && !Number.isNaN(entry.totalScore)) {
