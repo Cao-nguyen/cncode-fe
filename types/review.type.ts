@@ -12,10 +12,12 @@ export interface Review {
     updatedAt: string;
 }
 
+export type ReviewStar = 1 | 2 | 3 | 4 | 5;
+
 export interface ReviewStats {
     average: number;
     total: number;
-    distribution: { 1: number; 2: number; 3: number; 4: number; 5: number };
+    distribution: Record<ReviewStar, number>;
 }
 
 export interface ReviewsResponse {

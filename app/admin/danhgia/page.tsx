@@ -260,7 +260,7 @@ export default function AdminRatingsPage() {
             <div className="rounded-xl border border-gray-200 bg-white p-5">
                 <h3 className="mb-3 text-sm font-medium text-gray-700">Phân bố đánh giá</h3>
                 <div className="space-y-2">
-                    {[5, 4, 3, 2, 1].map((star) => {
+                    {([5, 4, 3, 2, 1] as const).map((star) => {
                         const count = stats.distribution[star] || 0;
                         const percent = distributionPercent(count);
                         return (
