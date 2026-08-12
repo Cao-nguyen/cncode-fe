@@ -35,18 +35,28 @@ export function useHelpCenter() {
         }
     }, []);
 
-    const toggleHelpful = useCallback(async (id: string) => {
+    const toggleHelpful = useCallback(async (id: string): Promise<boolean> => {
         try {
-            const response = await helpCenterApi.toggleHelpful(id);
+            const response = await helpCenterApi.toggleHelpful(id) as {
+                success?: boolean;
+                data?: { helpfulCount: number; userLiked: boolean };
+            };
             if (response.success && response.data) {
-                setFaqs(prev => prev.map(faq => 
-                    faq._id === id 
-                        ? { ...faq, helpfulCount: response.data.helpfulCount, userLiked: response.data.userLiked }
+                setFaqs(prev => prev.map(faq =>
+                    faq._id === id
+                        ? {
+                            ...faq,
+                            helpfulCount: response.data!.helpfulCount,
+                            userLiked: response.data!.userLiked,
+                        }
                         : faq
                 ));
+                return true;
             }
+            return false;
         } catch (err) {
             console.error('Toggle helpful error:', err);
+            return false;
         }
     }, []);
 

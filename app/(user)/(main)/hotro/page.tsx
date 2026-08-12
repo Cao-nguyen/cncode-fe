@@ -39,6 +39,12 @@ const CATEGORY_ICON: Record<string, { bg: string; icon: typeof User }> = {
     other: { bg: 'bg-gray-500', icon: MessageSquare },
 };
 
+type HelpCategory = (typeof CATEGORIES)[number]['value'];
+
+function sortByPopularity(items: HelpCenterFAQ[]) {
+    return [...items].sort((a, b) => (b.views ?? 0) - (a.views ?? 0));
+}
+
 function formatViewCount(count: number): string {
     if (count >= 1_000_000) return `${(count / 1_000_000).toFixed(1).replace(/\.0$/, '')}M`;
     if (count >= 1_000) return `${(count / 1_000).toFixed(1).replace(/\.0$/, '')}K`;
@@ -47,9 +53,8 @@ function formatViewCount(count: number): string {
 
 export default function HelpCenterPage() {
     const { token } = useAuthStore();
-    const [isMounted, setIsMounted] = useState(false);
     const [expandedId, setExpandedId] = useState<string | null>(null);
-    const [selectedCategory, setSelectedCategory] = useState('all');
+    const [selectedCategory, setSelectedCategory] = useState<HelpCategory>('all');
     const [searchTerm, setSearchTerm] = useState('');
     const [searchInput, setSearchInput] = useState('');
     const [showAllFaqs, setShowAllFaqs] = useState(false);
@@ -57,20 +62,19 @@ export default function HelpCenterPage() {
     const [previewSrc, setPreviewSrc] = useState<string | null>(null);
     const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
-    const { faqs, loading, fetchFAQs, toggleHelpful } = useHelpCenter();
-
-    useEffect(() => { setIsMounted(true); }, []);
+    const { faqs, loading, error, fetchFAQs, toggleHelpful } = useHelpCenter();
 
     useEffect(() => {
-        if (isMounted) fetchFAQs(selectedCategory, searchTerm);
-    }, [selectedCategory, searchTerm, isMounted, fetchFAQs]);
+        fetchFAQs(selectedCategory, searchTerm);
+    }, [selectedCategory, searchTerm, fetchFAQs]);
 
-    useEffect(() => {
-        // Auto reset search when input is cleared
-        if (searchInput === '' && searchTerm !== '') {
+    const handleSearchInputChange = (value: string) => {
+        setSearchInput(value);
+        if (value === '') {
             setSearchTerm('');
+            setShowAllFaqs(false);
         }
-    }, [searchInput, searchTerm]);
+    };
 
     const handleContentClick = (e: React.MouseEvent<HTMLDivElement>) => {
         const target = e.target as HTMLElement;
@@ -81,21 +85,27 @@ export default function HelpCenterPage() {
     };
 
     const handleHelpful = async (id: string) => {
-        if (!token) { toast.error('Vui lòng đăng nhập để đánh giá'); return; }
+        if (!token) {
+            toast.error('Vui lòng đăng nhập để đánh giá');
+            return;
+        }
         setLiking(id);
-        await toggleHelpful(id);
+        const ok = await toggleHelpful(id);
         setLiking(null);
+        if (!ok) toast.error('Không thể cập nhật đánh giá');
     };
 
-    const handleSearch = () => setSearchTerm(searchInput);
+    const handleSearch = () => {
+        setSearchTerm(searchInput.trim());
+        setShowAllFaqs(false);
+    };
     const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter') handleSearch();
     };
 
-    if (!isMounted) return null;
-
-    const displayedFaqs = showAllFaqs ? faqs : faqs.slice(0, 3);
-    const hasMoreFaqs = faqs.length > 3;
+    const sortedFaqs = sortByPopularity(faqs);
+    const displayedFaqs = showAllFaqs ? sortedFaqs : sortedFaqs.slice(0, 3);
+    const hasMoreFaqs = sortedFaqs.length > 3;
 
     const getCategoryLabel = (category: string) =>
         CATEGORIES.find(c => c.value === category)?.label || 'Khác';
@@ -171,7 +181,7 @@ export default function HelpCenterPage() {
                                                 />
                                             )}
                                             <span>Hữu ích</span>
-                                            {faq.helpfulCount > 0 && (
+                                            {((faq.helpfulCount ?? 0) > 0) && (
                                                 <span className="text-xs opacity-75">({faq.helpfulCount})</span>
                                             )}
                                         </button>
@@ -224,7 +234,7 @@ export default function HelpCenterPage() {
                             <input
                                 type="text"
                                 value={searchInput}
-                                onChange={(e) => setSearchInput(e.target.value)}
+                                onChange={(e) => handleSearchInputChange(e.target.value)}
                                 onKeyDown={handleKeyPress}
                                 placeholder="Tìm kiếm câu hỏi, hướng dẫn..."
                                 className="flex-1 pl-12 pr-36 py-4 bg-transparent outline-none text-base text-gray-800 placeholder:text-gray-400"
@@ -278,7 +288,7 @@ export default function HelpCenterPage() {
                 <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
                     <div className="flex items-center gap-2.5 px-5 md:px-6 py-5 border-b border-gray-100">
                         <div className="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center">
-                            <Flame className="w-4.5 h-4.5 text-orange-500" />
+                            <Flame className="w-[18px] h-[18px] text-orange-500" />
                         </div>
                         <h2 className="text-lg font-bold text-gray-900">Câu hỏi được quan tâm</h2>
                     </div>
@@ -286,6 +296,18 @@ export default function HelpCenterPage() {
                     {loading ? (
                         <div className="text-center py-16">
                             <div className="inline-block w-8 h-8 border-4 border-[var(--cn-primary)] border-t-transparent rounded-full animate-spin" />
+                        </div>
+                    ) : error ? (
+                        <div className="text-center py-16 px-6">
+                            <HelpCircle className="w-12 h-12 text-gray-200 mx-auto mb-3" />
+                            <p className="text-gray-500 mb-4">{error}</p>
+                            <button
+                                type="button"
+                                onClick={() => fetchFAQs(selectedCategory, searchTerm)}
+                                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[var(--cn-primary)] text-white text-sm font-medium hover:bg-[var(--cn-primary-hover)] transition-colors"
+                            >
+                                Thử lại
+                            </button>
                         </div>
                     ) : displayedFaqs.length === 0 ? (
                         <div className="text-center py-16">
