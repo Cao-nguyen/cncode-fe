@@ -13,7 +13,7 @@ import { toast } from 'sonner';
 import { isCommentContentEmpty } from '@/lib/comment-content';
 
 interface CommentSectionProps {
-    targetType: 'post' | 'lesson' | 'workspace' | 'task' | 'feedback' | 'feed' | 'short_video' | 'blog' | 'help_project';
+    targetType: 'post' | 'lesson' | 'workspace' | 'task' | 'feedback' | 'feed' | 'short_video' | 'blog' | 'help_project' | 'luyentap';
     targetId: string;
     title?: string;
     onCommentCountChange?: (count: number) => void;

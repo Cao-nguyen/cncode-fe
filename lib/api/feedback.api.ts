@@ -1,223 +1,167 @@
+import axios from 'axios';
+import {
+    CreateFeedbackDto,
+    Feedback,
+    FeedbackAdminStats,
+    FeedbackDetailResponse,
+    FeedbackListResponse,
+    ReactFeedbackResult,
+    UpdateFeedbackDto,
+    ReleaseVersion,
+    ReleaseVersionDto,
+    ReleaseVersionListResponse,
+} from '@/types/feedback.type';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
-export interface IFeedback {
-    _id: string;
-    userId: {
-        _id: string;
-        fullName: string;
-        email: string;
-        avatar?: string;
-        username?: string;
-    } | null;
-    title: string;
-    content: string;
-    category: 'bug' | 'ui_ux' | 'feature_request' | 'performance' | 'security' | 'other';
-    status: 'pending' | 'viewed' | 'approved' | 'improving' | 'completed' | 'rejected';
-    priority: 'low' | 'medium' | 'high';
-    adminResponse: string;
-    reactCount: number;
-    likedBy: string[];
-    viewCount: number;
-    commentCount: number;
-    isPinned: boolean;
-    isLocked: boolean;
-    reviewedBy?: {
-        _id: string;
-        fullName: string;
-    };
-    reviewedAt?: string;
-    createdAt: string;
-    updatedAt: string;
-}
-
-const getToken = () => {
+const getToken = (): string | null => {
     if (typeof window === 'undefined') return null;
     try {
         const raw = localStorage.getItem('auth-storage');
         if (!raw) return null;
-        const parsed = JSON.parse(raw);
-        return parsed?.state?.token ?? null;
+        return JSON.parse(raw)?.state?.token ?? null;
     } catch {
         return null;
     }
 };
 
+const api = axios.create({
+    baseURL: `${API_URL}/api/feedback`,
+    headers: { 'Content-Type': 'application/json' },
+});
+
+const adminApi = axios.create({
+    baseURL: `${API_URL}/api/admin/feedback`,
+    headers: { 'Content-Type': 'application/json' },
+});
+
+api.interceptors.request.use((config) => {
+    const token = getToken();
+    if (token) config.headers.Authorization = `Bearer ${token}`;
+    return config;
+});
+adminApi.interceptors.request.use((config) => {
+    const token = getToken();
+    if (token) config.headers.Authorization = `Bearer ${token}`;
+    return config;
+});
+
+export function getErrorMessage(error: unknown): string {
+    if (axios.isAxiosError(error)) {
+        return (error.response?.data as { message?: string })?.message || 'Có lỗi xảy ra';
+    }
+    return error instanceof Error ? error.message : 'Có lỗi xảy ra';
+}
+
+export type { Feedback };
+
+export interface FeedbackListParams {
+    page?: number;
+    limit?: number;
+    status?: string;
+    category?: string;
+    search?: string;
+}
+
+export interface AdminFeedbackListParams extends FeedbackListParams {
+    priority?: string;
+}
+
 export const feedbackApi = {
-    getFeedbacks: async (page = 1, limit = 10, status?: string, category?: string) => {
-        try {
-            let url = `${API_URL}/api/feedback?page=${page}&limit=${limit}`;
-            if (status && status !== 'all') url += `&status=${status}`;
-            if (category && category !== 'all') url += `&category=${category}`;
-
-            const response = await fetch(url);
-            return await response.json();
-        } catch (error) {
-            console.error('Get feedbacks error:', error);
-            return { success: false, message: 'Không thể lấy danh sách góp ý' };
-        }
+    getFeedbacks: async (params: FeedbackListParams = {}): Promise<FeedbackListResponse> => {
+        const { data } = await api.get<FeedbackListResponse>('/', { params });
+        return data;
     },
 
-    createFeedback: async (token: string, data: { title: string; content: string; category?: string }) => {
-        try {
-            const response = await fetch(`${API_URL}/api/feedback`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify(data)
-            });
-            return await response.json();
-        } catch (error) {
-            console.error('Create feedback error:', error);
-            return { success: false, message: 'Không thể tạo góp ý' };
-        }
+    getMyFeedbacks: async (params: FeedbackListParams = {}): Promise<FeedbackListResponse> => {
+        const { data } = await api.get<FeedbackListResponse>('/my', { params });
+        return data;
     },
 
-    reactFeedback: async (token: string, feedbackId: string) => {
-        try {
-            const response = await fetch(`${API_URL}/api/feedback/${feedbackId}/react`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-            const data = await response.json();
-            return {
-                success: data.success,
-                message: data.message,
-                data: data.data
-            };
-        } catch (error) {
-            console.error('React feedback error:', error);
-            return { success: false, message: 'Không thể ủng hộ' };
-        }
+    getFeedbackById: async (id: string): Promise<FeedbackDetailResponse> => {
+        const { data } = await api.get<FeedbackDetailResponse>(`/${id}`);
+        return data;
     },
 
-    updateFeedback: async (token: string, feedbackId: string, data: { title: string; content: string; category: string }) => {
-        try {
-            const response = await fetch(`${API_URL}/api/feedback/${feedbackId}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify(data)
-            });
-            return await response.json();
-        } catch (error) {
-            console.error('Update feedback error:', error);
-            return { success: false, message: 'Không thể cập nhật góp ý' };
-        }
+    createFeedback: async (payload: CreateFeedbackDto): Promise<{ success: boolean; message?: string; data: Feedback }> => {
+        const { data } = await api.post<{ success: boolean; message?: string; data: Feedback }>('/', payload);
+        return data;
     },
 
-    deleteFeedback: async (token: string, feedbackId: string) => {
-        try {
-            const response = await fetch(`${API_URL}/api/feedback/${feedbackId}`, {
-                method: 'DELETE',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-            return await response.json();
-        } catch (error) {
-            console.error('Delete feedback error:', error);
-            return { success: false, message: 'Không thể xóa góp ý' };
-        }
+    updateFeedback: async (id: string, payload: UpdateFeedbackDto): Promise<{ success: boolean; message?: string; data: Feedback }> => {
+        const { data } = await api.put<{ success: boolean; message?: string; data: Feedback }>(`/${id}`, payload);
+        return data;
     },
 
-    getAllFeedbacksForAdmin: async (token: string, page = 1, limit = 20, status?: string, category?: string, search?: string) => {
-        try {
-            let url = `${API_URL}/api/admin/feedback/all?page=${page}&limit=${limit}`;
-            if (status && status !== 'all') url += `&status=${status}`;
-            if (category && category !== 'all') url += `&category=${category}`;
-            if (search) url += `&search=${encodeURIComponent(search)}`;
-
-            const response = await fetch(url, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            return await response.json();
-        } catch (error) {
-            console.error('Get all feedbacks error:', error);
-            return { success: false, message: 'Không thể lấy danh sách góp ý' };
-        }
+    deleteFeedback: async (id: string): Promise<{ success: boolean; message?: string }> => {
+        const { data } = await api.delete<{ success: boolean; message?: string }>(`/${id}`);
+        return data;
     },
 
-    updateFeedbackStatus: async (token: string, feedbackId: string, status: string, adminResponse?: string) => {
-        try {
-            const response = await fetch(`${API_URL}/api/admin/feedback/${feedbackId}/status`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ status, adminResponse })
-            });
-            return await response.json();
-        } catch (error) {
-            console.error('Update feedback status error:', error);
-            return { success: false, message: 'Không thể cập nhật trạng thái' };
-        }
+    reactFeedback: async (id: string): Promise<{ success: boolean; message?: string; data: ReactFeedbackResult }> => {
+        const { data } = await api.post<{ success: boolean; message?: string; data: ReactFeedbackResult }>(`/${id}/react`);
+        return data;
     },
 
-    togglePinFeedback: async (token: string, feedbackId: string) => {
-        try {
-            const response = await fetch(`${API_URL}/api/admin/feedback/${feedbackId}/pin`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-            return await response.json();
-        } catch (error) {
-            console.error('Toggle pin feedback error:', error);
-            return { success: false, message: 'Không thể ghim/bỏ ghim' };
-        }
+    adminGetAll: async (params: AdminFeedbackListParams = {}): Promise<FeedbackListResponse> => {
+        const { data } = await adminApi.get<FeedbackListResponse>('/all', { params });
+        return data;
     },
 
-    toggleLockFeedback: async (token: string, feedbackId: string) => {
-        try {
-            const response = await fetch(`${API_URL}/api/admin/feedback/${feedbackId}/lock`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-            return await response.json();
-        } catch (error) {
-            console.error('Toggle lock feedback error:', error);
-            return { success: false, message: 'Không thể khóa/mở khóa' };
-        }
+    adminGetStats: async (): Promise<{ success: boolean; data: FeedbackAdminStats }> => {
+        const { data } = await adminApi.get<{ success: boolean; data: FeedbackAdminStats }>('/stats');
+        return data;
     },
 
-    adminDeleteFeedback: async (token: string, feedbackId: string) => {
-        try {
-            const response = await fetch(`${API_URL}/api/admin/feedback/${feedbackId}`, {
-                method: 'DELETE',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-            return await response.json();
-        } catch (error) {
-            console.error('Delete feedback error:', error);
-            return { success: false, message: 'Không thể xóa góp ý' };
-        }
+    adminUpdateStatus: async (
+        id: string,
+        status: string,
+        adminResponse?: string,
+    ): Promise<{ success: boolean; message?: string; data: Feedback }> => {
+        const { data } = await adminApi.put<{ success: boolean; message?: string; data: Feedback }>(`/${id}/status`, {
+            status,
+            adminResponse,
+        });
+        return data;
     },
 
-    getAdminStats: async (token: string) => {
-        try {
-            const response = await fetch(`${API_URL}/api/admin/feedback/stats`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            return await response.json();
-        } catch (error) {
-            console.error('Get stats error:', error);
-            return { success: false, message: 'Không thể lấy thống kê' };
-        }
+    adminTogglePin: async (id: string): Promise<{ success: boolean; message?: string; data: Feedback }> => {
+        const { data } = await adminApi.post<{ success: boolean; message?: string; data: Feedback }>(`/${id}/pin`);
+        return data;
+    },
+
+    adminToggleLock: async (id: string): Promise<{ success: boolean; message?: string; data: Feedback }> => {
+        const { data } = await adminApi.post<{ success: boolean; message?: string; data: Feedback }>(`/${id}/lock`);
+        return data;
+    },
+
+    adminDelete: async (id: string): Promise<{ success: boolean; message?: string }> => {
+        const { data } = await adminApi.delete<{ success: boolean; message?: string }>(`/${id}`);
+        return data;
+    },
+
+    getVersions: async (): Promise<ReleaseVersionListResponse> => {
+        const { data } = await api.get<ReleaseVersionListResponse>('/versions');
+        return data;
+    },
+
+    adminGetVersions: async (): Promise<ReleaseVersionListResponse> => {
+        const { data } = await adminApi.get<ReleaseVersionListResponse>('/versions');
+        return data;
+    },
+
+    adminCreateVersion: async (payload: ReleaseVersionDto): Promise<{ success: boolean; message?: string; data: ReleaseVersion }> => {
+        const { data } = await adminApi.post<{ success: boolean; message?: string; data: ReleaseVersion }>('/versions', payload);
+        return data;
+    },
+
+    adminUpdateVersion: async (id: string, payload: Partial<ReleaseVersionDto>): Promise<{ success: boolean; message?: string; data: ReleaseVersion }> => {
+        const { data } = await adminApi.put<{ success: boolean; message?: string; data: ReleaseVersion }>(`/versions/${id}`, payload);
+        return data;
+    },
+
+    adminDeleteVersion: async (id: string): Promise<{ success: boolean; message?: string }> => {
+        const { data } = await adminApi.delete<{ success: boolean; message?: string }>(`/versions/${id}`);
+        return data;
     },
 };

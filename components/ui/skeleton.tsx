@@ -125,4 +125,34 @@ function GiftShopPageSkeleton() {
     );
 }
 
-export { Skeleton, TableSkeleton, CardSkeleton, ListSkeleton, IndustryCardSkeleton, GiftShopSkeleton, GiftShopPageSkeleton };
+function FeedbackCardSkeleton({ count = 4 }: { count?: number }) {
+    return (
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+            {Array.from({ length: count }).map((_, i) => (
+                <div key={i} className="overflow-hidden rounded-xl border border-[var(--cn-border)] bg-[var(--cn-bg-card)]">
+                    <div className="flex gap-2 px-4 pt-4 md:px-5">
+                        <Skeleton className="h-5 w-16 rounded-md" />
+                        <Skeleton className="h-5 w-20 rounded-md" />
+                    </div>
+                    <div className="space-y-2 px-4 py-3 md:px-5">
+                        <Skeleton className="h-5 w-4/5" />
+                        <Skeleton className="h-4 w-full" />
+                        <Skeleton className="h-4 w-3/4" />
+                    </div>
+                    <div className="border-t border-[var(--cn-border)] px-4 py-3 md:px-5">
+                        <div className="flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-2">
+                                <Skeleton className="h-7 w-7 rounded-full" />
+                                <Skeleton className="h-4 w-24" />
+                            </div>
+                            <Skeleton className="h-3 w-16" />
+                        </div>
+                        <Skeleton className="mt-2.5 h-4 w-20" />
+                    </div>
+                </div>
+            ))}
+        </div>
+    );
+}
+
+export { Skeleton, TableSkeleton, CardSkeleton, ListSkeleton, IndustryCardSkeleton, GiftShopSkeleton, GiftShopPageSkeleton, FeedbackCardSkeleton };

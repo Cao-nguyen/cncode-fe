@@ -3,6 +3,13 @@ import { ReviewsResponse, ReviewStats, Review } from '@/types/review.type';
 
 export type { Review, ReviewStats };
 
+export function getErrorMessage(error: unknown): string {
+    if (axios.isAxiosError(error)) {
+        return (error.response?.data as { message?: string })?.message || 'Có lỗi xảy ra';
+    }
+    return error instanceof Error ? error.message : 'Có lỗi xảy ra';
+}
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
 const getToken = (): string | null => {
@@ -69,8 +76,12 @@ export const reviewApi = {
     },
 
     // Admin methods
-    adminGetAllReviews: async (page = 1, limit = 10, status?: string): Promise<ReviewsResponse> => {
-        const { data } = await adminApi.get('/', { params: { page, limit, status } });
+    adminGetAllReviews: async (
+        page = 1,
+        limit = 10,
+        params?: { search?: string; rating?: string; status?: string },
+    ): Promise<ReviewsResponse> => {
+        const { data } = await adminApi.get('/', { params: { page, limit, ...params } });
         return data;
     },
 

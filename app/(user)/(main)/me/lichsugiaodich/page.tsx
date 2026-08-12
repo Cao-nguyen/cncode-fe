@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
     Coins,
     Landmark,
@@ -10,55 +10,29 @@ import {
     Clock,
     XCircle,
     Download,
-    Filter,
     Search,
     ArrowUpDown,
+    Loader2,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/auth.store';
 import { cn } from '@/lib/utils';
+import { transactionApi, type CoinTransactionRow, type PayOSTransactionRow } from '@/lib/api/transaction.api';
+import { toast } from 'sonner';
 
 type TabType = 'xu' | 'payos';
 
-type XuRow = {
-    id: string;
-    type: 'credit' | 'debit';
-    amount: number;
-    reason: string;
-    balanceAfter: number;
-    createdAt: string;
-};
-
-type PayOSRow = {
-    id: string;
-    title: string;
-    amount: number;
-    orderCode: string;
-    status: 'completed' | 'pending' | 'failed';
-    createdAt: string;
-};
-
-const MOCK_XU: XuRow[] = [
-    { id: '1', type: 'credit', amount: 108, reason: 'Quy đổi quà tặng', balanceAfter: 1250, createdAt: '2026-08-12T09:30:00' },
-    { id: '2', type: 'debit', amount: 50, reason: 'Tặng quà cho bài viết', balanceAfter: 1142, createdAt: '2026-08-12T08:10:00' },
-    { id: '3', type: 'debit', amount: 200, reason: 'Mua khóa học bằng xu', balanceAfter: 1192, createdAt: '2026-08-11T14:00:00' },
-    { id: '4', type: 'credit', amount: 500, reason: 'Nhận quà từ cộng đồng', balanceAfter: 1392, createdAt: '2026-08-09T11:45:00' },
-    { id: '5', type: 'credit', amount: 100, reason: 'Thưởng hoàn thành bài tập', balanceAfter: 892, createdAt: '2026-08-05T08:20:00' },
-    { id: '6', type: 'debit', amount: 30, reason: 'Tặng quà hồ sơ cá nhân', balanceAfter: 792, createdAt: '2026-08-03T19:22:00' },
-];
-
-const MOCK_PAYOS: PayOSRow[] = [
-    { id: '1', title: 'Lập trình Python cơ bản', amount: 299000, orderCode: 'DH20260812001', status: 'completed', createdAt: '2026-08-12T10:05:00' },
-    { id: '2', title: 'Web Fullstack với Next.js', amount: 499000, orderCode: 'DH20260810002', status: 'pending', createdAt: '2026-08-10T16:30:00' },
-    { id: '3', title: 'Tin học 12 nâng cao', amount: 199000, orderCode: 'DH20260805003', status: 'completed', createdAt: '2026-08-05T09:12:00' },
-    { id: '4', title: 'AI cho học sinh', amount: 349000, orderCode: 'DH20260728004', status: 'failed', createdAt: '2026-07-28T21:40:00' },
-    { id: '5', title: 'Excel nâng cao', amount: 149000, orderCode: 'DH20260715005', status: 'completed', createdAt: '2026-07-15T11:00:00' },
-];
+const PAGE_SIZE = 10;
 
 const STATUS_MAP = {
     completed: { label: 'Thành công', icon: CheckCircle2, className: 'text-emerald-700 bg-emerald-50 dark:bg-emerald-950/40 dark:text-emerald-300' },
     pending: { label: 'Đang xử lý', icon: Clock, className: 'text-amber-700 bg-amber-50 dark:bg-amber-950/40 dark:text-amber-300' },
     failed: { label: 'Thất bại', icon: XCircle, className: 'text-red-700 bg-red-50 dark:bg-red-950/40 dark:text-red-300' },
 } as const;
+
+const CATEGORY_LABELS: Record<PayOSTransactionRow['category'], string> = {
+    course: 'Khóa học',
+    luyentap: 'Luyện tập',
+};
 
 function fmtDate(s: string) {
     return new Date(s).toLocaleString('vi-VN', {
@@ -107,32 +81,97 @@ function Td({ children, className }: { children: React.ReactNode; className?: st
     );
 }
 
+function paginate<T>(items: T[], page: number, pageSize: number) {
+    const total = items.length;
+    const totalPages = Math.max(1, Math.ceil(total / pageSize));
+    const safePage = Math.min(Math.max(1, page), totalPages);
+    const start = (safePage - 1) * pageSize;
+    return {
+        items: items.slice(start, start + pageSize),
+        total,
+        totalPages,
+        page: safePage,
+        start: total === 0 ? 0 : start + 1,
+        end: Math.min(start + pageSize, total),
+    };
+}
+
 export default function TransactionHistoryPage() {
-    const { user } = useAuthStore();
+    const { user, token } = useAuthStore();
     const [tab, setTab] = useState<TabType>('xu');
     const [query, setQuery] = useState('');
+    const [page, setPage] = useState(1);
+    const [loading, setLoading] = useState(true);
+    const [coinRows, setCoinRows] = useState<CoinTransactionRow[]>([]);
+    const [payosRows, setPayosRows] = useState<PayOSTransactionRow[]>([]);
+    const [stats, setStats] = useState({
+        coinsBalance: 0,
+        coinCreditTotal: 0,
+        coinDebitTotal: 0,
+        payosCompletedTotal: 0,
+        payosCompletedCount: 0,
+    });
 
-    const xuIn = MOCK_XU.filter((r) => r.type === 'credit').reduce((s, r) => s + r.amount, 0);
-    const xuOut = MOCK_XU.filter((r) => r.type === 'debit').reduce((s, r) => s + r.amount, 0);
-    const payosTotal = MOCK_PAYOS.filter((r) => r.status === 'completed').reduce((s, r) => s + r.amount, 0);
+    const fetchHistory = useCallback(async () => {
+        if (!token) {
+            setCoinRows([]);
+            setPayosRows([]);
+            setLoading(false);
+            return;
+        }
+        setLoading(true);
+        try {
+            const data = await transactionApi.getMyHistory();
+            setCoinRows(data.coinTransactions || []);
+            setPayosRows(data.payosTransactions || []);
+            setStats(data.stats || {
+                coinsBalance: user?.coins ?? 0,
+                coinCreditTotal: 0,
+                coinDebitTotal: 0,
+                payosCompletedTotal: 0,
+                payosCompletedCount: 0,
+            });
+        } catch {
+            toast.error('Không tải được lịch sử giao dịch');
+        } finally {
+            setLoading(false);
+        }
+    }, [token, user?.coins]);
+
+    useEffect(() => { fetchHistory(); }, [fetchHistory]);
+
+    useEffect(() => { setPage(1); }, [tab, query]);
 
     const filteredXu = useMemo(() => {
         const q = query.trim().toLowerCase();
-        if (!q) return MOCK_XU;
-        return MOCK_XU.filter((r) => r.reason.toLowerCase().includes(q));
-    }, [query]);
+        if (!q) return coinRows;
+        return coinRows.filter((r) => r.reason.toLowerCase().includes(q));
+    }, [coinRows, query]);
 
     const filteredPayos = useMemo(() => {
         const q = query.trim().toLowerCase();
-        if (!q) return MOCK_PAYOS;
-        return MOCK_PAYOS.filter(
-            (r) => r.title.toLowerCase().includes(q) || r.orderCode.toLowerCase().includes(q)
+        if (!q) return payosRows;
+        return payosRows.filter(
+            (r) => r.title.toLowerCase().includes(q)
+                || r.orderCode.toLowerCase().includes(q)
+                || CATEGORY_LABELS[r.category].toLowerCase().includes(q)
         );
-    }, [query]);
+    }, [payosRows, query]);
+
+    const xuPage = useMemo(() => paginate(filteredXu, page, PAGE_SIZE), [filteredXu, page]);
+    const payosPage = useMemo(() => paginate(filteredPayos, page, PAGE_SIZE), [filteredPayos, page]);
+    const activePage = tab === 'xu' ? xuPage : payosPage;
+
+    if (!token) {
+        return (
+            <div className="mx-auto max-w-6xl px-4 py-16 text-center">
+                <p className="text-[var(--cn-text-sub)]">Vui lòng đăng nhập để xem lịch sử giao dịch</p>
+            </div>
+        );
+    }
 
     return (
         <div className="mx-auto max-w-6xl px-4 py-6 md:px-6 md:py-8">
-            {/* Header */}
             <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                 <div>
                     <h1 className="text-2xl font-bold tracking-tight text-[var(--cn-text-main)] md:text-3xl">
@@ -151,15 +190,17 @@ export default function TransactionHistoryPage() {
                 </button>
             </div>
 
-            {/* Stats */}
             <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
-                <StatCard label="Số dư xu" value={`${(user?.coins ?? 1250).toLocaleString()} xu`} />
-                <StatCard label="Xu nhận" value={`+${xuIn.toLocaleString()}`} trend="up" sub="Trong kỳ" />
-                <StatCard label="Xu chi" value={`−${xuOut.toLocaleString()}`} trend="down" sub="Trong kỳ" />
-                <StatCard label="PayOS thành công" value={fmtVnd(payosTotal)} sub={`${MOCK_PAYOS.filter((r) => r.status === 'completed').length} giao dịch`} />
+                <StatCard label="Số dư xu" value={`${(stats.coinsBalance ?? user?.coins ?? 0).toLocaleString()} xu`} />
+                <StatCard label="Xu nhận" value={`+${stats.coinCreditTotal.toLocaleString()}`} trend="up" sub="Tổng cộng" />
+                <StatCard label="Xu chi" value={`−${stats.coinDebitTotal.toLocaleString()}`} trend="down" sub="Tổng cộng" />
+                <StatCard
+                    label="PayOS thành công"
+                    value={fmtVnd(stats.payosCompletedTotal)}
+                    sub={`${stats.payosCompletedCount} giao dịch`}
+                />
             </div>
 
-            {/* Toolbar */}
             <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="inline-flex rounded-lg border border-[var(--cn-border)] bg-[var(--cn-bg-section)] p-0.5">
                     <button
@@ -175,7 +216,7 @@ export default function TransactionHistoryPage() {
                         <Coins className="h-4 w-4" />
                         Xu
                         <span className="rounded-full bg-[var(--cn-bg-section)] px-1.5 py-0.5 text-[10px] font-bold text-[var(--cn-text-muted)]">
-                            {MOCK_XU.length}
+                            {coinRows.length}
                         </span>
                     </button>
                     <button
@@ -191,36 +232,30 @@ export default function TransactionHistoryPage() {
                         <Landmark className="h-4 w-4" />
                         PayOS
                         <span className="rounded-full bg-[var(--cn-bg-section)] px-1.5 py-0.5 text-[10px] font-bold text-[var(--cn-text-muted)]">
-                            {MOCK_PAYOS.length}
+                            {payosRows.length}
                         </span>
                     </button>
                 </div>
 
-                <div className="flex gap-2">
-                    <div className="relative flex-1 sm:w-64 sm:flex-none">
-                        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--cn-text-muted)]" />
-                        <input
-                            type="text"
-                            value={query}
-                            onChange={(e) => setQuery(e.target.value)}
-                            placeholder={tab === 'xu' ? 'Tìm theo nội dung...' : 'Tìm mã đơn, khóa học...'}
-                            className="w-full rounded-lg border border-[var(--cn-border)] bg-[var(--cn-bg-card)] py-2 pl-9 pr-3 text-sm text-[var(--cn-text-main)] outline-none transition focus:border-[var(--cn-primary)] focus:ring-2 focus:ring-[var(--cn-primary)]/20"
-                        />
-                    </div>
-                    <button
-                        type="button"
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--cn-border)] bg-[var(--cn-bg-card)] px-3 py-2 text-sm text-[var(--cn-text-sub)] hover:bg-[var(--cn-hover)]"
-                    >
-                        <Filter className="h-4 w-4" />
-                        <span className="hidden sm:inline">Lọc</span>
-                    </button>
+                <div className="relative w-full sm:w-64">
+                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--cn-text-muted)]" />
+                    <input
+                        type="text"
+                        value={query}
+                        onChange={(e) => setQuery(e.target.value)}
+                        placeholder={tab === 'xu' ? 'Tìm theo nội dung...' : 'Tìm mã đơn, dịch vụ...'}
+                        className="w-full rounded-lg border border-[var(--cn-border)] bg-[var(--cn-bg-card)] py-2 pl-9 pr-3 text-sm text-[var(--cn-text-main)] outline-none transition focus:border-[var(--cn-primary)] focus:ring-2 focus:ring-[var(--cn-primary)]/20"
+                    />
                 </div>
             </div>
 
-            {/* Table */}
             <div className="overflow-hidden rounded-xl border border-[var(--cn-border)] bg-[var(--cn-bg-card)] shadow-sm">
                 <div className="overflow-x-auto">
-                    {tab === 'xu' ? (
+                    {loading ? (
+                        <div className="flex justify-center py-20">
+                            <Loader2 className="h-8 w-8 animate-spin text-[var(--cn-primary)]" />
+                        </div>
+                    ) : tab === 'xu' ? (
                         <table className="w-full min-w-[640px] border-collapse">
                             <thead>
                                 <tr className="border-b border-[var(--cn-border)] bg-[var(--cn-bg-section)]/80">
@@ -233,14 +268,14 @@ export default function TransactionHistoryPage() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-[var(--cn-border)]/70">
-                                {filteredXu.length === 0 ? (
+                                {xuPage.total === 0 ? (
                                     <tr>
                                         <td colSpan={6} className="px-4 py-16 text-center text-sm text-[var(--cn-text-muted)]">
                                             Không tìm thấy giao dịch xu
                                         </td>
                                     </tr>
                                 ) : (
-                                    filteredXu.map((row, i) => {
+                                    xuPage.items.map((row, i) => {
                                         const isIn = row.type === 'credit';
                                         return (
                                             <tr
@@ -252,7 +287,7 @@ export default function TransactionHistoryPage() {
                                             >
                                                 <Td>
                                                     <span className="font-mono text-xs text-[var(--cn-text-muted)]">
-                                                        #XU{row.id.padStart(4, '0')}
+                                                        #{row.id.slice(-8).toUpperCase()}
                                                     </span>
                                                 </Td>
                                                 <Td>
@@ -300,20 +335,21 @@ export default function TransactionHistoryPage() {
                                 <tr className="border-b border-[var(--cn-border)] bg-[var(--cn-bg-section)]/80">
                                     <Th>Mã đơn</Th>
                                     <Th>Thời gian</Th>
-                                    <Th>Khóa học / Dịch vụ</Th>
+                                    <Th>Loại</Th>
+                                    <Th>Dịch vụ</Th>
                                     <Th>Trạng thái</Th>
                                     <Th className="text-right">Số tiền</Th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-[var(--cn-border)]/70">
-                                {filteredPayos.length === 0 ? (
+                                {payosPage.total === 0 ? (
                                     <tr>
-                                        <td colSpan={5} className="px-4 py-16 text-center text-sm text-[var(--cn-text-muted)]">
+                                        <td colSpan={6} className="px-4 py-16 text-center text-sm text-[var(--cn-text-muted)]">
                                             Không tìm thấy giao dịch PayOS
                                         </td>
                                     </tr>
                                 ) : (
-                                    filteredPayos.map((row, i) => {
+                                    payosPage.items.map((row, i) => {
                                         const st = STATUS_MAP[row.status];
                                         const Icon = st.icon;
                                         return (
@@ -331,6 +367,11 @@ export default function TransactionHistoryPage() {
                                                 </Td>
                                                 <Td>
                                                     <span className="text-[var(--cn-text-sub)] whitespace-nowrap">{fmtDate(row.createdAt)}</span>
+                                                </Td>
+                                                <Td>
+                                                    <span className="rounded-md bg-[var(--cn-bg-section)] px-2 py-0.5 text-xs font-medium text-[var(--cn-text-sub)]">
+                                                        {CATEGORY_LABELS[row.category]}
+                                                    </span>
                                                 </Td>
                                                 <Td>
                                                     <span className="font-medium">{row.title}</span>
@@ -353,18 +394,31 @@ export default function TransactionHistoryPage() {
                     )}
                 </div>
 
-                {/* Footer */}
-                <div className="flex items-center justify-between border-t border-[var(--cn-border)] px-4 py-3 text-xs text-[var(--cn-text-muted)]">
-                    <span>
-                        Hiển thị {tab === 'xu' ? filteredXu.length : filteredPayos.length} /{' '}
-                        {tab === 'xu' ? MOCK_XU.length : MOCK_PAYOS.length} giao dịch
+                <div className="flex flex-col gap-3 border-t border-[var(--cn-border)] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                    <span className="text-xs text-[var(--cn-text-muted)]">
+                        {activePage.total === 0
+                            ? 'Không có giao dịch'
+                            : `Hiển thị ${activePage.start}–${activePage.end} / ${activePage.total} giao dịch`}
                     </span>
                     <div className="flex items-center gap-1">
-                        <button type="button" className="rounded-md px-2.5 py-1 hover:bg-[var(--cn-hover)] disabled:opacity-40" disabled>
+                        <button
+                            type="button"
+                            onClick={() => setPage((p) => Math.max(1, p - 1))}
+                            disabled={activePage.page <= 1 || loading}
+                            className="rounded-md px-2.5 py-1 text-xs font-medium text-[var(--cn-text-sub)] hover:bg-[var(--cn-hover)] disabled:cursor-not-allowed disabled:opacity-40"
+                        >
                             Trước
                         </button>
-                        <span className="rounded-md bg-[var(--cn-primary)] px-2.5 py-1 font-semibold text-white">1</span>
-                        <button type="button" className="rounded-md px-2.5 py-1 hover:bg-[var(--cn-hover)] disabled:opacity-40" disabled>
+                        <span className="rounded-md bg-[var(--cn-primary)] px-2.5 py-1 text-xs font-semibold text-white">
+                            {activePage.page}
+                        </span>
+                        <span className="px-1 text-xs text-[var(--cn-text-muted)]">/ {activePage.totalPages}</span>
+                        <button
+                            type="button"
+                            onClick={() => setPage((p) => Math.min(activePage.totalPages, p + 1))}
+                            disabled={activePage.page >= activePage.totalPages || loading}
+                            className="rounded-md px-2.5 py-1 text-xs font-medium text-[var(--cn-text-sub)] hover:bg-[var(--cn-hover)] disabled:cursor-not-allowed disabled:opacity-40"
+                        >
                             Sau
                         </button>
                     </div>

@@ -94,12 +94,22 @@ export function mergeAlgorithmQuestionForBackend(
 ): string {
     const parts: string[] = [];
     if (content.trim()) parts.push(content.trim());
-    if (options?.algoRequirement?.trim()) parts.push(options.algoRequirement.trim());
+
+    if (options?.algoRequirement?.trim()) {
+        parts.push('{yêu cầu:');
+        parts.push(options.algoRequirement.trim());
+        parts.push('}');
+    }
     if (options?.algoInputDesc?.trim()) {
-        parts.push(`Đầu vào:\n${options.algoInputDesc.trim()}`);
+        parts.push('{đầu vào:');
+        parts.push(options.algoInputDesc.trim());
+        parts.push('}');
     }
     if (options?.algoOutputDesc?.trim()) {
-        parts.push(`Đầu ra:\n${options.algoOutputDesc.trim()}`);
+        parts.push('{đầu ra:');
+        parts.push(options.algoOutputDesc.trim());
+        parts.push('}');
     }
-    return parts.join('\n\n');
+
+    return parts.join('\n');
 }

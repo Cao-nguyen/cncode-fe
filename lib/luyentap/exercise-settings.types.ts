@@ -1,6 +1,8 @@
 import type { ExerciseConfigForm } from '@/components/luyentap/LuyentapExerciseConfigOverlay';
 import { combineDateAndTime, splitDateAndTime } from '@/components/custom/CustomInputHourMinute';
 
+export type ExerciseDifficulty = 'easy' | 'medium' | 'hard' | 'very_hard';
+
 export interface CustomStudentField {
     id: string;
     label: string;
@@ -9,6 +11,7 @@ export interface CustomStudentField {
 
 export interface ExerciseSettingsForm extends ExerciseConfigForm {
     duration: number;
+    difficulty: ExerciseDifficulty;
     deliveryFromDate: string;
     deliveryFromTime: string;
     deliveryToDate: string;
@@ -28,6 +31,7 @@ export interface ExerciseSettingsForm extends ExerciseConfigForm {
     hideLeaderboard: boolean;
     preExamNoticeEnabled: boolean;
     preExamNotice: string;
+    folderId: string;
 }
 
 export const DEFAULT_EXERCISE_SETTINGS: ExerciseSettingsForm = {
@@ -36,6 +40,7 @@ export const DEFAULT_EXERCISE_SETTINGS: ExerciseSettingsForm = {
     examPurpose: '',
     description: '',
     duration: 60,
+    difficulty: 'medium',
     deliveryFromDate: '',
     deliveryFromTime: '',
     deliveryToDate: '',
@@ -55,6 +60,7 @@ export const DEFAULT_EXERCISE_SETTINGS: ExerciseSettingsForm = {
     hideLeaderboard: false,
     preExamNoticeEnabled: false,
     preExamNotice: '',
+    folderId: '',
 };
 
 function toDatetimeLocal(value?: string | Date | null): string {
@@ -65,11 +71,18 @@ function toTimeLocal(value?: string | Date | null): string {
     return splitDateAndTime(value).time;
 }
 
+function resolveFolderId(exercise?: { folderId?: string | null | { _id?: string } } | null): string {
+    if (!exercise?.folderId) return '';
+    if (typeof exercise.folderId === 'object') return exercise.folderId._id || '';
+    return exercise.folderId;
+}
+
 export function buildSettingsForm(
     basic: ExerciseConfigForm,
     exercise?: Partial<ExerciseSettingsForm & {
         deliveryFrom?: string;
         deliveryTo?: string;
+        folderId?: string | null | { _id?: string };
         studentInfoFields?: {
             fullName?: boolean;
             className?: boolean;
@@ -90,6 +103,7 @@ export function buildSettingsForm(
         examPurpose: basic.examPurpose || exercise?.examPurpose || '',
         description: basic.description || exercise?.description || '',
         duration: exercise?.duration ?? DEFAULT_EXERCISE_SETTINGS.duration,
+        difficulty: exercise?.difficulty ?? DEFAULT_EXERCISE_SETTINGS.difficulty,
         deliveryFromDate: toDatetimeLocal(exercise?.deliveryFrom),
         deliveryFromTime: toTimeLocal(exercise?.deliveryFrom),
         deliveryToDate: toDatetimeLocal(exercise?.deliveryTo),
@@ -109,6 +123,7 @@ export function buildSettingsForm(
         hideLeaderboard: exercise?.hideLeaderboard ?? false,
         preExamNoticeEnabled: exercise?.preExamNoticeEnabled ?? false,
         preExamNotice: exercise?.preExamNotice ?? '',
+        folderId: resolveFolderId(exercise),
     };
 }
 
@@ -119,6 +134,7 @@ export function settingsFormToPayload(form: ExerciseSettingsForm) {
         grade: form.grade,
         examPurpose: form.examPurpose,
         duration: form.duration,
+        difficulty: form.difficulty,
         deliveryFrom: combineDateAndTime(form.deliveryFromDate, form.deliveryFromTime) ?? undefined,
         deliveryTo: combineDateAndTime(form.deliveryToDate, form.deliveryToTime) ?? undefined,
         maxAttempts: form.maxAttempts,
@@ -141,5 +157,6 @@ export function settingsFormToPayload(form: ExerciseSettingsForm) {
         hideLeaderboard: form.hideLeaderboard,
         preExamNoticeEnabled: form.preExamNoticeEnabled,
         preExamNotice: form.preExamNotice,
+        folderId: form.folderId || null,
     };
 }

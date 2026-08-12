@@ -9,6 +9,7 @@ import { useState, useEffect } from "react";
 const PAGE_TITLES: Record<string, string> = {
     "/admin/dashboard": "Trang tổng quan",
     "/admin/users": "Người dùng",
+    "/admin/lichsugiaodich": "Lịch sử giao dịch",
     "/admin/gopy": "Quản lí góp ý",
     "/admin/affiliate": "Tiếp thị liên kết",
     "/admin/rutgonlink": "Rút gọn liên kết",

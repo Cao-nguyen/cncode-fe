@@ -1,14 +1,16 @@
 'use client';
 
 import React from 'react';
-import { ArrowDownToLine, ArrowUpFromLine, ArrowRight } from 'lucide-react';
+import { ArrowDownToLine, ArrowUpFromLine, ArrowRight, ClipboardList } from 'lucide-react';
 import StaticContent from '@/components/common/StaticContent';
 import { parseAlgorithmQuestionDisplay } from '@/lib/luyentap/algorithm-question-display';
 
 interface AlgorithmQuestionPanelProps {
     question: string;
-    /** Hiển thị intro (tiêu đề + yêu cầu) */
+    /** Hiển thị phần intro (tiêu đề đề bài) */
     showIntro?: boolean;
+    /** compact: nhãn in đậm; cards: khối màu đầu vào/ra tách biệt */
+    variant?: 'compact' | 'cards';
     className?: string;
 }
 
@@ -30,13 +32,29 @@ function IoBlock({
     return (
         <div className={`rounded-xl border-2 ${border} overflow-hidden shadow-sm`}>
             <div className={`flex items-center gap-2 px-4 py-2.5 ${headerBg} text-white`}>
-                <Icon className="w-4 h-4 shrink-0" strokeWidth={2.25} />
+                <Icon className="h-4 w-4 shrink-0" strokeWidth={2.25} />
                 <span className="text-sm font-bold tracking-wide">{label}</span>
             </div>
             <div className={`p-3 ${bodyBg}`}>
                 <pre
-                    className={`text-sm font-mono leading-relaxed whitespace-pre-wrap text-gray-800 rounded-lg border px-3 py-2.5 ${codeBg}`}
+                    className={`whitespace-pre-wrap rounded-lg border px-3 py-2.5 font-mono text-sm leading-relaxed text-gray-800 ${codeBg}`}
                 >
+                    {content}
+                </pre>
+            </div>
+        </div>
+    );
+}
+
+function RequirementBlock({ content }: { content: string }) {
+    return (
+        <div className="rounded-xl border-2 border-amber-200 overflow-hidden shadow-sm">
+            <div className="flex items-center gap-2 bg-amber-600 px-4 py-2.5 text-white">
+                <ClipboardList className="h-4 w-4 shrink-0" strokeWidth={2.25} />
+                <span className="text-sm font-bold tracking-wide">Yêu cầu</span>
+            </div>
+            <div className="bg-amber-50/80 p-3">
+                <pre className="whitespace-pre-wrap rounded-lg border border-amber-100 bg-white px-3 py-2.5 font-mono text-sm leading-relaxed text-gray-800">
                     {content}
                 </pre>
             </div>
@@ -47,10 +65,34 @@ function IoBlock({
 export default function AlgorithmQuestionPanel({
     question,
     showIntro = true,
+    variant = 'cards',
     className = '',
 }: AlgorithmQuestionPanelProps) {
     const parsed = parseAlgorithmQuestionDisplay(question);
     const hasIo = Boolean(parsed.inputDesc?.trim() || parsed.outputDesc?.trim());
+    const hasRequirement = Boolean(parsed.requirementDesc?.trim());
+
+    if (variant === 'compact') {
+        return (
+            <div className={`space-y-4 ${className}`}>
+                {showIntro && parsed.intro && (
+                    <StaticContent
+                        content={parsed.intro}
+                        className="prose prose-sm max-w-none text-gray-800 dark:prose-invert"
+                    />
+                )}
+                {hasRequirement && (
+                    <RequirementBlock content={parsed.requirementDesc!} />
+                )}
+                {parsed.inputDesc?.trim() && (
+                    <IoBlock kind="input" content={parsed.inputDesc} />
+                )}
+                {parsed.outputDesc?.trim() && (
+                    <IoBlock kind="output" content={parsed.outputDesc} />
+                )}
+            </div>
+        );
+    }
 
     return (
         <div className={`space-y-5 ${className}`}>
@@ -61,27 +103,34 @@ export default function AlgorithmQuestionPanel({
                 />
             )}
 
-            {hasIo && (
-                <div>
-                    <p className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-3">
-                        Dữ liệu vào / ra
+            {(hasRequirement || hasIo) && (
+                <div className="border-t border-slate-100 pt-4">
+                    <p className="mb-3 text-xs font-bold uppercase tracking-wider text-gray-500">
+                        Yêu cầu & dữ liệu
                     </p>
-                    <div className="flex flex-col lg:flex-row lg:items-stretch gap-3">
-                        {parsed.inputDesc?.trim() && (
-                            <div className="flex-1 min-w-0">
-                                <IoBlock kind="input" content={parsed.inputDesc} />
-                            </div>
+                    <div className="space-y-3">
+                        {hasRequirement && (
+                            <RequirementBlock content={parsed.requirementDesc!} />
                         )}
-                        {parsed.inputDesc?.trim() && parsed.outputDesc?.trim() && (
-                            <div className="hidden lg:flex items-center justify-center shrink-0 px-1">
-                                <div className="w-9 h-9 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center">
-                                    <ArrowRight className="w-4 h-4 text-gray-500" />
-                                </div>
-                            </div>
-                        )}
-                        {parsed.outputDesc?.trim() && (
-                            <div className="flex-1 min-w-0">
-                                <IoBlock kind="output" content={parsed.outputDesc} />
+                        {hasIo && (
+                            <div className="flex flex-col gap-3 lg:flex-row lg:items-stretch">
+                                {parsed.inputDesc?.trim() && (
+                                    <div className="min-w-0 flex-1">
+                                        <IoBlock kind="input" content={parsed.inputDesc} />
+                                    </div>
+                                )}
+                                {parsed.inputDesc?.trim() && parsed.outputDesc?.trim() && (
+                                    <div className="hidden shrink-0 items-center justify-center px-1 lg:flex">
+                                        <div className="flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 bg-gray-100">
+                                            <ArrowRight className="h-4 w-4 text-gray-500" />
+                                        </div>
+                                    </div>
+                                )}
+                                {parsed.outputDesc?.trim() && (
+                                    <div className="min-w-0 flex-1">
+                                        <IoBlock kind="output" content={parsed.outputDesc} />
+                                    </div>
+                                )}
                             </div>
                         )}
                     </div>
@@ -103,32 +152,32 @@ export function AlgorithmSampleTestPanel({
 
     return (
         <div>
-            <p className="text-xs font-bold uppercase tracking-wider text-violet-600 mb-3">
+            <p className="mb-3 text-xs font-bold uppercase tracking-wider text-violet-600">
                 Test case mẫu
             </p>
             <div className="space-y-4">
                 {samples.map((tc, i) => (
                     <div
                         key={i}
-                        className="rounded-xl border border-violet-200 bg-violet-50/40 overflow-hidden"
+                        className="overflow-hidden rounded-xl border border-violet-200 bg-violet-50/40"
                     >
-                        <div className="px-4 py-2 bg-violet-600 text-white text-sm font-semibold">
+                        <div className="bg-violet-600 px-4 py-2 text-sm font-semibold text-white">
                             Ví dụ {i + 1}
                         </div>
-                        <div className="p-3 grid sm:grid-cols-2 gap-3">
+                        <div className="grid gap-3 p-3 sm:grid-cols-2">
                             <div>
-                                <p className="text-[11px] font-bold uppercase tracking-wide text-emerald-700 mb-1.5">
-                                    Input
+                                <p className="mb-1.5 text-[11px] font-bold uppercase tracking-wide text-emerald-700">
+                                    Đầu vào
                                 </p>
-                                <pre className="text-sm font-mono whitespace-pre-wrap bg-white border border-emerald-100 rounded-lg px-3 py-2 text-gray-800 min-h-[2.5rem]">
+                                <pre className="min-h-[2.5rem] whitespace-pre-wrap rounded-lg border border-emerald-100 bg-white px-3 py-2 font-mono text-sm text-gray-800">
                                     {tc.input?.trim() || '(trống)'}
                                 </pre>
                             </div>
                             <div>
-                                <p className="text-[11px] font-bold uppercase tracking-wide text-sky-700 mb-1.5">
-                                    Output
+                                <p className="mb-1.5 text-[11px] font-bold uppercase tracking-wide text-sky-700">
+                                    Đầu ra
                                 </p>
-                                <pre className="text-sm font-mono whitespace-pre-wrap bg-white border border-sky-100 rounded-lg px-3 py-2 text-gray-800 min-h-[2.5rem]">
+                                <pre className="min-h-[2.5rem] whitespace-pre-wrap rounded-lg border border-sky-100 bg-white px-3 py-2 font-mono text-sm text-gray-800">
                                     {tc.expectedOutput?.trim() || '(trống)'}
                                 </pre>
                             </div>

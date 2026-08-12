@@ -17,9 +17,10 @@ interface WebCodeEditorProps {
     onChange: (value: string) => void;
     disabled?: boolean;
     autoFocus?: boolean;
+    fillHeight?: boolean;
 }
 
-export default function WebCodeEditor({ file, value, onChange, disabled, autoFocus }: WebCodeEditorProps) {
+export default function WebCodeEditor({ file, value, onChange, disabled, autoFocus, fillHeight }: WebCodeEditorProps) {
     const extensions = useMemo(() => {
         const language =
             file === 'index.html'
@@ -42,7 +43,7 @@ export default function WebCodeEditor({ file, value, onChange, disabled, autoFoc
 
     return (
         <div
-            className="web-code-editor flex-1 min-h-0 overflow-hidden select-text"
+            className={`web-code-editor flex min-h-0 flex-col overflow-hidden select-text ${fillHeight ? 'h-full' : 'flex-1'}`}
             style={{ backgroundColor: WEB_IDE_COLORS.editorBg }}
         >
             <CodeMirror
@@ -55,7 +56,7 @@ export default function WebCodeEditor({ file, value, onChange, disabled, autoFoc
                 autoFocus={autoFocus}
                 indentWithTab={false}
                 basicSetup={false}
-                className={ideEditorCmClassName}
+                className={fillHeight ? `${ideEditorCmClassName} h-full min-h-0` : ideEditorCmClassName}
             />
         </div>
     );

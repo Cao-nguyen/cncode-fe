@@ -2107,6 +2107,7 @@ Mô tả kết quả cần in
                     </div>
 
                     {/* Sample templates footer */}
+                    {!(showDivideModal || showExamInfoModal || showImageModal || showMathModal) && (
                     <div className="px-4 py-2 border-t border-gray-100 bg-gray-50 text-xs text-gray-500 space-y-1">
                         <div className="flex items-center gap-2 flex-wrap">
                             <span className="font-medium">Mẫu:</span>
@@ -2153,6 +2154,7 @@ Mô tả kết quả cần in
                             <span className="font-mono">? contains flex</span>
                         </p>
                     </div>
+                    )}
                 </div>
             </div>
 
@@ -2235,20 +2237,35 @@ Mô tả kết quả cần in
 
             {showDivideModal && (
                 <div
-                    className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4"
+                    className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4"
                     onClick={() => setShowDivideModal(false)}
                 >
                     <div
-                        className="bg-[#eef2f7] rounded-xl shadow-2xl w-full max-w-2xl p-6 sm:p-8"
+                        className="flex max-h-[90vh] w-full max-w-xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl"
                         onClick={(e) => e.stopPropagation()}
                     >
-                        <div className="space-y-5">
+                        <div className="border-b border-gray-100 px-6 py-4">
+                            <h2 className="text-lg font-semibold text-gray-900">Chia điểm</h2>
+                            <p className="mt-1 text-sm text-gray-500">
+                                Nhập tổng điểm theo loại câu — hệ thống chia đều cho từng câu.
+                            </p>
+                        </div>
+
+                        <div className="flex-1 space-y-4 overflow-y-auto px-6 py-5">
                             {scoreGroups.map((group) => (
-                                <div key={group.key} className="flex items-center justify-between gap-4">
-                                    <label className="text-sm text-gray-700">
-                                        {group.label} ({group.count} Câu):
+                                <div
+                                    key={group.key}
+                                    className="grid grid-cols-[minmax(0,1fr)_88px] items-center gap-3"
+                                >
+                                    <label
+                                        htmlFor={`divide-${group.key}`}
+                                        className="text-sm leading-snug text-gray-700"
+                                    >
+                                        {group.label}{' '}
+                                        <span className="text-gray-400">({group.count} câu)</span>
                                     </label>
                                     <input
+                                        id={`divide-${group.key}`}
                                         type="number"
                                         min={0}
                                         step="0.01"
@@ -2258,58 +2275,61 @@ Mô tả kết quả cần in
                                             [group.key]: e.target.value,
                                         }))}
                                         placeholder="0"
-                                        className="w-20 px-3 py-2 text-center bg-white border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/30"
+                                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-center text-sm outline-none focus:ring-2 focus:ring-blue-500/30"
                                     />
                                 </div>
                             ))}
 
                             {hasTrueFalse && (
-                            <div className="pt-1">
-                                <h3 className="text-base font-semibold text-gray-800">
-                                    Cấu hình thang điểm cho câu hỏi đúng sai
-                                </h3>
-                                <p className="text-sm text-gray-500 mt-2 leading-relaxed">
-                                    Chức năng này cho phép Người dùng có thể cấu hình % số điểm mong muốn với từng câu trả lời đúng với loại câu hỏi đúng sai.
-                                </p>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4 mt-5">
-                                    {([
-                                        ['correct1', 'Trả lời đúng 1 ý'] as const,
-                                        ['correct2', 'Trả lời đúng 2 ý'] as const,
-                                        ['correct3', 'Trả lời đúng 3 ý'] as const,
-                                        ['correct4', 'Trả lời đúng 4 ý'] as const,
-                                    ]).map(([key, label]) => (
-                                        <div key={key} className="flex items-center justify-between gap-3">
-                                            <span className="text-sm text-gray-700">{label}:</span>
-                                            <div className="flex items-center gap-1">
+                                <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+                                    <h3 className="text-sm font-semibold text-gray-800">
+                                        Cấu hình thang điểm cho câu hỏi đúng sai
+                                    </h3>
+                                    <p className="mt-1.5 text-sm leading-relaxed text-gray-500">
+                                        Cấu hình % điểm theo số ý trả lời đúng trong mỗi câu đúng sai.
+                                    </p>
+                                    <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                        {([
+                                            ['correct1', 'Trả lời đúng 1 ý'] as const,
+                                            ['correct2', 'Trả lời đúng 2 ý'] as const,
+                                            ['correct3', 'Trả lời đúng 3 ý'] as const,
+                                            ['correct4', 'Trả lời đúng 4 ý'] as const,
+                                        ]).map(([key, label]) => (
+                                            <label
+                                                key={key}
+                                                htmlFor={`tf-scale-${key}`}
+                                                className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2.5"
+                                            >
+                                                <span className="min-w-0 flex-1 text-sm text-gray-700">{label}</span>
                                                 <input
+                                                    id={`tf-scale-${key}`}
                                                     type="number"
                                                     min={0}
                                                     max={100}
                                                     value={tfScaleDraft[key]}
                                                     onChange={(e) => updateTfScaleDraft(key, e.target.value)}
-                                                    className="w-16 px-2 py-2 text-center bg-white border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/30"
+                                                    className="w-14 rounded-md border border-gray-200 px-2 py-1.5 text-center text-sm outline-none focus:ring-2 focus:ring-blue-500/30"
                                                 />
-                                                <span className="text-sm text-gray-600">%</span>
-                                            </div>
-                                        </div>
-                                    ))}
+                                                <span className="shrink-0 text-sm text-gray-500">%</span>
+                                            </label>
+                                        ))}
+                                    </div>
                                 </div>
-                            </div>
                             )}
                         </div>
 
-                        <div className="flex justify-end gap-3 mt-8">
+                        <div className="flex justify-end gap-3 border-t border-gray-100 px-6 py-4">
                             <button
                                 type="button"
                                 onClick={() => setShowDivideModal(false)}
-                                className="px-5 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 text-sm font-medium hover:bg-gray-50"
+                                className="rounded-lg border border-gray-300 bg-white px-5 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
                             >
                                 Đóng
                             </button>
                             <button
                                 type="button"
                                 onClick={applyDividePoints}
-                                className="px-6 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700"
+                                className="rounded-lg bg-blue-600 px-6 py-2 text-sm font-semibold text-white hover:bg-blue-700"
                             >
                                 Chia
                             </button>

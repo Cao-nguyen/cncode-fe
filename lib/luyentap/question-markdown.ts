@@ -124,6 +124,56 @@ export function formatWebRequirementLabel(req: WebRequirement): string {
 
 
 
+import { mergeAlgorithmQuestionForBackend } from '@/lib/luyentap/algorithm-question-markdown';
+
+export type EditorQuestionContent = {
+    number?: number;
+    type: string;
+    content?: string;
+    codeMode?: 'algorithm' | 'web';
+    algoRequirement?: string;
+    algoInputDesc?: string;
+    algoOutputDesc?: string;
+    webRequirements?: WebRequirement[];
+    options?: string[];
+    leftItems?: string[];
+    correctAnswers?: string[];
+    testCases?: Array<{ input: string; expectedOutput: string; isSample: boolean }>;
+};
+
+/** Gom nội dung câu hỏi trước khi gửi backend (tránh `question` rỗng). */
+export function resolveEditorQuestionText(q: EditorQuestionContent, index: number): string {
+    const isAlgorithmCode = q.type === 'code'
+        && (q.codeMode === 'algorithm' || !q.codeMode || (q.testCases?.length ?? 0) > 0);
+
+    if (isAlgorithmCode) {
+        const merged = mergeAlgorithmQuestionForBackend(q.content || '', {
+            algoRequirement: q.algoRequirement,
+            algoInputDesc: q.algoInputDesc,
+            algoOutputDesc: q.algoOutputDesc,
+        });
+        if (merged.trim()) return merged.trim();
+    }
+
+    const content = (q.content || '').trim();
+    if (content) return content;
+
+    if (q.type === 'code' && q.codeMode === 'web' && q.webRequirements?.length) {
+        return q.webRequirements.map((req) => serializeWebRequirement(req)).join('\n');
+    }
+
+    if (q.algoRequirement?.trim()) return q.algoRequirement.trim();
+
+    if (q.leftItems?.[0]?.trim()) return q.leftItems[0].trim();
+
+    const firstOption = q.options?.[0]?.replace(/^[A-Da-d][).]\s*/, '').trim();
+    if (firstOption) return firstOption;
+
+    if (q.correctAnswers?.[0]?.trim()) return q.correctAnswers[0].trim();
+
+    return `Câu ${q.number ?? index + 1}`;
+}
+
 export type AnswerCheckQuestion = {
 
     type: 'multiple-choice' | 'multiple-select' | 'true-false' | 'matching' | 'short-answer' | 'essay' | 'code';

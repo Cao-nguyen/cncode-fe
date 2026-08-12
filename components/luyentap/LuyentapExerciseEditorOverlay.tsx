@@ -7,6 +7,7 @@ import { ArrowLeft, Loader2 } from 'lucide-react';
 import { CustomButton } from '@/components/custom/CustomButton';
 import { CustomInput } from '@/components/custom/CustomInput';
 import { toast } from 'sonner';
+import type { LuyentapFolder } from '@/types/luyentap.type';
 import { luyentapApi } from '@/lib/api/luyentap.api';
 import CustomEditorContest, { type TrueFalseScale } from '@/components/custom/CustomEditorContest';
 import LuyentapExerciseConfigOverlay, { type ExerciseConfigForm } from '@/components/luyentap/LuyentapExerciseConfigOverlay';
@@ -20,11 +21,12 @@ import {
     type WebRequirement,
     serializeWebRequirement,
     questionMissingAnswer,
+    resolveEditorQuestionText,
 } from '@/lib/luyentap/question-markdown';
 import {
     serializeAlgorithmQuestionBody,
-    mergeAlgorithmQuestionForBackend,
 } from '@/lib/luyentap/algorithm-question-markdown';
+import { parseAlgorithmQuestionDisplay } from '@/lib/luyentap/algorithm-question-display';
 
 interface EditorQuestion {
     id: number;
@@ -52,6 +54,7 @@ interface Question {
     _id?: string;
     type: 'multiple-choice' | 'multiple-select' | 'true-false' | 'matching' | 'short-answer' | 'essay' | 'code';
     question: string;
+    groupTitle?: string;
     explanation?: string;
     points?: number;
     options?: Array<{ _id?: string; text: string; isCorrect: boolean }>;
@@ -93,6 +96,8 @@ interface Exercise {
     preExamNotice?: string;
     thumbnail?: string;
     duration: number;
+    difficulty?: ExerciseSettingsForm['difficulty'];
+    folderId?: string | null | { _id?: string; name?: string };
     questions: Question[];
     totalPoints: number;
     status: 'draft' | 'pending' | 'published';
@@ -102,9 +107,18 @@ interface Exercise {
 
 const convertDbQuestionsToMarkdown = (questions: Question[]): string => {
     if (!questions?.length) return '';
+    let lastGroup = '';
     return questions.map((q, index) => {
+        const parts: string[] = [];
+        if (q.groupTitle && q.groupTitle !== lastGroup) {
+            parts.push(q.groupTitle);
+            lastGroup = q.groupTitle;
+        }
         const n = index + 1;
-        let markdown = `Câu ${n}. ${q.question}\n`;
+        const algoParsed = q.type === 'code' && q.codeMode === 'algorithm'
+            ? parseAlgorithmQuestionDisplay(q.question || '')
+            : null;
+        let markdown = `Câu ${n}. ${algoParsed?.intro?.trim() || q.question}\n`;
         if (q.type === 'multiple-choice' || q.type === 'multiple-select' || q.type === 'true-false') {
             if (q.type === 'multiple-select') markdown += '{ms}\n';
             const options = q.type === 'true-false' ? q.trueFalseOptions : q.options;
@@ -140,9 +154,9 @@ const convertDbQuestionsToMarkdown = (questions: Question[]): string => {
                 });
             } else {
                 serializeAlgorithmQuestionBody({
-                    algoRequirement: undefined,
-                    algoInputDesc: undefined,
-                    algoOutputDesc: undefined,
+                    algoRequirement: algoParsed?.requirementDesc,
+                    algoInputDesc: algoParsed?.inputDesc,
+                    algoOutputDesc: algoParsed?.outputDesc,
                     testCases: q.testCases?.map((tc) => ({
                         input: tc.input || '',
                         expectedOutput: tc.expectedOutput || '',
@@ -154,7 +168,8 @@ const convertDbQuestionsToMarkdown = (questions: Question[]): string => {
             }
         }
         if (q.explanation) markdown += `{lg: ${q.explanation}}\n`;
-        return markdown;
+        parts.push(markdown);
+        return parts.join('\n');
     }).join('\n');
 };
 
@@ -216,7 +231,7 @@ interface LuyentapExerciseEditorOverlayProps {
     exerciseId: string;
     isUpload?: boolean;
     uploadMarkdown?: string;
-    onClose?: () => void;
+    onClose?: (exercise?: Exercise | null) => void;
 }
 
 export default function LuyentapExerciseEditorOverlay({
@@ -252,14 +267,20 @@ export default function LuyentapExerciseEditorOverlay({
     const [settingsForm, setSettingsForm] = useState<ExerciseSettingsForm>(
         buildSettingsForm({ title: '', grade: '', examPurpose: '', description: '' }),
     );
+    const [folders, setFolders] = useState<LuyentapFolder[]>([]);
+
+    const folderOptions = folders.map((folder) => ({
+        value: folder._id,
+        label: folder.name,
+    }));
 
     const handleClose = useCallback(() => {
         if (onClose) {
-            onClose();
+            onClose(exercise);
         } else {
-            router.push('/admin/luyentap');
+            router.replace('/admin/luyentap');
         }
-    }, [onClose, router]);
+    }, [onClose, router, exercise]);
 
     useEffect(() => {
         document.body.style.overflow = 'hidden';
@@ -273,13 +294,8 @@ export default function LuyentapExerciseEditorOverlay({
         return questions.map((q, index) => ({
             _id: exercise.questions[index]?._id,
             type: q.type,
-            question: q.type === 'code' && q.codeMode === 'algorithm'
-                ? mergeAlgorithmQuestionForBackend(q.content, {
-                    algoRequirement: q.algoRequirement,
-                    algoInputDesc: q.algoInputDesc,
-                    algoOutputDesc: q.algoOutputDesc,
-                })
-                : q.content,
+            question: resolveEditorQuestionText(q, index),
+            groupTitle: q.groupTitle,
             explanation: q.explanation,
             points: q.score,
             options: (q.type === 'multiple-choice' || q.type === 'multiple-select') ? q.options?.map((opt, optIndex) => ({
@@ -343,6 +359,16 @@ export default function LuyentapExerciseEditorOverlay({
         setSaveStatus('saving');
         try {
             const backendQuestions = buildBackendQuestions(questions);
+            const emptyQuestions = backendQuestions
+                .map((q, index) => ({ number: questions[index]?.number ?? index + 1, question: q.question }))
+                .filter(({ question }) => !question?.trim());
+
+            if (emptyQuestions.length > 0) {
+                toast.error(`Thiếu nội dung câu hỏi: ${emptyQuestions.map((q) => `Câu ${q.number}`).join(', ')}`);
+                setSaveStatus('unsaved');
+                return false;
+            }
+
             const settingsPayload = mergedSettings ? settingsFormToPayload(mergedSettings) : {
                 title: nextTitle,
                 description: config.description,
@@ -367,8 +393,9 @@ export default function LuyentapExerciseEditorOverlay({
             setTitle(nextTitle);
             setSaveStatus('saved');
             return true;
-        } catch {
-            toast.error(options?.publish ? 'Lỗi khi xuất bản' : 'Lỗi khi lưu bài tập');
+        } catch (err: unknown) {
+            const message = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+            toast.error(message || (options?.publish ? 'Lỗi khi xuất bản' : 'Lỗi khi lưu bài tập'));
             setSaveStatus('unsaved');
             return false;
         } finally {
@@ -432,10 +459,10 @@ export default function LuyentapExerciseEditorOverlay({
                 description: settingsForm.description,
             },
             settingsForm,
-            { status: 'pending', publish: true },
+            { status: 'published', publish: true },
         );
         if (ok) {
-            toast.success('Đã gửi xuất bản');
+            toast.success('Đã xuất bản');
             handleClose();
         }
     };
@@ -460,6 +487,15 @@ export default function LuyentapExerciseEditorOverlay({
         setParsedQuestions(questions);
         if (saveStatus === 'saved') setSaveStatus('unsaved');
     }, [saveStatus]);
+
+    useEffect(() => {
+        luyentapApi.adminListFolders()
+            .then((res) => {
+                const data = res.data || res;
+                setFolders(data.folders || []);
+            })
+            .catch(() => {});
+    }, []);
 
     useEffect(() => {
         const load = async () => {
@@ -603,6 +639,7 @@ export default function LuyentapExerciseEditorOverlay({
                     form={settingsForm}
                     saving={saving}
                     publishing={publishing}
+                    folderOptions={folderOptions}
                     onChange={handleSettingsChange}
                     onBack={() => setShowSettingsOverlay(false)}
                     onPublish={handlePublish}

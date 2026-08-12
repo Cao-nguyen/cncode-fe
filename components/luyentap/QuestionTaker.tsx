@@ -1,14 +1,37 @@
 'use client';
 
 import React, { useState } from 'react';
+import dynamic from 'next/dynamic';
 import WebCodeIdeOverlay from './WebCodeIdeOverlay';
 import AlgorithmCodeIdeOverlay from './AlgorithmCodeIdeOverlay';
-import AlgorithmQuestionPanel from './AlgorithmQuestionPanel';
+import CodeQuestionDisplay from './CodeQuestionDisplay';
+import MatchingQuestionPanel from './MatchingQuestionPanel';
 import StaticContent from '@/components/common/StaticContent';
 import type { PracticeQuestion, PracticeAnswer } from '@/types/luyentap.type';
-import { parseWebProject } from '@/lib/luyentap/web-project';
-import { formatWebRequirementLabel } from '@/lib/luyentap/question-markdown';
-import { Monitor, Code2 } from 'lucide-react';
+import { parseWebProject, serializeWebProject } from '@/lib/luyentap/web-project';
+import { Monitor, Code2, Loader2 } from 'lucide-react';
+
+const CustomEditor = dynamic(() => import('@/components/custom/CustomEditor'), {
+    ssr: false,
+    loading: () => (
+        <div className="flex items-center justify-center h-[200px] rounded-xl border border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800/50">
+            <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
+        </div>
+    ),
+});
+
+function resolveCodeAnswerValue(answer: unknown, starterCode?: string): string {
+    if (typeof answer === 'string') return answer;
+    if (answer && typeof answer === 'object' && ('html' in answer || 'css' in answer || 'js' in answer)) {
+        const project = answer as { html?: string; css?: string; js?: string };
+        return serializeWebProject({
+            html: typeof project.html === 'string' ? project.html : '',
+            css: typeof project.css === 'string' ? project.css : '',
+            js: typeof project.js === 'string' ? project.js : '',
+        });
+    }
+    return typeof starterCode === 'string' ? starterCode : '';
+}
 
 interface QuestionTakerProps {
     question: PracticeQuestion;
@@ -30,14 +53,14 @@ export default function QuestionTaker({
     isCorrect,
 }: QuestionTakerProps) {
     const isWebCode = question.type === 'code' && question.codeMode === 'web';
-    const isAlgoCode = question.type === 'code' && question.codeMode !== 'web';
     const [ideOpen, setIdeOpen] = useState(false);
-    const codeValue = (answer as string) ?? question.starterCode ?? '';
+    const codeValue = resolveCodeAnswerValue(answer, question.starterCode);
     const webProject = isWebCode ? parseWebProject(codeValue, question.starterCode) : null;
     const hasWebCode = webProject
         ? Boolean(webProject.html.trim() || webProject.css.trim() || webProject.js.trim())
         : Boolean(codeValue.trim());
     const hasAlgoCode = Boolean(codeValue.trim());
+    const essayEditorId = `essay-${question._id ?? index}`;
 
     return (
         <div className={`rounded-2xl border p-4 sm:p-6 ${showResult ? (isCorrect ? 'border-green-200 bg-green-50/50' : 'border-red-200 bg-red-50/50') : 'border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900'}`}>
@@ -46,8 +69,15 @@ export default function QuestionTaker({
                     {index + 1}
                 </span>
                 <div className="flex-1 min-w-0">
-                    {isAlgoCode ? (
-                        <AlgorithmQuestionPanel question={question.question} />
+                    {question.type === 'code' ? (
+                        <CodeQuestionDisplay
+                            question={question.question}
+                            codeMode={question.codeMode}
+                            testCases={question.testCases}
+                            webRequirements={question.webRequirements}
+                            variant="cards"
+                            showSampleTests
+                        />
                     ) : (
                         <StaticContent content={question.question} className="prose prose-sm max-w-none dark:prose-invert" />
                     )}
@@ -113,39 +143,14 @@ export default function QuestionTaker({
             )}
 
             {question.type === 'matching' && (
-                <div className="ml-11 space-y-3">
-                    {(question.leftItems || []).map((left, li) => {
-                        const current = (answer as Array<{ leftIndex: number; rightIndex: number }>) || [];
-                        const selected = current.find((a) => a.leftIndex === li)?.rightIndex;
-                        return (
-                            <div key={li} className="flex flex-col sm:flex-row sm:items-center gap-2 p-3 rounded-xl border border-gray-100">
-                                <div className="flex-1 text-sm font-medium">
-                                    <span className="text-gray-500 mr-2">{li + 1}.</span>
-                                    <StaticContent content={left.text} className="inline prose prose-sm" />
-                                </div>
-                                <select
-                                    disabled={disabled}
-                                    value={selected ?? ''}
-                                    onChange={(e) => {
-                                        const rightIndex = parseInt(e.target.value, 10);
-                                        const next = current.filter((a) => a.leftIndex !== li);
-                                        if (!Number.isNaN(rightIndex)) {
-                                            next.push({ leftIndex: li, rightIndex });
-                                        }
-                                        onChange(next);
-                                    }}
-                                    className="sm:w-48 px-3 py-2 rounded-lg border border-gray-200 text-sm bg-white dark:bg-gray-800"
-                                >
-                                    <option value="">— Chọn —</option>
-                                    {(question.rightItems || []).map((right, ri) => (
-                                        <option key={ri} value={ri}>
-                                            {String.fromCharCode(97 + ri)}. {right.text.replace(/<[^>]+>/g, '').slice(0, 40)}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                        );
-                    })}
+                <div className="ml-0 sm:ml-11">
+                    <MatchingQuestionPanel
+                        leftItems={question.leftItems || []}
+                        rightItems={question.rightItems || []}
+                        value={(answer as Array<{ leftIndex: number; rightIndex: number }>) || []}
+                        onChange={onChange}
+                        disabled={disabled}
+                    />
                 </div>
             )}
 
@@ -202,15 +207,21 @@ export default function QuestionTaker({
             )}
 
             {question.type === 'essay' && (
-                <div className="ml-11">
-                    <textarea
-                        value={(answer as string) || ''}
-                        onChange={e => onChange(e.target.value)}
-                        disabled={disabled}
-                        rows={5}
-                        placeholder="Nhập câu trả lời tự luận..."
-                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-600 resize-y min-h-[120px]"
-                    />
+                <div className="ml-0 sm:ml-11">
+                    {disabled || showResult ? (
+                        <StaticContent
+                            content={(answer as string) || '<p class="text-gray-400 italic">Chưa trả lời</p>'}
+                            className="prose prose-sm max-w-none dark:prose-invert rounded-xl border border-gray-200 p-4 dark:border-gray-700"
+                        />
+                    ) : (
+                        <CustomEditor
+                            key={essayEditorId}
+                            editorId={essayEditorId}
+                            initialValue={(answer as string) || ''}
+                            onChange={(content) => onChange(content)}
+                            placeholder="Nhập câu trả lời tự luận..."
+                        />
+                    )}
                 </div>
             )}
 
@@ -218,19 +229,6 @@ export default function QuestionTaker({
                 <div className="ml-0 sm:ml-11">
                     {isWebCode ? (
                         <>
-                            {question.webRequirements && question.webRequirements.length > 0 && (
-                                <div className="mb-3 rounded-xl border border-indigo-200 bg-indigo-50/60 p-3">
-                                    <p className="text-xs font-semibold text-indigo-800 mb-2">Yêu cầu cần đạt</p>
-                                    <ul className="space-y-1">
-                                        {question.webRequirements.map((req, i) => (
-                                            <li key={i} className="text-sm text-indigo-900 flex items-start gap-2">
-                                                <span className="text-indigo-500 mt-0.5">•</span>
-                                                {formatWebRequirementLabel(req)}
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </div>
-                            )}
                             <button
                                 type="button"
                                 onClick={() => setIdeOpen(true)}

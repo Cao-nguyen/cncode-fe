@@ -41,6 +41,7 @@ export interface PracticeQuestion {
     leftItems?: Array<{ _id?: string; text: string }>;
     rightItems?: Array<{ _id?: string; text: string }>;
     matchingPairs?: Array<{ leftIndex: number; rightIndex: number }>;
+    groupTitle?: string;
 }
 
 export interface PracticeSet {
@@ -66,7 +67,10 @@ export interface PracticeSet {
     questions: PracticeQuestion[];
     timeLimit?: number;
     passThreshold?: number;
+    totalPoints?: number;
     rejectionReason?: string;
+    folderId?: string | null;
+    folder?: { _id: string; name: string } | null;
     grade?: string;
     examPurpose?: string;
     deliveryFrom?: string;
@@ -162,6 +166,22 @@ export interface PracticeListResponse {
     items: PracticeSet[];
     pagination: { page: number; limit: number; total: number; totalPages: number };
     hasProAccess?: boolean;
+}
+
+export interface LuyentapFolder {
+    _id: string;
+    name: string;
+    description?: string;
+    sortOrder?: number;
+    exerciseCount?: number;
+    createdAt?: string;
+    updatedAt?: string;
+}
+
+export interface LuyentapFolderListData {
+    folders: LuyentapFolder[];
+    unassignedCount: number;
+    totalCount: number;
 }
 
 export const QUESTION_TYPE_LABELS: Record<PracticeQuestionType, string> = {

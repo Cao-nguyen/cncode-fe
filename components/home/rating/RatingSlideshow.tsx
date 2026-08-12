@@ -4,11 +4,13 @@ import { useState, useCallback, useEffect } from 'react';
 import { IRating } from '@/lib/api/rating.api';
 import StarRating from '@/components/common/StarRating';
 import { DeleteConfirmModal } from '@/components/common/DeleteConfirmModal';
-import { ChevronLeft, ChevronRight, Star, Pencil, Trash, Loader2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Pencil, Trash, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { useCarousel } from '@/hooks/useCarousel';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { avatarImageProps, getAvatarUrl } from '@/lib/utils/imageUrl';
 
 interface RatingSlideshowProps {
     ratings: IRating[];
@@ -105,21 +107,16 @@ export default function RatingSlideshow({
 
                 <div className={`p-6 transition-opacity duration-300 ${carousel.isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
                     <div className="flex flex-col items-center text-center">
-                        <div className="w-16 h-16 rounded-full bg-[var(--cn-primary)]/10 overflow-hidden mb-4">
-                            {currentRating.userId?.avatar ? (
-                                <img
-                                    src={currentRating.userId.avatar}
-                                    alt={currentRating.userId.fullName || 'User'}
-                                    width={64}
-                                    height={64}
-                                    className="w-full h-full object-cover"
-                                />
-                            ) : (
-                                <div className="w-full h-full flex items-center justify-center text-[var(--cn-primary)] text-xl font-semibold">
-                                    {(currentRating.userId?.fullName?.charAt(0) || 'U').toUpperCase()}
-                                </div>
-                            )}
-                        </div>
+                        <Avatar className="mb-4 h-16 w-16 border border-[var(--cn-border)]">
+                            <AvatarImage
+                                src={getAvatarUrl(currentRating.userId?.avatar)}
+                                alt={currentRating.userId?.fullName || 'User'}
+                                {...avatarImageProps}
+                            />
+                            <AvatarFallback className="bg-[var(--cn-primary)]/10 text-xl font-semibold text-[var(--cn-primary)]">
+                                {(currentRating.userId?.fullName?.charAt(0) || 'U').toUpperCase()}
+                            </AvatarFallback>
+                        </Avatar>
 
                         <div className="flex items-center gap-2 flex-wrap justify-center">
                             <p className="font-semibold text-[var(--cn-text-main)] text-base">

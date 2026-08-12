@@ -3,476 +3,414 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuthStore } from '@/store/auth.store';
 import { useSocket } from '@/providers/socket.provider';
-import { reviewApi } from '@/lib/api/review.api';
+import { reviewApi, getErrorMessage } from '@/lib/api/review.api';
 import type { Review, ReviewStats } from '@/lib/api/review.api';
 import StarRating from '@/components/common/StarRating';
 import { CustomButton } from '@/components/custom/CustomButton';
-import { Loader2, ChevronLeft, ChevronRight, Eraser, Star, Search, User, X } from 'lucide-react';
-
+import { CustomInputSearch } from '@/components/custom/CustomInputSearch';
+import { CustomSelect } from '@/components/custom/CustomSelect';
+import { ConfirmModalDelete } from '@/components/custom/ConfirmationModal';
+import { DashboardCard } from '@/components/custom/DashboardCard';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import {
+    Star, Trash2, X, ChevronLeft, ChevronRight, Eye, MessageSquare,
+} from 'lucide-react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { toast } from 'sonner';
+import { avatarImageProps, getAvatarUrl } from '@/lib/utils/imageUrl';
+import { cn } from '@/lib/utils';
 
 const PAGE_SIZE = 10;
 
-interface AdminStatsType {
-    average: number;
-    distribution: Record<number, number>;
+const RATING_OPTIONS = [
+    { value: 'all', label: 'Tất cả sao' },
+    { value: '5', label: '5 sao' },
+    { value: '4', label: '4 sao' },
+    { value: '3', label: '3 sao' },
+    { value: '2', label: '2 sao' },
+    { value: '1', label: '1 sao' },
+];
+
+function ReviewAvatar({ avatar, name, className }: { avatar?: string; name?: string; className?: string }) {
+    const displayName = name || 'Người dùng';
+    return (
+        <Avatar className={cn('h-8 w-8 shrink-0 border border-gray-200', className)}>
+            <AvatarImage
+                src={getAvatarUrl(avatar)}
+                alt={displayName}
+                {...avatarImageProps}
+            />
+            <AvatarFallback className="text-xs font-semibold">
+                {displayName.charAt(0).toUpperCase()}
+            </AvatarFallback>
+        </Avatar>
+    );
+}
+
+function DetailModal({
+    review,
+    onClose,
+    onDelete,
+    deleting,
+}: {
+    review: Review | null;
+    onClose: () => void;
+    onDelete: () => void;
+    deleting: boolean;
+}) {
+    if (!review) return null;
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
+            <div
+                className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white shadow-xl"
+                onClick={(e) => e.stopPropagation()}
+            >
+                <div className="sticky top-0 flex items-center justify-between border-b bg-white px-5 py-4">
+                    <h3 className="text-lg font-semibold text-gray-800">Chi tiết đánh giá</h3>
+                    <button type="button" onClick={onClose} className="rounded-lg p-1 hover:bg-gray-100">
+                        <X className="h-5 w-5 text-gray-500" />
+                    </button>
+                </div>
+                <div className="space-y-4 p-5">
+                    <div className="flex items-center gap-3">
+                        <ReviewAvatar avatar={review.userId?.avatar} name={review.userId?.fullName} className="h-10 w-10" />
+                        <div>
+                            <p className="font-medium text-gray-900">{review.userId?.fullName || 'Người dùng'}</p>
+                            <p className="text-xs text-gray-400">
+                                {format(new Date(review.createdAt), 'dd/MM/yyyy HH:mm', { locale: vi })}
+                            </p>
+                        </div>
+                    </div>
+                    <StarRating rating={review.rating} readonly size={20} />
+                    <div className="rounded-xl bg-gray-50 p-4">
+                        <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-700">{review.content}</p>
+                    </div>
+                    <div className="flex gap-2 pt-1">
+                        <CustomButton variant="danger" fullWidth onClick={onDelete} loading={deleting}>
+                            Xóa đánh giá
+                        </CustomButton>
+                        <CustomButton variant="secondary" fullWidth onClick={onClose}>
+                            Đóng
+                        </CustomButton>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
 }
 
 export default function AdminRatingsPage() {
     const { token } = useAuthStore();
     const { socket, isConnected } = useSocket();
     const [ratings, setRatings] = useState<Review[]>([]);
+    const [stats, setStats] = useState<ReviewStats>({
+        average: 0,
+        total: 0,
+        distribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
+    });
     const [loading, setLoading] = useState(true);
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [total, setTotal] = useState(0);
     const [searchInput, setSearchInput] = useState('');
-    const [deletingId, setDeletingId] = useState<string | null>(null);
-    const [selectedRating, setSelectedRating] = useState<Review | null>(null);
-    const [showDetailModal, setShowDetailModal] = useState(false);
-    const [stats, setStats] = useState<AdminStatsType>({
-        average: 0,
-        distribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
-    });
-    const initialFetchDone = useRef(false);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [ratingFilter, setRatingFilter] = useState('all');
+    const [deleteTarget, setDeleteTarget] = useState<Review | null>(null);
+    const [detailTarget, setDetailTarget] = useState<Review | null>(null);
+    const [deleting, setDeleting] = useState(false);
+    const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    const fetchRatings = useCallback(async () => {
+    useEffect(() => {
+        if (searchTimeout.current) clearTimeout(searchTimeout.current);
+        searchTimeout.current = setTimeout(() => {
+            setSearchTerm(searchInput);
+            setPage(1);
+        }, 400);
+        return () => {
+            if (searchTimeout.current) clearTimeout(searchTimeout.current);
+        };
+    }, [searchInput]);
+
+    const fetchRatings = useCallback(async (silent = false) => {
         if (!token) return;
-
+        if (!silent) setLoading(true);
         try {
-            setLoading(true);
-            const result = await reviewApi.adminGetAllReviews(page, PAGE_SIZE);
-
+            const result = await reviewApi.adminGetAllReviews(page, PAGE_SIZE, {
+                search: searchTerm || undefined,
+                rating: ratingFilter !== 'all' ? ratingFilter : undefined,
+                status: 'active',
+            });
             setRatings(result.reviews);
             setTotalPages(result.totalPages);
             setTotal(result.total);
-            if (result.stats) {
-                setStats({
-                    average: result.stats.average,
-                    distribution: result.stats.distribution
-                });
-            }
+            if (result.stats) setStats(result.stats);
         } catch (error) {
-            console.error('Fetch ratings error:', error);
-            toast.error('Có lỗi xảy ra khi tải danh sách đánh giá');
+            toast.error(getErrorMessage(error));
         } finally {
             setLoading(false);
         }
-    }, [token, page]);
+    }, [token, page, searchTerm, ratingFilter]);
 
-    const fetchStats = useCallback(async () => {
-        try {
-            const statsData = await reviewApi.getStats();
-            setStats({
-                average: statsData.average,
-                distribution: statsData.distribution
-            });
-        } catch (error) {
-            console.error('Fetch stats error:', error);
-        }
-    }, []);
+    useEffect(() => {
+        fetchRatings();
+    }, [fetchRatings]);
 
     useEffect(() => {
         if (!socket || !isConnected) return;
 
-        const handleReviewCreated = (newReview: Review) => {
-            console.log('Admin real-time: new review', newReview);
-            if (page === 1) {
-                setRatings(prev => [newReview, ...prev]);
-                setTotal(prev => prev + 1);
-            }
-            fetchStats();
-            fetchRatings();
-        };
+        const refresh = () => fetchRatings(true);
 
-        const handleReviewUpdated = (updatedReview: Review) => {
-            console.log('Admin real-time: review updated', updatedReview);
-            setRatings(prev => prev.map(r => r._id === updatedReview._id ? updatedReview : r));
-            fetchStats();
-            fetchRatings();
+        const handleReviewCreated = (newReview: Review) => {
+            if (page === 1 && !searchTerm && ratingFilter === 'all') {
+                setRatings((prev) => {
+                    if (prev.some((r) => r._id === newReview._id)) return prev;
+                    return [newReview, ...prev].slice(0, PAGE_SIZE);
+                });
+                setTotal((prev) => prev + 1);
+            }
+            refresh();
         };
 
         const handleReviewDeleted = (reviewId: string) => {
-            console.log('Admin real-time: review deleted', reviewId);
-            setRatings(prev => prev.filter(r => r._id !== reviewId));
-            setTotal(prev => prev - 1);
-            fetchStats();
-            fetchRatings();
+            setRatings((prev) => prev.filter((r) => r._id !== reviewId));
+            setTotal((prev) => Math.max(0, prev - 1));
+            refresh();
         };
 
         const handleStatsUpdated = (newStats: ReviewStats) => {
-            console.log('Admin real-time: stats updated', newStats);
-            setStats({
-                average: newStats.average,
-                distribution: newStats.distribution
-            });
+            setStats(newStats);
         };
 
         socket.on('review_created', handleReviewCreated);
-        socket.on('review_updated', handleReviewUpdated);
+        socket.on('review_updated', refresh);
         socket.on('review_deleted', handleReviewDeleted);
         socket.on('review_stats_updated', handleStatsUpdated);
 
         return () => {
             socket.off('review_created', handleReviewCreated);
-            socket.off('review_updated', handleReviewUpdated);
+            socket.off('review_updated', refresh);
             socket.off('review_deleted', handleReviewDeleted);
             socket.off('review_stats_updated', handleStatsUpdated);
         };
-    }, [socket, isConnected, page, fetchStats, fetchRatings]);
+    }, [socket, isConnected, page, searchTerm, ratingFilter, fetchRatings]);
 
-    useEffect(() => {
-        if (token && !initialFetchDone.current) {
-            initialFetchDone.current = true;
-            fetchRatings();
-        }
-    }, [token, fetchRatings]);
-
-    const handleDeleteRating = async (ratingId: string) => {
-        if (!token) return;
-        const confirmMsg = 'Bạn có chắc chắn muốn xóa đánh giá này?';
-        if (!confirm(confirmMsg)) return;
-
+    const handleDelete = async () => {
+        if (!deleteTarget) return;
+        setDeleting(true);
         try {
-            setDeletingId(ratingId);
-            await reviewApi.adminDeleteReview(ratingId);
-            toast.success('Xóa đánh giá thành công');
-            setRatings(prev => prev.filter(r => r._id !== ratingId));
-            setTotal(prev => prev - 1);
+            await reviewApi.adminDeleteReview(deleteTarget._id);
+            toast.success('Đã xóa đánh giá');
+            setDeleteTarget(null);
+            setDetailTarget(null);
             if (ratings.length === 1 && page > 1) {
-                setPage(page - 1);
+                setPage((p) => p - 1);
             } else {
-                fetchRatings();
+                fetchRatings(true);
             }
         } catch (error) {
-            console.error('Delete rating error:', error);
-            toast.error('Có lỗi xảy ra khi xóa đánh giá');
+            toast.error(getErrorMessage(error));
         } finally {
-            setDeletingId(null);
-            setShowDetailModal(false);
+            setDeleting(false);
         }
     };
 
-    const handleSearch = () => {
-        setPage(1);
-        fetchRatings();
-    };
-
-    const openDetailModal = (rating: Review) => {
-        setSelectedRating(rating);
-        setShowDetailModal(true);
-    };
-
-    const percentage = (count: number) => {
-        return total > 0 ? (count / total) * 100 : 0;
-    };
+    const distributionPercent = (count: number) => (stats.total > 0 ? (count / stats.total) * 100 : 0);
 
     return (
-        <>
-            <div className="space-y-4 sm:space-y-6 pb-8 px-3 sm:px-4">
-                { }
-                <div>
-                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">Quản lý đánh giá</h1>
-                    <p className="text-sm text-gray-500 mt-1">Quản lý tất cả đánh giá của người dùng</p>
-                </div>
-
-                { }
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="rounded-xl p-4 sm:p-5 shadow-sm border border-main/20 bg-white dark:bg-gray-900">
-                        <div className="flex items-center gap-2 mb-2">
-                            <Star className="w-5 h-5 text-yellow-400 fill-yellow-400" data-filled={true} />
-                            <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Đánh giá trung bình</span>
-                        </div>
-                        <div className="text-3xl sm:text-4xl font-bold text-main">{stats.average.toFixed(1)}/5</div>
-                        <div className="mt-2">
-                            <StarRating rating={Math.round(stats.average)} readonly size={16} />
-                        </div>
-                        <p className="text-xs text-gray-500 mt-2">Từ {total} đánh giá</p>
-                    </div>
-
-                    <div className="rounded-xl p-4 sm:p-5 shadow-sm border border-main/20 bg-white dark:bg-gray-900">
-                        <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-3">Phân bố đánh giá</h3>
-                        <div className="space-y-2">
-                            {[5, 4, 3, 2, 1].map(star => {
-                                const count = stats.distribution[star] || 0;
-                                const percent = percentage(count);
-                                return (
-                                    <div key={star} className="flex items-center gap-2">
-                                        <div className="w-10 text-xs sm:text-sm text-gray-600 dark:text-gray-400">{star}★</div>
-                                        <div className="flex-1 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                                            <div
-                                                className="h-full bg-yellow-400 rounded-full transition-all"
-                                                style={{ width: `${percent}%` }}
-                                            />
-                                        </div>
-                                        <div className="w-10 text-xs sm:text-sm text-gray-500">{count}</div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-                </div>
-
-                { }
-                {loading && ratings.length === 0 ? (
-                    <div className="space-y-4">
-                        {[...Array(5)].map((_, i) => (
-                            <div key={i} className="bg-white dark:bg-gray-900 border border-main/20 rounded-xl p-4">
-                                <div className="flex items-start gap-3">
-                                    <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 animate-pulse" />
-                                    <div className="flex-1 space-y-3">
-                                        <div className="flex items-center justify-between">
-                                            <div className="h-4 w-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-                                            <div className="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-                                        </div>
-                                        <div className="h-3 w-full bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-                                        <div className="h-3 w-3/4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-                                        <div className="flex gap-2">
-                                            <div className="h-8 w-20 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-                                            <div className="h-8 w-20 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                ) : ratings.length === 0 ? (
-                    <div className="text-center py-12 text-gray-500 border border-main/20 rounded-xl bg-white dark:bg-gray-900">
-                        Không có đánh giá nào
-                    </div>
-                ) : (
-                    <>
-                        { }
-                        <div className="block md:hidden space-y-3">
-                            {ratings.map((rating) => (
-                                <div
-                                    key={rating._id}
-                                    className="bg-white dark:bg-gray-900 rounded-xl p-4 border border-gray-200 dark:border-gray-700 shadow-sm"
-                                >
-                                    <div className="flex items-start justify-between gap-2 mb-3">
-                                        <div className="flex items-center gap-2 flex-1 min-w-0">
-                                            <div className="w-8 h-8 rounded-full bg-main/10 overflow-hidden flex-shrink-0">
-                                                {rating.userId?.avatar ? (
-                                                    <img
-                                                        src={rating.userId.avatar}
-                                                        alt={rating.userId.fullName || 'User'}
-                                                        className="w-full h-full object-cover"
-                                                    />
-                                                ) : (
-                                                    <div className="w-full h-full flex items-center justify-center text-main text-xs font-semibold">
-                                                        {rating.userId?.fullName?.charAt(0)?.toUpperCase() || 'U'}
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                                <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                                                    {rating.userId?.fullName || 'Người dùng'}
-                                                </p>
-                                                <span className="text-xs text-gray-400">
-                                                    {format(new Date(rating.createdAt), 'dd/MM/yyyy', { locale: vi })}
-                                                </span>
-                                            </div>
-                                        </div>
-                                        <button
-                                            onClick={() => openDetailModal(rating)}
-                                            className="text-xs text-main hover:underline flex-shrink-0"
-                                        >
-                                            Chi tiết
-                                        </button>
-                                    </div>
-                                    <div className="flex items-center justify-between">
-                                        <StarRating rating={rating.rating} readonly size={14} />
-                                        <button
-                                            onClick={() => handleDeleteRating(rating._id)}
-                                            disabled={deletingId === rating._id}
-                                            className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
-                                        >
-                                            {deletingId === rating._id ? (
-                                                <Loader2 className="w-4 h-4 animate-spin" data-filled={true} />
-                                            ) : (
-                                                <Eraser size={14} data-filled={true} />
-                                            )}
-                                        </button>
-                                    </div>
-                                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-2 line-clamp-2">
-                                        {rating.content}
-                                    </p>
-                                </div>
-                            ))}
-                        </div>
-
-                        { }
-                        <div className="hidden md:block rounded-xl shadow-sm border border-main/20 overflow-hidden bg-white dark:bg-gray-900">
-                            <div className="overflow-x-auto">
-                                <table className="w-full">
-                                    <thead className="bg-main/5 border-b border-main/20">
-                                        <tr>
-                                            <th className="text-left px-4 py-3 text-xs sm:text-sm font-semibold text-main">Người dùng</th>
-                                            <th className="text-left px-4 py-3 text-xs sm:text-sm font-semibold text-main">Đánh giá</th>
-                                            <th className="text-left px-4 py-3 text-xs sm:text-sm font-semibold text-main">Nội dung</th>
-                                            <th className="text-left px-4 py-3 text-xs sm:text-sm font-semibold text-main">Ngày tạo</th>
-                                            <th className="text-center px-4 py-3 text-xs sm:text-sm font-semibold text-main">Thao tác</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-main/10">
-                                        {ratings.map((rating) => (
-                                            <tr key={rating._id} className="hover:bg-main/5 transition">
-                                                <td className="px-4 py-3">
-                                                    <div className="flex items-center gap-2">
-                                                        <div className="w-8 h-8 rounded-full bg-main/10 overflow-hidden flex-shrink-0">
-                                                            {rating.userId?.avatar ? (
-                                                                <img
-                                                                    src={rating.userId.avatar}
-                                                                    alt={rating.userId.fullName}
-                                                                    className="w-full h-full object-cover"
-                                                                />
-                                                            ) : (
-                                                                <div className="w-full h-full flex items-center justify-center text-main text-xs font-semibold">
-                                                                    {rating.userId?.fullName?.charAt(0)?.toUpperCase() || 'U'}
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                        <span className="text-sm text-gray-700 dark:text-gray-300 truncate max-w-[120px]">
-                                                            {rating.userId?.fullName || 'Người dùng'}
-                                                        </span>
-                                                    </div>
-                                                </td>
-                                                <td className="px-4 py-3">
-                                                    <StarRating rating={rating.rating} readonly size={16} />
-                                                </td>
-                                                <td className="px-4 py-3">
-                                                    <p
-                                                        className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 max-w-md cursor-pointer hover:text-main"
-                                                        onClick={() => openDetailModal(rating)}
-                                                    >
-                                                        {rating.content}
-                                                    </p>
-                                                </td>
-                                                <td className="px-4 py-3">
-                                                    <span className="text-xs sm:text-sm text-gray-500 whitespace-nowrap">
-                                                        {format(new Date(rating.createdAt), 'dd/MM/yyyy', { locale: vi })}
-                                                    </span>
-                                                </td>
-                                                <td className="px-4 py-3">
-                                                    <div className="flex items-center justify-center">
-                                                        <button
-                                                            onClick={() => handleDeleteRating(rating._id)}
-                                                            disabled={deletingId === rating._id}
-                                                            className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-lg transition-colors disabled:opacity-50"
-                                                            title="Xóa đánh giá"
-                                                        >
-                                                            {deletingId === rating._id ? (
-                                                                <Loader2 className="w-4 h-4 animate-spin" data-filled={true} />
-                                                            ) : (
-                                                                <Eraser size={16} data-filled={true} />
-                                                            )}
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-
-                        { }
-                        {totalPages > 1 && (
-                            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4">
-                                <div className="text-xs sm:text-sm text-gray-500 order-2 sm:order-1">
-                                    {(page - 1) * PAGE_SIZE + 1} - {Math.min(page * PAGE_SIZE, total)} / {total}
-                                </div>
-                                <div className="flex items-center gap-1 order-1 sm:order-2">
-                                    <button
-                                        onClick={() => setPage(p => Math.max(1, p - 1))}
-                                        disabled={page === 1}
-                                        className="p-1.5 sm:p-2 border border-main/20 rounded-lg disabled:opacity-50 hover:bg-main/5"
-                                    >
-                                        <ChevronLeft size={16} data-filled={true} />
-                                    </button>
-                                    <span className="px-2 sm:px-3 py-1 text-sm font-medium">
-                                        {page} / {totalPages}
-                                    </span>
-                                    <button
-                                        onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                                        disabled={page === totalPages}
-                                        className="p-1.5 sm:p-2 border border-main/20 rounded-lg disabled:opacity-50 hover:bg-main/5"
-                                    >
-                                        <ChevronRight size={16} data-filled={true} />
-                                    </button>
-                                </div>
-                            </div>
-                        )}
-                    </>
-                )}
+        <div className="space-y-6 pb-8">
+            <div>
+                <h1 className="text-2xl font-bold text-gray-800 sm:text-3xl">Quản lý đánh giá</h1>
+                <p className="mt-1 text-sm text-gray-500">Theo dõi và quản lý đánh giá từ học viên</p>
             </div>
 
-            { }
-            {showDetailModal && selectedRating && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowDetailModal(false)}>
-                    <div className="bg-white dark:bg-gray-900 rounded-xl w-full max-w-md max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-                        <div className="sticky top-0 bg-white dark:bg-gray-900 p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Chi tiết đánh giá</h3>
-                            <button onClick={() => setShowDetailModal(false)} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg">
-                                <X size={20} data-filled={true} />
-                            </button>
-                        </div>
-                        <div className="p-5 space-y-4">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-full bg-main/10 overflow-hidden">
-                                    {selectedRating.userId?.avatar ? (
-                                        <img
-                                            src={selectedRating.userId.avatar}
-                                            alt={selectedRating.userId.fullName || 'User'}
-                                            className="w-full h-full object-cover"
-                                        />
-                                    ) : (
-                                        <div className="w-full h-full flex items-center justify-center text-main font-semibold">
-                                            {selectedRating.userId?.fullName?.charAt(0)?.toUpperCase() || 'U'}
-                                        </div>
-                                    )}
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+                <DashboardCard
+                    title="Điểm trung bình"
+                    value={stats.average.toFixed(1)}
+                    suffix="/5"
+                    icon={<Star size={18} />}
+                    iconBgColor="#FEF9C3"
+                    iconColor="#EAB308"
+                />
+                <DashboardCard
+                    title="Tổng đánh giá"
+                    value={stats.total}
+                    icon={<MessageSquare size={18} />}
+                    iconBgColor="#EFF6FF"
+                    iconColor="#3B82F6"
+                />
+                <DashboardCard
+                    title="5 sao"
+                    value={stats.distribution[5] || 0}
+                    icon={<Star size={18} />}
+                    iconBgColor="#F0FDF4"
+                    iconColor="#22C55E"
+                />
+                <DashboardCard
+                    title="1-2 sao"
+                    value={(stats.distribution[1] || 0) + (stats.distribution[2] || 0)}
+                    icon={<Star size={18} />}
+                    iconBgColor="#FEF2F2"
+                    iconColor="#EF4444"
+                />
+            </div>
+
+            <div className="rounded-xl border border-gray-200 bg-white p-5">
+                <h3 className="mb-3 text-sm font-medium text-gray-700">Phân bố đánh giá</h3>
+                <div className="space-y-2">
+                    {[5, 4, 3, 2, 1].map((star) => {
+                        const count = stats.distribution[star] || 0;
+                        const percent = distributionPercent(count);
+                        return (
+                            <div key={star} className="flex items-center gap-3">
+                                <span className="w-8 text-xs text-gray-500">{star}★</span>
+                                <div className="h-2 flex-1 overflow-hidden rounded-full bg-gray-100">
+                                    <div
+                                        className="h-full rounded-full bg-yellow-400 transition-all"
+                                        style={{ width: `${percent}%` }}
+                                    />
                                 </div>
-                                <div>
-                                    <p className="font-medium text-gray-900 dark:text-white">
-                                        {selectedRating.userId?.fullName || 'Người dùng'}
-                                    </p>
-                                    <p className="text-xs text-gray-400">
-                                        {format(new Date(selectedRating.createdAt), 'dd/MM/yyyy HH:mm', { locale: vi })}
-                                    </p>
-                                </div>
+                                <span className="w-8 text-right text-xs text-gray-500">{count}</span>
                             </div>
-                            <div>
-                                <StarRating rating={selectedRating.rating} readonly size={20} />
-                            </div>
-                            <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
-                                <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed whitespace-pre-wrap">
-                                    {selectedRating.content}
-                                </p>
-                            </div>
-                            <div className="flex gap-3 pt-2">
-                                <CustomButton
-                                    onClick={() => handleDeleteRating(selectedRating._id)}
-                                    disabled={deletingId === selectedRating._id}
-                                    loading={deletingId === selectedRating._id}
-                                    variant="danger"
-                                    fullWidth
-                                >
-                                    Xóa đánh giá
-                                </CustomButton>
-                                <CustomButton
-                                    onClick={() => setShowDetailModal(false)}
-                                    variant="outline"
-                                    fullWidth
-                                >
-                                    Đóng
-                                </CustomButton>
-                            </div>
-                        </div>
+                        );
+                    })}
+                </div>
+            </div>
+
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                <div className="min-w-0 flex-1">
+                    <CustomInputSearch
+                        placeholder="Tìm theo tên hoặc nội dung..."
+                        value={searchInput}
+                        onChange={setSearchInput}
+                        size="medium"
+                    />
+                </div>
+                <div className="w-full sm:w-44">
+                    <CustomSelect
+                        options={RATING_OPTIONS}
+                        value={ratingFilter}
+                        onChange={(v) => { setRatingFilter(v); setPage(1); }}
+                        placeholder="Lọc sao"
+                    />
+                </div>
+            </div>
+
+            <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+                <div className="overflow-x-auto">
+                    <table className="w-full">
+                        <thead className="border-b bg-gray-50 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                            <tr>
+                                <th className="px-5 py-3">Người dùng</th>
+                                <th className="px-5 py-3">Sao</th>
+                                <th className="px-5 py-3">Nội dung</th>
+                                <th className="px-5 py-3">Ngày tạo</th>
+                                <th className="px-5 py-3 text-center">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody className={cn('divide-y', loading && 'opacity-60')}>
+                            {!loading && ratings.length === 0 ? (
+                                <tr>
+                                    <td colSpan={5} className="py-16 text-center text-gray-400">
+                                        Không có đánh giá nào
+                                    </td>
+                                </tr>
+                            ) : (
+                                ratings.map((rating) => (
+                                    <tr key={rating._id} className="hover:bg-gray-50">
+                                        <td className="px-5 py-4">
+                                            <div className="flex min-w-[160px] items-center gap-2">
+                                                <ReviewAvatar
+                                                    avatar={rating.userId?.avatar}
+                                                    name={rating.userId?.fullName}
+                                                />
+                                                <span className="truncate text-sm text-gray-800">
+                                                    {rating.userId?.fullName || 'Người dùng'}
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td className="px-5 py-4">
+                                            <StarRating rating={rating.rating} readonly size={14} />
+                                        </td>
+                                        <td className="max-w-md px-5 py-4">
+                                            <p className="line-clamp-2 text-sm text-gray-600">{rating.content}</p>
+                                        </td>
+                                        <td className="whitespace-nowrap px-5 py-4 text-sm text-gray-500">
+                                            {format(new Date(rating.createdAt), 'dd/MM/yyyy', { locale: vi })}
+                                        </td>
+                                        <td className="px-5 py-4">
+                                            <div className="flex items-center justify-center gap-1">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setDetailTarget(rating)}
+                                                    className="rounded-lg p-2 text-blue-600 hover:bg-blue-50"
+                                                    title="Xem chi tiết"
+                                                >
+                                                    <Eye className="h-4 w-4" />
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setDeleteTarget(rating)}
+                                                    className="rounded-lg p-2 text-red-500 hover:bg-red-50"
+                                                    title="Xóa"
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            {totalPages > 1 && (
+                <div className="flex flex-col items-center justify-between gap-3 sm:flex-row">
+                    <p className="text-sm text-gray-500">
+                        {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, total)} / {total}
+                    </p>
+                    <div className="flex items-center gap-2">
+                        <button
+                            type="button"
+                            onClick={() => setPage((p) => Math.max(1, p - 1))}
+                            disabled={page === 1}
+                            className="rounded-lg border p-2 disabled:opacity-40"
+                        >
+                            <ChevronLeft className="h-4 w-4" />
+                        </button>
+                        <span className="text-sm text-gray-600">{page} / {totalPages}</span>
+                        <button
+                            type="button"
+                            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                            disabled={page === totalPages}
+                            className="rounded-lg border p-2 disabled:opacity-40"
+                        >
+                            <ChevronRight className="h-4 w-4" />
+                        </button>
                     </div>
                 </div>
             )}
-        </>
+
+            <DetailModal
+                review={detailTarget}
+                onClose={() => setDetailTarget(null)}
+                onDelete={() => detailTarget && setDeleteTarget(detailTarget)}
+                deleting={deleting}
+            />
+
+            <ConfirmModalDelete
+                isOpen={!!deleteTarget}
+                onClose={() => setDeleteTarget(null)}
+                onConfirm={handleDelete}
+                title="Xóa đánh giá"
+                message={deleteTarget ? `Xóa đánh giá của "${deleteTarget.userId?.fullName || 'người dùng'}"?` : ''}
+                warning="Đánh giá sẽ bị xóa vĩnh viễn khỏi hệ thống."
+                isDeleting={deleting}
+            />
+        </div>
     );
 }

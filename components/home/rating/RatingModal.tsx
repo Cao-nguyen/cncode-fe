@@ -57,7 +57,6 @@ export default function RatingModal({
             setRating(0);
             setContent('');
             onClose();
-            toast.success(isEdit ? 'Cập nhật đánh giá thành công!' : 'Gửi đánh giá thành công!');
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : (isEdit ? 'Cập nhật thất bại' : 'Gửi đánh giá thất bại');
             toast.error(errorMessage);

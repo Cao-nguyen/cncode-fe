@@ -1,419 +1,406 @@
-
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAuthStore } from '@/store/auth.store';
 import { useSocket } from '@/providers/socket.provider';
-import { feedbackApi, IFeedback } from '@/lib/api/feedback.api';
+import { feedbackApi, getErrorMessage } from '@/lib/api/feedback.api';
+import {
+    Feedback,
+    FeedbackCategory,
+    FeedbackPriority,
+    FeedbackStats,
+    ReleaseVersion,
+    PUBLIC_STATUS_FILTERS,
+    CATEGORY_OPTIONS,
+    CREATE_CATEGORY_OPTIONS,
+    CREATE_PRIORITY_OPTIONS,
+} from '@/types/feedback.type';
 import FeedbackCard from '@/components/feedback/FeedbackCard';
-import { Loader2, Plus, X, Send, MessageSquare } from 'lucide-react';
-import { toast } from 'sonner';
-import { CustomSelect } from '@/components/custom/CustomSelect';
+import FeedbackVersionList from '@/components/feedback/FeedbackVersionList';
+import { CustomButton } from '@/components/custom/CustomButton';
 import { CustomInput } from '@/components/custom/CustomInput';
 import { CustomTextarea } from '@/components/custom/CustomTextarea';
+import { CustomSelect } from '@/components/custom/CustomSelect';
+import {
+    Plus, X, MessageSquare, ChevronLeft, ChevronRight,
+    Search, Clock, CheckCircle2, Sparkles, Lightbulb, GitBranch,
+} from 'lucide-react';
+import { FeedbackCardSkeleton } from '@/components/ui/skeleton';
+import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
-type FeedbackCategory = 'bug' | 'ui_ux' | 'feature_request' | 'performance' | 'security' | 'other';
+const PAGE_SIZE = 10;
 
-const CATEGORIES = [
-    { value: 'all', label: 'Tất cả' },
-    { value: 'bug', label: 'Lỗi/Bug' },
-    { value: 'ui_ux', label: 'UI/UX' },
-    { value: 'feature_request', label: 'Tính năng mới' },
-    { value: 'performance', label: 'Hiệu năng' },
-    { value: 'security', label: 'Bảo mật' },
-    { value: 'other', label: 'Khác' }
+type ViewMode = 'all' | 'mine' | 'versions';
+
+const VIEW_TABS: { value: ViewMode; label: string }[] = [
+    { value: 'all', label: 'Cộng đồng' },
+    { value: 'mine', label: 'Của tôi' },
+    { value: 'versions', label: 'Phiên bản' },
 ];
 
-const STATUS_FILTERS = [
-    { value: 'all', label: 'Tất cả' },
-    { value: 'approved', label: 'Đã duyệt' },
-    { value: 'improving', label: 'Đang cải tiến' },
-    { value: 'completed', label: 'Hoàn thành' }
-];
-
-const CREATE_CATEGORIES: { value: FeedbackCategory; label: string }[] = [
-    { value: 'bug', label: 'Lỗi/Bug' },
-    { value: 'ui_ux', label: 'UI/UX' },
-    { value: 'feature_request', label: 'Tính năng mới' },
-    { value: 'performance', label: 'Hiệu năng' },
-    { value: 'security', label: 'Bảo mật' },
-    { value: 'other', label: 'Khác' }
-];
-
-const STATUS_LABELS: Record<string, string> = {
-    pending: 'Chờ xử lý', viewed: 'Đã xem', approved: 'Đã duyệt',
-    improving: 'Đang cải tiến', completed: 'Hoàn thành', rejected: 'Từ chối'
-};
-
-const STATUS_COLORS: Record<string, string> = {
-    pending: 'bg-yellow-50 text-yellow-600', viewed: 'bg-blue-50 text-blue-600',
-    approved: 'bg-green-50 text-green-600', improving: 'bg-purple-50 text-purple-600',
-    completed: 'bg-emerald-50 text-emerald-600', rejected: 'bg-red-50 text-red-600'
-};
+function StatCard({ icon, label, value, color }: { icon: React.ReactNode; label: string; value: number; color: string }) {
+    return (
+        <div className="rounded-xl border border-[var(--cn-border)] bg-[var(--cn-bg-card)] p-3 md:p-4">
+            <div className="flex items-center gap-2 md:gap-3">
+                <div className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-xl md:h-10 md:w-10', color)}>{icon}</div>
+                <div className="min-w-0">
+                    <p className="text-xl font-bold text-[var(--cn-text-main)] md:text-2xl">{value.toLocaleString('vi-VN')}</p>
+                    <p className="truncate text-[11px] text-[var(--cn-text-muted)] md:text-xs">{label}</p>
+                </div>
+            </div>
+        </div>
+    );
+}
 
 export default function FeedbackPage() {
-    const { token, user } = useAuthStore();
+    const { token } = useAuthStore();
     const { socket, isConnected } = useSocket();
-    const [feedbacks, setFeedbacks] = useState<IFeedback[]>([]);
-    const [stats, setStats] = useState<{ byStatus: Record<string, number>; byCategory: Record<string, number> }>({
-        byStatus: {},
-        byCategory: {}
-    });
+    const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
+    const [versions, setVersions] = useState<ReleaseVersion[]>([]);
+    const [stats, setStats] = useState<FeedbackStats>({ byStatus: {}, byCategory: {} });
     const [loading, setLoading] = useState(true);
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [selectedCategory, setSelectedCategory] = useState('all');
     const [selectedStatus, setSelectedStatus] = useState('all');
+    const [searchInput, setSearchInput] = useState('');
+    const [searchTerm, setSearchTerm] = useState('');
+    const [viewMode, setViewMode] = useState<ViewMode>('all');
     const [showCreateModal, setShowCreateModal] = useState(false);
+    const [submitting, setSubmitting] = useState(false);
     const [formData, setFormData] = useState<{
         title: string;
         content: string;
         category: FeedbackCategory;
-    }>({
-        title: '',
-        content: '',
-        category: 'other'
-    });
-    const [submitting, setSubmitting] = useState(false);
+        priority: FeedbackPriority;
+    }>({ title: '', content: '', category: 'other', priority: 'medium' });
+    const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const summaryStats = useMemo(() => {
+        const byStatus = stats.byStatus || {};
+        const total = Object.values(byStatus).reduce((sum, n) => sum + (n || 0), 0);
+        return {
+            total,
+            pending: byStatus.pending || 0,
+            improving: byStatus.improving || 0,
+            completed: byStatus.completed || 0,
+        };
+    }, [stats.byStatus]);
+
+    useEffect(() => {
+        if (searchTimeout.current) clearTimeout(searchTimeout.current);
+        searchTimeout.current = setTimeout(() => {
+            setSearchTerm(searchInput);
+            setPage(1);
+        }, 400);
+        return () => {
+            if (searchTimeout.current) clearTimeout(searchTimeout.current);
+        };
+    }, [searchInput]);
+
+    const filteredVersions = useMemo(() => {
+        if (!searchTerm.trim()) return versions;
+        const q = searchTerm.trim().toLowerCase();
+        return versions.filter((item) =>
+            item.version.toLowerCase().includes(q)
+            || item.changes.some((change) => change.toLowerCase().includes(q)),
+        );
+    }, [versions, searchTerm]);
 
     const fetchFeedbacks = useCallback(async () => {
-        try {
-            setLoading(true);
-            const result = await feedbackApi.getFeedbacks(page, 10, selectedStatus, selectedCategory);
+        if (viewMode === 'versions') return;
 
-            if (result.success && result.data) {
-                setFeedbacks(result.data as IFeedback[]);
-                if (result.pagination) {
-                    setTotalPages(result.pagination.totalPages);
-                }
-                if (result.stats) {
-                    setStats(result.stats);
-                }
+        setLoading(true);
+        try {
+            const listParams = {
+                page,
+                limit: PAGE_SIZE,
+                status: selectedStatus !== 'all' ? selectedStatus : undefined,
+                category: selectedCategory !== 'all' ? selectedCategory : undefined,
+                search: searchTerm || undefined,
+            };
+
+            const result = viewMode === 'mine' && token
+                ? await feedbackApi.getMyFeedbacks(listParams)
+                : await feedbackApi.getFeedbacks(listParams);
+
+            if (result.success) {
+                setFeedbacks(result.data || []);
+                setTotalPages(result.pagination?.totalPages || 1);
+                if (result.stats) setStats(result.stats);
             }
         } catch (error) {
-            console.error('Fetch feedbacks error:', error);
+            toast.error(getErrorMessage(error));
         } finally {
             setLoading(false);
         }
-    }, [page, selectedStatus, selectedCategory]);
+    }, [page, selectedStatus, selectedCategory, searchTerm, viewMode, token]);
 
-    const handleLikeSuccess = useCallback((feedbackId: string, newReactCount: number) => {
-        setFeedbacks(prev => prev.map(f =>
-            f._id === feedbackId
-                ? { ...f, reactCount: newReactCount }
-                : f
-        ));
-    }, []);
+    const fetchVersions = useCallback(async () => {
+        if (viewMode !== 'versions') return;
 
-    const handleEditFeedback = async (feedbackId: string, title: string, content: string, category: string) => {
-        if (!token) {
-            toast.error('Vui lòng đăng nhập');
-            return;
+        setLoading(true);
+        try {
+            const result = await feedbackApi.getVersions();
+            if (result.success) setVersions(result.data || []);
+        } catch (error) {
+            toast.error(getErrorMessage(error));
+        } finally {
+            setLoading(false);
         }
-
-        const result = await feedbackApi.updateFeedback(token, feedbackId, { title, content, category });
-        if (result.success) {
-            toast.success('Cập nhật góp ý thành công');
-            fetchFeedbacks();
-        } else {
-            toast.error(result.message || 'Cập nhật thất bại');
-        }
-    };
-
-    const handleDeleteFeedback = async (feedbackId: string) => {
-        if (!token) return;
-
-        const result = await feedbackApi.deleteFeedback(token, feedbackId);
-        if (result.success) {
-            toast.success('Xóa góp ý thành công');
-            fetchFeedbacks();
-        } else {
-            toast.error(result.message || 'Xóa thất bại');
-        }
-    };
+    }, [viewMode]);
 
     useEffect(() => {
-        if (!socket) {
-            console.log('⚠️ [Socket] Socket is null, waiting...');
-            return;
+        if (viewMode === 'versions') {
+            fetchVersions();
+        } else {
+            fetchFeedbacks();
         }
-        if (!isConnected) {
-            console.log('⚠️ [Socket] Socket not connected yet, waiting...');
-            return;
-        }
+    }, [viewMode, fetchFeedbacks, fetchVersions]);
 
-        console.log('🔌 [Socket] Setting up feedback listeners', {
-            socketId: socket.id,
-            isConnected,
-            userId: user?._id
-        });
+    useEffect(() => {
+        if (!socket || !isConnected || viewMode === 'versions') return;
 
-        const handleFeedbackCreated = (newFeedback: IFeedback) => {
-            console.log('📝 [Socket] Received feedback_created:', newFeedback._id);
-            if (page === 1) {
-                setFeedbacks(prev => [newFeedback, ...prev]);
+        const refresh = () => fetchFeedbacks();
+        const handleCreated = (item: Feedback) => {
+            if (page === 1 && viewMode === 'all') {
+                setFeedbacks((prev) => [item, ...prev].slice(0, PAGE_SIZE));
             }
-            toast.info('Có góp ý mới!', { duration: 3000 });
+            refresh();
         };
-
-        const handleFeedbackUpdated = (updatedFeedback: IFeedback) => {
-            console.log('📝 [Socket] Received feedback_updated:', updatedFeedback._id);
-            setFeedbacks(prev => prev.map(f => f._id === updatedFeedback._id ? updatedFeedback : f));
+        const handleUpdated = (item: Feedback) => {
+            setFeedbacks((prev) => prev.map((f) => (f._id === item._id ? item : f)));
         };
-
-        const handleFeedbackDeleted = (feedbackId: string) => {
-            console.log('📝 [Socket] Received feedback_deleted:', feedbackId);
-            setFeedbacks(prev => prev.filter(f => f._id !== feedbackId));
+        const handleDeleted = (id: string) => {
+            setFeedbacks((prev) => prev.filter((f) => f._id !== id));
+            refresh();
         };
-
-        const handleFeedbackReacted = (data: { feedbackId: string; reactCount: number; userId: string }) => {
-            console.log('💗 [Socket] Received feedback_reacted:', data);
-            if (data.userId !== user?._id) {
-                setFeedbacks(prev => prev.map(f =>
-                    f._id === data.feedbackId
-                        ? { ...f, reactCount: data.reactCount }
-                        : f
-                ));
-            }
-        };
-
-        const handleFeedbackStatusChanged = (data: { feedbackId: string; oldStatus: string; newStatus: string; adminResponse: string }) => {
-            console.log('🔔 [Frontend] Received feedback_status_changed:', data);
-            setFeedbacks(prev => prev.map(f =>
+        const handleStatusChanged = (data: { feedbackId: string; newStatus: string; adminResponse?: string }) => {
+            setFeedbacks((prev) => prev.map((f) => (
                 f._id === data.feedbackId
-                    ? { ...f, status: data.newStatus as IFeedback['status'], adminResponse: data.adminResponse }
+                    ? { ...f, status: data.newStatus as Feedback['status'], adminResponse: data.adminResponse || f.adminResponse }
                     : f
-            ));
-            toast.success('Góp ý của bạn đã được cập nhật!', { duration: 3000 });
+            )));
         };
 
-        socket.on('feedback_created', handleFeedbackCreated);
-        socket.on('feedback_updated', handleFeedbackUpdated);
-        socket.on('feedback_deleted', handleFeedbackDeleted);
-        socket.on('feedback_reacted', handleFeedbackReacted);
-        socket.on('feedback_status_changed', handleFeedbackStatusChanged);
-
-        console.log('✅ [Socket] All 5 feedback listeners registered successfully');
+        socket.on('feedback_created', handleCreated);
+        socket.on('feedback_updated', handleUpdated);
+        socket.on('feedback_deleted', handleDeleted);
+        socket.on('feedback_status_changed', handleStatusChanged);
 
         return () => {
-            console.log('🧹 [Socket] Cleaning up feedback listeners');
-            socket.off('feedback_created', handleFeedbackCreated);
-            socket.off('feedback_updated', handleFeedbackUpdated);
-            socket.off('feedback_deleted', handleFeedbackDeleted);
-            socket.off('feedback_reacted', handleFeedbackReacted);
-            socket.off('feedback_status_changed', handleFeedbackStatusChanged);
+            socket.off('feedback_created', handleCreated);
+            socket.off('feedback_updated', handleUpdated);
+            socket.off('feedback_deleted', handleDeleted);
+            socket.off('feedback_status_changed', handleStatusChanged);
         };
-    }, [socket, isConnected, page, user?._id]);
+    }, [socket, isConnected, page, viewMode, fetchFeedbacks]);
 
-    useEffect(() => {
-        fetchFeedbacks();
-    }, [fetchFeedbacks]);
-
-    const handleCreateFeedback = async (e: React.FormEvent) => {
+    const handleCreate = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!token) {
             toast.error('Vui lòng đăng nhập để gửi góp ý');
             return;
         }
-
-        if (!formData.title.trim()) {
-            toast.warning('Vui lòng nhập tiêu đề');
-            return;
-        }
-        if (!formData.content.trim()) {
-            toast.warning('Vui lòng nhập nội dung');
+        if (!formData.title.trim() || !formData.content.trim()) {
+            toast.error('Vui lòng nhập đầy đủ tiêu đề và nội dung');
             return;
         }
 
+        setSubmitting(true);
         try {
-            setSubmitting(true);
-            const result = await feedbackApi.createFeedback(token, formData);
-            if (result.success) {
-                toast.success(result.message);
-                setShowCreateModal(false);
-                setFormData({ title: '', content: '', category: 'other' });
-                fetchFeedbacks();
-            } else {
-                toast.error(result.message || 'Gửi góp ý thất bại');
-            }
+            const result = await feedbackApi.createFeedback(formData);
+            toast.success(result.message || 'Gửi góp ý thành công');
+            setShowCreateModal(false);
+            setFormData({ title: '', content: '', category: 'other', priority: 'medium' });
+            setViewMode('all');
+            setPage(1);
+            fetchFeedbacks();
         } catch (error) {
-            toast.error('Có lỗi xảy ra');
+            toast.error(getErrorMessage(error));
         } finally {
             setSubmitting(false);
         }
     };
 
-    const loadMore = () => {
-        if (page < totalPages && !loading) {
-            setPage(prev => prev + 1);
-        }
-    };
-
-    const statusOrder = ['pending', 'viewed', 'approved', 'improving', 'completed', 'rejected'];
-
     return (
-        <div className="max-w-6xl mx-auto px-4 pt-14 pb-6 sm:py-8">
-            { }
-            <div className="text-center mb-8">
-                <h1 className="text-3xl font-bold text-gray-800">Góp ý & Phản hồi</h1>
-                <p className="text-sm text-gray-500 mt-2">
-                    Đóng góp ý kiến của bạn để CNcode ngày càng hoàn thiện hơn
-                </p>
-            </div>
+        <div className="min-h-screen pb-6 pt-[20px] md:pb-8 lg:pt-[30px]" style={{ backgroundColor: 'var(--cn-bg-main)' }}>
+            <div className="container mx-auto max-w-7xl px-4">
+                <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between md:mb-8">
+                    <div>
+                        <h1 className="flex items-center gap-2 text-xl font-bold tracking-tight text-[var(--cn-text-main)] sm:text-2xl md:text-3xl">
+                            <Lightbulb className="h-7 w-7 text-[var(--cn-primary)] md:h-8 md:w-8" />
+                            Góp ý & Phản hồi
+                        </h1>
+                        <p className="mt-1 text-xs text-[var(--cn-text-sub)] sm:text-sm">
+                            Đóng góp ý kiến để CNcode ngày càng hoàn thiện hơn
+                        </p>
+                    </div>
+                    <CustomButton className="w-full shrink-0 sm:w-auto" onClick={() => setShowCreateModal(true)}>
+                        <Plus className="h-4 w-4" />
+                        Gửi góp ý
+                    </CustomButton>
+                </div>
 
-            { }
-            {Object.keys(stats.byStatus || {}).length > 0 && (
-                <div className="grid grid-cols-3 sm:grid-cols-6 gap-3 mb-6">
-                    {statusOrder.map((status) => (
-                        <div
-                            key={status}
-                            className={`rounded-xl p-3 text-center border ${STATUS_COLORS[status] || 'bg-gray-50 text-gray-600'}`}
-                        >
-                            <div className="text-xl font-bold text-gray-800">{stats.byStatus[status] || 0}</div>
-                            <div className="text-xs text-gray-500">{STATUS_LABELS[status]}</div>
+                {summaryStats.total > 0 && (
+                    <div className="mb-4 grid grid-cols-2 gap-2 md:mb-6 md:grid-cols-4 md:gap-3">
+                        <StatCard icon={<MessageSquare className="h-5 w-5 text-blue-600" />} label="Tổng góp ý" value={summaryStats.total} color="bg-blue-100" />
+                        <StatCard icon={<Clock className="h-5 w-5 text-amber-600" />} label="Chờ xử lý" value={summaryStats.pending} color="bg-amber-100" />
+                        <StatCard icon={<Sparkles className="h-5 w-5 text-purple-600" />} label="Đang cải tiến" value={summaryStats.improving} color="bg-purple-100" />
+                        <StatCard icon={<CheckCircle2 className="h-5 w-5 text-emerald-600" />} label="Hoàn thành" value={summaryStats.completed} color="bg-emerald-100" />
+                    </div>
+                )}
+
+                <div className="mb-4 space-y-3 sm:mb-6">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+                        <div className="min-w-0 flex-1">
+                            <CustomInput
+                                placeholder={viewMode === 'versions' ? 'Tìm phiên bản...' : 'Tìm góp ý...'}
+                                value={searchInput}
+                                onChange={(e) => setSearchInput(e.target.value)}
+                                icon={<Search className="h-4 w-4" />}
+                            />
                         </div>
-                    ))}
-                </div>
-            )}
+                        {viewMode !== 'versions' && (
+                            <>
+                                <div className="w-full sm:w-44">
+                                    <CustomSelect options={CATEGORY_OPTIONS} value={selectedCategory} onChange={(v) => { setSelectedCategory(v); setPage(1); }} placeholder="Danh mục" />
+                                </div>
+                                <div className="w-full sm:w-44">
+                                    <CustomSelect options={PUBLIC_STATUS_FILTERS} value={selectedStatus} onChange={(v) => { setSelectedStatus(v); setPage(1); }} placeholder="Trạng thái" />
+                                </div>
+                            </>
+                        )}
+                    </div>
 
-            { }
-            <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center justify-between gap-3 mb-6">
-                <div className="flex flex-wrap gap-2">
-                    <div className="flex flex-wrap gap-1 bg-gray-100 rounded-lg p-1">
-                        {CATEGORIES.map(cat => (
+                    <div className="inline-flex flex-wrap rounded-lg border border-[var(--cn-border)] bg-[var(--cn-bg-card)] p-0.5 shadow-sm">
+                        {VIEW_TABS.map((opt) => (
                             <button
-                                key={cat.value}
-                                onClick={() => setSelectedCategory(cat.value)}
-                                className={`px-3 py-1.5 text-sm rounded-md transition ${selectedCategory === cat.value
-                                    ? 'bg-white text-blue-600 shadow-sm'
-                                    : 'text-gray-600 hover:bg-gray-200'
-                                    }`}
+                                key={opt.value}
+                                type="button"
+                                onClick={() => { setViewMode(opt.value); setPage(1); }}
+                                className={cn(
+                                    'rounded-md px-4 py-1.5 text-sm font-medium transition',
+                                    viewMode === opt.value
+                                        ? 'bg-[var(--cn-primary)] text-white shadow-sm'
+                                        : 'text-[var(--cn-text-sub)] hover:text-[var(--cn-text-main)]',
+                                )}
                             >
-                                {cat.label}
-                            </button>
-                        ))}
-                    </div>
-                    <div className="flex flex-wrap gap-1 bg-gray-100 rounded-lg p-1">
-                        {STATUS_FILTERS.map(status => (
-                            <button
-                                key={status.value}
-                                onClick={() => setSelectedStatus(status.value)}
-                                className={`px-3 py-1.5 text-sm rounded-md transition ${selectedStatus === status.value
-                                    ? 'bg-white text-blue-600 shadow-sm'
-                                    : 'text-gray-600 hover:bg-gray-200'
-                                    }`}
-                            >
-                                {status.label}
+                                {opt.label}
                             </button>
                         ))}
                     </div>
                 </div>
-                <button
-                    onClick={() => setShowCreateModal(true)}
-                    className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition text-sm font-medium"
-                >
-                    <Plus size={16} />
-                    Gửi góp ý
-                </button>
+
+                {loading ? (
+                    viewMode === 'versions' ? (
+                        <div className="space-y-4">
+                            {Array.from({ length: 3 }).map((_, i) => (
+                                <div key={i} className="h-36 animate-pulse rounded-xl bg-[var(--cn-bg-card)]" />
+                            ))}
+                        </div>
+                    ) : (
+                        <FeedbackCardSkeleton count={PAGE_SIZE} />
+                    )
+                ) : viewMode === 'versions' ? (
+                    filteredVersions.length === 0 ? (
+                        <div className="rounded-xl border border-[var(--cn-border)] bg-[var(--cn-bg-card)] py-16 text-center">
+                            <GitBranch className="mx-auto mb-4 h-16 w-16 text-gray-300" />
+                            <p className="mb-1 font-medium text-[var(--cn-text-main)]">Chưa có cập nhật phiên bản</p>
+                            <p className="text-sm text-[var(--cn-text-sub)]">Các thay đổi mới sẽ được hiển thị tại đây</p>
+                        </div>
+                    ) : (
+                        <FeedbackVersionList versions={filteredVersions} />
+                    )
+                ) : feedbacks.length === 0 ? (
+                    <div className="rounded-xl border border-[var(--cn-border)] bg-[var(--cn-bg-card)] py-16 text-center">
+                        <MessageSquare className="mx-auto mb-4 h-16 w-16 text-gray-300" />
+                        <p className="mb-1 font-medium text-[var(--cn-text-main)]">
+                            {viewMode === 'mine' && 'Bạn chưa gửi góp ý nào'}
+                            {viewMode === 'all' && 'Chưa có góp ý nào'}
+                        </p>
+                        <p className="mb-5 text-sm text-[var(--cn-text-sub)]">
+                            {viewMode === 'mine' && 'Hãy chia sẻ ý kiến để giúp CNcode tốt hơn'}
+                            {viewMode === 'all' && 'Hãy là người đầu tiên góp ý'}
+                        </p>
+                        <CustomButton onClick={() => setShowCreateModal(true)}>
+                            <Plus className="h-4 w-4" />
+                            Gửi góp ý
+                        </CustomButton>
+                    </div>
+                ) : (
+                    <>
+                        <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+                            {feedbacks.map((feedback) => (
+                                <FeedbackCard
+                                    key={feedback._id}
+                                    feedback={feedback}
+                                    onUpdated={fetchFeedbacks}
+                                    onDeleted={fetchFeedbacks}
+                                />
+                            ))}
+                        </div>
+                        {totalPages > 1 && (
+                            <div className="mt-8 flex items-center justify-center gap-3">
+                                <button type="button" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1} className="rounded-lg border border-[var(--cn-border)] p-2 transition hover:bg-[var(--cn-hover)] disabled:opacity-40">
+                                    <ChevronLeft className="h-5 w-5" />
+                                </button>
+                                <span className="text-sm text-[var(--cn-text-sub)]">Trang {page} / {totalPages}</span>
+                                <button type="button" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages} className="rounded-lg border border-[var(--cn-border)] p-2 transition hover:bg-[var(--cn-hover)] disabled:opacity-40">
+                                    <ChevronRight className="h-5 w-5" />
+                                </button>
+                            </div>
+                        )}
+                    </>
+                )}
             </div>
 
-            { }
-            {loading && page === 1 ? (
-                <div className="flex justify-center py-12">
-                    <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-                </div>
-            ) : feedbacks.length === 0 ? (
-                <div className="text-center py-16 bg-white rounded-xl border border-gray-200">
-                    <MessageSquare size={48} className="text-gray-300 mx-auto mb-3" />
-                    <p className="text-gray-500">Chưa có góp ý nào</p>
-                    <p className="text-sm text-gray-400 mt-1">Hãy là người đầu tiên đóng góp ý kiến!</p>
-                </div>
-            ) : (
-                <div className="space-y-4">
-                    {feedbacks.map(feedback => (
-                        <FeedbackCard
-                            key={feedback._id}
-                            feedback={feedback}
-                            onLikeSuccess={handleLikeSuccess}
-                            onDelete={handleDeleteFeedback}
-                            onEdit={handleEditFeedback}
-                        />
-                    ))}
-                </div>
-            )}
-
-            { }
-            {page < totalPages && (
-                <div className="text-center mt-6">
-                    <button
-                        onClick={loadMore}
-                        disabled={loading}
-                        className="px-6 py-2 border border-blue-500 text-blue-500 rounded-lg hover:bg-blue-50 transition disabled:opacity-50 text-sm font-medium"
-                    >
-                        {loading && <Loader2 className="w-4 h-4 animate-spin inline mr-2" />}
-                        {loading ? 'Đang tải...' : 'Xem thêm'}
-                    </button>
-                </div>
-            )}
-
-            { }
             {showCreateModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowCreateModal(false)}>
-                    <div className="bg-white rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>
-                        <div className="sticky top-0 bg-white px-5 py-4 border-b border-gray-100 flex justify-between items-center">
-                            <h3 className="text-lg font-semibold text-gray-800">Gửi góp ý</h3>
-                            <button
-                                onClick={() => setShowCreateModal(false)}
-                                className="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 hover:bg-gray-200 transition"
-                            >
-                                <X size={16} className="text-gray-500" />
+                    <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white shadow-xl" onClick={(e) => e.stopPropagation()}>
+                        <div className="sticky top-0 flex items-center justify-between border-b bg-white px-5 py-4">
+                            <div>
+                                <h3 className="text-lg font-semibold text-gray-900">Gửi góp ý</h3>
+                                <p className="text-xs text-gray-500">Ý kiến của bạn giúp chúng tôi cải thiện sản phẩm</p>
+                            </div>
+                            <button type="button" onClick={() => setShowCreateModal(false)} className="rounded-lg p-1.5 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600">
+                                <X className="h-5 w-5" />
                             </button>
                         </div>
-                        <form onSubmit={handleCreateFeedback} className="p-5 space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1.5">Danh mục</label>
+                        <form onSubmit={handleCreate} className="space-y-4 p-5">
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <CustomSelect
+                                    label="Danh mục"
                                     value={formData.category}
-                                    onChange={(value) => setFormData(prev => ({ ...prev, category: value as FeedbackCategory }))}
-                                    options={CREATE_CATEGORIES}
-                                    placeholder="Chọn danh mục"
+                                    onChange={(v) => setFormData((prev) => ({ ...prev, category: v as FeedbackCategory }))}
+                                    options={CREATE_CATEGORY_OPTIONS}
+                                />
+                                <CustomSelect
+                                    label="Mức độ ưu tiên"
+                                    value={formData.priority}
+                                    onChange={(v) => setFormData((prev) => ({ ...prev, priority: v as FeedbackPriority }))}
+                                    options={CREATE_PRIORITY_OPTIONS}
                                 />
                             </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1.5">Tiêu đề</label>
-                                <CustomInput
-                                    value={formData.title}
-                                    onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                                    placeholder="Tóm tắt ngắn gọn về ý kiến của bạn"
-                                    maxLength={200}
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1.5">Nội dung</label>
-                                <CustomTextarea
-                                    value={formData.content}
-                                    onChange={(value) => setFormData(prev => ({ ...prev, content: value }))}
-                                    placeholder="Mô tả chi tiết ý kiến đóng góp của bạn..."
-                                    rows={5}
-                                    maxLength={2000}
-                                />
-                            </div>
-                            <div className="flex gap-3 pt-3">
-                                <button
-                                    type="button"
-                                    onClick={() => setShowCreateModal(false)}
-                                    className="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg text-gray-600 font-medium hover:bg-gray-50 transition text-sm"
-                                >
-                                    Hủy
-                                </button>
-                                <button
-                                    type="submit"
-                                    disabled={submitting}
-                                    className="flex-1 px-4 py-2.5 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition disabled:opacity-50 flex items-center justify-center gap-2 text-sm"
-                                >
-                                    {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send size={16} />}
-                                    {submitting ? 'Đang gửi...' : 'Gửi góp ý'}
-                                </button>
+                            <CustomInput
+                                label="Tiêu đề"
+                                value={formData.title}
+                                onChange={(e) => setFormData((prev) => ({ ...prev, title: e.target.value }))}
+                                placeholder="Tóm tắt ngắn gọn"
+                                maxLength={200}
+                            />
+                            <CustomTextarea
+                                label="Nội dung"
+                                value={formData.content}
+                                onChange={(value) => setFormData((prev) => ({ ...prev, content: value }))}
+                                placeholder="Mô tả chi tiết vấn đề hoặc đề xuất của bạn..."
+                                rows={5}
+                                maxLength={2000}
+                            />
+                            <div className="flex gap-2 pt-1">
+                                <CustomButton type="button" variant="secondary" fullWidth onClick={() => setShowCreateModal(false)}>Hủy</CustomButton>
+                                <CustomButton type="submit" fullWidth loading={submitting}>Gửi góp ý</CustomButton>
                             </div>
                         </form>
                     </div>

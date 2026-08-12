@@ -36,7 +36,7 @@ export interface INotification {
         fullName: string;
         avatar?: string;
     };
-    type: 'comment' | 'reply_comment' | 'like_post' | 'reaction_comment' | 'bookmark' | 'first_login_bonus' | 'streak_bonus' | 'role_request_approved' | 'role_request_rejected' | 'system' | 'policy_update' | 'admin_chat_message' | 'cross_promotion_new' | 'cross_promotion_status_updated' | 'gift_received';
+    type: 'comment' | 'reply_comment' | 'like_post' | 'reaction_comment' | 'bookmark' | 'first_login_bonus' | 'streak_bonus' | 'role_request_approved' | 'role_request_rejected' | 'system' | 'policy_update' | 'admin_chat_message' | 'cross_promotion_new' | 'cross_promotion_status_updated' | 'gift_received' | 'new_review' | 'exercise_essay_graded';
     content: string;
     postId?: string;
     postSlug?: string;
@@ -62,6 +62,9 @@ export interface INotification {
         giftImage?: string;
         targetType?: string;
         targetId?: string;
+        reviewId?: string;
+        rating?: number;
+        reviewContent?: string;
     };
     read: boolean;
     createdAt: string;

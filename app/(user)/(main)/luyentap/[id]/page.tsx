@@ -1,4 +1,4 @@
-import LuyentapDetailClient from './LuyentapDetailClient';
+import LuyentapSlugDetailClient from '@/components/luyentap/LuyentapSlugDetailClient';
 
 type PageProps = {
     params: Promise<{ id: string }>;
@@ -6,5 +6,5 @@ type PageProps = {
 
 export default async function LuyentapDetailPage({ params }: PageProps) {
     const { id } = await params;
-    return <LuyentapDetailClient exerciseId={id} />;
+    return <LuyentapSlugDetailClient id={id} />;
 }

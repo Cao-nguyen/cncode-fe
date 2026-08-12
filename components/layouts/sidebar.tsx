@@ -69,6 +69,11 @@ const menuItems = [
                 link: "/admin/users",
                 icon: <UserCircle size={18} />,
             },
+            {
+                title: "Lịch sử giao dịch",
+                link: "/admin/lichsugiaodich",
+                icon: <History size={18} />,
+            },
         ],
     },
     {

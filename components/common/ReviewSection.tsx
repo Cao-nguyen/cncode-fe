@@ -8,6 +8,8 @@ import { CustomButton } from '@/components/custom/CustomButton';
 import { CustomTextarea } from '@/components/custom/CustomTextarea';
 import { DeleteConfirmModal } from '@/components/common/DeleteConfirmModal';
 import { useAuthStore } from '@/store/auth.store';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { avatarImageProps, getAvatarUrl } from '@/lib/utils/imageUrl';
 
 interface Props {
     targetType: 'course' | 'product';
@@ -241,13 +243,16 @@ export default function ReviewSection({ targetType, targetId, canReview = true }
                     {reviews.map((review) => (
                         <div key={review._id} className="p-4 bg-white rounded-2xl border border-gray-200">
                             <div className="flex items-center gap-3 mb-2">
-                                <div className="w-9 h-9 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold text-xs overflow-hidden shrink-0">
-                                    {review.userId?.avatar ? (
-                                        <img src={review.userId.avatar} alt="" className="w-full h-full object-cover" />
-                                    ) : (
-                                        review.userId?.fullName?.charAt(0) || '?'
-                                    )}
-                                </div>
+                                <Avatar className="h-9 w-9 shrink-0">
+                                    <AvatarImage
+                                        src={getAvatarUrl(review.userId?.avatar)}
+                                        alt={review.userId?.fullName || 'User'}
+                                        {...avatarImageProps}
+                                    />
+                                    <AvatarFallback className="bg-blue-500 text-xs font-bold text-white">
+                                        {review.userId?.fullName?.charAt(0) || '?'}
+                                    </AvatarFallback>
+                                </Avatar>
                                 <div>
                                     <div className="font-semibold text-sm text-gray-900">{review.userId?.fullName || 'User'}</div>
                                     <div className="text-xs text-gray-500">{formatDate(review.createdAt)}</div>

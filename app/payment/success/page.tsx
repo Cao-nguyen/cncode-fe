@@ -13,6 +13,8 @@ export default function PaymentSuccessPage() {
   const searchParams = useSearchParams();
   const orderCode = searchParams.get('orderCode');
   const course = searchParams.get('course');
+  const exercise = searchParams.get('exercise');
+  const purchaseType = searchParams.get('type');
 
   const [status, setStatus] = useState<PageStatus>(() =>
     orderCode ? 'confirming' : 'failed'
@@ -67,6 +69,8 @@ export default function PaymentSuccessPage() {
   }, [orderCode]);
 
   const courseHref = course ? `/khoahoc/${course}` : '/me/khoahoc';
+  const exerciseHref = exercise ? `/luyentap/${exercise}` : '/luyentap';
+  const isLuyentap = purchaseType === 'luyentap' || !!exercise;
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-black">
@@ -93,18 +97,37 @@ export default function PaymentSuccessPage() {
               Mã đơn hàng: {orderCode}
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-              <Link
-                href={courseHref}
-                className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-6 py-3 text-white hover:bg-blue-700"
-              >
-                Vào khoá học
-              </Link>
-              <Link
-                href="/me/khoahoc"
-                className="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-6 py-3 text-gray-700 hover:bg-gray-100 dark:border-gray-800 dark:text-gray-200 dark:hover:bg-gray-900"
-              >
-                Khoá học của tôi
-              </Link>
+              {isLuyentap ? (
+                <>
+                  <Link
+                    href={exerciseHref}
+                    className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-6 py-3 text-white hover:bg-blue-700"
+                  >
+                    Làm bài ngay
+                  </Link>
+                  <Link
+                    href="/luyentap"
+                    className="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-6 py-3 text-gray-700 hover:bg-gray-100 dark:border-gray-800 dark:text-gray-200 dark:hover:bg-gray-900"
+                  >
+                    Danh sách luyện tập
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <Link
+                    href={courseHref}
+                    className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-6 py-3 text-white hover:bg-blue-700"
+                  >
+                    Vào khoá học
+                  </Link>
+                  <Link
+                    href="/me/khoahoc"
+                    className="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-6 py-3 text-gray-700 hover:bg-gray-100 dark:border-gray-800 dark:text-gray-200 dark:hover:bg-gray-900"
+                  >
+                    Khoá học của tôi
+                  </Link>
+                </>
+              )}
             </div>
           </>
         )}

@@ -76,6 +76,9 @@ interface CustomEditorProps {
     uploading?: boolean;
     compact?: boolean;
     placeholder?: string;
+    onChange?: (content: string) => void;
+    disabled?: boolean;
+    editorId?: string;
 }
 
 export interface CustomEditorRef {
@@ -1088,10 +1091,22 @@ const mountedRoots = new Map<string, ReturnType<typeof createRoot>>();
 
 // ─── Main Editor ──────────────────────────────────────────────────────────────
 
-const CustomEditor = forwardRef<CustomEditorRef, CustomEditorProps>(({ initialValue = '', onImageUpload, uploading = false, compact = false, placeholder = "Nội dung" }, ref) => {
+const CustomEditor = forwardRef<CustomEditorRef, CustomEditorProps>(({
+    initialValue = '',
+    onImageUpload,
+    uploading = false,
+    compact = false,
+    placeholder = "Nội dung",
+    onChange,
+    disabled = false,
+    editorId = 'editor',
+}, ref) => {
     const editorRef = useRef<HTMLDivElement>(null);
     const savedRangeRef = useRef<Range | null>(null);
     const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const changeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const onChangeRef = useRef(onChange);
+    onChangeRef.current = onChange;
     const [, startTransition] = useTransition();
 
     const [active, setActive] = useState<ActiveStates>({
@@ -1308,17 +1323,19 @@ const CustomEditor = forwardRef<CustomEditorRef, CustomEditorProps>(({ initialVa
         return () => observer.disconnect();
     }, [mountImageWidgets, mountTableWidgets]);
 
+    const readContent = useCallback(() => {
+        if (editorRef.current) syncAllTableWidgetsToDom(editorRef.current);
+        const html = editorRef.current?.innerHTML || '';
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = html;
+        tempDiv.querySelectorAll('.inline-code').forEach((code) => {
+            code.textContent = (code.textContent || '').replace(/\u200B/g, '');
+        });
+        return tempDiv.innerHTML;
+    }, []);
+
     useImperativeHandle(ref, () => ({
-        getContent: () => {
-            if (editorRef.current) syncAllTableWidgetsToDom(editorRef.current);
-            const html = editorRef.current?.innerHTML || '';
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = html;
-            tempDiv.querySelectorAll('.inline-code').forEach(code => {
-                code.textContent = (code.textContent || '').replace(/\u200B/g, '');
-            });
-            return tempDiv.innerHTML;
-        },
+        getContent: () => readContent(),
         setContent: (content: string) => {
             console.log('CustomEditor setContent called with:', content);
             if (editorRef.current) {
@@ -1638,6 +1655,12 @@ const CustomEditor = forwardRef<CustomEditorRef, CustomEditorProps>(({ initialVa
     const handleInput = () => {
         updateActiveStates();
         scheduleAutosave();
+        if (onChangeRef.current) {
+            if (changeTimerRef.current) clearTimeout(changeTimerRef.current);
+            changeTimerRef.current = setTimeout(() => {
+                onChangeRef.current?.(readContent());
+            }, 400);
+        }
     };
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
@@ -1932,21 +1955,22 @@ const CustomEditor = forwardRef<CustomEditorRef, CustomEditorProps>(({ initialVa
                 <div className="ed-content-wrap">
                     <div
                         ref={editorRef}
-                        id="editor"
+                        id={editorId}
                         className={isEmpty ? "ed-empty" : undefined}
                         data-placeholder={placeholder}
-                        contentEditable
+                        contentEditable={!disabled}
                         suppressContentEditableWarning
-                        spellCheck
+                        spellCheck={!disabled}
                         role="textbox"
                         aria-multiline
                         aria-label="Trình soạn thảo"
+                        aria-disabled={disabled}
                         style={{
                             fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
                             fontSize: "15px",
                             lineHeight: "1.75",
                         }}
-                        onInput={handleInput}
+                        onInput={disabled ? undefined : handleInput}
                         onCompositionStart={() => { isComposingRef.current = true; }}
                         onCompositionEnd={() => { isComposingRef.current = false; }}
                         onKeyUp={updateActiveStates}
@@ -1956,6 +1980,8 @@ const CustomEditor = forwardRef<CustomEditorRef, CustomEditorProps>(({ initialVa
                         onPaste={handlePaste}
                     />
                 </div>
+                {!disabled && (
+                <>
                 <div className="ed-header">
                     <div className="ed-toolbar">
                         <ToolbarButton icon={<Undo2 size={15} />} label="Undo" onClick={() => exec("undo")} />
@@ -2004,6 +2030,8 @@ const CustomEditor = forwardRef<CustomEditorRef, CustomEditorProps>(({ initialVa
                         <span className="ed-pill">{status.chars} ký tự</span>
                     </div>
                 </div>
+                </>
+                )}
                 {modal === "math" && <MathModal onClose={() => setModal(null)} onInsert={insertMath} />}
                 <input
                     ref={fileInputRef}

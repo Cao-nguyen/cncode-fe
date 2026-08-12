@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { CustomInput } from '@/components/custom/CustomInput';
 import { CustomSelect } from '@/components/custom/CustomSelect';
 import { CustomTextarea } from '@/components/custom/CustomTextarea';
@@ -13,8 +13,8 @@ import {
     GRADE_OPTIONS,
     EXAM_PURPOSE_OPTIONS,
     PROCTORING_OPTIONS,
-    ESSAY_KEYBOARD_OPTIONS,
     REVEAL_WHEN_OPTIONS,
+    DIFFICULTY_OPTIONS,
 } from '@/lib/luyentap/exercise-config.constants';
 import type { ExerciseSettingsForm } from '@/lib/luyentap/exercise-settings.types';
 
@@ -22,6 +22,7 @@ interface LuyentapExerciseSettingsOverlayProps {
     form: ExerciseSettingsForm;
     saving?: boolean;
     publishing?: boolean;
+    folderOptions?: Array<{ value: string; label: string }>;
     onChange: (patch: Partial<ExerciseSettingsForm>) => void;
     onBack: () => void;
     onPublish: () => void;
@@ -57,34 +58,12 @@ export default function LuyentapExerciseSettingsOverlay({
     form,
     saving = false,
     publishing = false,
+    folderOptions = [],
     onChange,
     onBack,
     onPublish,
 }: LuyentapExerciseSettingsOverlayProps) {
     const busy = saving || publishing;
-
-    const addCustomField = () => {
-        onChange({
-            customStudentFields: [
-                ...form.customStudentFields,
-                { id: `custom-${Date.now()}`, label: '', required: false },
-            ],
-        });
-    };
-
-    const updateCustomField = (id: string, patch: Partial<{ label: string; required: boolean }>) => {
-        onChange({
-            customStudentFields: form.customStudentFields.map((f) =>
-                f.id === id ? { ...f, ...patch } : f
-            ),
-        });
-    };
-
-    const removeCustomField = (id: string) => {
-        onChange({
-            customStudentFields: form.customStudentFields.filter((f) => f.id !== id),
-        });
-    };
 
     return (
         <div className="fixed inset-0 z-[10001] bg-white flex flex-col">
@@ -140,6 +119,24 @@ export default function LuyentapExerciseSettingsOverlay({
                                 min={1}
                                 value={form.duration}
                                 onChange={(e) => onChange({ duration: Math.max(1, parseInt(e.target.value, 10) || 1) })}
+                            />
+                            <CustomSelect
+                                label="Mức độ"
+                                placeholder="Chọn mức độ"
+                                options={DIFFICULTY_OPTIONS}
+                                value={form.difficulty}
+                                onChange={(v) => onChange({ difficulty: v as ExerciseSettingsForm['difficulty'] })}
+                                required
+                            />
+                            <CustomSelect
+                                label="Thư mục"
+                                placeholder="Chọn thư mục"
+                                options={[
+                                    { value: '', label: 'Ngoài thư mục' },
+                                    ...folderOptions,
+                                ]}
+                                value={form.folderId}
+                                onChange={(v) => onChange({ folderId: v })}
                             />
                         </div>
                         <div className="mt-2.5">
@@ -197,55 +194,6 @@ export default function LuyentapExerciseSettingsOverlay({
                                 onChange={(v) => onChange({ proctoring: v as ExerciseSettingsForm['proctoring'] })}
                             />
                         </div>
-                        <div className="mt-2">
-                            <ToggleRow
-                                label="Xác thực thông tin học sinh"
-                                checked={form.verifyStudentInfo}
-                                onChange={(v) => onChange({ verifyStudentInfo: v })}
-                            />
-                            {form.verifyStudentInfo && (
-                                <div className="ml-1 mt-1 space-y-2">
-                                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-                                        <label className="flex items-center gap-1.5 text-sm text-gray-700 cursor-pointer">
-                                            <input type="checkbox" checked={form.studentFullName} onChange={(e) => onChange({ studentFullName: e.target.checked })} className="rounded" />
-                                            Họ và tên
-                                        </label>
-                                        <label className="flex items-center gap-1.5 text-sm text-gray-700 cursor-pointer">
-                                            <input type="checkbox" checked={form.studentClassName} onChange={(e) => onChange({ studentClassName: e.target.checked })} className="rounded" />
-                                            Lớp
-                                        </label>
-                                    </div>
-                                    {form.customStudentFields.map((field) => (
-                                        <div key={field.id} className="flex items-center gap-2">
-                                            <input
-                                                className="flex-1 px-2.5 py-1.5 text-sm border border-gray-200 rounded-md outline-none focus:border-[var(--cn-primary)]"
-                                                placeholder="Trường khác..."
-                                                value={field.label}
-                                                onChange={(e) => updateCustomField(field.id, { label: e.target.value })}
-                                            />
-                                            <label className="flex items-center gap-1 text-xs text-gray-500 shrink-0">
-                                                <input type="checkbox" checked={field.required} onChange={(e) => updateCustomField(field.id, { required: e.target.checked })} className="rounded" />
-                                                BB
-                                            </label>
-                                            <button type="button" onClick={() => removeCustomField(field.id)} className="p-1 text-red-400 hover:text-red-600">
-                                                <Trash2 size={14} />
-                                            </button>
-                                        </div>
-                                    ))}
-                                    <button type="button" onClick={addCustomField} className="text-xs text-[var(--cn-primary)] hover:underline flex items-center gap-0.5">
-                                        <Plus size={12} /> Thêm trường
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-                    </Section>
-
-                    <Section title="Bàn phím tự luận">
-                        <CustomSelect
-                            options={ESSAY_KEYBOARD_OPTIONS}
-                            value={form.essayKeyboard}
-                            onChange={(v) => onChange({ essayKeyboard: v as ExerciseSettingsForm['essayKeyboard'] })}
-                        />
                     </Section>
 
                     <Section title="Đáp án & điểm số">
@@ -271,7 +219,6 @@ export default function LuyentapExerciseSettingsOverlay({
                     </Section>
 
                     <Section title="Khác">
-                        <ToggleRow label="Ẩn bảng xếp hạng" checked={form.hideLeaderboard} onChange={(v) => onChange({ hideLeaderboard: v })} />
                         <ToggleRow label="Thông báo trước khi thi" checked={form.preExamNoticeEnabled} onChange={(v) => onChange({ preExamNoticeEnabled: v })} />
                         {form.preExamNoticeEnabled && (
                             <CustomTextarea

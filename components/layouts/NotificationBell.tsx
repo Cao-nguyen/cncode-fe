@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import {
     Bell, MessageCircle, Heart, ThumbsUp, Bookmark,
     CheckCheck, Coins, Flame, Info, XCircle, Loader2, X, FileText,
-    PartyPopper, CheckCircle2, AlertCircle, Share2, Handshake, Gift
+    PartyPopper, CheckCircle2, AlertCircle, Share2, Handshake, Gift, Star
 } from 'lucide-react';
 import { useSocket } from '@/providers/socket.provider';
 import { useAuthStore } from '@/store/auth.store';
@@ -13,7 +13,7 @@ import Link from 'next/link';
 import { notificationApi } from '@/lib/api/notification.api';
 import type { INotification } from '@/types/notification.type';
 import { CustomButton } from '../custom/CustomButton';
-import { getImageUrl } from '@/lib/utils/imageUrl';
+import { getAvatarUrl, avatarImageProps } from '@/lib/utils/imageUrl';
 import {
     subscribeToPushNotifications,
     isPushSubscribed,
@@ -36,6 +36,7 @@ const ADMIN_ONLY_TYPES: INotification['type'][] = [
     'post_reported' as INotification['type'],
     'comment_reported' as INotification['type'],
     'cross_promotion_new',
+    'new_review',
 ];
 
 function formatTime(dateString: string): string {
@@ -88,6 +89,10 @@ function NotificationIcon({ type }: { type: INotification['type'] }) {
             return <FileText className={`${iconClass} text-blue-600`} />;
         case 'gift_received':
             return <Gift className={`${iconClass} text-pink-500`} />;
+        case 'new_review':
+            return <Star className={`${iconClass} text-yellow-500`} data-filled={true} />;
+        case 'exercise_essay_graded':
+            return <FileText className={`${iconClass} text-blue-600`} />;
         default:
             return <Info className={`${iconClass} text-gray-500`} />;
     }
@@ -140,24 +145,17 @@ function SystemAvatar({ type }: { type: INotification['type'] }) {
 }
 
 function UserAvatar({ avatar, name }: { avatar?: string; name?: string }) {
-    const getInitials = (fullName?: string) => {
-        if (!fullName) return 'N';
-        return fullName.charAt(0).toUpperCase();
-    };
-
     return (
         <div className="flex-shrink-0">
-            {avatar ? (
-                <img
-                    src={getImageUrl(avatar)}
-                    alt={name || 'Avatar'}
-                    className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover border-2 border-gray-200"
-                />
-            ) : (
-                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[var(--cn-primary)] flex items-center justify-center text-white text-sm sm:text-base font-semibold border-2 border-gray-200">
-                    {getInitials(name)}
-                </div>
-            )}
+            <img
+                src={getAvatarUrl(avatar)}
+                alt={name || 'Avatar'}
+                className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover border-2 border-gray-200"
+                {...avatarImageProps}
+                onError={(e) => {
+                    e.currentTarget.src = '/images/avatar.png';
+                }}
+            />
         </div>
     );
 }
@@ -192,6 +190,16 @@ function getNotificationMessage(notification: INotification): string {
             return `${senderName} đã lưu bài viết "${notification.postTitle}"`;
         case 'gift_received':
             return notification.content || `${senderName} đã tặng bạn ${notification.meta?.giftName || 'một món quà'}`;
+        case 'new_review': {
+            const rating = notification.meta?.rating;
+            const reviewContent = notification.meta?.reviewContent;
+            if (rating && reviewContent) {
+                return `${senderName} vừa đánh giá ${rating} sao với lời đánh giá: "${reviewContent}"`;
+            }
+            return notification.content || `${senderName} vừa gửi đánh giá mới`;
+        }
+        case 'exercise_essay_graded':
+            return notification.content || 'Giáo viên đã chấm xong phần tự luận của bạn';
         default:
             return notification.content || `${senderName} đã có hoạt động mới`;
     }
@@ -217,6 +225,10 @@ function NotificationItem({ notification, onMarkAsRead, onClose }: NotificationI
         ? '/admin/chatwithadmin'
         : notification.type === 'cross_promotion_new'
             ? '/admin/truyenthongcheo'
+            : notification.type === 'new_review'
+                ? '/admin/danhgia'
+            : notification.type === 'exercise_essay_graded'
+                ? (typeof notification.meta?.url === 'string' ? notification.meta.url : null)
             : notification.type === 'cross_promotion_status_updated'
                 ? '/truyenthongcheo'
                 : notification.type === 'gift_received'

@@ -41,3 +41,14 @@ export const REVEAL_WHEN_OPTIONS = [
     { value: 'after-submit', label: 'Khi thi xong' },
     { value: 'after-expiry', label: 'Khi đề thi hết hạn' },
 ];
+
+export const DIFFICULTY_OPTIONS = [
+    { value: 'easy', label: 'Dễ' },
+    { value: 'medium', label: 'Trung bình' },
+    { value: 'hard', label: 'Khó' },
+    { value: 'very_hard', label: 'Rất khó' },
+];
+
+export const DIFFICULTY_LABELS: Record<string, string> = Object.fromEntries(
+    DIFFICULTY_OPTIONS.map((opt) => [opt.value, opt.label]),
+);
