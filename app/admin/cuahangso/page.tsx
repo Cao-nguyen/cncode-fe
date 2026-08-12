@@ -57,7 +57,7 @@ export default function AdminShopPage() {
     const fetchStats = async () => {
         if (!token) return;
         try {
-            const result = await shopApi.getStats(token);
+            const result = await shopApi.getStats();
             if (result.success) {
                 setStats(result.data);
             }
@@ -78,10 +78,10 @@ export default function AdminShopPage() {
                 search: search || undefined
             };
 
-            const result = await shopApi.getProducts(filters, token);
+            const result = await shopApi.getProducts(filters);
             if (result.success) {
                 setProducts(result.data);
-                setTotalPages(result.pagination.pages);
+                setTotalPages(result.pagination.totalPages);
             }
         } catch (error) {
             console.error('Error fetching products:', error);
@@ -94,7 +94,7 @@ export default function AdminShopPage() {
         if (!token) return;
         setProcessing(true);
         try {
-            const result = await shopApi.approveProduct(id, token);
+            const result = await shopApi.approveProduct(id);
             if (result.success) {
                 fetchProducts();
                 fetchStats();
@@ -113,7 +113,7 @@ export default function AdminShopPage() {
         if (!token || !rejectId || !rejectReason.trim()) return;
         setProcessing(true);
         try {
-            const result = await shopApi.rejectProduct(rejectId, rejectReason, token);
+            const result = await shopApi.rejectProduct(rejectId, rejectReason);
             if (result.success) {
                 setShowRejectModal(false);
                 setRejectId(null);
@@ -135,7 +135,7 @@ export default function AdminShopPage() {
         if (!token || !deleteId || deleting) return;
         setDeleting(true);
         try {
-            const result = await shopApi.deleteProduct(deleteId, token);
+            const result = await shopApi.deleteProduct(deleteId);
             if (result.success) {
                 setShowDeleteConfirm(false);
                 setDeleteId(null);
