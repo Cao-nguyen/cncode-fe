@@ -28,6 +28,7 @@ interface CustomInputProps {
     isLoading?: boolean;
     min?: number;
     max?: number;
+    className?: string;
 }
 
 export const CustomInput = forwardRef<HTMLInputElement, CustomInputProps>(({
@@ -53,6 +54,7 @@ export const CustomInput = forwardRef<HTMLInputElement, CustomInputProps>(({
     isLoading = false,
     min,
     max,
+    className = '',
 }, ref) => {
     const [showPassword, setShowPassword] = useState(false);
     const [charCount, setCharCount] = useState(String(value || '').length);
@@ -82,7 +84,7 @@ export const CustomInput = forwardRef<HTMLInputElement, CustomInputProps>(({
     const labelClasses = 'block font-medium text-[var(--cn-text-sub)] mb-1 sm:mb-1.5 text-[11px] lg:text-[13px]';
 
     return (
-        <div className="w-full">
+        <div className={`w-full ${className}`.trim()}>
             {label && (
                 <label className={labelClasses}>
                     {label}
