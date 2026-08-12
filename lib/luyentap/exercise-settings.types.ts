@@ -71,7 +71,7 @@ function toTimeLocal(value?: string | Date | null): string {
     return splitDateAndTime(value).time;
 }
 
-function resolveFolderId(exercise?: { folderId?: string | null | { _id?: string } } | null): string {
+function resolveFolderId(exercise?: { folderId?: string | null | { _id?: string; name?: string } } | null): string {
     if (!exercise?.folderId) return '';
     if (typeof exercise.folderId === 'object') return exercise.folderId._id || '';
     return exercise.folderId;
@@ -79,16 +79,16 @@ function resolveFolderId(exercise?: { folderId?: string | null | { _id?: string 
 
 export function buildSettingsForm(
     basic: ExerciseConfigForm,
-    exercise?: Partial<ExerciseSettingsForm & {
+    exercise?: Partial<Omit<ExerciseSettingsForm, 'folderId'>> & {
         deliveryFrom?: string;
         deliveryTo?: string;
-        folderId?: string | null | { _id?: string };
+        folderId?: string | null | { _id?: string; name?: string };
         studentInfoFields?: {
             fullName?: boolean;
             className?: boolean;
             custom?: Array<{ label: string; required?: boolean }>;
         };
-    }> | null,
+    } | null,
 ): ExerciseSettingsForm {
     const custom = exercise?.studentInfoFields?.custom?.map((f, i) => ({
         id: `custom-${i}-${f.label}`,
