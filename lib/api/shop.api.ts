@@ -1,4 +1,33 @@
+import axios from 'axios';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+
+const getToken = (): string | null => {
+    if (typeof window === 'undefined') return null;
+    try {
+        const raw = localStorage.getItem('auth-storage');
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        return parsed?.state?.token ?? null;
+    } catch {
+        return null;
+    }
+};
+
+const apiClient = axios.create({
+    baseURL: `${API_URL}/api`,
+    headers: {
+        'Content-Type': 'application/json',
+    },
+});
+
+apiClient.interceptors.request.use((config) => {
+    const token = getToken();
+    if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+});
 
 export interface Product {
     _id: string;
@@ -36,9 +65,20 @@ export interface ProductFilters {
     sortOrder?: 'asc' | 'desc';
 }
 
+export interface ProductsResponse {
+    success: boolean;
+    data: Product[];
+    pagination: {
+        page: number;
+        limit: number;
+        total: number;
+        totalPages: number;
+    };
+}
+
 export const shopApi = {
     // Get all products
-    async getProducts(filters: ProductFilters = {}, token?: string) {
+    getProducts: async (filters: ProductFilters = {}): Promise<ProductsResponse> => {
         const params = new URLSearchParams();
         Object.entries(filters).forEach(([key, value]) => {
             if (value !== undefined && value !== null) {
@@ -46,102 +86,49 @@ export const shopApi = {
             }
         });
 
-        const headers: HeadersInit = {
-            'Content-Type': 'application/json',
-        };
-        if (token) {
-            headers['Authorization'] = `Bearer ${token}`;
-        }
-
-        const response = await fetch(`${API_URL}/api/shop/products?${params}`, {
-            headers,
-        });
-        return response.json();
+        const response = await apiClient.get(`/shop/products?${params.toString()}`);
+        return response.data;
     },
 
     // Get single product
-    async getProduct(id: string, token?: string) {
-        const headers: HeadersInit = {
-            'Content-Type': 'application/json',
-        };
-        if (token) {
-            headers['Authorization'] = `Bearer ${token}`;
-        }
-
-        const response = await fetch(`${API_URL}/api/shop/products/${id}`, {
-            headers,
-        });
-        return response.json();
+    getProduct: async (id: string): Promise<{ success: boolean; data: Product }> => {
+        const response = await apiClient.get(`/shop/products/${id}`);
+        return response.data;
     },
 
     // Create product
-    async createProduct(data: Partial<Product>, token: string) {
-        const response = await fetch(`${API_URL}/api/shop/products`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`,
-            },
-            body: JSON.stringify(data),
-        });
-        return response.json();
+    createProduct: async (data: Partial<Product>): Promise<{ success: boolean; data: Product }> => {
+        const response = await apiClient.post('/shop/products', data);
+        return response.data;
     },
 
     // Update product
-    async updateProduct(id: string, data: Partial<Product>, token: string) {
-        const response = await fetch(`${API_URL}/api/shop/products/${id}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`,
-            },
-            body: JSON.stringify(data),
-        });
-        return response.json();
+    updateProduct: async (id: string, data: Partial<Product>): Promise<{ success: boolean; data: Product }> => {
+        const response = await apiClient.put(`/shop/products/${id}`, data);
+        return response.data;
     },
 
     // Delete product
-    async deleteProduct(id: string, token: string) {
-        const response = await fetch(`${API_URL}/api/shop/products/${id}`, {
-            method: 'DELETE',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-            },
-        });
-        return response.json();
+    deleteProduct: async (id: string): Promise<{ success: boolean; message: string }> => {
+        const response = await apiClient.delete(`/shop/products/${id}`);
+        return response.data;
     },
 
     // Approve product (admin)
-    async approveProduct(id: string, token: string) {
-        const response = await fetch(`${API_URL}/api/shop/products/${id}/approve`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-            },
-        });
-        return response.json();
+    approveProduct: async (id: string): Promise<{ success: boolean; data: Product }> => {
+        const response = await apiClient.post(`/shop/products/${id}/approve`);
+        return response.data;
     },
 
     // Reject product (admin)
-    async rejectProduct(id: string, reason: string, token: string) {
-        const response = await fetch(`${API_URL}/api/shop/products/${id}/reject`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`,
-            },
-            body: JSON.stringify({ reason }),
-        });
-        return response.json();
+    rejectProduct: async (id: string, reason: string): Promise<{ success: boolean; message: string }> => {
+        const response = await apiClient.post(`/shop/products/${id}/reject`, { reason });
+        return response.data;
     },
 
     // Get stats (admin)
-    async getStats(token: string) {
-        const response = await fetch(`${API_URL}/api/shop/admin/stats`, {
-            headers: {
-                'Authorization': `Bearer ${token}`,
-            },
-        });
-        return response.json();
+    getStats: async (): Promise<{ success: boolean; data: any }> => {
+        const response = await apiClient.get('/shop/admin/stats');
+        return response.data;
     },
 };

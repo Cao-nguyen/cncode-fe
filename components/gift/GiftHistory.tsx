@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Gift, Loader2, Coins } from 'lucide-react';
 import { giftApi, IGiftTransaction } from '@/lib/api/gift.api';
 import { useAuthStore } from '@/store/auth.store';
+import { getImageUrl } from '@/lib/utils/imageUrl';
 
 interface GiftHistoryProps {
     userId: string;
@@ -29,8 +30,8 @@ export function GiftHistory({ userId, isOwnProfile = false }: GiftHistoryProps) 
         if (!token) return;
         try {
             setLoading(true);
-            const result = await giftApi.getReceivedGifts(token, page, 10);
-            setTransactions(result.transactions);
+            const result = await giftApi.getReceivedGifts(page, 10);
+            setTransactions(result.data || []);
             setHasMore(page < result.pagination.totalPages);
         } catch (error) {
             console.error('Error fetching received gifts:', error);
@@ -43,7 +44,7 @@ export function GiftHistory({ userId, isOwnProfile = false }: GiftHistoryProps) 
         try {
             setLoading(true);
             const result = await giftApi.getGiftsForTarget('user', userId, page, 10);
-            setTransactions(result.transactions);
+            setTransactions(result.data || []);
             setHasMore(page < result.pagination.totalPages);
         } catch (error) {
             console.error('Error fetching user gifts:', error);
@@ -81,9 +82,12 @@ export function GiftHistory({ userId, isOwnProfile = false }: GiftHistoryProps) 
                     className="flex items-center gap-4 p-4 bg-gray-50 dark:bg-white/[0.05] rounded-lg"
                 >
                     <img
-                        src={transaction.gift.image}
+                        src={getImageUrl(transaction.gift.image)}
                         alt={transaction.gift.name}
-                        className="w-12 h-12 rounded-lg object-cover"
+                        className="w-12 h-12 rounded-lg object-cover bg-gray-100 dark:bg-white/10"
+                        onError={(e) => {
+                            e.currentTarget.src = '/images/blog.png';
+                        }}
                     />
                     <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">

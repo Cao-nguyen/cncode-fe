@@ -219,11 +219,13 @@ function NotificationItem({ notification, onMarkAsRead, onClose }: NotificationI
             ? '/admin/truyenthongcheo'
             : notification.type === 'cross_promotion_status_updated'
                 ? '/truyenthongcheo'
-                : notification.meta?.url
-                    ? notification.meta.url
-                    : notification.postSlug || notification.postId
-                        ? `/blog/${notification.postSlug || notification.postId}`
-                        : null;
+                : notification.type === 'gift_received'
+                    ? '/me/shop'
+                    : notification.meta?.url
+                        ? notification.meta.url
+                        : notification.postSlug || notification.postId
+                            ? `/blog/${notification.postSlug || notification.postId}`
+                            : null;
 
     const content = (
         <div

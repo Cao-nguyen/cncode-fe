@@ -76,4 +76,53 @@ function IndustryCardSkeleton({ count = 4 }: { count?: number }) {
     );
 }
 
-export { Skeleton, TableSkeleton, CardSkeleton, ListSkeleton, IndustryCardSkeleton };
+function GiftShopSkeleton({ count = 6 }: { count?: number }) {
+    return (
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+            {Array.from({ length: count }).map((_, i) => (
+                <div
+                    key={i}
+                    className="rounded-2xl border border-[var(--cn-border)] bg-[var(--cn-bg-card)] p-4 space-y-4"
+                >
+                    <div className="flex items-start gap-4">
+                        <Skeleton className="h-20 w-20 shrink-0 rounded-xl" />
+                        <div className="flex-1 space-y-2">
+                            <Skeleton className="h-5 w-3/4" />
+                            <Skeleton className="h-4 w-1/2" />
+                            <Skeleton className="h-6 w-24 rounded-full" />
+                        </div>
+                    </div>
+                    <Skeleton className="h-10 w-full rounded-xl" />
+                </div>
+            ))}
+        </div>
+    );
+}
+
+function GiftShopPageSkeleton() {
+    return (
+        <div className="space-y-8">
+            <div className="rounded-2xl border border-[var(--cn-border)] bg-[var(--cn-bg-card)] p-6 md:p-8">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+                    <div className="space-y-3">
+                        <Skeleton className="h-8 w-56" />
+                        <Skeleton className="h-4 w-72" />
+                    </div>
+                    <Skeleton className="h-12 w-40 rounded-full" />
+                </div>
+                <div className="grid grid-cols-3 gap-4 mt-6 pt-6 border-t border-[var(--cn-border)]">
+                    {Array.from({ length: 3 }).map((_, i) => (
+                        <div key={i} className="space-y-2">
+                            <Skeleton className="h-7 w-16" />
+                            <Skeleton className="h-3 w-24" />
+                        </div>
+                    ))}
+                </div>
+            </div>
+            <Skeleton className="h-11 w-full max-w-md rounded-xl" />
+            <GiftShopSkeleton count={6} />
+        </div>
+    );
+}
+
+export { Skeleton, TableSkeleton, CardSkeleton, ListSkeleton, IndustryCardSkeleton, GiftShopSkeleton, GiftShopPageSkeleton };

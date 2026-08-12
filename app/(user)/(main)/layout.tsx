@@ -9,7 +9,7 @@ export default function UserLayoutMain({
     return (
         <>
             <Header />
-            <div className="min-h-[calc(100dvh-96px)] lg:min-h-screen mt-0 md:mt-0 lg:mt-15">
+            <div className="min-h-[calc(100dvh-96px)] lg:min-h-[calc(100dvh-60px)] pt-10 pb-14 lg:pt-[60px] lg:pb-0">
                 {children}
             </div>
             <Footer />

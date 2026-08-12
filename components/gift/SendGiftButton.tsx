@@ -48,7 +48,7 @@ export function SendGiftButton({
         try {
             setLoading(true);
             const data = await giftApi.getActiveGifts();
-            setGifts(data);
+            setGifts(data.data || []);
             setShowModal(true);
         } catch (error: unknown) {
             const err = error as { message?: string };
@@ -114,7 +114,7 @@ export function SendGiftButton({
                     targetType,
                     targetId,
                     message: message || undefined
-                }, token);
+                });
             }
 
             toast.success(`Đã gửi ${quantity} ${selectedGift.name} thành công!`);
@@ -196,7 +196,10 @@ export function SendGiftButton({
                                             <img
                                                 src={getImageUrl(gift.image)}
                                                 alt={gift.name}
-                                                className="w-full aspect-square object-cover rounded-lg mb-2"
+                                                className="w-full aspect-square object-cover rounded-lg mb-2 bg-gray-100 dark:bg-white/10"
+                                                onError={(e) => {
+                                                    e.currentTarget.src = '/images/blog.png';
+                                                }}
                                             />
                                             <h3 className="font-medium text-gray-900 dark:text-white text-sm">{gift.name}</h3>
                                             <p className="text-yellow-600 dark:text-yellow-400 text-sm font-semibold">
@@ -211,7 +214,10 @@ export function SendGiftButton({
                                         <img
                                             src={getImageUrl(selectedGift.image)}
                                             alt={selectedGift.name}
-                                            className="w-20 h-20 rounded-lg object-cover"
+                                            className="w-20 h-20 rounded-lg object-cover bg-gray-100 dark:bg-white/10"
+                                            onError={(e) => {
+                                                e.currentTarget.src = '/images/blog.png';
+                                            }}
                                         />
                                         <div className="flex-1">
                                             <h3 className="font-semibold text-gray-900 dark:text-white">{selectedGift.name}</h3>

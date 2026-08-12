@@ -7,7 +7,8 @@
  * Falls back to localhost only in development
  */
 export const getApiUrl = (): string => {
-    return process.env.NEXT_PUBLIC_API_URL || '';
+    const url = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+    return url.replace(/\/+$/, '');
 };
 
 /**
@@ -15,19 +16,25 @@ export const getApiUrl = (): string => {
  * @param thumbnail - Can be a messageId, relative path, or full URL
  * @returns Full image URL using the environment's API URL
  */
-export const getImageUrl = (thumbnail: string | undefined | number): string => {
-    if (!thumbnail && thumbnail !== 0) {
-        return '/images/blog.png'; // Default fallback image
+export const getImageUrl = (thumbnail: string | undefined | number | null): string => {
+    if (thumbnail === null || thumbnail === undefined || thumbnail === '') {
+        return '/images/blog.png';
     }
 
-    // Convert number to string
-    const thumbnailStr = String(thumbnail);
+    const thumbnailStr = String(thumbnail).trim();
+    if (!thumbnailStr) {
+        return '/images/blog.png';
+    }
 
     const apiUrl = getApiUrl();
 
-    // If it's already a full URL with http/https
+    // Static local assets
+    if (thumbnailStr.startsWith('/images/') || thumbnailStr.startsWith('/icons/')) {
+        return thumbnailStr;
+    }
+
+    // Full http(s) URLs
     if (thumbnailStr.startsWith('http://') || thumbnailStr.startsWith('https://')) {
-        // Check if it's from external sources (Google, CDNs, etc.) - return as-is
         const isExternalUrl = thumbnailStr.includes('googleusercontent.com') ||
             thumbnailStr.includes('googleapis.com') ||
             thumbnailStr.includes('cloudflare.com') ||
@@ -37,25 +44,38 @@ export const getImageUrl = (thumbnail: string | undefined | number): string => {
             thumbnailStr.includes('storage.googleapis.com');
 
         if (isExternalUrl) {
-            return thumbnailStr; // Return Google/CDN URLs directly
+            return thumbnailStr;
         }
 
-        // For backend URLs (localhost or backend domain), replace with current API URL
-        return thumbnailStr.replace(/https?:\/\/[^\/]+/, apiUrl);
+        if (thumbnailStr.includes('/api/upload/proxy/')) {
+            return thumbnailStr.replace(/https?:\/\/[^/]+/, apiUrl);
+        }
+
+        return thumbnailStr.replace(/https?:\/\/[^/]+/, apiUrl);
     }
 
-    // If it starts with /api/upload (relative path)
+    // Relative API upload paths
     if (thumbnailStr.startsWith('/api/upload')) {
         return `${apiUrl}${thumbnailStr}`;
     }
 
-    // Check if it's a Telegram message ID pattern
-    const messageIdMatch = thumbnailStr.match(/\/file\/(\d+)/);
+    // Extract messageId from proxy path fragments
+    const messageIdMatch = thumbnailStr.match(/\/proxy\/file\/(\d+)/);
     if (messageIdMatch) {
         return `${apiUrl}/api/upload/proxy/file/${messageIdMatch[1]}`;
     }
 
-    // Otherwise, assume it's a messageId and construct the proxy URL
+    // Numeric Telegram message IDs
+    if (/^\d+$/.test(thumbnailStr)) {
+        return `${apiUrl}/api/upload/proxy/file/${thumbnailStr}`;
+    }
+
+    // Other site-relative paths
+    if (thumbnailStr.startsWith('/')) {
+        return thumbnailStr;
+    }
+
+    // Fallback: treat as messageId
     return `${apiUrl}/api/upload/proxy/file/${thumbnailStr}`;
 };
 

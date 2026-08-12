@@ -5,7 +5,6 @@ import { Gift, Loader2, Coins } from 'lucide-react';
 import { giftApi, IGiftTransaction } from '@/lib/api/gift.api';
 import { useSocket } from '@/providers/socket.provider';
 import { useAuthStore } from '@/store/auth.store';
-import Image from 'next/image';
 import { getImageUrl } from '@/lib/utils/imageUrl';
 
 interface BlogGiftListProps {
@@ -100,8 +99,8 @@ export function BlogGiftList({ blogId }: BlogGiftListProps) {
         try {
             setLoading(true);
             const result = await giftApi.getGiftsForTarget('post', blogId, 1, 10);
-            console.log('Blog gifts:', result.transactions);
-            setTransactions(result.transactions);
+            console.log('Blog gifts:', result.data);
+            setTransactions(result.data || []);
         } catch (error) {
             console.error('Error fetching blog gifts:', error);
         } finally {
@@ -136,13 +135,13 @@ export function BlogGiftList({ blogId }: BlogGiftListProps) {
                         className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-white/[0.05] rounded-lg"
                     >
                         {transaction.gift.image ? (
-                            <Image
+                            <img
                                 src={getImageUrl(transaction.gift.image)}
                                 alt={transaction.gift.name}
-                                width={40}
-                                height={40}
-                                className="w-10 h-10 rounded-lg object-cover"
-                                unoptimized={true}
+                                className="w-10 h-10 rounded-lg object-cover bg-gray-100 dark:bg-white/10"
+                                onError={(e) => {
+                                    e.currentTarget.src = '/images/blog.png';
+                                }}
                             />
                         ) : (
                             <div className="w-10 h-10 rounded-lg bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
