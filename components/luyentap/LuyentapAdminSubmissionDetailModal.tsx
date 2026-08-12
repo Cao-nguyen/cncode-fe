@@ -73,7 +73,7 @@ export default function LuyentapAdminSubmissionDetailModal({
         return () => { cancelled = true; };
     }, [open, exerciseId, submission?._id, submission?.attemptNumber, onClose]);
 
-    const answers = (detail?.answers || []) as CheckAnswerItem[];
+    const answers = (detail?.answers || []) as unknown as CheckAnswerItem[];
     const exerciseQuestions = detail?.exercise?.questions || [];
     const totalPoints = detail?.totalPoints || resolveExerciseTotalPoints({ questions: exerciseQuestions });
     const displayScore = useMemo(
