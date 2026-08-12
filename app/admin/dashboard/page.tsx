@@ -418,7 +418,10 @@ function AdminDashboardContent() {
                                         borderRadius: '8px',
                                         fontSize: '12px'
                                     }}
-                                    formatter={(value: number) => [value.toLocaleString(), 'Lượt truy cập']}
+                                    formatter={(value) => [
+                                        (typeof value === 'number' ? value : Number(value ?? 0)).toLocaleString(),
+                                        'Lượt truy cập',
+                                    ]}
                                 />
                                 <Area
                                     type="monotone"
