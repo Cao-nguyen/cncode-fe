@@ -27,7 +27,7 @@ export default function LuyentapPage() {
         setLoading(true);
         try {
             const res = await luyentapApi.getPublicExercises({ limit: 100 });
-            const list = (res.exercises || res.data?.exercises || []).map(mapBackendExercise);
+            const list = (res.exercises || []).map(mapBackendExercise);
             setExercises(list);
 
             if (token) {
