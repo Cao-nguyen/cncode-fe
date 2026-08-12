@@ -113,10 +113,13 @@ const chaptersCache = new Map<string, ChapterWithLessons[]>();
 const progressCache = new Map<string, Progress>();
 const prefetchSet = new Set<string>();
 const notFoundLessonIds = new Set<string>();
+
+type LessonLoadError = 'not-found' | 'network' | 'invalid-lesson-id';
+
 const fetchInFlight = new Map<string, Promise<{
     lesson: LessonWithExercise | null;
     progress: Progress | null;
-    error?: string;
+    error?: LessonLoadError;
 }>>();
 
 // ─── Pure helpers ─────────────────────────────────────────────────────────────
@@ -174,7 +177,7 @@ function buildVideoUrl(videoFileId: string): string {
 async function fetchLessonData(lessonId: string): Promise<{
     lesson: LessonWithExercise | null;
     progress: Progress | null;
-    error?: string;
+    error?: LessonLoadError;
 }> {
     if (!lessonId || lessonId === 'undefined' || lessonId === 'null') {
         return { lesson: null, progress: null, error: 'invalid-lesson-id' };
@@ -187,7 +190,11 @@ async function fetchLessonData(lessonId: string): Promise<{
     const inFlight = fetchInFlight.get(lessonId);
     if (inFlight) return inFlight;
 
-    const promise = (async () => {
+    const promise = (async (): Promise<{
+        lesson: LessonWithExercise | null;
+        progress: Progress | null;
+        error?: LessonLoadError;
+    }> => {
         const [lessonResult, progressResult, exerciseResult] = await Promise.allSettled([
             getLessonDetail(lessonId).then(data => {
                 if (!data) return null;
@@ -294,7 +301,7 @@ export default function LearnPage() {
 
     // Chỉ show spinner lần đầu tiên mở app (cache còn rỗng)
     const [initialLoading, setInitialLoading] = useState(!lessonCache.has(lessonId));
-    const [loadError, setLoadError] = useState<'not-found' | 'network' | 'invalid-lesson-id' | null>(null);
+    const [loadError, setLoadError] = useState<LessonLoadError | null>(null);
     const [failedCourseId, setFailedCourseId] = useState<string | null>(null);
 
     // Video loading state riêng để tránh màn hình đen khi chuyển bài học
@@ -506,7 +513,8 @@ export default function LearnPage() {
                 }
             } catch (err) {
                 console.error('[LearnPage] fetch failed:', err);
-                setVideoLoading(false); // Reset loading nếu có lỗi
+                setLoadError('network');
+                setVideoLoading(false);
             } finally {
                 setInitialLoading(false);
             }
