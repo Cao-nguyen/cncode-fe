@@ -70,6 +70,15 @@ apiClient.interceptors.response.use(
 );
 
 // Types
+export type WebRequirement = {
+    type: 'has-tag' | 'has-text' | 'has-style' | 'contains';
+    selector?: string;
+    tag?: string;
+    property?: string;
+    value?: string;
+    text?: string;
+};
+
 export interface User {
     _id: string;
     name: string;
@@ -91,14 +100,7 @@ export interface Question {
     language?: string;
     starterCode?: string;
     testCases?: Array<{ _id?: string; input?: string; expectedOutput?: string; isSample?: boolean }>;
-    webRequirements?: Array<{
-        type: string;
-        selector?: string;
-        tag?: string;
-        property?: string;
-        value?: string;
-        text?: string;
-    }>;
+    webRequirements?: WebRequirement[];
     leftItems?: Array<{ _id?: string; text: string }>;
     rightItems?: Array<{ _id?: string; text: string }>;
     matchingPairs?: Array<{ leftIndex: number; rightIndex: number }>;
@@ -319,14 +321,7 @@ export interface AdminQuestionPreview {
     codeMode?: 'algorithm' | 'web';
     starterCode?: string;
     testCases?: Array<{ input?: string; expectedOutput?: string; isSample?: boolean }>;
-    webRequirements?: Array<{
-        type: 'has-tag' | 'has-text' | 'has-style' | 'contains';
-        selector?: string;
-        tag?: string;
-        property?: string;
-        value?: string;
-        text?: string;
-    }>;
+    webRequirements?: WebRequirement[];
 }
 
 export interface AdminQuestionStatRow {
