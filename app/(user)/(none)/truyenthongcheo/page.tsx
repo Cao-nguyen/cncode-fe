@@ -23,6 +23,8 @@ import {
     ChevronRight,
     FileText,
     Calendar,
+    ArrowLeft,
+    PanelLeft,
 } from 'lucide-react';
 import { CustomButton } from '@/components/custom/CustomButton';
 import { CustomInput } from '@/components/custom/CustomInput';
@@ -30,6 +32,7 @@ import { CustomInputSearch } from '@/components/custom/CustomInputSearch';
 import { CustomSelect } from '@/components/custom/CustomSelect';
 import CustomEditor, { CustomEditorRef } from '@/components/custom/CustomEditor';
 import StaticContent from '@/components/common/StaticContent';
+import { CrossPromotionSidebar, type CrossPromotionSidebarStats, type CrossPromotionSidebarView } from '@/components/truyenthongcheo/CrossPromotionSidebar';
 import { useAuthStore } from '@/store/auth.store';
 import { useSocket } from '@/providers/socket.provider';
 import { toast } from 'sonner';
@@ -97,7 +100,15 @@ const api = {
             })
         });
         return res.json();
-    }
+    },
+    getMyStats: async (token: string): Promise<ApiResponse<CrossPromotionSidebarStats>> => {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/cross-promotion/my/stats`, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        });
+        return res.json();
+    },
 };
 
 const RequestStatusBadge = ({ status }: { status: Request['status'] }) => {
@@ -164,6 +175,17 @@ export default function CrossPromotionPage() {
     const [searchTerm, setSearchTerm] = React.useState('');
     const [selectedRequest, setSelectedRequest] = React.useState<Request | null>(null);
     const [isViewDetailModalOpen, setIsViewDetailModalOpen] = React.useState(false);
+    const [sidebarStats, setSidebarStats] = React.useState<CrossPromotionSidebarStats>({
+        runningCampaigns: 0,
+        pendingPosts: 0,
+        publishingPosts: 0,
+        reach: 0,
+        engagement: 0,
+        completed: 0,
+    });
+    const [loadingSidebarStats, setLoadingSidebarStats] = React.useState(false);
+    const [sidebarOpen, setSidebarOpen] = React.useState(false);
+    const [activeView, setActiveView] = React.useState<CrossPromotionSidebarView>('intro');
 
     const limit = 5; // Items per page for the list modal
 
@@ -201,8 +223,77 @@ export default function CrossPromotionPage() {
     };
 
     const handleOpenRequestModal = () => {
+        if (!token) {
+            toast.error('Bạn cần đăng nhập để tạo chiến dịch.');
+            return;
+        }
         resetRequestForm();
         setIsRequestModalOpen(true);
+    };
+
+    const handleOpenListWithFilter = (status = '') => {
+        if (!token) {
+            toast.error('Bạn cần đăng nhập để xem chiến dịch của bạn.');
+            return;
+        }
+        setFilterStatus(status);
+        setSearchTerm('');
+        setCurrentPage(1);
+        setIsListModalOpen(true);
+    };
+
+    const handleSidebarViewChange = (view: CrossPromotionSidebarView) => {
+        setActiveView(view);
+        setSidebarOpen(false);
+
+        if (view === 'intro' || view === 'reach' || view === 'engagement') {
+            return;
+        }
+
+        if (!token) {
+            toast.error('Bạn cần đăng nhập để xem chiến dịch của bạn.');
+            setActiveView('intro');
+            return;
+        }
+
+        const statusMap: Partial<Record<CrossPromotionSidebarView, string>> = {
+            running: 'approved',
+            pending: 'pending',
+            publishing: 'completed',
+            completed: 'completed',
+            'my-campaigns': '',
+        };
+
+        const status = statusMap[view];
+        if (status !== undefined) {
+            handleOpenListWithFilter(status);
+        }
+    };
+
+    const fetchSidebarStats = async (): Promise<void> => {
+        if (!token) {
+            setSidebarStats({
+                runningCampaigns: 0,
+                pendingPosts: 0,
+                publishingPosts: 0,
+                reach: 0,
+                engagement: 0,
+                completed: 0,
+            });
+            return;
+        }
+
+        setLoadingSidebarStats(true);
+        try {
+            const res = await api.getMyStats(token);
+            if (res.success && res.data) {
+                setSidebarStats(res.data);
+            }
+        } catch (error) {
+            console.error('Error fetching sidebar stats:', error);
+        } finally {
+            setLoadingSidebarStats(false);
+        }
     };
 
     const handleCloseRequestModal = () => {
@@ -242,6 +333,7 @@ export default function CrossPromotionPage() {
                 toast.success(res.message);
                 handleCloseRequestModal();
                 fetchRequests();
+                fetchSidebarStats();
             } else {
                 toast.error(res.message || 'Gửi yêu cầu thất bại.');
             }
@@ -270,6 +362,10 @@ export default function CrossPromotionPage() {
             setLoadingRequests(false);
         }
     };
+
+    React.useEffect(() => {
+        fetchSidebarStats();
+    }, [token]);
 
     React.useEffect(() => {
         if (isListModalOpen && token) {
@@ -317,6 +413,7 @@ export default function CrossPromotionPage() {
             if (isListModalOpen) {
                 fetchRequests();
             }
+            fetchSidebarStats();
         };
 
         socket.on('cross_promotion_status_changed', handleStatusChanged);
@@ -407,8 +504,63 @@ export default function CrossPromotionPage() {
     ];
 
     return (
-        <div className="min-h-screen py-8" style={{ backgroundColor: 'var(--cn-bg-main)' }}>
-            <div className="container mx-auto px-4 max-w-7xl">
+        <div className="flex h-screen flex-col overflow-hidden" style={{ backgroundColor: 'var(--cn-bg-main)' }}>
+            <header
+                className="sticky top-0 z-50 h-14 shrink-0 border-b shadow-sm"
+                style={{ backgroundColor: 'var(--cn-bg-card)', borderColor: 'var(--cn-border)' }}
+            >
+                <div className="flex h-full items-center gap-3 px-4 md:gap-4 md:px-6">
+                    <button
+                        type="button"
+                        onClick={() => setSidebarOpen((prev) => !prev)}
+                        className="flex h-9 w-9 items-center justify-center rounded-lg transition-colors hover:bg-black/5 lg:hidden"
+                        title={sidebarOpen ? 'Ẩn menu' : 'Mở menu'}
+                    >
+                        {sidebarOpen ? (
+                            <X className="h-5 w-5" style={{ color: 'var(--cn-text-main)' }} />
+                        ) : (
+                            <PanelLeft className="h-5 w-5" style={{ color: 'var(--cn-text-main)' }} />
+                        )}
+                    </button>
+                    <Link
+                        href="/"
+                        className="flex h-9 w-9 items-center justify-center rounded-lg transition-colors hover:bg-black/5"
+                        title="Về trang chủ"
+                    >
+                        <ArrowLeft className="h-5 w-5" style={{ color: 'var(--cn-text-main)' }} />
+                    </Link>
+                    <img src="/images/logo.png" alt="Logo CNcode" width={100} height={32} className="h-8 w-auto" />
+                    <span className="text-gray-300">|</span>
+                    <span className="truncate text-sm font-semibold md:text-base" style={{ color: 'var(--cn-text-main)' }}>
+                        Trung tâm truyền thông
+                    </span>
+                </div>
+            </header>
+
+            <div className="flex min-h-0 flex-1 overflow-hidden">
+                {sidebarOpen && (
+                    <div
+                        className="fixed inset-0 z-40 bg-black/40 lg:hidden"
+                        onClick={() => setSidebarOpen(false)}
+                        aria-hidden
+                    />
+                )}
+                <CrossPromotionSidebar
+                    stats={sidebarStats}
+                    loadingStats={loadingSidebarStats}
+                    isLoggedIn={!!token}
+                    activeView={activeView}
+                    onCreateCampaign={handleOpenRequestModal}
+                    onViewChange={handleSidebarViewChange}
+                    className={`fixed inset-y-14 left-0 z-50 h-[calc(100vh-3.5rem)] transform transition-transform duration-300 lg:relative lg:inset-auto lg:z-auto lg:h-full lg:translate-x-0 lg:transform-none ${
+                        sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+                    }`}
+                />
+
+                <div className="min-h-0 flex-1 overflow-y-auto py-6 px-[20px]">
+            <div className="w-full">
+                {activeView === 'intro' && (
+                <>
                 {/* Header Section */}
                 <div className="mb-8">
                     <div className="flex items-center justify-between flex-wrap gap-4">
@@ -425,11 +577,24 @@ export default function CrossPromotionPage() {
                                     <Send className="w-4 h-4 mr-2" />
                                     Gửi yêu cầu
                                 </CustomButton>
-                                <CustomButton variant="secondary" onClick={() => setIsListModalOpen(true)}>
+                                <CustomButton variant="secondary" onClick={() => handleSidebarViewChange('my-campaigns')}>
                                     Yêu cầu của tôi
                                 </CustomButton>
                             </div>
                         )}
+                    </div>
+                </div>
+
+                {/* What is Cross-Promotion */}
+                <div className="mb-10 rounded-2xl border border-[var(--cn-border)] bg-[var(--cn-bg-card)] p-6 md:p-8">
+                    <h2 className="text-2xl font-bold text-[var(--cn-text-main)] mb-4">Truyền thông chéo là gì?</h2>
+                    <div className="space-y-4 text-[var(--cn-text-sub)] leading-relaxed">
+                        <p>
+                            <strong className="text-[var(--cn-text-main)]">Truyền thông chéo</strong> (Cross-Promotion) là hình thức hợp tác tự nguyện giữa CNcode và các tổ chức, doanh nghiệp, cộng đồng đối tác. Hai bên cùng đăng tải nội dung giới thiệu lẫn nhau trên các kênh truyền thông của mình — blog, fanpage, website — để tiếp cận tệp khách hàng mới mà không cần chi quá nhiều ngân sách quảng cáo.
+                        </p>
+                        <p>
+                            Mục tiêu là gia tăng nhận diện thương hiệu, chia sẻ tệp khách hàng tiềm năng chất lượng và tối ưu hiệu quả truyền thông dựa trên thỏa thuận trao đổi giá trị tương đương giữa hai bên.
+                        </p>
                     </div>
                 </div>
 
@@ -543,6 +708,53 @@ export default function CrossPromotionPage() {
                         </div>
                     </div>
                 </div>
+
+                </>
+                )}
+
+                {activeView === 'reach' && (
+                    <div className="rounded-2xl border border-[var(--cn-border)] bg-[var(--cn-bg-card)] p-8">
+                        <h1 className="text-2xl font-bold text-[var(--cn-text-main)] mb-2">Lượt tiếp cận</h1>
+                        <p className="text-[var(--cn-text-sub)]">Thống kê lượt tiếp cận đang được phát triển.</p>
+                    </div>
+                )}
+
+                {activeView === 'engagement' && (
+                    <div className="rounded-2xl border border-[var(--cn-border)] bg-[var(--cn-bg-card)] p-8">
+                        <h1 className="text-2xl font-bold text-[var(--cn-text-main)] mb-2">Lượt tương tác</h1>
+                        <p className="text-[var(--cn-text-sub)]">Thống kê lượt tương tác đang được phát triển.</p>
+                    </div>
+                )}
+
+                {activeView !== 'intro' && activeView !== 'reach' && activeView !== 'engagement' && (
+                    <div className="rounded-2xl border border-[var(--cn-border)] bg-[var(--cn-bg-card)] p-8">
+                        <h1 className="text-2xl font-bold text-[var(--cn-text-main)] mb-2">
+                            {{
+                                running: 'Chiến dịch đang chạy',
+                                pending: 'Đang chờ duyệt',
+                                publishing: 'Bài đang phát hành',
+                                completed: 'Đã hoàn thành',
+                                'my-campaigns': 'Chiến dịch của tôi',
+                            }[activeView]}
+                        </h1>
+                        <p className="text-[var(--cn-text-sub)] mb-4">
+                            Quản lý và theo dõi các yêu cầu truyền thông chéo của bạn.
+                        </p>
+                        <CustomButton onClick={() => {
+                            const statusMap: Partial<Record<CrossPromotionSidebarView, string>> = {
+                                running: 'approved',
+                                pending: 'pending',
+                                publishing: 'completed',
+                                completed: 'completed',
+                                'my-campaigns': '',
+                            };
+                            handleOpenListWithFilter(statusMap[activeView] ?? '');
+                        }}>
+                            <FileText className="w-4 h-4 mr-2" />
+                            Xem danh sách
+                        </CustomButton>
+                    </div>
+                )}
 
             </div>
 
@@ -1000,6 +1212,8 @@ export default function CrossPromotionPage() {
                     </div>
                 </div>
             )}
+                </div>
+            </div>
         </div>
     );
 }

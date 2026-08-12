@@ -59,6 +59,15 @@ export const getImageUrl = (thumbnail: string | undefined | number): string => {
     return `${apiUrl}/api/upload/proxy/file/${thumbnailStr}`;
 };
 
+/** Props for avatar images — Google CDN blocks hotlink without no-referrer */
+export const avatarImageProps = {
+    referrerPolicy: 'no-referrer' as const,
+};
+
+export const getAvatarUrl = (avatar: string | undefined | null): string => {
+    return getImageUrl(avatar || '/images/avatar.png');
+};
+
 /**
  * Get video proxy URL from video file ID
  * @param videoFileId - The video file ID from Telegram

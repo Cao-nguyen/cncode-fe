@@ -50,7 +50,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useAuthStore } from "@/store/auth.store";
 import { useUnreadMessagesStore } from "@/store/unreadMessages.store";
 import { useSocket } from "@/providers/socket.provider";
-import { getImageUrl } from "@/lib/utils/imageUrl";
+import { getAvatarUrl, avatarImageProps } from "@/lib/utils/imageUrl";
 import { userApi } from "@/lib/api/user.api";
 
 const formatNumber = (num: number) =>
@@ -242,7 +242,7 @@ function DesktopUserDrawer({ user, onLogout, onClose, open }: DrawerProps) {
                     <div className="flex items-center gap-3">
                         <div className="relative flex-shrink-0">
                             <Avatar className="w-12 h-12 border-2 border-[var(--cn-border)]">
-                                <AvatarImage src={getImageUrl(user.avatar)} />
+                                <AvatarImage src={getAvatarUrl(user.avatar)} {...avatarImageProps} />
                                 <AvatarFallback className="text-[15px] font-bold bg-[var(--cn-primary)] text-white">
                                     {user.fullname?.charAt(0) || "U"}
                                 </AvatarFallback>
@@ -491,7 +491,7 @@ function MobileUserSheet({ user, onLogout, onClose, open }: MobileSheetProps) {
                 <div className="px-4 pt-2 pb-4 flex items-center gap-3 flex-shrink-0">
                     <div className="relative flex-shrink-0">
                         <Avatar className="w-12 h-12 border-2 border-[var(--cn-border)]">
-                            <AvatarImage src={getImageUrl(user.avatar)} />
+                            <AvatarImage src={getAvatarUrl(user.avatar)} {...avatarImageProps} />
                             <AvatarFallback className="text-base font-bold bg-[var(--cn-primary)] text-white">
                                 {user.fullname?.charAt(0) || "U"}
                             </AvatarFallback>
@@ -718,16 +718,6 @@ export default function Header() {
         avatar: user.avatar || "/images/avatar.png",
         role: displayRole,
     } : null;
-
-    // Avatar error debugging
-    useEffect(() => {
-        if (displayUser) {
-            const testImage = new window.Image();
-            testImage.onload = () => console.log('✅ Avatar loaded successfully:', displayUser.avatar);
-            testImage.onerror = (e) => console.error('❌ Avatar failed to load:', displayUser.avatar, e);
-            testImage.src = getImageUrl(displayUser.avatar);
-        }
-    }, [displayUser?.avatar]);
 
     // Increment streak when user loads the page
     // DISABLED: Backend endpoint /api/users/increment-streak not available (404 error)
@@ -956,7 +946,7 @@ export default function Header() {
                         {displayUser ? (
                             <button onClick={() => setDrawerOpen(true)} className="relative p-0.5 rounded-full focus:outline-none group">
                                 <Avatar key={displayUser.avatar} className="w-8 h-8 ring-2 ring-[var(--cn-border)] group-hover:ring-[var(--cn-primary)]/30 transition-all">
-                                    <AvatarImage src={getImageUrl(displayUser.avatar)} />
+                                    <AvatarImage src={getAvatarUrl(displayUser.avatar)} {...avatarImageProps} />
                                     <AvatarFallback className="text-xs font-bold bg-[var(--cn-primary)] text-white">
                                         {displayUser.fullname?.charAt(0) || "U"}
                                     </AvatarFallback>
@@ -1115,7 +1105,7 @@ export default function Header() {
                         {displayUser ? (
                             <button onClick={() => setSheetOpen(true)} className="relative">
                                 <Avatar className="w-6 h-6 ring-2 ring-[var(--cn-border)]">
-                                    <AvatarImage src={getImageUrl(displayUser.avatar)} />
+                                    <AvatarImage src={getAvatarUrl(displayUser.avatar)} {...avatarImageProps} />
                                     <AvatarFallback className="text-[10px] font-bold bg-[var(--cn-primary)] text-white">
                                         {displayUser.fullname?.charAt(0) || "U"}
                                     </AvatarFallback>
