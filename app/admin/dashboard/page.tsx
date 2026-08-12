@@ -108,7 +108,7 @@ function AdminDashboardContent() {
             ]);
 
             // Parse responses with error handling
-            let visitsData = { success: false, data: { totalVisits: 0, todayVisits: 0 } };
+            let visitsData = { success: false, data: { totalVisits: 0, todayVisits: 0, weeklyData: [] as Array<{ day: string; visits: number; date?: string }> } };
             let onlineData: { success?: boolean; data?: { total: number; users: number; guests: number }; total?: number; users?: number; guests?: number } = {};
             let userStatsData = { success: false, data: { total: 0, teachers: 0, admins: 0, newThisWeek: 0, activeToday: 0 } };
 
