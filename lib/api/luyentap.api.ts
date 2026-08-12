@@ -320,7 +320,7 @@ export interface AdminQuestionPreview {
     starterCode?: string;
     testCases?: Array<{ input?: string; expectedOutput?: string; isSample?: boolean }>;
     webRequirements?: Array<{
-        type: string;
+        type: 'has-tag' | 'has-text' | 'has-style' | 'contains';
         selector?: string;
         tag?: string;
         property?: string;

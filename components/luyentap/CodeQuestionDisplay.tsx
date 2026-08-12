@@ -2,18 +2,9 @@
 
 import React from 'react';
 import AlgorithmQuestionPanel, { AlgorithmSampleTestPanel } from '@/components/luyentap/AlgorithmQuestionPanel';
-import { formatWebRequirementLabel } from '@/lib/luyentap/question-markdown';
+import { formatWebRequirementLabel, type WebRequirement } from '@/lib/luyentap/question-markdown';
 import { cn } from '@/lib/utils';
 import { ClipboardList } from 'lucide-react';
-
-type WebRequirement = {
-    type: 'has-tag' | 'has-text' | 'has-style' | 'contains';
-    selector?: string;
-    tag?: string;
-    property?: string;
-    value?: string;
-    text?: string;
-};
 
 interface CodeQuestionDisplayProps {
     question: string;
