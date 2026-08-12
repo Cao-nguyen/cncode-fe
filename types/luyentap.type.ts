@@ -76,6 +76,13 @@ export interface PracticeSet {
     deliveryFrom?: string;
     deliveryTo?: string;
     examPassword?: string;
+    hasExamPassword?: boolean;
+    availability?: {
+        phase: 'upcoming' | 'open' | 'closed';
+        canEnter: boolean;
+        message: string | null;
+    };
+    maxAttempts?: number;
     proctoring?: 'off' | 'tab-switch';
     verifyStudentInfo?: boolean;
     studentInfoFields?: {
