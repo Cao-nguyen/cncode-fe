@@ -2,140 +2,146 @@
 
 import React from 'react';
 import { useRouter } from 'next/navigation';
-import { Book, Clock, Award, CheckCircle } from 'lucide-react';
-import { CustomButton } from '@/components/custom/CustomButton';
+import { Book, Clock, Award, ChevronRight, BookOpen, Highlighter, StickyNote } from 'lucide-react';
 import { CNBOOKS_DATA } from '@/lib/data/cnbooks.data';
 
 export default function CnBooksPage() {
     const router = useRouter();
     const { book, lessons } = CNBOOKS_DATA;
 
-    const completedLessons = lessons.filter(l =>
-        l.exercises.every(ex => ex.completed)
-    ).length;
-
-    const progress = Math.round((completedLessons / book.totalLessons) * 100);
-
     return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-            <div className="max-w-6xl mx-auto px-4 py-8">
-                {/* Header */}
-                <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-lg mb-8">
-                    <div className="flex items-start gap-6">
-                        <div className="flex-shrink-0">
-                            <div className="w-32 h-40 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-xl">
-                                <Book className="w-16 h-16 text-white" />
+        <div className="min-h-screen bg-gradient-to-b from-gray-50 via-white to-gray-50">
+            <div className="max-w-5xl mx-auto px-4 py-10 md:py-14">
+                <p className="text-blue-600 text-xs uppercase tracking-[0.25em] mb-2 font-medium">
+                    Thư viện CNbooks
+                </p>
+                <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
+                    {book.title}
+                </h1>
+                <p className="text-gray-500 max-w-2xl mb-10">{book.subtitle}</p>
+
+                <div className="flex flex-col md:flex-row gap-8 mb-12">
+                    {/* Book cover */}
+                    <div className="flex-shrink-0 flex justify-center md:justify-start">
+                        <div
+                            className="relative cursor-pointer group"
+                            onClick={() =>
+                                lessons[0] &&
+                                router.push(`/cnbooks/${lessons[0].slug}`)
+                            }
+                        >
+                            <div className="w-44 h-60 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-xl flex flex-col items-center justify-center p-6 transition-transform duration-300 group-hover:-translate-y-1 group-hover:shadow-2xl">
+                                <Book className="w-11 h-11 text-white/90 mb-4" />
+                                <h2 className="text-center text-white text-lg font-bold leading-tight">
+                                    Python
+                                </h2>
+                                <p className="text-center text-blue-100 text-xs mt-2">
+                                    Cơ bản cho người mới
+                                </p>
+                                <div className="mt-auto pt-4 border-t border-white/20 w-full text-center">
+                                    <span className="text-[10px] text-blue-100 uppercase tracking-widest">
+                                        CNbooks
+                                    </span>
+                                </div>
                             </div>
+                            <div className="w-48 h-2 bg-gray-200 rounded-full mt-3 mx-auto" />
+                        </div>
+                    </div>
+
+                    <div className="flex-1 space-y-5">
+                        <p className="text-gray-600 text-sm leading-relaxed">
+                            {book.description}
+                        </p>
+
+                        <div className="flex flex-wrap gap-4 text-sm text-gray-500">
+                            <span className="flex items-center gap-1.5">
+                                <BookOpen className="w-4 h-4 text-blue-500" />
+                                {book.totalLessons} bài học
+                            </span>
+                            <span className="flex items-center gap-1.5">
+                                <Clock className="w-4 h-4 text-blue-500" />
+                                {book.estimatedTotalTime}
+                            </span>
+                            <span className="flex items-center gap-1.5">
+                                <Award className="w-4 h-4 text-blue-500" />
+                                {book.level.replace('-', ' → ')}
+                            </span>
                         </div>
 
-                        <div className="flex-1">
-                            <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
-                                {book.title}
-                            </h1>
-                            <p className="text-xl text-gray-600 dark:text-gray-300 mb-4">
-                                {book.subtitle}
-                            </p>
-                            <p className="text-gray-600 dark:text-gray-400 mb-6">
-                                {book.description}
-                            </p>
+                        <div className="flex flex-wrap gap-2">
+                            {book.features.slice(0, 3).map((feature, idx) => (
+                                <span
+                                    key={idx}
+                                    className="text-xs px-3 py-1.5 rounded-full bg-blue-50 text-blue-700 border border-blue-100"
+                                >
+                                    {feature}
+                                </span>
+                            ))}
+                        </div>
 
-                            <div className="flex flex-wrap gap-4 mb-6">
-                                <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                                    <Book className="w-4 h-4" />
-                                    <span>{book.totalLessons} bài học</span>
-                                </div>
-                                <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                                    <Clock className="w-4 h-4" />
-                                    <span>{book.estimatedTotalTime}</span>
-                                </div>
-                                <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                                    <Award className="w-4 h-4" />
-                                    <span className="capitalize">{book.level.replace('-', ' ')}</span>
-                                </div>
-                            </div>
-
-                            {/* Progress Bar */}
-                            <div className="mb-4">
-                                <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400 mb-2">
-                                    <span>Tiến độ học tập</span>
-                                    <span>{completedLessons}/{book.totalLessons} bài</span>
-                                </div>
-                                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
-                                    <div
-                                        className="bg-gradient-to-r from-blue-500 to-purple-600 h-3 rounded-full transition-all duration-300"
-                                        style={{ width: `${progress}%` }}
-                                    />
-                                </div>
+                        <div className="flex flex-wrap items-center gap-4 pt-1">
+                            <button
+                                onClick={() =>
+                                    lessons[0] &&
+                                    router.push(`/cnbooks/${lessons[0].slug}`)
+                                }
+                                className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium text-sm transition-colors flex items-center gap-2"
+                            >
+                                <BookOpen className="w-4 h-4" />
+                                Mở sách
+                            </button>
+                            <div className="flex items-center gap-3 text-xs text-gray-400">
+                                <span className="flex items-center gap-1">
+                                    <Highlighter className="w-3.5 h-3.5" />
+                                    Highlight
+                                </span>
+                                <span className="flex items-center gap-1">
+                                    <StickyNote className="w-3.5 h-3.5" />
+                                    Ghi chú
+                                </span>
+                                <span>Lưu trên trình duyệt</span>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Features */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-                    {book.features.map((feature, idx) => (
-                        <div key={idx} className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm">
-                            <div className="flex items-start gap-3">
-                                <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
-                                <p className="text-sm text-gray-600 dark:text-gray-300">{feature}</p>
-                            </div>
-                        </div>
-                    ))}
-                </div>
+                {/* Table of contents */}
+                <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                    <div className="px-6 py-4 border-b border-gray-100">
+                        <h2 className="text-lg font-semibold text-gray-900">Mục lục</h2>
+                    </div>
 
-                {/* Lessons List */}
-                <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg">
-                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
-                        Danh sách bài học
-                    </h2>
+                    <div className="divide-y divide-gray-100">
+                        {lessons.map((lesson) => (
+                            <button
+                                key={lesson.id}
+                                onClick={() => router.push(`/cnbooks/${lesson.slug}`)}
+                                className="w-full flex items-center gap-4 px-6 py-4 hover:bg-gray-50 transition-colors text-left group"
+                            >
+                                <span className="flex-shrink-0 w-10 h-10 rounded-full bg-gray-100 group-hover:bg-blue-100 flex items-center justify-center text-gray-600 group-hover:text-blue-700 text-sm font-semibold transition-colors">
+                                    {lesson.order}
+                                </span>
 
-                    <div className="space-y-3">
-                        {lessons.map((lesson) => {
-                            const isCompleted = lesson.exercises.every(ex => ex.completed);
-                            const completedEx = lesson.exercises.filter(ex => ex.completed).length;
-
-                            return (
-                                <div
-                                    key={lesson.id}
-                                    onClick={() => router.push(`/cnbooks/${lesson.slug}`)}
-                                    className="group flex items-center gap-4 p-4 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-all border border-transparent hover:border-blue-200 dark:hover:border-blue-800"
-                                >
-                                    <div className="flex-shrink-0 w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold">
-                                        {lesson.order}
-                                    </div>
-
-                                    <div className="flex-1">
-                                        <h3 className="font-semibold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                                            {lesson.title}
-                                        </h3>
-                                        <div className="flex items-center gap-4 mt-1 text-sm text-gray-500 dark:text-gray-400">
-                                            <span className="flex items-center gap-1">
-                                                <Clock className="w-4 h-4" />
-                                                {lesson.duration}
-                                            </span>
-                                            <span className={`px-2 py-0.5 rounded text-xs ${lesson.difficulty === 'beginner' ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' :
-                                                lesson.difficulty === 'intermediate' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300' :
-                                                    'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'
-                                                }`}>
-                                                {lesson.difficulty === 'beginner' ? 'Cơ bản' :
-                                                    lesson.difficulty === 'intermediate' ? 'Trung bình' : 'Nâng cao'}
-                                            </span>
-                                            <span>{completedEx}/{lesson.exercises.length} bài tập</span>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex-shrink-0">
-                                        {isCompleted ? (
-                                            <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center">
-                                                <CheckCircle className="w-5 h-5 text-white" />
-                                            </div>
-                                        ) : (
-                                            <CustomButton>Học ngay</CustomButton>
-                                        )}
+                                <div className="flex-1 min-w-0">
+                                    <h3 className="font-medium text-gray-900 group-hover:text-blue-600 transition-colors truncate">
+                                        {lesson.title}
+                                    </h3>
+                                    <div className="flex items-center gap-3 mt-0.5 text-xs text-gray-400">
+                                        <span>{lesson.duration}</span>
+                                        <span>
+                                            {lesson.difficulty === 'beginner'
+                                                ? 'Cơ bản'
+                                                : lesson.difficulty === 'intermediate'
+                                                  ? 'Trung bình'
+                                                  : 'Nâng cao'}
+                                        </span>
+                                        <span>{lesson.exercises.length} bài tập</span>
                                     </div>
                                 </div>
-                            );
-                        })}
+
+                                <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-blue-500 transition-colors shrink-0" />
+                            </button>
+                        ))}
                     </div>
                 </div>
             </div>

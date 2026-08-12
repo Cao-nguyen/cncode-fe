@@ -10,12 +10,42 @@ import { getImageUrl } from '@/lib/utils/imageUrl';
 import { DeleteConfirmModal } from '@/components/common/DeleteConfirmModal';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { isCommentContentEmpty } from '@/lib/comment-content';
 
 interface CommentSectionProps {
     targetType: 'post' | 'lesson' | 'workspace' | 'task' | 'feedback' | 'feed' | 'short_video' | 'blog';
     targetId: string;
     onCommentCountChange?: (count: number) => void;
 }
+
+const normalizeReactions = (raw: unknown): Record<string, number> => {
+    if (!raw || typeof raw !== 'object') return {};
+    return { ...(raw as Record<string, number>) };
+};
+
+const updateCommentInTree = (
+    items: CommentType[],
+    commentId: string,
+    updater: (comment: CommentType) => CommentType,
+): CommentType[] =>
+    items.map((item) => {
+        if (item._id === commentId) return updater(item);
+        if (item.replies?.length) {
+            return { ...item, replies: updateCommentInTree(item.replies, commentId, updater) };
+        }
+        return item;
+    });
+
+const removeCommentFromTree = (items: CommentType[], commentId: string): CommentType[] =>
+    items
+        .filter((item) => item._id !== commentId)
+        .map((item) => ({
+            ...item,
+            replies: item.replies ? removeCommentFromTree(item.replies, commentId) : [],
+            replyCount: item.replies?.some((r) => r._id === commentId)
+                ? Math.max(0, (item.replyCount || 0) - 1)
+                : item.replyCount,
+        }));
 
 export default function CommentSection({ targetType, targetId, onCommentCountChange }: CommentSectionProps) {
     const { user, token } = useAuthStore();
@@ -24,6 +54,7 @@ export default function CommentSection({ targetType, targetId, onCommentCountCha
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [newComment, setNewComment] = useState('');
+    const [newAttachments, setNewAttachments] = useState<string[]>([]);
     const [isCommentExpanded, setIsCommentExpanded] = useState(false);
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
@@ -99,12 +130,16 @@ export default function CommentSection({ targetType, targetId, onCommentCountCha
         };
 
         const handleCommentUpdated = (updatedComment: CommentType) => {
-            setComments(prev => prev.map(c => c._id === updatedComment._id ? updatedComment : c));
+            setComments((prev) => updateCommentInTree(prev, updatedComment._id, (c) => ({
+                ...c,
+                ...updatedComment,
+                replies: c.replies,
+            })));
         };
 
         const handleCommentDeleted = (commentId: string) => {
-            setComments(prev => {
-                const updated = prev.filter(c => c._id !== commentId);
+            setComments((prev) => {
+                const updated = removeCommentFromTree(prev, commentId);
                 onCommentCountChange?.(updated.length);
                 return updated;
             });
@@ -126,8 +161,8 @@ export default function CommentSection({ targetType, targetId, onCommentCountCha
             toast.error('Vui lòng đăng nhập để bình luận');
             return;
         }
-        if (!newComment.trim()) {
-            toast.warning('Vui lòng nhập nội dung');
+        if (isCommentContentEmpty(newComment) && newAttachments.length === 0) {
+            toast.warning('Vui lòng nhập nội dung hoặc đính kèm media');
             return;
         }
 
@@ -136,14 +171,17 @@ export default function CommentSection({ targetType, targetId, onCommentCountCha
             const result = await commentApi.createComment(token, {
                 targetType,
                 targetId,
-                content: newComment.trim()
+                content: newComment,
+                attachments: newAttachments,
             });
 
             if (result.success) {
                 setNewComment('');
+                setNewAttachments([]);
                 setIsCommentExpanded(false);
                 toast.success('Bình luận thành công');
-                fetchComments(1);
+                setComments((prev) => [{ ...result.data, replies: [] }, ...prev]);
+                onCommentCountChange?.(comments.length + 1);
             } else {
                 toast.error(result.message || 'Bình luận thất bại');
             }
@@ -156,6 +194,7 @@ export default function CommentSection({ targetType, targetId, onCommentCountCha
 
     const handleCancelComment = () => {
         setNewComment('');
+        setNewAttachments([]);
         setIsCommentExpanded(false);
     };
 
@@ -172,25 +211,31 @@ export default function CommentSection({ targetType, targetId, onCommentCountCha
                     if (comment._id === commentId) {
                         return {
                             ...comment,
-                            reactions: result.data.reactionCounts,
-                            userReaction: result.data.reacted ? result.data.reactionType : null
+                            reactions: normalizeReactions(result.data.reactionCounts),
+                            userReaction: result.data.reacted ? result.data.reactionType : null,
                         };
                     }
                     if (comment.replies) {
-                        return { ...comment, replies: comment.replies.map(reply => updateComment(reply)) };
+                        return { ...comment, replies: comment.replies.map((reply) => updateComment(reply)) };
                     }
                     return comment;
                 };
-                setComments(prev => prev.map(comment => updateComment(comment)));
+                setComments((prev) => prev.map((comment) => updateComment(comment)));
+            } else {
+                toast.error(result.message || 'Không thể thả cảm xúc');
             }
         } catch (error) {
             toast.error('Không thể thả cảm xúc');
         }
     };
 
-    const handleReply = async (parentId: string, content: string) => {
+    const handleReply = async (parentId: string, content: string, replyAttachments: string[] = []) => {
         if (!token) {
             toast.error('Vui lòng đăng nhập');
+            return;
+        }
+        if (isCommentContentEmpty(content) && replyAttachments.length === 0) {
+            toast.warning('Vui lòng nhập nội dung hoặc đính kèm media');
             return;
         }
 
@@ -199,12 +244,24 @@ export default function CommentSection({ targetType, targetId, onCommentCountCha
                 targetType,
                 targetId,
                 parentId,
-                content
+                content,
+                attachments: replyAttachments,
             });
 
             if (result.success) {
                 toast.success('Phản hồi thành công');
-                fetchComments(1);
+                const rootId = result.data.parentId || parentId;
+                setComments((prev) => updateCommentInTree(prev, rootId, (c) => {
+                    const exists = c.replies?.some((r) => r._id === result.data._id);
+                    if (exists) return c;
+                    return {
+                        ...c,
+                        replies: [...(c.replies || []), result.data],
+                        replyCount: (c.replyCount || 0) + 1,
+                    };
+                }));
+            } else {
+                toast.error(result.message || 'Phản hồi thất bại');
             }
         } catch (error) {
             toast.error('Phản hồi thất bại');
@@ -218,7 +275,14 @@ export default function CommentSection({ targetType, targetId, onCommentCountCha
             const result = await commentApi.updateComment(token, commentId, content);
             if (result.success) {
                 toast.success('Cập nhật thành công');
-                fetchComments(page);
+                setComments((prev) => updateCommentInTree(prev, commentId, (c) => ({
+                    ...c,
+                    content,
+                    isEdited: true,
+                    editedAt: new Date().toISOString(),
+                })));
+            } else {
+                toast.error(result.message || 'Cập nhật thất bại');
             }
         } catch (error) {
             toast.error('Cập nhật thất bại');
@@ -241,7 +305,7 @@ export default function CommentSection({ targetType, targetId, onCommentCountCha
                 toast.success('Xóa bình luận thành công');
                 setDeleteModalOpen(false);
                 setCommentToDelete(null);
-                fetchComments(page);
+                setComments((prev) => removeCommentFromTree(prev, commentToDelete));
             } else {
                 toast.error(result.message || 'Xóa thất bại');
             }
@@ -265,6 +329,20 @@ export default function CommentSection({ targetType, targetId, onCommentCountCha
             }
         } catch (error) {
             toast.error('Gửi báo cáo thất bại');
+        }
+    };
+
+    const handleLoadMoreReplies = async (commentId: string) => {
+        try {
+            const result = await commentApi.getReplies(commentId, 1, 50);
+            if (result.success) {
+                setComments((prev) => updateCommentInTree(prev, commentId, (c) => ({
+                    ...c,
+                    replies: result.data || [],
+                })));
+            }
+        } catch {
+            toast.error('Không thể tải thêm phản hồi');
         }
     };
 
@@ -304,15 +382,16 @@ export default function CommentSection({ targetType, targetId, onCommentCountCha
                             {user.fullName?.charAt(0).toUpperCase() || 'U'}
                         </div>
                     </div>
-                    <div className="flex-1">
+                    <div className="flex-1 min-w-0 w-full">
                         <CustomTextCmt
                             value={newComment}
                             onChange={setNewComment}
+                            attachments={newAttachments}
+                            onAttachmentsChange={setNewAttachments}
                             placeholder="Viết bình luận..."
                             rows={3}
                             onSubmit={handleSubmitComment}
                             onCancel={handleCancelComment}
-                            submitLabel="Gửi bình luận"
                             cancelLabel="Hủy"
                             isSubmitting={submitting}
                         />
@@ -346,6 +425,7 @@ export default function CommentSection({ targetType, targetId, onCommentCountCha
                             onEdit={handleEdit}
                             onDelete={handleDelete}
                             onReport={handleReport}
+                            onLoadMoreReplies={handleLoadMoreReplies}
                         />
                     ))}
                 </div>

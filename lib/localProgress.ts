@@ -31,3 +31,14 @@ export function setCourseLastLesson(courseId: string, lessonId: string): void {
     } catch {
     }
 }
+
+export function removeCourseLastLesson(courseId: string): void {
+    try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return;
+        const list: CourseLastLesson[] = JSON.parse(raw);
+        const next = list.filter(item => item.courseId !== courseId);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+    } catch {
+    }
+}

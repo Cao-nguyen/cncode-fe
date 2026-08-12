@@ -1,17 +1,188 @@
 'use client';
 
-import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuthStore } from '@/store/auth.store';
-import { aitutorApi, AIChat, AIMessage, RateLimitInfo } from '@/lib/api/aitutor.api';
+import { aitutorApi, AIChat, AIAttachment, RateLimitInfo } from '@/lib/api/aitutor.api';
+import { useTypewriter } from '@/hooks/useTypewriter';
+import { uploadApi, compressImage } from '@/lib/upload';
+import { getImageUrl } from '@/lib/utils/imageUrl';
 import { toast } from 'sonner';
-import { Send, Plus, Trash2, MessageSquare, Clock, Zap, ArrowLeft, Sparkles, Bot, Home, MoreHorizontal, Pin, Edit2, X, Copy, ThumbsUp, ThumbsDown, ArrowUp, Menu } from 'lucide-react';
-import { CustomButton } from '@/components/custom/CustomButton';
+import { Plus, Trash2, MessageSquare, Clock, Zap, Sparkles, Bot, Home, MoreHorizontal, Pin, Edit2, X, Copy, ThumbsUp, ThumbsDown, ArrowUp, Menu, Image as ImageIcon, Loader2 } from 'lucide-react';
+import { ImagePreviewModal } from '@/components/custom/ImagePreviewModal';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import 'katex/dist/katex.min.css';
+
+interface PendingAttachment {
+  id: string;
+  name: string;
+  url?: string;
+  messageId?: string;
+  dataUrl?: string;
+  previewUrl?: string;
+  uploading?: boolean;
+}
+
+function readFileAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function prepareStreamingMarkdown(text: string): string {
+  if (!text) return text;
+
+  let result = text;
+  const fenceCount = (result.match(/```/g) || []).length;
+  if (fenceCount % 2 === 1) {
+    result += '\n```';
+  }
+
+  const boldCount = (result.match(/\*\*/g) || []).length;
+  if (boldCount % 2 === 1) {
+    result += '**';
+  }
+
+  return result;
+}
+
+function autoWrapMath(text: string): string {
+  let result = text;
+
+  const codeBlocks: string[] = [];
+  result = result.replace(/```[\s\S]*?```/g, (match) => {
+    codeBlocks.push(match);
+    return `__CODE_BLOCK_${codeBlocks.length - 1}__`;
+  });
+
+  result = result.replace(/\\\*/g, '\\times ');
+  result = result.replace(/\\\//g, '\\div ');
+  result = result.replace(/\\_/g, '_');
+
+  const lines = result.split('\n');
+  const processedLines = lines.map(line => {
+    if (line.includes('$') || !line.trim()) return line;
+    line = line.replace(/(\d+[\.,]?\d*\s*[\*\/\^]\s*\d+[\.,]?\d*)/g, '$$$1$$');
+    line = line.replace(/\b([a-zA-Z]{1,4}\s*=\s*[a-zA-Z]{1,4})\b/g, '$$$1$$');
+    return line;
+  });
+
+  result = processedLines.join('\n');
+  result = result.replace(/__CODE_BLOCK_(\d+)__/g, (_, index) => codeBlocks[parseInt(index)]);
+
+  return result;
+}
+
+function AssistantMessageContent({
+  content,
+  isStreaming = false,
+  onCopyCode,
+}: {
+  content: string;
+  isStreaming?: boolean;
+  onCopyCode: (code: string) => void;
+}) {
+  const markdown = autoWrapMath(isStreaming ? prepareStreamingMarkdown(content) : content);
+
+  return (
+    <div className="prose prose-sm max-w-none text-sm md:text-base text-justify">
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm, [remarkMath, { singleDollar: true, doubleDollar: true }]]}
+        rehypePlugins={[rehypeKatex]}
+        components={{
+          pre: ({ children, ...props }) => {
+            const codeContent = typeof children === 'string'
+              ? children
+              : (React.isValidElement(children) && typeof (children as React.ReactElement<Record<string, unknown>>).props.children === 'string'
+                ? (children as React.ReactElement<Record<string, unknown>>).props.children
+                : '') || '';
+            return (
+              <div className="relative">
+                <button
+                  onClick={() => onCopyCode(String(codeContent))}
+                  className="absolute top-2 right-2 p-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg transition z-10"
+                  title="Sao chép code"
+                >
+                  <Copy className="w-4 h-4 text-gray-600" />
+                </button>
+                <pre className="bg-gray-50 p-4 rounded-xl border border-gray-200 text-gray-900 overflow-x-auto pt-8" {...props}>
+                  {children}
+                </pre>
+              </div>
+            );
+          },
+          code: ({ className, children, ...props }) => {
+            const isInline = !className;
+            return isInline ? (
+              <code className="bg-indigo-50 text-indigo-700 px-2 py-1 rounded-lg text-sm font-medium" {...props}>
+                {children}
+              </code>
+            ) : (
+              <code className="text-gray-900" {...props}>
+                {children}
+              </code>
+            );
+          },
+        }}
+      >
+        {markdown}
+      </ReactMarkdown>
+      {isStreaming && (
+        <span
+          className="inline-block w-[2px] h-[1.05em] ml-0.5 align-text-bottom bg-indigo-500 rounded-sm animate-pulse"
+          aria-hidden
+        />
+      )}
+    </div>
+  );
+}
+
+function cleanUserMessageContent(content: string): string {
+  return content.replace(/\n*🖼️[^\n]*/g, '').trim();
+}
+
+function MessageAttachments({
+  attachments,
+  onPreview,
+}: {
+  attachments?: AIAttachment[];
+  onPreview?: (url: string) => void;
+}) {
+  if (!attachments?.length) return null;
+
+  return (
+    <div className="mt-2 space-y-2">
+      {attachments.map((attachment, index) => {
+        const imageUrl = attachment.url || (attachment.messageId ? getImageUrl(attachment.messageId) : '');
+
+        if (!imageUrl) return null;
+
+        const previewUrl = getImageUrl(imageUrl);
+
+        return (
+          <button
+            key={`${attachment.messageId || attachment.name}-${index}`}
+            type="button"
+            onClick={() => onPreview?.(previewUrl)}
+            className="block cursor-zoom-in"
+          >
+            <img
+              src={previewUrl}
+              alt=""
+              className="max-h-56 rounded-xl border border-white/20 object-contain bg-black/10"
+            />
+          </button>
+        );
+      })}
+    </div>
+  );
+}
 
 export default function AITutorPage() {
   const router = useRouter();
@@ -31,14 +202,45 @@ export default function AITutorPage() {
   const [likedMessages, setLikedMessages] = useState<Set<number>>(new Set());
   const [dislikedMessages, setDislikedMessages] = useState<Set<number>>(new Set());
   const [optimisticMessage, setOptimisticMessage] = useState<string | null>(null);
-  const [typingMessageIndex, setTypingMessageIndex] = useState<number | null>(null);
-  const [typedContent, setTypedContent] = useState<string>('');
+  const [optimisticAttachments, setOptimisticAttachments] = useState<AIAttachment[]>([]);
+  const [pendingAttachments, setPendingAttachments] = useState<PendingAttachment[]>([]);
+  const [uploadingAttachment, setUploadingAttachment] = useState(false);
+  const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [animatingMessageIndex, setAnimatingMessageIndex] = useState<number | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  // NEW: ref tới container scroll của khu vực tin nhắn
   const messagesContainerRef = useRef<HTMLDivElement>(null);
-  // NEW: cờ theo dõi user có đang ở đáy (bot-0) hay không, dùng ref để không gây re-render
   const isAutoScrollRef = useRef(true);
+
+  const animatingContent = animatingMessageIndex !== null
+    ? currentChat?.messages[animatingMessageIndex]?.content ?? ''
+    : '';
+
+  const pinToBottom = useCallback(() => {
+    const el = messagesContainerRef.current;
+    if (el) {
+      el.scrollTop = el.scrollHeight;
+    }
+  }, []);
+
+  const { displayed: typedContent, isTyping } = useTypewriter({
+    content: animatingContent,
+    enabled: animatingMessageIndex !== null && animatingContent.length > 0,
+    charsPerSecond: 85,
+    onComplete: () => {
+      setAnimatingMessageIndex(null);
+      if (isAutoScrollRef.current) {
+        requestAnimationFrame(() => pinToBottom());
+      }
+    },
+    onTick: () => {
+      if (isAutoScrollRef.current) {
+        pinToBottom();
+      }
+    },
+  });
 
   useEffect(() => {
     if (token) {
@@ -63,66 +265,10 @@ export default function AITutorPage() {
     if (isAutoScrollRef.current) {
       scrollToBottom();
     }
-  }, [currentChat?.messages, optimisticMessage]);
-
-  // Typing effect for new AI messages
-  useEffect(() => {
-    if (currentChat && currentChat.messages.length > 0) {
-      const lastMessage = currentChat.messages[currentChat.messages.length - 1];
-      // Chỉ chạy typing effect nếu tin nhắn vừa được thêm (không phải khi quay lại chat cũ)
-      if (lastMessage.role === 'assistant' && typingMessageIndex === null) {
-        setTypingMessageIndex(currentChat.messages.length - 1);
-        setTypedContent('');
-        let index = 0;
-        const content = lastMessage.content;
-
-        const typeNextChunk = () => {
-          if (index < content.length) {
-            const charsToAdd = Math.min(10, content.length - index);
-            setTypedContent(content.substring(0, index + charsToAdd));
-            index += charsToAdd;
-            requestAnimationFrame(typeNextChunk);
-          } else {
-            setTypingMessageIndex(null);
-            setTypedContent('');
-            // Sau khi "chốt" bằng ReactMarkdown, layout có thể đổi (code block, list...),
-            // nên căn lại đáy 1 lần nếu user vẫn đang theo dõi đáy.
-            if (isAutoScrollRef.current) {
-              requestAnimationFrame(() => pinToBottom());
-            }
-          }
-        };
-
-        requestAnimationFrame(typeNextChunk);
-      }
-    }
-  }, [currentChat?.messages]); // Chạy khi messages thay đổi (có tin nhắn mới)
-
-  // Reset typing state khi chuyển chat
-  useEffect(() => {
-    setTypingMessageIndex(null);
-    setTypedContent('');
-  }, [currentChat?._id]);
-
-  // NEW: mỗi khi typedContent tăng lên (đang gõ chữ), nếu user đang ở đáy thì
-  // "ghim" xuống đáy ngay lập tức (không dùng smooth để tránh giật do animation chồng chéo).
-  // Nếu user đang tự kéo lên xem lại, isAutoScrollRef.current = false nên sẽ không bị ép kéo xuống.
-  useEffect(() => {
-    if (typingMessageIndex !== null && isAutoScrollRef.current) {
-      pinToBottom();
-    }
-  }, [typedContent]);
+  }, [currentChat?.messages, optimisticMessage, optimisticAttachments]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
-  // NEW: scroll tức thì xuống đáy (dùng khi đang gõ chữ để tránh giật)
-  const pinToBottom = () => {
-    const el = messagesContainerRef.current;
-    if (el) {
-      el.scrollTop = el.scrollHeight;
-    }
   };
 
   // NEW: theo dõi vị trí scroll của user để biết có đang ở đáy hay không
@@ -174,7 +320,8 @@ export default function AITutorPage() {
     try {
       const res = await aitutorApi.createChat(token);
       if (res.success) {
-        isAutoScrollRef.current = true; // NEW: mở chat mới thì luôn theo dõi đáy
+        isAutoScrollRef.current = true;
+        setAnimatingMessageIndex(null);
         setCurrentChat(res.data);
         setChats(prev => {
           // Insert new chat after all pinned chats
@@ -196,7 +343,8 @@ export default function AITutorPage() {
     try {
       const res = await aitutorApi.getChatById(chatId, token);
       if (res.success) {
-        isAutoScrollRef.current = true; // NEW: chuyển chat thì luôn theo dõi đáy
+        isAutoScrollRef.current = true;
+        setAnimatingMessageIndex(null);
         setCurrentChat(res.data);
         // Update URL with chatId
         router.push(`/giasuai?id=${chatId}`, { scroll: false });
@@ -281,8 +429,75 @@ export default function AITutorPage() {
     }
   };
 
+  const removePendingAttachment = (id: string) => {
+    setPendingAttachments(prev => {
+      const target = prev.find(item => item.id === id);
+      if (target?.previewUrl) URL.revokeObjectURL(target.previewUrl);
+      return prev.filter(item => item.id !== id);
+    });
+  };
+
+  const uploadImageAttachment = async (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      toast.error('Vui lòng chọn file ảnh');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Ảnh tối đa 5MB');
+      return;
+    }
+
+    const pendingId = `${Date.now()}-${Math.random()}`;
+    const previewUrl = URL.createObjectURL(file);
+
+    setPendingAttachments(prev => [...prev, {
+      id: pendingId,
+      name: file.name,
+      previewUrl,
+      uploading: true,
+    }]);
+    setUploadingAttachment(true);
+
+    try {
+      const base64 = await readFileAsDataUrl(file);
+      const compressedBase64 = await compressImage(base64, 1024, 0.75);
+      const result = await uploadApi.uploadImage(compressedBase64, 'aitutor');
+
+      if (!result.success || !result.messageId) {
+        throw new Error(result.message || 'Upload ảnh thất bại');
+      }
+
+      setPendingAttachments(prev => prev.map(item => item.id === pendingId
+        ? {
+          ...item,
+          uploading: false,
+          url: result.url,
+          messageId: result.messageId ? String(result.messageId) : undefined,
+          dataUrl: compressedBase64,
+        }
+        : item));
+    } catch (error) {
+      removePendingAttachment(pendingId);
+      const err = error as Error;
+      toast.error(err.message || 'Upload ảnh thất bại');
+    } finally {
+      setUploadingAttachment(false);
+    }
+  };
+
   const sendMessage = async () => {
-    if (!message.trim() || !token || sending) return;
+    const readyAttachments: AIAttachment[] = pendingAttachments
+      .filter(item => !item.uploading && item.messageId && item.dataUrl)
+      .map(item => ({
+        type: 'image' as const,
+        name: item.name,
+        url: item.url,
+        messageId: item.messageId ? String(item.messageId) : undefined,
+        dataUrl: item.dataUrl,
+      }));
+
+    if ((!message.trim() && readyAttachments.length === 0) || !token || sending || uploadingAttachment) return;
 
     // Check rate limit (skip for admin)
     if (user?.role !== 'admin' && rateLimit && !rateLimit.allowed) {
@@ -291,6 +506,7 @@ export default function AITutorPage() {
     }
 
     const messageToSend = message;
+    const attachmentsToSend = readyAttachments;
     const chatId = currentChat?._id || null;
 
     // NEW: user vừa gửi tin nhắn thì luôn kéo xuống đáy để thấy tin nhắn của mình + phản hồi AI
@@ -298,12 +514,24 @@ export default function AITutorPage() {
 
     // Optimistic UI: Show user message immediately
     setOptimisticMessage(messageToSend);
+    setOptimisticAttachments(attachmentsToSend);
     setMessage('');
+    setPendingAttachments(prev => {
+      prev.forEach(item => {
+        if (item.previewUrl) URL.revokeObjectURL(item.previewUrl);
+      });
+      return [];
+    });
     setSending(true);
 
     try {
-      const res = await aitutorApi.sendMessage(chatId, messageToSend, token);
+      const res = await aitutorApi.sendMessage(chatId, messageToSend, token, attachmentsToSend);
       if (res.success) {
+        const assistantIndex = res.data.chat.messages.length - 1;
+        const lastMessage = res.data.chat.messages[assistantIndex];
+        if (lastMessage?.role === 'assistant') {
+          setAnimatingMessageIndex(assistantIndex);
+        }
         setCurrentChat(res.data.chat);
         setChats(prev => {
           const updated = prev.map(c => c._id === res.data.chat._id ? res.data.chat : c);
@@ -324,6 +552,13 @@ export default function AITutorPage() {
     } catch (error) {
       // Restore message to textarea on error
       setMessage(messageToSend);
+      setPendingAttachments(attachmentsToSend.map((item, index) => ({
+        id: `restore-${index}`,
+        name: item.name,
+        url: item.url,
+        messageId: item.messageId,
+        dataUrl: item.dataUrl,
+      })));
       const err = error as Error;
       if (err.message.includes('hôm nay')) {
         toast.error(err.message);
@@ -334,6 +569,7 @@ export default function AITutorPage() {
     } finally {
       setSending(false);
       setOptimisticMessage(null);
+      setOptimisticAttachments([]);
     }
   };
 
@@ -344,6 +580,33 @@ export default function AITutorPage() {
       e.preventDefault();
       sendMessage();
     }
+  };
+
+  const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    if (sending || uploadingAttachment) return;
+
+    const clipboardData = e.clipboardData;
+    if (!clipboardData) return;
+
+    const imageFiles: File[] = [];
+    for (const item of Array.from(clipboardData.items)) {
+      if (item.type.startsWith('image/')) {
+        const file = item.getAsFile();
+        if (file) imageFiles.push(file);
+      }
+    }
+
+    if (imageFiles.length === 0) return;
+
+    e.preventDefault();
+    for (const file of imageFiles) {
+      void uploadImageAttachment(file);
+    }
+  };
+
+  const openImagePreview = (url: string) => {
+    setPreviewImageUrl(url);
+    setIsPreviewOpen(true);
   };
 
   const copyMessage = (content: string) => {
@@ -415,46 +678,6 @@ export default function AITutorPage() {
   const copyCode = (code: string) => {
     navigator.clipboard.writeText(code);
     toast.success('Đã sao chép code');
-  };
-
-  // Auto-wrap math expressions in $...$ if AI forgot to wrap them
-  const autoWrapMath = (text: string): string => {
-    let result = text;
-
-    // First, handle code blocks - don't process inside them
-    const codeBlocks: string[] = [];
-    result = result.replace(/```[\s\S]*?```/g, (match) => {
-      codeBlocks.push(match);
-      return `__CODE_BLOCK_${codeBlocks.length - 1}__`;
-    });
-
-    // Replace escape characters with proper LaTeX
-    result = result.replace(/\\\*/g, '\\times ');
-    result = result.replace(/\\\//g, '\\div ');
-    result = result.replace(/\\_/g, '_');
-
-    // Detect and wrap math expressions - very conservative patterns only
-    // Only process line by line to avoid breaking across lines
-    const lines = result.split('\n');
-    const processedLines = lines.map(line => {
-      // Skip if already has $ or is empty
-      if (line.includes('$') || !line.trim()) return line;
-
-      // Pattern 1: Simple number operations like "50 * 9.8" (single operation only)
-      line = line.replace(/(\d+[\.,]?\d*\s*[\*\/\^]\s*\d+[\.,]?\d*)/g, '$$$1$$');
-      
-      // Pattern 2: Simple variable equations like "F = ma" (short only)
-      line = line.replace(/\b([a-zA-Z]{1,4}\s*=\s*[a-zA-Z]{1,4})\b/g, '$$$1$$');
-
-      return line;
-    });
-
-    result = processedLines.join('\n');
-
-    // Restore code blocks
-    result = result.replace(/__CODE_BLOCK_(\d+)__/g, (_, index) => codeBlocks[parseInt(index)]);
-
-    return result;
   };
 
   // Bỏ phần resize khỏi onChange, chỉ còn cập nhật state để tránh
@@ -696,60 +919,24 @@ export default function AITutorPage() {
                       }`}
                   >
                     {msg.role === 'assistant' ? (
-                      typingMessageIndex === index ? (
-                        // NEW: trong lúc đang "gõ chữ", render plain text (không qua ReactMarkdown)
-                        // để tránh việc parse lại toàn bộ Markdown mỗi frame -> hết giật.
-                        // Khi gõ xong sẽ tự chuyển sang nhánh ReactMarkdown bên dưới để có định dạng đầy đủ.
-                        <div className="prose prose-sm max-w-none text-sm md:text-base text-justify whitespace-pre-wrap">
-                          {typedContent}
-                        </div>
-                      ) : (
-                        <div className="prose prose-sm max-w-none text-sm md:text-base text-justify">
-                          <ReactMarkdown
-                            remarkPlugins={[remarkGfm, [remarkMath, { singleDollar: true, doubleDollar: true }]]}
-                            rehypePlugins={[rehypeKatex]}
-                            components={{
-                              pre: ({ children, ...props }) => {
-                                const codeContent = typeof children === 'string'
-                                  ? children
-                                  : (React.isValidElement(children) && typeof (children as React.ReactElement<Record<string, unknown>>).props.children === 'string' ? (children as React.ReactElement<Record<string, unknown>>).props.children : '') || '';
-                                return (
-                                  <div className="relative">
-                                    <button
-                                      onClick={() => copyCode(String(codeContent))}
-                                      className="absolute top-2 right-2 p-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg transition z-10"
-                                      title="Sao chép code"
-                                    >
-                                      <Copy className="w-4 h-4 text-gray-600" />
-                                    </button>
-                                    <pre className="bg-gray-50 p-4 rounded-xl border border-gray-200 text-gray-900 overflow-x-auto pt-8" {...props}>
-                                      {children}
-                                    </pre>
-                                  </div>
-                                );
-                              },
-                              code: ({ className, children, ...props }) => {
-                                const isInline = !className;
-                                return isInline ? (
-                                  <code className="bg-indigo-50 text-indigo-700 px-2 py-1 rounded-lg text-sm font-medium" {...props}>
-                                    {children}
-                                  </code>
-                                ) : (
-                                  <code className="text-gray-900" {...props}>
-                                    {children}
-                                  </code>
-                                );
-                              }
-                            }}
-                          >
-                            {autoWrapMath(msg.content)}
-                          </ReactMarkdown>
-                        </div>
-                      )
+                      <AssistantMessageContent
+                        content={
+                          animatingMessageIndex === index && (isTyping || typedContent)
+                            ? typedContent
+                            : msg.content
+                        }
+                        isStreaming={animatingMessageIndex === index && isTyping}
+                        onCopyCode={copyCode}
+                      />
                     ) : (
-                      <p className="whitespace-pre-wrap text-sm md:text-base text-left">{msg.content}</p>
+                      <>
+                        {cleanUserMessageContent(msg.content) && (
+                          <p className="whitespace-pre-wrap text-sm md:text-base text-left">{cleanUserMessageContent(msg.content)}</p>
+                        )}
+                        <MessageAttachments attachments={msg.attachments} onPreview={openImagePreview} />
+                      </>
                     )}
-                    {msg.role === 'assistant' && typingMessageIndex !== index && (
+                    {msg.role === 'assistant' && animatingMessageIndex !== index && (
                       <div className="flex items-center gap-3 mt-2 text-gray-400">
                         <button
                           onClick={() => copyMessage(msg.content)}
@@ -780,13 +967,16 @@ export default function AITutorPage() {
                   </div>
                 </div>
               ))}
-              {optimisticMessage && (
+              {optimisticMessage !== null || optimisticAttachments.length > 0 ? (
                 <div className="flex justify-end">
                   <div className="max-w-[85%] md:max-w-[75%] bg-gradient-to-br from-indigo-500 to-purple-600 text-white rounded-2xl px-4 py-2.5 md:py-3 shadow-sm">
-                    <p className="whitespace-pre-wrap text-sm md:text-base text-left">{optimisticMessage}</p>
+                    {optimisticMessage && (
+                      <p className="whitespace-pre-wrap text-sm md:text-base text-left">{optimisticMessage}</p>
+                    )}
+                    <MessageAttachments attachments={optimisticAttachments} onPreview={openImagePreview} />
                   </div>
                 </div>
-              )}
+              ) : null}
               {sending && (
                 <div className="flex justify-start">
                   <div className="rounded-2xl px-4 py-2.5 md:py-3 flex items-center gap-1">
@@ -804,26 +994,94 @@ export default function AITutorPage() {
         {/* Input Area - Fixed at bottom on mobile, normal on desktop */}
         <div className="fixed md:relative bottom-0 left-0 right-0 md:left-auto md:right-auto bg-white/80 backdrop-blur-lg border-t border-white/20 p-4 md:p-6 flex-shrink-0 z-40">
           <div className="max-w-4xl mx-auto">
-            <div className="relative">
-              <textarea
-                ref={textareaRef}
-                value={message}
-                onChange={handleTextareaChange}
-                onKeyDown={handleKeyDown}
-                placeholder={!currentChat ? "Nhập câu hỏi để bắt đầu cuộc trò chuyện mới..." : "Nhập câu hỏi của bạn..."}
-                disabled={sending}
-                rows={1}
-                className="w-full px-4 py-2.5 pr-14 bg-white border border-gray-200 rounded-[15px] focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:bg-gray-50 disabled:cursor-not-allowed text-sm md:text-base shadow-sm resize-none overflow-y-auto"
-                style={{ minHeight: '42px', maxHeight: '150px', scrollbarWidth: 'thin', scrollbarColor: 'transparent transparent' }}
-              />
-              <button
-                onClick={sendMessage}
-                disabled={!message.trim() || sending}
-                className="absolute right-2 bottom-3 p-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-full hover:shadow-lg hover:shadow-indigo-500/25 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <ArrowUp className="w-4 h-4" />
-              </button>
+            {pendingAttachments.length > 0 && (
+              <div className="mb-3 flex flex-wrap gap-2">
+                {pendingAttachments.map((attachment) => (
+                  <div
+                    key={attachment.id}
+                    className="relative group"
+                  >
+                    {attachment.previewUrl ? (
+                      <button
+                        type="button"
+                        onClick={() => !attachment.uploading && openImagePreview(attachment.previewUrl!)}
+                        disabled={attachment.uploading}
+                        className="block cursor-zoom-in disabled:cursor-default"
+                      >
+                        <img
+                          src={attachment.previewUrl}
+                          alt=""
+                          className="w-16 h-16 rounded-xl object-cover border border-gray-200"
+                        />
+                      </button>
+                    ) : null}
+                    {attachment.uploading && (
+                      <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-black/40">
+                        <Loader2 className="w-4 h-4 animate-spin text-white" />
+                      </div>
+                    )}
+                    {!attachment.uploading && (
+                      <button
+                        type="button"
+                        onClick={() => removePendingAttachment(attachment.id)}
+                        className="absolute -top-1.5 -right-1.5 p-0.5 rounded-full bg-gray-800 text-white hover:bg-gray-700 shadow"
+                        title="Xóa"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="relative flex items-end gap-2">
+              <div className="flex items-center gap-1 pb-2">
+                <button
+                  type="button"
+                  onClick={() => imageInputRef.current?.click()}
+                  disabled={sending || uploadingAttachment}
+                  className="p-2 rounded-xl text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 transition disabled:opacity-50"
+                  title="Gửi ảnh"
+                >
+                  <ImageIcon className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="relative flex-1">
+                <textarea
+                  ref={textareaRef}
+                  value={message}
+                  onChange={handleTextareaChange}
+                  onKeyDown={handleKeyDown}
+                  onPaste={handlePaste}
+                  placeholder={!currentChat ? "Nhập câu hỏi để bắt đầu cuộc trò chuyện mới..." : "Nhập câu hỏi của bạn..."}
+                  disabled={sending || uploadingAttachment}
+                  rows={1}
+                  className="w-full px-4 py-2.5 pr-14 bg-white border border-gray-200 rounded-[15px] focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:bg-gray-50 disabled:cursor-not-allowed text-sm md:text-base shadow-sm resize-none overflow-y-auto"
+                  style={{ minHeight: '42px', maxHeight: '150px', scrollbarWidth: 'thin', scrollbarColor: 'transparent transparent' }}
+                />
+                <button
+                  onClick={sendMessage}
+                  disabled={(!message.trim() && pendingAttachments.filter(item => !item.uploading && item.messageId && item.dataUrl).length === 0) || sending || uploadingAttachment}
+                  className="absolute right-2 bottom-3 p-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-full hover:shadow-lg hover:shadow-indigo-500/25 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <ArrowUp className="w-4 h-4" />
+                </button>
+              </div>
             </div>
+
+            <input
+              ref={imageInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) void uploadImageAttachment(file);
+                e.target.value = '';
+              }}
+            />
           </div>
         </div>
       </div>
@@ -875,6 +1133,15 @@ export default function AITutorPage() {
           </div>
         </div>
       )}
+
+      <ImagePreviewModal
+        src={previewImageUrl}
+        isOpen={isPreviewOpen}
+        onClose={() => {
+          setIsPreviewOpen(false);
+          setPreviewImageUrl(null);
+        }}
+      />
     </div>
   );
 }

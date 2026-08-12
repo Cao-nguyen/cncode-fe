@@ -318,9 +318,22 @@ export const khoahocApi = {
         return response.data.data;
     },
 
-    getLesson: async (lessonId: string): Promise<Lesson> => {
-        const response = await apiClient.get(`/baihoc/${lessonId}`);
-        return response.data.data;
+    getLesson: async (lessonId: string): Promise<Lesson | null> => {
+        if (!lessonId || lessonId === 'undefined' || lessonId === 'null') {
+            return null;
+        }
+
+        try {
+            const response = await apiClient.get(`/baihoc/${lessonId}`);
+            return response.data?.data ?? null;
+        } catch (error) {
+            if (axios.isAxiosError(error)) {
+                const status = error.response?.status;
+                if (status === 404) return null;
+                console.error('[getLesson]', status, error.response?.data ?? error.message);
+            }
+            throw error;
+        }
     },
 
     getExerciseByLessonId: async (lessonId: string): Promise<Exercise | null> => {

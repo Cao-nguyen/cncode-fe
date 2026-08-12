@@ -114,6 +114,42 @@ body {
 }
 
 /* ========== UTILITY CLASSES ========== */
+.select-text,
+.select-text .static-editor,
+.select-text .static-editor * {
+  user-select: text !important;
+  -webkit-user-select: text !important;
+}
+
+.web-code-editor .cm-content,
+.web-code-editor .cm-line,
+.algorithm-code-editor .cm-content,
+.algorithm-code-editor .cm-line,
+.algorithm-stdin-editor .cm-content,
+.algorithm-stdin-editor .cm-line {
+  user-select: text !important;
+  -webkit-user-select: text !important;
+}
+
+.web-code-editor .cm-line::selection,
+.web-code-editor .cm-line *::selection,
+.web-code-editor .cm-content ::selection,
+.algorithm-code-editor .cm-line::selection,
+.algorithm-code-editor .cm-line *::selection,
+.algorithm-code-editor .cm-content ::selection,
+.algorithm-stdin-editor .cm-line::selection,
+.algorithm-stdin-editor .cm-line *::selection,
+.algorithm-stdin-editor .cm-content ::selection {
+  background-color: #1a6bb8 !important;
+  color: #ffffff !important;
+}
+
+.web-code-editor .cm-content,
+.algorithm-code-editor .cm-content,
+.algorithm-stdin-editor .cm-content {
+  background-color: transparent !important;
+}
+
 .no-download {
   user-select: none;
   -webkit-user-drag: none;
@@ -404,6 +440,36 @@ svg.lucide[data-filled="false"] {
 
 .static-content tr:last-child td:last-child {
   border-bottom-right-radius: 8px;
+}
+
+/* Comment editor — table borders */
+.comment-wysiwyg .tableWrapper {
+  overflow-x: auto;
+  margin: 0.5rem 0;
+}
+
+.comment-wysiwyg table {
+  border-collapse: collapse !important;
+  width: 100%;
+  border: 1px solid #94a3b8 !important;
+}
+
+.comment-wysiwyg th,
+.comment-wysiwyg td {
+  border: 1px solid #94a3b8 !important;
+  padding: 8px !important;
+  min-width: 72px;
+  vertical-align: top;
+}
+
+.comment-wysiwyg th {
+  background: #f1f5f9 !important;
+  font-weight: 600;
+}
+
+.comment-wysiwyg td p,
+.comment-wysiwyg th p {
+  margin: 0;
 }
 
 /* Responsive table */

@@ -33,7 +33,7 @@ const getToken = (): string | null => {
     }
 };
 
-const compressImage = (base64: string, maxWidth: number = 1200, quality: number = 0.7): Promise<string> => {
+export const compressImage = (base64: string, maxWidth: number = 1200, quality: number = 0.7): Promise<string> => {
     return new Promise((resolve) => {
         const img = new Image();
         img.onload = () => {
@@ -286,7 +286,7 @@ export const uploadApi = {
         }
     },
 
-    uploadFile: async (base64File: string, folder: string = 'general'): Promise<UploadResponse> => {
+    uploadFile: async (base64File: string, folder: string = 'general', fileName?: string): Promise<UploadResponse> => {
         const token = getToken();
         if (!token) {
             return { success: false, message: 'Chưa đăng nhập' };
@@ -299,7 +299,7 @@ export const uploadApi = {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify({ file: base64File, folder })
+                body: JSON.stringify({ file: base64File, folder, fileName })
             });
 
             const data = await response.json();

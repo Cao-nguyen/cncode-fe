@@ -16,11 +16,11 @@ export function useAdminHelpCenter() {
         totalPages: 0
     });
 
-    const fetchAllFAQs = useCallback(async (page: number = 1, category: string = 'all', search: string = '') => {
+    const fetchAllFAQs = useCallback(async (page: number = 1, category: string = 'all', search: string = '', limit: number = 20) => {
         setLoading(true);
         setError(null);
         try {
-            const response: HelpCenterListResponse = await helpCenterApi.getAllFAQs(page, 20, category, search);
+            const response: HelpCenterListResponse = await helpCenterApi.getAllFAQs(page, limit, category, search);
             if (response.success && response.data) {
                 setFaqs(response.data);
                 if (response.pagination) {

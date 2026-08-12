@@ -1,6 +1,20 @@
 import axios from 'axios';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+/** Chuẩn hóa base URL — .env có thể là `http://localhost:5000` hoặc `http://localhost:5000/api`. */
+const getApiRoot = () => {
+    const raw = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+    return raw.replace(/\/api\/?$/, '');
+};
+
+function unwrapApiPayload<T>(payload: unknown): T {
+    if (payload && typeof payload === 'object' && 'data' in payload) {
+        const wrapped = payload as { data?: T };
+        if (wrapped.data !== undefined && wrapped.data !== null) {
+            return wrapped.data;
+        }
+    }
+    return payload as T;
+};
 
 const getToken = (): string | null => {
     if (typeof window === 'undefined') return null;
@@ -15,7 +29,7 @@ const getToken = (): string | null => {
 };
 
 const apiClient = axios.create({
-    baseURL: `${API_URL}/api/luyentap`,
+    baseURL: `${getApiRoot()}/api/luyentap`,
     headers: {
         'Content-Type': 'application/json',
     },
@@ -49,12 +63,29 @@ export interface User {
 
 export interface Question {
     _id?: string;
-    type: 'multiple-choice' | 'true-false' | 'short-answer';
+    type: 'multiple-choice' | 'multiple-select' | 'true-false' | 'matching' | 'short-answer' | 'essay' | 'code';
     question: string;
     explanation?: string;
+    points?: number;
     options?: Array<{ _id?: string; text: string; isCorrect: boolean }>;
-    trueFalseOptions?: Array<{ text: string; isCorrect: boolean }>;
+    trueFalseOptions?: Array<{ _id?: string; text: string; isCorrect: boolean }>;
     correctAnswer?: string;
+    sampleAnswer?: string;
+    codeMode?: 'algorithm' | 'web';
+    language?: string;
+    starterCode?: string;
+    testCases?: Array<{ _id?: string; input?: string; expectedOutput?: string; isSample?: boolean }>;
+    webRequirements?: Array<{
+        type: string;
+        selector?: string;
+        tag?: string;
+        property?: string;
+        value?: string;
+        text?: string;
+    }>;
+    leftItems?: Array<{ _id?: string; text: string }>;
+    rightItems?: Array<{ _id?: string; text: string }>;
+    matchingPairs?: Array<{ leftIndex: number; rightIndex: number }>;
 }
 
 export interface Exercise {
@@ -66,10 +97,47 @@ export interface Exercise {
     duration: number;
     questions: Question[];
     totalPoints: number;
-    status: 'draft' | 'published';
+    status: 'draft' | 'pending' | 'published' | 'rejected';
+    tier?: 'free' | 'pro';
+    difficulty?: 'easy' | 'medium' | 'hard';
+    price?: number;
+    discountType?: 'percent' | 'vnd';
+    discountValue?: number;
+    discountPrice?: number;
+    allowCoinPayment?: boolean;
+    passThreshold?: number;
+    creationMethod?: 'editor' | 'upload';
+    rejectionReason?: string;
+    grade?: string;
+    examPurpose?: string;
+    deliveryFrom?: string;
+    deliveryTo?: string;
+    examPassword?: string;
+    proctoring?: 'off' | 'tab-switch';
+    verifyStudentInfo?: boolean;
+    studentInfoFields?: {
+        fullName?: boolean;
+        className?: boolean;
+        custom?: Array<{ label: string; required?: boolean }>;
+    };
+    shuffleQuestions?: boolean;
+    shuffleAnswers?: boolean;
+    essayKeyboard?: 'basic' | 'math' | 'editor';
+    showScoreWhen?: 'never' | 'after-submit' | 'after-expiry';
+    showAnswersWhen?: 'never' | 'after-submit' | 'after-expiry';
+    hideLeaderboard?: boolean;
+    preExamNoticeEnabled?: boolean;
+    preExamNotice?: string;
     createdBy?: string | User;
     participantCount: number;
     maxAttempts: number;
+    questionCount?: number;
+    trueFalseScale?: {
+        correct1?: number;
+        correct2?: number;
+        correct3?: number;
+        correct4?: number;
+    };
     createdAt: string;
     updatedAt: string;
 }
@@ -110,18 +178,17 @@ export interface LeaderboardEntry {
 // Public APIs
 export const getPublicExercises = async (params?: { page?: number; limit?: number }) => {
     const response = await apiClient.get('/public', { params });
-    const result = response.data.data || response.data;
-    return result;
+    return unwrapApiPayload<{ exercises: Exercise[]; total: number; page: number; limit: number }>(response.data);
 };
 
 export const getExerciseBySlug = async (slug: string) => {
     const response = await apiClient.get(`/public/${slug}`);
-    return response.data;
+    return unwrapApiPayload<Exercise>(response.data);
 };
 
 export const getPublicExerciseById = async (id: string) => {
     const response = await apiClient.get(`/public/id/${id}`);
-    return response.data.data || response.data;
+    return unwrapApiPayload<Exercise>(response.data);
 };
 
 export const getOverallLeaderboard = async (limit?: number) => {
@@ -146,6 +213,8 @@ export const submitExerciseAnswer = async (exerciseId: string, data: {
         selectedOption?: string;
         trueFalseAnswers?: Array<{ optionIndex: number; isTrue: boolean }>;
         shortAnswer?: string;
+        essayAnswer?: string;
+        codeAnswer?: string;
     }>;
     timeSpent: number;
 }) => {
@@ -197,21 +266,11 @@ export const runCodeTest = async (data: {
     code: string;
     input?: string;
     expectedOutput?: string;
+    codeMode?: 'algorithm' | 'web';
+    webRequirements?: Question['webRequirements'];
 }) => {
-    try {
-        const response = await apiClient.post('/run-code', data);
-        return response.data;
-    } catch (error) {
-        // Mock response for development when backend is not available
-        return {
-            success: true,
-            data: {
-                output: 'Code execution not available in development',
-                passed: false,
-                error: 'Backend code execution service not configured'
-            }
-        };
-    }
+    const response = await apiClient.post('/run-code', data);
+    return response.data;
 };
 
 export const getAdminExerciseById = async (id: string) => {
@@ -234,9 +293,16 @@ export const deleteExercise = async (id: string) => {
     return response.data;
 };
 
+export const scanAiExplanations = async (content: string) => {
+    const response = await apiClient.post('/admin/scan-explanations', { content });
+    const data = response.data.data || response.data;
+    return data.explanations || [];
+};
+
 // Export as named export for easier imports
 export const luyentapApi = {
     getPublicExercises,
+    getPublicExerciseById,
     getExerciseBySlug,
     getOverallLeaderboard,
     getExerciseLeaderboard,
@@ -260,6 +326,7 @@ export const luyentapApi = {
     adminDelete: deleteExercise,
     adminApprove: approveExercise,
     adminReject: rejectExercise,
+    scanAiExplanations,
 };
 
 export default luyentapApi;

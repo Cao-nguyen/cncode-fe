@@ -1,4 +1,4 @@
-export type PracticeQuestionType = 'quiz' | 'true-false' | 'short-answer' | 'essay' | 'code';
+export type PracticeQuestionType = 'quiz' | 'multiple-select' | 'true-false' | 'matching' | 'short-answer' | 'essay' | 'code';
 export type PracticeTier = 'free' | 'pro';
 export type PracticeStatus = 'draft' | 'pending' | 'approved' | 'rejected';
 export type CodeLanguage = 'python' | 'pascal' | 'cpp' | 'csharp' | 'html' | 'css' | 'javascript';
@@ -13,6 +13,7 @@ export interface PracticeTestCase {
     _id?: string;
     input?: string;
     expectedOutput?: string;
+    isSample?: boolean;
 }
 
 export interface PracticeQuestion {
@@ -24,9 +25,22 @@ export interface PracticeQuestion {
     trueFalseOptions?: PracticeOption[];
     correctAnswer?: string;
     maxLength?: number;
+    sampleAnswer?: string;
+    codeMode?: 'algorithm' | 'web';
     language?: CodeLanguage;
     starterCode?: string;
     testCases?: PracticeTestCase[];
+    webRequirements?: Array<{
+        type: 'has-tag' | 'has-text' | 'has-style' | 'contains';
+        selector?: string;
+        tag?: string;
+        property?: string;
+        value?: string;
+        text?: string;
+    }>;
+    leftItems?: Array<{ _id?: string; text: string }>;
+    rightItems?: Array<{ _id?: string; text: string }>;
+    matchingPairs?: Array<{ leftIndex: number; rightIndex: number }>;
 }
 
 export interface PracticeSet {
@@ -36,6 +50,11 @@ export interface PracticeSet {
     description?: string;
     tier: PracticeTier;
     status: PracticeStatus;
+    price?: number;
+    discountType?: 'percent' | 'vnd';
+    discountValue?: number;
+    discountPrice?: number;
+    allowCoinPayment?: boolean;
     author?: {
         _id: string;
         fullName?: string;
@@ -48,6 +67,26 @@ export interface PracticeSet {
     timeLimit?: number;
     passThreshold?: number;
     rejectionReason?: string;
+    grade?: string;
+    examPurpose?: string;
+    deliveryFrom?: string;
+    deliveryTo?: string;
+    examPassword?: string;
+    proctoring?: 'off' | 'tab-switch';
+    verifyStudentInfo?: boolean;
+    studentInfoFields?: {
+        fullName?: boolean;
+        className?: boolean;
+        custom?: Array<{ label: string; required?: boolean }>;
+    };
+    shuffleQuestions?: boolean;
+    shuffleAnswers?: boolean;
+    essayKeyboard?: 'basic' | 'math' | 'editor';
+    showScoreWhen?: 'never' | 'after-submit' | 'after-expiry';
+    showAnswersWhen?: 'never' | 'after-submit' | 'after-expiry';
+    hideLeaderboard?: boolean;
+    preExamNoticeEnabled?: boolean;
+    preExamNotice?: string;
     attemptCount?: number;
     questionCount?: number;
     locked?: boolean;
@@ -58,7 +97,13 @@ export interface PracticeSet {
 
 export interface PracticeAnswer {
     questionId: string;
-    answer: string | number | Record<string, boolean> | Array<{ optionId: string; answer: boolean }>;
+    answer:
+        | string
+        | number
+        | number[]
+        | Array<{ leftIndex: number; rightIndex: number }>
+        | Record<string, boolean>
+        | Array<{ optionId: string; answer: boolean }>;
 }
 
 export interface QuestionResult {
@@ -103,6 +148,11 @@ export interface CreatePracticeDto {
     description?: string;
     tier?: PracticeTier;
     status?: PracticeStatus;
+    price?: number;
+    discountType?: 'percent' | 'vnd';
+    discountValue?: number;
+    allowCoinPayment?: boolean;
+    creationMethod?: 'editor' | 'upload';
     questions: PracticeQuestion[];
     timeLimit?: number;
     passThreshold?: number;
@@ -116,11 +166,19 @@ export interface PracticeListResponse {
 
 export const QUESTION_TYPE_LABELS: Record<PracticeQuestionType, string> = {
     quiz: 'Trắc nghiệm',
+    'multiple-select': 'TN nhiều đáp án',
     'true-false': 'Đúng/Sai',
+    matching: 'Nối câu',
     'short-answer': 'Trả lời ngắn',
     essay: 'Tự luận',
     code: 'Code',
 };
+
+/** Nhãn tiếng Việt — chấp nhận cả type backend (multiple-choice) lẫn frontend (quiz). */
+export function getQuestionTypeLabel(type: string): string {
+    const frontendType = type === 'multiple-choice' ? 'quiz' : type;
+    return QUESTION_TYPE_LABELS[frontendType as PracticeQuestionType] ?? type;
+}
 
 export const CODE_LANGUAGES: { value: CodeLanguage; label: string }[] = [
     { value: 'javascript', label: 'JavaScript' },

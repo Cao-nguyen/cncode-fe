@@ -1,5 +1,6 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import {
     MoreHorizontal,
     Flag,
@@ -16,7 +17,9 @@ import { useAuthStore } from '@/store/auth.store';
 import { toast } from 'sonner';
 import { CustomTextCmt } from '@/components/custom/CustomTextCmt';
 import { commentApi } from '@/lib/api/comment.api';
-import { getImageUrl } from '@/lib/utils/imageUrl';
+import { getImageUrl, getVideoUrl } from '@/lib/utils/imageUrl';
+import StaticContent from '@/components/common/StaticContent';
+import { isHtmlContent, isCommentContentEmpty } from '@/lib/comment-content';
 
 interface CommentUser {
     _id: string;
@@ -45,7 +48,7 @@ interface CommentType {
 interface CommentItemProps {
     comment: CommentType;
     onLike: (commentId: string, type: string) => void;
-    onReply: (commentId: string, content: string) => void;
+    onReply: (commentId: string, content: string, attachments?: string[]) => void;
     onEdit: (commentId: string, content: string) => void;
     onDelete: (commentId: string) => void;
     onReport: (
@@ -78,47 +81,117 @@ const REPORT_REASONS = [
     { value: 'other', label: 'Khác - Vui lòng nhập lý do cụ thể' }
 ];
 
-function HighlightedText({
-    text,
-    parentUserName
-}: {
-    text: string;
-    parentUserName?: string;
-}) {
-    if (parentUserName) {
-        const escapedName = parentUserName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const regex = new RegExp(`(@${escapedName})(?=\\s|$)`, 'g');
-        const parts = text.split(regex);
-        return (
-            <span className="text-sm text-gray-700 break-words leading-relaxed">
-                {parts.map((part, index) => {
-                    if (part === `@${parentUserName}`) {
-                        return (
-                            <span key={index} className="font-semibold text-blue-600">
-                                {part}
-                            </span>
-                        );
-                    }
-                    return part;
-                })}
-            </span>
-        );
-    }
+function isVideoUrl(url: string) {
+    return url.startsWith('video::')
+        || /\.(mp4|webm|mov|m4v)(\?|$)/i.test(url)
+        || url.includes('/video/');
+}
 
-    const parts = text.split(/(@\S+)/g);
+function stripMediaPrefix(url: string) {
+    if (url.startsWith('video::')) return url.slice('video::'.length);
+    return url;
+}
+
+function commentMarkdownToHtml(text: string): string {
+    if (!text.trim() || text.trim() === ' ') return '';
+    let html = text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    html = html.replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>');
+    html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+    html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+    html = html.replace(/~~(.+?)~~/g, '<del>$1</del>');
+    html = html.replace(/<u>(.+?)<\/u>/g, '<u>$1</u>');
+    html = html.replace(/<sup>(.+?)<\/sup>/g, '<sup>$1</sup>');
+    html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+    html = html.replace(/^&gt; (.+)$/gm, '<blockquote>$1</blockquote>');
+    html = html.replace(/(@[\wÀ-ỹ]+(?:\s[\wÀ-ỹ]+)*)/g, '<span class="font-semibold text-blue-600">$1</span>');
+    html = html.replace(/\n/g, '<br/>');
+    return html;
+}
+
+function resolveAttachmentSrc(url: string) {
+    const normalized = stripMediaPrefix(url);
+    if (isVideoUrl(url)) {
+        if (normalized.includes('/proxy/video/') || normalized.startsWith('http')) return getImageUrl(normalized);
+        return getVideoUrl(normalized);
+    }
+    return getImageUrl(normalized);
+}
+
+function CommentAttachments({ attachments }: { attachments: string[] }) {
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+    const [previewType, setPreviewType] = useState<'image' | 'video'>('image');
+
+    if (!attachments?.length) return null;
+
+    const openPreview = (url: string) => {
+        setPreviewType(isVideoUrl(url) ? 'video' : 'image');
+        setPreviewUrl(url);
+    };
+
     return (
-        <span className="text-sm text-gray-700 break-words leading-relaxed">
-            {parts.map((part, index) => {
-                if (part.startsWith('@')) {
-                    return (
-                        <span key={index} className="font-semibold text-blue-600">
-                            {part}
-                        </span>
-                    );
-                }
-                return part;
-            })}
-        </span>
+        <>
+            <div className="flex flex-wrap gap-2 mt-2">
+                {attachments.map((url, index) => (
+                    <button
+                        key={`${url}-${index}`}
+                        type="button"
+                        onClick={() => openPreview(url)}
+                        className="max-w-full rounded-lg overflow-hidden border border-gray-200 hover:opacity-90 transition-opacity"
+                        title="Xem media"
+                    >
+                        {isVideoUrl(url) ? (
+                            <video
+                                src={resolveAttachmentSrc(url)}
+                                className="max-h-56 max-w-full bg-black pointer-events-none"
+                                muted
+                                playsInline
+                            />
+                        ) : (
+                            <img
+                                src={resolveAttachmentSrc(url)}
+                                alt=""
+                                className="max-h-56 max-w-full object-contain"
+                            />
+                        )}
+                    </button>
+                ))}
+            </div>
+
+            {previewUrl && (
+                <div
+                    className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 p-4"
+                    onClick={() => setPreviewUrl(null)}
+                >
+                    <button
+                        type="button"
+                        onClick={() => setPreviewUrl(null)}
+                        className="absolute top-4 right-4 p-2 rounded-full bg-black/60 text-white hover:bg-black/80"
+                    >
+                        <X size={20} />
+                    </button>
+                    <div className="max-w-[min(960px,95vw)] max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
+                        {previewType === 'video' ? (
+                            <video
+                                src={resolveAttachmentSrc(previewUrl)}
+                                controls
+                                autoPlay
+                                className="max-h-[90vh] max-w-full rounded-lg bg-black"
+                            />
+                        ) : (
+                            <img
+                                src={resolveAttachmentSrc(previewUrl)}
+                                alt=""
+                                className="max-h-[90vh] max-w-full rounded-lg object-contain"
+                            />
+                        )}
+                    </div>
+                </div>
+            )}
+        </>
     );
 }
 
@@ -138,6 +211,7 @@ export default function CommentItem({
     const [isEditing, setIsEditing] = useState(false);
     const [editContent, setEditContent] = useState(comment.content);
     const [replyContent, setReplyContent] = useState('');
+    const [replyAttachments, setReplyAttachments] = useState<string[]>([]);
     const [showReactionPicker, setShowReactionPicker] = useState(false);
     const [showMoreMenu, setShowMoreMenu] = useState(false);
     const [showAllReplies, setShowAllReplies] = useState(false);
@@ -145,6 +219,7 @@ export default function CommentItem({
     const [showReportModal, setShowReportModal] = useState(false);
     const [selectedReason, setSelectedReason] = useState('');
     const [customReason, setCustomReason] = useState('');
+    const [isReporting, setIsReporting] = useState(false);
     const [showReactionModal, setShowReactionModal] = useState(false);
     const [reactionUsers, setReactionUsers] = useState<Array<{
         userId: CommentUser;
@@ -157,6 +232,23 @@ export default function CommentItem({
     const reactionPickerRef = useRef<HTMLDivElement>(null);
     const moreMenuRef = useRef<HTMLDivElement>(null);
     const moreButtonRef = useRef<HTMLButtonElement>(null);
+    const [menuPosition, setMenuPosition] = useState<{ top: number; left: number } | null>(null);
+
+    const openMoreMenu = useCallback(() => {
+        if (moreButtonRef.current) {
+            const rect = moreButtonRef.current.getBoundingClientRect();
+            setMenuPosition({
+                top: rect.bottom + 4,
+                left: Math.max(8, rect.right - 140),
+            });
+        }
+        setShowMoreMenu(true);
+    }, []);
+
+    const closeMoreMenu = useCallback(() => {
+        setShowMoreMenu(false);
+        setMenuPosition(null);
+    }, []);
 
     const isOwner = user?._id === comment.userId?._id;
     const reactionCount = Object.values(comment.reactions || {}).reduce((a, b) => a + b, 0);
@@ -189,6 +281,12 @@ export default function CommentItem({
         });
     };
 
+    useEffect(() => {
+        if (!isEditing) {
+            setEditContent(comment.content);
+        }
+    }, [comment.content, isEditing]);
+
     // Click outside handlers
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -201,13 +299,26 @@ export default function CommentItem({
                 moreButtonRef.current &&
                 !moreButtonRef.current.contains(event.target as Node)
             ) {
-                setShowMoreMenu(false);
+                closeMoreMenu();
             }
         };
 
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
+    }, [closeMoreMenu]);
+
+    useEffect(() => {
+        if (!showMoreMenu) return;
+
+        const handleDismiss = () => closeMoreMenu();
+        window.addEventListener('scroll', handleDismiss, true);
+        window.addEventListener('resize', handleDismiss);
+
+        return () => {
+            window.removeEventListener('scroll', handleDismiss, true);
+            window.removeEventListener('resize', handleDismiss);
+        };
+    }, [showMoreMenu, closeMoreMenu]);
 
     // Prevent scroll when modal open
     useEffect(() => {
@@ -227,21 +338,28 @@ export default function CommentItem({
     };
 
     const handleSubmitReply = async () => {
-        if (!replyContent.trim()) {
-            toast.warning('Vui lòng nhập nội dung');
+        if (isCommentContentEmpty(replyContent) && replyAttachments.length === 0) {
+            toast.warning('Vui lòng nhập nội dung hoặc đính kèm media');
             return;
         }
         setIsSubmitting(true);
         let content = replyContent;
-        if (parentUserName) content = `@${parentUserName} ${replyContent}`;
-        await onReply(comment._id, content);
+        if (parentUserName && !content.includes(`@${parentUserName}`)) {
+            if (isHtmlContent(content)) {
+                content = `<p><strong class="text-blue-600">@${parentUserName}</strong> </p>${content}`;
+            } else {
+                content = `@${parentUserName} ${content.trim()}`;
+            }
+        }
+        await onReply(comment._id, content, replyAttachments);
         setReplyContent('');
+        setReplyAttachments([]);
         setShowReplyInput(false);
         setIsSubmitting(false);
     };
 
     const handleSubmitEdit = async () => {
-        if (!editContent.trim()) {
+        if (isCommentContentEmpty(editContent)) {
             toast.warning('Vui lòng nhập nội dung');
             return;
         }
@@ -251,16 +369,25 @@ export default function CommentItem({
         setIsSubmitting(false);
     };
 
-    const handleReportSubmit = () => {
+    const handleReportSubmit = async () => {
         if (!selectedReason) {
             toast.warning('Vui lòng chọn lý do báo cáo');
             return;
         }
-        const description = selectedReason === 'other' ? customReason : undefined;
-        onReport(comment._id, selectedReason, description);
-        setShowReportModal(false);
-        setSelectedReason('');
-        setCustomReason('');
+        if (selectedReason === 'other' && !customReason.trim()) {
+            toast.warning('Vui lòng nhập lý do cụ thể');
+            return;
+        }
+        setIsReporting(true);
+        try {
+            const description = selectedReason === 'other' ? customReason.trim() : undefined;
+            await onReport(comment._id, selectedReason, description);
+            setShowReportModal(false);
+            setSelectedReason('');
+            setCustomReason('');
+        } finally {
+            setIsReporting(false);
+        }
     };
 
     const getUserAvatar = () => comment.userId?.avatar;
@@ -327,7 +454,7 @@ export default function CommentItem({
                 </div>
 
                 {/* Nội dung */}
-                <div className="flex-1 min-w-0 max-w-full overflow-hidden">
+                <div className="flex-1 min-w-0 max-w-full">
                     <div className="relative">
                         <div className="px-1 py-1">
                             <div className="flex items-center justify-between gap-2 mb-1">
@@ -344,57 +471,17 @@ export default function CommentItem({
                                     )}
                                 </div>
 
-                                <button
-                                    ref={moreButtonRef}
-                                    onClick={() => setShowMoreMenu(!showMoreMenu)}
-                                    className="p-1.5 rounded-full hover:bg-gray-200 transition text-gray-400 hover:text-gray-600 flex-shrink-0"
-                                >
-                                    <MoreHorizontal size={14} />
-                                </button>
-
-                                {showMoreMenu && (
-                                    <div
-                                        ref={moreMenuRef}
-                                        className="absolute right-0 top-6 z-[100] bg-white rounded-lg shadow-lg border border-gray-200 py-1 min-w-[140px]"
+                                <div className="relative shrink-0">
+                                    <button
+                                        ref={moreButtonRef}
+                                        onClick={() => (showMoreMenu ? closeMoreMenu() : openMoreMenu())}
+                                        className="p-1.5 rounded-full hover:bg-gray-200 transition text-gray-400 hover:text-gray-600"
+                                        aria-expanded={showMoreMenu}
+                                        aria-haspopup="menu"
                                     >
-                                        {!isOwner && (
-                                            <button
-                                                onClick={() => {
-                                                    setShowMoreMenu(false);
-                                                    setShowReportModal(true);
-                                                }}
-                                                className="w-full px-3 py-2 text-left text-sm text-red-500 hover:bg-gray-50 flex items-center gap-2"
-                                            >
-                                                <Flag size={14} />
-                                                Báo cáo
-                                            </button>
-                                        )}
-                                        {isOwner && !isEditing && (
-                                            <>
-                                                <button
-                                                    onClick={() => {
-                                                        setIsEditing(true);
-                                                        setShowMoreMenu(false);
-                                                    }}
-                                                    className="w-full px-3 py-2 text-left text-sm text-gray-600 hover:bg-gray-50 flex items-center gap-2"
-                                                >
-                                                    <Edit2 size={14} />
-                                                    Chỉnh sửa
-                                                </button>
-                                                <button
-                                                    onClick={() => {
-                                                        onDelete(comment._id);
-                                                        setShowMoreMenu(false);
-                                                    }}
-                                                    className="w-full px-3 py-2 text-left text-sm text-red-500 hover:bg-gray-50 flex items-center gap-2"
-                                                >
-                                                    <Trash2 size={14} />
-                                                    Xóa
-                                                </button>
-                                            </>
-                                        )}
-                                    </div>
-                                )}
+                                        <MoreHorizontal size={14} />
+                                    </button>
+                                </div>
                             </div>
 
                             {isEditing ? (
@@ -413,11 +500,26 @@ export default function CommentItem({
                                     />
                                 </div>
                             ) : (
-                                <div className="mt-1 break-words w-full overflow-hidden">
-                                    <HighlightedText
-                                        text={getDisplayContent()}
-                                        parentUserName={parentUserName}
-                                    />
+                                <div className="mt-1 break-words w-full">
+                                    {(() => {
+                                        const display = getDisplayContent();
+                                        if (isCommentContentEmpty(display)) return null;
+                                        if (isHtmlContent(display)) {
+                                            return (
+                                                <StaticContent
+                                                    content={display}
+                                                    className="prose prose-sm max-w-none text-gray-800 [&_p]:my-0.5 [&_table]:w-full [&_table]:border-collapse [&_table]:text-sm [&_th]:border [&_th]:border-gray-300 [&_th]:bg-slate-100 [&_th]:px-2 [&_th]:py-1.5 [&_td]:border [&_td]:border-gray-200 [&_td]:px-2 [&_td]:py-1.5"
+                                                />
+                                            );
+                                        }
+                                        return (
+                                            <div
+                                                className="text-sm text-gray-700 prose prose-sm max-w-none [&_code]:bg-gray-100 [&_code]:px-1 [&_code]:rounded [&_a]:text-blue-600"
+                                                dangerouslySetInnerHTML={{ __html: commentMarkdownToHtml(display) }}
+                                            />
+                                        );
+                                    })()}
+                                    <CommentAttachments attachments={comment.attachments || []} />
                                 </div>
                             )}
                         </div>
@@ -497,12 +599,16 @@ export default function CommentItem({
                             <CustomTextCmt
                                 value={replyContent}
                                 onChange={setReplyContent}
+                                attachments={replyAttachments}
+                                onAttachmentsChange={setReplyAttachments}
                                 rows={2}
                                 placeholder={`Phản hồi ${getUserName()}...`}
                                 autoFocus
                                 onSubmit={handleSubmitReply}
-                                onCancel={() => setShowReplyInput(false)}
-                                submitLabel="Phản hồi"
+                                onCancel={() => {
+                                    setShowReplyInput(false);
+                                    setReplyAttachments([]);
+                                }}
                                 cancelLabel="Hủy"
                                 isSubmitting={isSubmitting}
                             />
@@ -535,6 +641,15 @@ export default function CommentItem({
                                         Xem thêm {hiddenRepliesCount} phản hồi
                                     </button>
                                 )}
+                                {comment.replyCount > replies.length && onLoadMoreReplies && (
+                                    <button
+                                        type="button"
+                                        onClick={() => onLoadMoreReplies(comment._id)}
+                                        className="text-xs text-blue-500 hover:text-blue-600 mt-2 block"
+                                    >
+                                        Tải thêm phản hồi ({comment.replyCount - replies.length} còn lại)
+                                    </button>
+                                )}
                                 {replies.length > 3 && showAllReplies && (
                                     <button
                                         onClick={() => setShowAllReplies(false)}
@@ -549,20 +664,230 @@ export default function CommentItem({
                 </div>
             </div>
 
+            {showMoreMenu && menuPosition && typeof document !== 'undefined' && createPortal(
+                <div
+                    ref={moreMenuRef}
+                    role="menu"
+                    className="fixed z-[9998] bg-white rounded-lg shadow-xl border border-gray-200 py-1 min-w-[140px]"
+                    style={{ top: menuPosition.top, left: menuPosition.left }}
+                >
+                    {!isOwner && (
+                        <button
+                            type="button"
+                            role="menuitem"
+                            onClick={() => {
+                                closeMoreMenu();
+                                setShowReportModal(true);
+                            }}
+                            className="w-full px-3 py-2 text-left text-sm text-red-500 hover:bg-gray-50 flex items-center gap-2"
+                        >
+                            <Flag size={14} />
+                            Báo cáo
+                        </button>
+                    )}
+                    {isOwner && !isEditing && (
+                        <>
+                            <button
+                                type="button"
+                                role="menuitem"
+                                onClick={() => {
+                                    setIsEditing(true);
+                                    closeMoreMenu();
+                                }}
+                                className="w-full px-3 py-2 text-left text-sm text-gray-600 hover:bg-gray-50 flex items-center gap-2"
+                            >
+                                <Edit2 size={14} />
+                                Chỉnh sửa
+                            </button>
+                            <button
+                                type="button"
+                                role="menuitem"
+                                onClick={() => {
+                                    onDelete(comment._id);
+                                    closeMoreMenu();
+                                }}
+                                className="w-full px-3 py-2 text-left text-sm text-red-500 hover:bg-gray-50 flex items-center gap-2"
+                            >
+                                <Trash2 size={14} />
+                                Xóa
+                            </button>
+                        </>
+                    )}
+                </div>,
+                document.body
+            )}
+
             {/* Report Modal */}
             {showReportModal && (
-                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4" onClick={() => setShowReportModal(false)}>
-                    <div className="bg-white rounded-xl w-full max-w-md max-h-[90vh] overflow-y-auto shadow-xl" onClick={(e) => e.stopPropagation()}>
-                        {/* Modal content giữ nguyên như code cũ của bạn */}
-                        {/* ... (bạn có thể copy phần modal từ code cũ) */}
+                <div
+                    className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4"
+                    onClick={() => !isReporting && setShowReportModal(false)}
+                >
+                    <div
+                        className="bg-white rounded-xl w-full max-w-md max-h-[90vh] overflow-hidden shadow-xl flex flex-col"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+                            <div className="flex items-center gap-2">
+                                <AlertTriangle className="w-5 h-5 text-amber-500" />
+                                <h3 className="text-base font-semibold text-gray-900">Báo cáo bình luận</h3>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => !isReporting && setShowReportModal(false)}
+                                className="p-1.5 rounded-full hover:bg-gray-100 text-gray-400"
+                            >
+                                <X size={18} />
+                            </button>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-2">
+                            <p className="text-sm text-gray-500 mb-3">Chọn lý do báo cáo:</p>
+                            {REPORT_REASONS.map((reason) => (
+                                <label
+                                    key={reason.value}
+                                    className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition ${
+                                        selectedReason === reason.value
+                                            ? 'border-blue-500 bg-blue-50'
+                                            : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                                    }`}
+                                >
+                                    <input
+                                        type="radio"
+                                        name="report-reason"
+                                        value={reason.value}
+                                        checked={selectedReason === reason.value}
+                                        onChange={() => setSelectedReason(reason.value)}
+                                        className="mt-0.5"
+                                    />
+                                    <span className="text-sm text-gray-700">{reason.label}</span>
+                                </label>
+                            ))}
+
+                            {selectedReason === 'other' && (
+                                <textarea
+                                    value={customReason}
+                                    onChange={(e) => setCustomReason(e.target.value)}
+                                    placeholder="Mô tả lý do báo cáo..."
+                                    rows={3}
+                                    className="w-full mt-2 px-3 py-2 text-sm border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                                />
+                            )}
+                        </div>
+
+                        <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-gray-100 bg-gray-50">
+                            <button
+                                type="button"
+                                onClick={() => setShowReportModal(false)}
+                                disabled={isReporting}
+                                className="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-200 rounded-lg transition disabled:opacity-50"
+                            >
+                                Hủy
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleReportSubmit}
+                                disabled={isReporting || !selectedReason}
+                                className="px-4 py-2 text-sm font-medium bg-red-500 text-white rounded-lg hover:bg-red-600 transition disabled:opacity-50 flex items-center gap-2"
+                            >
+                                {isReporting && <Loader2 className="w-4 h-4 animate-spin" />}
+                                Gửi báo cáo
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
 
-            {/* Reaction Modal - Giữ nguyên như cũ */}
+            {/* Reaction Modal */}
             {showReactionModal && (
-                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4" onClick={() => setShowReactionModal(false)}>
-                    {/* Modal content giữ nguyên */}
+                <div
+                    className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4"
+                    onClick={() => setShowReactionModal(false)}
+                >
+                    <div
+                        className="bg-white rounded-xl w-full max-w-sm max-h-[80vh] overflow-hidden shadow-xl flex flex-col"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+                            <h3 className="text-base font-semibold text-gray-900">
+                                Cảm xúc ({reactionCount})
+                            </h3>
+                            <button
+                                type="button"
+                                onClick={() => setShowReactionModal(false)}
+                                className="p-1.5 rounded-full hover:bg-gray-100 text-gray-400"
+                            >
+                                <X size={18} />
+                            </button>
+                        </div>
+
+                        <div className="flex items-center gap-1 px-3 py-2 border-b border-gray-100 overflow-x-auto">
+                            <button
+                                type="button"
+                                onClick={() => handleReactionTabChange('all')}
+                                className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition ${
+                                    selectedReactionTab === 'all'
+                                        ? 'bg-blue-100 text-blue-700'
+                                        : 'text-gray-500 hover:bg-gray-100'
+                                }`}
+                            >
+                                Tất cả {reactionCount}
+                            </button>
+                            {REACTION_TYPES.filter((rt) => (comment.reactions?.[rt.type] || 0) > 0).map((rt) => (
+                                <button
+                                    key={rt.type}
+                                    type="button"
+                                    onClick={() => handleReactionTabChange(rt.type)}
+                                    className={`shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium transition ${
+                                        selectedReactionTab === rt.type
+                                            ? 'bg-blue-100 text-blue-700'
+                                            : 'text-gray-500 hover:bg-gray-100'
+                                    }`}
+                                >
+                                    <img src={rt.icon} alt={rt.label} className="w-4 h-4" />
+                                    {comment.reactions?.[rt.type] || 0}
+                                </button>
+                            ))}
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto">
+                            {loadingReactions ? (
+                                <div className="flex justify-center py-10">
+                                    <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
+                                </div>
+                            ) : reactionUsers.length === 0 ? (
+                                <p className="text-center text-sm text-gray-400 py-10">Chưa có cảm xúc</p>
+                            ) : (
+                                <ul className="divide-y divide-gray-100">
+                                    {reactionUsers.map((item, idx) => {
+                                        const rt = REACTION_TYPES.find((r) => r.type === item.reactionType);
+                                        return (
+                                            <li key={`${item.userId?._id}-${idx}`} className="flex items-center gap-3 px-5 py-3">
+                                                {item.userId?.avatar ? (
+                                                    <img
+                                                        src={getImageUrl(item.userId.avatar)}
+                                                        alt={item.userId.fullName}
+                                                        className="w-9 h-9 rounded-full object-cover"
+                                                    />
+                                                ) : (
+                                                    <div className="w-9 h-9 rounded-full bg-blue-500 flex items-center justify-center text-white text-sm font-bold">
+                                                        {item.userId?.fullName?.charAt(0).toUpperCase() || 'U'}
+                                                    </div>
+                                                )}
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-sm font-medium text-gray-900 truncate">
+                                                        {item.userId?.fullName || 'Người dùng'}
+                                                    </p>
+                                                    <p className="text-xs text-gray-400">{rt?.label || item.reactionType}</p>
+                                                </div>
+                                                {rt && <img src={rt.icon} alt={rt.label} className="w-6 h-6 shrink-0" />}
+                                            </li>
+                                        );
+                                    })}
+                                </ul>
+                            )}
+                        </div>
+                    </div>
                 </div>
             )}
         </>

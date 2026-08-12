@@ -31,6 +31,8 @@ const editorStyles = `
     color: #111827;
     box-sizing: border-box;
     padding: 5px 0;
+    user-select: text;
+    -webkit-user-select: text;
   }
 
   .static-editor * {
@@ -106,8 +108,10 @@ const editorStyles = `
     padding: 0;
     margin: 1em 0;
     overflow: hidden;
-    font-size: 0;
-    line-height: normal !important;
+    font-size: 13px;
+    line-height: 1.7 !important;
+    user-select: text;
+    -webkit-user-select: text;
   }
 
   .static-editor .ed-code-lang-badge {
@@ -134,6 +138,8 @@ const editorStyles = `
     overflow-x: auto;
     white-space: pre;
     font-family: 'JetBrains Mono', 'Fira Code', monospace !important;
+    user-select: text;
+    -webkit-user-select: text;
   }
 
   .static-editor a { 

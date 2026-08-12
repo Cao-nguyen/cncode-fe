@@ -17,6 +17,9 @@ export interface LuyentapExercise {
     questions: LuyentapQuestion[];
     tier: 'tin11' | 'tin10';
     status: 'approved';
+    difficulty: 'easy' | 'medium' | 'hard';
+    type: 'free' | 'vip';
+    completionStatus: 'not_started' | 'completed';
     createdAt: string;
 }
 
@@ -29,6 +32,9 @@ export const LUYENTAP_DATA: LuyentapExercise[] = [
         duration: 30,
         tier: 'tin11',
         status: 'approved',
+        difficulty: 'easy',
+        type: 'free',
+        completionStatus: 'not_started',
         createdAt: '2026-07-01T00:00:00.000Z',
         questions: [
             {
@@ -119,6 +125,9 @@ export const LUYENTAP_DATA: LuyentapExercise[] = [
         duration: 30,
         tier: 'tin11',
         status: 'approved',
+        difficulty: 'medium',
+        type: 'free',
+        completionStatus: 'not_started',
         createdAt: '2026-07-01T00:00:00.000Z',
         questions: [
             {
@@ -194,6 +203,9 @@ export const LUYENTAP_DATA: LuyentapExercise[] = [
         duration: 30,
         tier: 'tin11',
         status: 'approved',
+        difficulty: 'medium',
+        type: 'free',
+        completionStatus: 'not_started',
         createdAt: '2026-07-01T00:00:00.000Z',
         questions: [
             {
@@ -264,6 +276,9 @@ export const LUYENTAP_DATA: LuyentapExercise[] = [
         duration: 30,
         tier: 'tin11',
         status: 'approved',
+        difficulty: 'hard',
+        type: 'vip',
+        completionStatus: 'not_started',
         createdAt: '2026-07-01T00:00:00.000Z',
         questions: [
             {
@@ -324,6 +339,9 @@ export const LUYENTAP_DATA: LuyentapExercise[] = [
         duration: 30,
         tier: 'tin11',
         status: 'approved',
+        difficulty: 'hard',
+        type: 'vip',
+        completionStatus: 'completed',
         createdAt: '2026-07-01T00:00:00.000Z',
         questions: [
             {

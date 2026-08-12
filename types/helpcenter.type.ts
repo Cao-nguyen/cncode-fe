@@ -28,6 +28,8 @@ export interface HelpCenterStats {
     total: number;
     active: number;
     inactive: number;
+    totalViews: number;
+    totalHelpful: number;
     byCategory: Record<string, number>;
 }
 

@@ -52,7 +52,7 @@ interface DashboardStats extends ComprehensiveStats {
         today: number;
         thisWeek: number;
         thisMonth: number;
-        weeklyData: Array<{ day: string; visits: number }>;
+        weeklyData: Array<{ day: string; visits: number; date?: string }>;
     };
     online: {
         total: number;
@@ -109,7 +109,7 @@ function AdminDashboardContent() {
 
             // Parse responses with error handling
             let visitsData = { success: false, data: { totalVisits: 0, todayVisits: 0 } };
-            let onlineData = { total: 0, users: 0, guests: 0 };
+            let onlineData: { success?: boolean; data?: { total: number; users: number; guests: number }; total?: number; users?: number; guests?: number } = {};
             let userStatsData = { success: false, data: { total: 0, teachers: 0, admins: 0, newThisWeek: 0, activeToday: 0 } };
 
             try {
@@ -139,7 +139,9 @@ function AdminDashboardContent() {
                 console.error('Error parsing user stats data:', e);
             }
 
-            const weeklyData = generateWeeklyData(visitsData.data?.todayVisits || 0);
+            const weeklyData = visitsData.data?.weeklyData?.length
+                ? visitsData.data.weeklyData
+                : [];
 
             // Calculate students count
             const students = userStatsData.success
@@ -181,11 +183,11 @@ function AdminDashboardContent() {
                 visits: visitsData.success ? {
                     total: visitsData.data.totalVisits || 0,
                     today: visitsData.data.todayVisits || 0,
-                    thisWeek: (visitsData.data.todayVisits || 0) * 7,
-                    thisMonth: (visitsData.data.todayVisits || 0) * 30,
-                    weeklyData
+                    thisWeek: visitsData.data.thisWeek || weeklyData.reduce((sum, item) => sum + (item.visits || 0), 0),
+                    thisMonth: visitsData.data.todayVisits || 0,
+                    weeklyData,
                 } : stats.visits,
-                online: onlineData || stats.online
+                online: onlineData?.data || onlineData || stats.online
             });
         } catch (error) {
             console.error('Error fetching dashboard stats:', error);
@@ -194,21 +196,11 @@ function AdminDashboardContent() {
         }
     };
 
-    const generateWeeklyData = (todayVisits: number) => {
-        const days = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
-        // Use consistent multipliers instead of random for stable data
-        const multipliers = [0.85, 0.92, 0.88, 0.95, 1.0, 0.78, 0.82];
-        return days.map((day, index) => ({
-            day,
-            visits: Math.floor(todayVisits * multipliers[index])
-        }));
-    };
-
     const fetchOnlineStats = async () => {
         try {
             const res = await fetch(`${API_URL}/api/statistic/online`);
             const data = await res.json();
-            setStats(prev => ({ ...prev, online: data || prev.online }));
+            setStats(prev => ({ ...prev, online: data?.data || data || prev.online }));
         } catch (error) {
             console.error('Error fetching online stats:', error);
         }
@@ -401,6 +393,7 @@ function AdminDashboardContent() {
                                         borderRadius: '8px',
                                         fontSize: '12px'
                                     }}
+                                    formatter={(value: number) => [value.toLocaleString(), 'Lượt truy cập']}
                                 />
                                 <Area
                                     type="monotone"

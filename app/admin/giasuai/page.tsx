@@ -10,13 +10,17 @@ import {
   User,
   Loader2,
   Shield,
-  Trash2
+  Trash2,
+  Layers,
+  Eye,
+  Heart
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { CustomInputSearch } from '@/components/custom/CustomInputSearch';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DeleteConfirmModal } from '@/components/common/DeleteConfirmModal';
+import { DashboardCard } from '@/components/custom/DashboardCard';
 
 interface AdminChat {
   _id: string;
@@ -151,6 +155,49 @@ export default function AITutorAdminPage() {
     totalUsers: new Set(chats.map(chat => chat.userId)).size
   };
 
+  const statCards = [
+    {
+      key: 'totalChats',
+      title: 'Tổng cuộc trò chuyện',
+      value: stats.totalChats,
+      description: `${stats.totalUsers} người dùng đang hoạt động`,
+      icon: <Layers size={20} />,
+      iconBgColor: '#EFF6FF',
+      iconColor: '#3B82F6',
+      accentColor: '#3B82F6',
+    },
+    {
+      key: 'totalMessages',
+      title: 'Tổng tin nhắn',
+      value: stats.totalMessages,
+      description: stats.totalChats > 0 ? `${Math.round(stats.totalMessages / stats.totalChats)} tin nhắn/trò chuyện trung bình` : 'Chưa có tin nhắn',
+      icon: <MessageSquare size={20} />,
+      iconBgColor: '#ECFDF5',
+      iconColor: '#059669',
+      accentColor: '#10B981',
+    },
+    {
+      key: 'totalUsers',
+      title: 'Người dùng',
+      value: stats.totalUsers,
+      description: stats.totalChats > 0 ? `${Math.round((stats.totalUsers / stats.totalChats) * 100)}% người dùng có hoạt động` : 'Chưa có người dùng',
+      icon: <Users size={20} />,
+      iconBgColor: '#FDF2F8',
+      iconColor: '#DB2777',
+      accentColor: '#EC4899',
+    },
+    {
+      key: 'avgMessages',
+      title: 'Tương tác',
+      value: stats.totalChats > 0 ? Math.round(stats.totalMessages / stats.totalUsers) : 0,
+      description: 'Tin nhắn trung bình/người dùng',
+      icon: <Heart size={20} />,
+      iconBgColor: '#FEF3C7',
+      iconColor: '#D97706',
+      accentColor: '#F59E0B',
+    },
+  ];
+
   if (!token || user?.role !== 'admin') {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -175,34 +222,19 @@ export default function AITutorAdminPage() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Tổng cuộc trò chuyện</CardTitle>
-              <MessageSquare className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.totalChats}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Tổng tin nhắn</CardTitle>
-              <MessageSquare className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.totalMessages}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Người dùng</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.totalUsers}</div>
-            </CardContent>
-          </Card>
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-4">
+          {statCards.map((card) => (
+            <DashboardCard
+              key={card.key}
+              title={card.title}
+              value={card.value}
+              description={card.description}
+              icon={card.icon}
+              iconBgColor={card.iconBgColor}
+              iconColor={card.iconColor}
+              accentColor={card.accentColor}
+            />
+          ))}
         </div>
 
       </div>

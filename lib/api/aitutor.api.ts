@@ -1,9 +1,18 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
+export interface AIAttachment {
+  type: 'image';
+  name: string;
+  url?: string;
+  messageId?: string;
+  dataUrl?: string;
+}
+
 export interface AIMessage {
   role: 'user' | 'assistant';
   content: string;
   timestamp: string;
+  attachments?: AIAttachment[];
 }
 
 export interface AIChat {
@@ -69,7 +78,12 @@ export const aitutorApi = {
     return handleResponse<{ success: boolean; data: AIChat }>(response);
   },
 
-  sendMessage: async (chatId: string | null, message: string, token: string): Promise<{ 
+  sendMessage: async (
+    chatId: string | null,
+    message: string,
+    token: string,
+    attachments: AIAttachment[] = []
+  ): Promise<{ 
     success: boolean; 
     data: { 
       message: string; 
@@ -83,7 +97,7 @@ export const aitutorApi = {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`
       },
-      body: JSON.stringify({ chatId, message })
+      body: JSON.stringify({ chatId, message, attachments })
     });
     return handleResponse<{ success: boolean; data: { message: string; chat: AIChat; remaining: number } }>(response);
   },
