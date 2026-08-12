@@ -15,6 +15,7 @@ import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import 'katex/dist/katex.min.css';
+import { prepareAiMarkdown, getLinkDisplayLabel } from '@/lib/utils/aiMarkdown';
 
 interface PendingAttachment {
   id: string;
@@ -26,6 +27,9 @@ interface PendingAttachment {
   uploading?: boolean;
 }
 
+const IMAGE_ONLY_MESSAGE = 'Tìm kiếm nội dung về bức ảnh này';
+const MAX_IMAGE_ATTACHMENTS = 3;
+
 function readFileAsDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -35,48 +39,13 @@ function readFileAsDataUrl(file: File): Promise<string> {
   });
 }
 
-function prepareStreamingMarkdown(text: string): string {
-  if (!text) return text;
-
-  let result = text;
-  const fenceCount = (result.match(/```/g) || []).length;
-  if (fenceCount % 2 === 1) {
-    result += '\n```';
+function getNodeText(node: React.ReactNode): string {
+  if (typeof node === 'string' || typeof node === 'number') return String(node);
+  if (Array.isArray(node)) return node.map(getNodeText).join('');
+  if (React.isValidElement<{ children?: React.ReactNode }>(node)) {
+    return getNodeText(node.props.children);
   }
-
-  const boldCount = (result.match(/\*\*/g) || []).length;
-  if (boldCount % 2 === 1) {
-    result += '**';
-  }
-
-  return result;
-}
-
-function autoWrapMath(text: string): string {
-  let result = text;
-
-  const codeBlocks: string[] = [];
-  result = result.replace(/```[\s\S]*?```/g, (match) => {
-    codeBlocks.push(match);
-    return `__CODE_BLOCK_${codeBlocks.length - 1}__`;
-  });
-
-  result = result.replace(/\\\*/g, '\\times ');
-  result = result.replace(/\\\//g, '\\div ');
-  result = result.replace(/\\_/g, '_');
-
-  const lines = result.split('\n');
-  const processedLines = lines.map(line => {
-    if (line.includes('$') || !line.trim()) return line;
-    line = line.replace(/(\d+[\.,]?\d*\s*[\*\/\^]\s*\d+[\.,]?\d*)/g, '$$$1$$');
-    line = line.replace(/\b([a-zA-Z]{1,4}\s*=\s*[a-zA-Z]{1,4})\b/g, '$$$1$$');
-    return line;
-  });
-
-  result = processedLines.join('\n');
-  result = result.replace(/__CODE_BLOCK_(\d+)__/g, (_, index) => codeBlocks[parseInt(index)]);
-
-  return result;
+  return '';
 }
 
 function AssistantMessageContent({
@@ -88,14 +57,46 @@ function AssistantMessageContent({
   isStreaming?: boolean;
   onCopyCode: (code: string) => void;
 }) {
-  const markdown = autoWrapMath(isStreaming ? prepareStreamingMarkdown(content) : content);
+  const markdown = prepareAiMarkdown(content, isStreaming);
 
   return (
-    <div className="prose prose-sm max-w-none text-sm md:text-base text-justify">
+    <div className="prose prose-sm max-w-none min-w-0 overflow-hidden text-sm md:text-base text-left break-words [&_p]:break-words [&_li]:break-words [&_ul]:break-words [&_ol]:break-words [&_table]:w-full [&_table]:border-collapse [&_table]:text-sm [&_th]:border [&_th]:border-gray-300 [&_th]:bg-slate-100 [&_th]:px-3 [&_th]:py-2 [&_th]:text-left [&_td]:border [&_td]:border-gray-200 [&_td]:px-3 [&_td]:py-2 [&_td]:break-words [&_.katex-display]:my-4 [&_.katex-display]:overflow-x-auto">
       <ReactMarkdown
-        remarkPlugins={[remarkGfm, [remarkMath, { singleDollar: true, doubleDollar: true }]]}
-        rehypePlugins={[rehypeKatex]}
+        remarkPlugins={[remarkGfm, [remarkMath, { singleDollarTextMath: true }]]}
+        rehypePlugins={[[rehypeKatex, { throwOnError: false, strict: false }]]}
         components={{
+          p: ({ children }) => <p className="break-words [overflow-wrap:anywhere]">{children}</p>,
+          li: ({ children }) => <li className="break-words [overflow-wrap:anywhere]">{children}</li>,
+          a: ({ href, children, ...props }) => {
+            const hrefStr = href || '';
+            const label = getLinkDisplayLabel(hrefStr, getNodeText(children));
+            return (
+              <a
+                href={hrefStr}
+                target="_blank"
+                rel="noopener noreferrer"
+                title={hrefStr}
+                className="text-indigo-600 hover:underline break-all [overflow-wrap:anywhere]"
+                {...props}
+              >
+                {label}
+              </a>
+            );
+          },
+          table: ({ children }) => (
+            <div className="my-4 overflow-x-auto rounded-xl border border-gray-200">
+              <table>{children}</table>
+            </div>
+          ),
+          thead: ({ children }) => <thead className="bg-slate-100">{children}</thead>,
+          th: ({ children }) => (
+            <th className="border border-gray-300 bg-slate-100 px-3 py-2 text-left font-semibold text-gray-800">
+              {children}
+            </th>
+          ),
+          td: ({ children }) => (
+            <td className="border border-gray-200 px-3 py-2 align-top text-gray-700">{children}</td>
+          ),
           pre: ({ children, ...props }) => {
             const codeContent = typeof children === 'string'
               ? children
@@ -449,19 +450,31 @@ export default function AITutorPage() {
     }
 
     const pendingId = `${Date.now()}-${Math.random()}`;
-    const previewUrl = URL.createObjectURL(file);
+    let previewUrl: string | undefined;
+    let canUpload = false;
 
-    setPendingAttachments(prev => [...prev, {
-      id: pendingId,
-      name: file.name,
-      previewUrl,
-      uploading: true,
-    }]);
+    setPendingAttachments((prev) => {
+      if (prev.length >= MAX_IMAGE_ATTACHMENTS) return prev;
+      canUpload = true;
+      previewUrl = URL.createObjectURL(file);
+      return [...prev, {
+        id: pendingId,
+        name: file.name,
+        previewUrl,
+        uploading: true,
+      }];
+    });
+
+    if (!canUpload) {
+      toast.error(`Chỉ được đính kèm tối đa ${MAX_IMAGE_ATTACHMENTS} ảnh mỗi lần gửi`);
+      return;
+    }
+
     setUploadingAttachment(true);
 
     try {
       const base64 = await readFileAsDataUrl(file);
-      const compressedBase64 = await compressImage(base64, 1024, 0.75);
+      const compressedBase64 = await compressImage(base64, 1800, 0.88);
       const result = await uploadApi.uploadImage(compressedBase64, 'aitutor');
 
       if (!result.success || !result.messageId) {
@@ -488,7 +501,7 @@ export default function AITutorPage() {
 
   const sendMessage = async () => {
     const readyAttachments: AIAttachment[] = pendingAttachments
-      .filter(item => !item.uploading && item.messageId && item.dataUrl)
+      .filter(item => !item.uploading && item.messageId)
       .map(item => ({
         type: 'image' as const,
         name: item.name,
@@ -506,6 +519,7 @@ export default function AITutorPage() {
     }
 
     const messageToSend = message;
+    const displayMessage = messageToSend.trim() || (readyAttachments.length > 0 ? IMAGE_ONLY_MESSAGE : '');
     const attachmentsToSend = readyAttachments;
     const chatId = currentChat?._id || null;
 
@@ -513,7 +527,7 @@ export default function AITutorPage() {
     isAutoScrollRef.current = true;
 
     // Optimistic UI: Show user message immediately
-    setOptimisticMessage(messageToSend);
+    setOptimisticMessage(displayMessage);
     setOptimisticAttachments(attachmentsToSend);
     setMessage('');
     setPendingAttachments(prev => {
@@ -548,6 +562,8 @@ export default function AITutorPage() {
         if (!chatId) {
           router.push(`/giasuai?id=${res.data.chat._id}`, { scroll: false });
         }
+      } else {
+        throw new Error('Không gửi được tin nhắn');
       }
     } catch (error) {
       // Restore message to textarea on error
@@ -599,7 +615,19 @@ export default function AITutorPage() {
     if (imageFiles.length === 0) return;
 
     e.preventDefault();
-    for (const file of imageFiles) {
+
+    const remainingSlots = MAX_IMAGE_ATTACHMENTS - pendingAttachments.length;
+    if (remainingSlots <= 0) {
+      toast.error(`Chỉ được đính kèm tối đa ${MAX_IMAGE_ATTACHMENTS} ảnh mỗi lần gửi`);
+      return;
+    }
+
+    const filesToUpload = imageFiles.slice(0, remainingSlots);
+    if (imageFiles.length > remainingSlots) {
+      toast.error(`Chỉ thêm được ${remainingSlots} ảnh nữa (tối đa ${MAX_IMAGE_ATTACHMENTS} ảnh)`);
+    }
+
+    for (const file of filesToUpload) {
       void uploadImageAttachment(file);
     }
   };
@@ -915,7 +943,7 @@ export default function AITutorPage() {
                   <div
                     className={`${msg.role === 'user'
                       ? 'max-w-[85%] md:max-w-[75%] bg-gradient-to-br from-indigo-500 to-purple-600 text-white rounded-2xl px-4 py-2.5 md:py-3 shadow-sm'
-                      : 'w-full'
+                      : 'w-full min-w-0 overflow-hidden'
                       }`}
                   >
                     {msg.role === 'assistant' ? (
@@ -1040,9 +1068,9 @@ export default function AITutorPage() {
                 <button
                   type="button"
                   onClick={() => imageInputRef.current?.click()}
-                  disabled={sending || uploadingAttachment}
+                  disabled={sending || uploadingAttachment || pendingAttachments.length >= MAX_IMAGE_ATTACHMENTS}
                   className="p-2 rounded-xl text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 transition disabled:opacity-50"
-                  title="Gửi ảnh"
+                  title={pendingAttachments.length >= MAX_IMAGE_ATTACHMENTS ? `Tối đa ${MAX_IMAGE_ATTACHMENTS} ảnh` : 'Gửi ảnh'}
                 >
                   <ImageIcon className="w-5 h-5" />
                 </button>
@@ -1055,7 +1083,7 @@ export default function AITutorPage() {
                   onChange={handleTextareaChange}
                   onKeyDown={handleKeyDown}
                   onPaste={handlePaste}
-                  placeholder={!currentChat ? "Nhập câu hỏi để bắt đầu cuộc trò chuyện mới..." : "Nhập câu hỏi của bạn..."}
+                  placeholder={!currentChat ? "Hỏi bất kỳ đi — AI có thể tìm kiếm web & phân tích ảnh..." : "Hỏi bất kỳ — AI tự tìm kiếm web khi cần..."}
                   disabled={sending || uploadingAttachment}
                   rows={1}
                   className="w-full px-4 py-2.5 pr-14 bg-white border border-gray-200 rounded-[15px] focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:bg-gray-50 disabled:cursor-not-allowed text-sm md:text-base shadow-sm resize-none overflow-y-auto"
@@ -1063,7 +1091,7 @@ export default function AITutorPage() {
                 />
                 <button
                   onClick={sendMessage}
-                  disabled={(!message.trim() && pendingAttachments.filter(item => !item.uploading && item.messageId && item.dataUrl).length === 0) || sending || uploadingAttachment}
+                  disabled={(!message.trim() && pendingAttachments.filter(item => !item.uploading && item.messageId).length === 0) || sending || uploadingAttachment}
                   className="absolute right-2 bottom-3 p-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-full hover:shadow-lg hover:shadow-indigo-500/25 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <ArrowUp className="w-4 h-4" />
