@@ -19,7 +19,7 @@ import { CustomTextCmt } from '@/components/custom/CustomTextCmt';
 import { commentApi } from '@/lib/api/comment.api';
 import { getImageUrl, getVideoUrl } from '@/lib/utils/imageUrl';
 import StaticContent from '@/components/common/StaticContent';
-import { isHtmlContent, isCommentContentEmpty } from '@/lib/comment-content';
+import { isHtmlContent, isCommentContentEmpty, sanitizeCommentHtml } from '@/lib/comment-content';
 
 interface CommentUser {
     _id: string;
@@ -455,96 +455,94 @@ export default function CommentItem({
 
                 {/* Nội dung */}
                 <div className="flex-1 min-w-0 max-w-full">
-                    <div className="relative">
-                        <div className="px-1 py-1">
-                            <div className="flex items-center justify-between gap-2 mb-1">
-                                <div className="flex items-center gap-2 flex-wrap min-w-0">
-                                    <span className="font-semibold text-sm text-gray-900 truncate max-w-[120px]">
-                                        {getUserName()}
-                                    </span>
-                                    <span className="text-gray-300">·</span>
-                                    <span className="text-xs text-gray-400 whitespace-nowrap">
-                                        {formatTime(comment.createdAt)}
-                                    </span>
-                                    {comment.isEdited && (
-                                        <span className="text-xs text-gray-400 whitespace-nowrap">(đã sửa)</span>
-                                    )}
-                                </div>
-
-                                <div className="relative shrink-0">
-                                    <button
-                                        ref={moreButtonRef}
-                                        onClick={() => (showMoreMenu ? closeMoreMenu() : openMoreMenu())}
-                                        className="p-1.5 rounded-full hover:bg-gray-200 transition text-gray-400 hover:text-gray-600"
-                                        aria-expanded={showMoreMenu}
-                                        aria-haspopup="menu"
-                                    >
-                                        <MoreHorizontal size={14} />
-                                    </button>
-                                </div>
+                    <div className="px-1">
+                        <div className="flex items-center justify-between gap-2 mb-1">
+                            <div className="flex items-center gap-2 flex-wrap min-w-0">
+                                <span className="font-semibold text-sm text-gray-900 truncate max-w-[120px]">
+                                    {getUserName()}
+                                </span>
+                                <span className="text-gray-300">·</span>
+                                <span className="text-xs text-gray-400 whitespace-nowrap">
+                                    {formatTime(comment.createdAt)}
+                                </span>
+                                {comment.isEdited && (
+                                    <span className="text-xs text-gray-400 whitespace-nowrap">(đã sửa)</span>
+                                )}
                             </div>
 
-                            {isEditing ? (
-                                <div className="mt-2 w-full">
-                                    <CustomTextCmt
-                                        value={editContent}
-                                        onChange={setEditContent}
-                                        rows={3}
-                                        placeholder="Chỉnh sửa bình luận..."
-                                        autoFocus
-                                        onSubmit={handleSubmitEdit}
-                                        onCancel={() => setIsEditing(false)}
-                                        submitLabel="Lưu"
-                                        cancelLabel="Hủy"
-                                        isSubmitting={isSubmitting}
-                                    />
-                                </div>
-                            ) : (
-                                <div className="mt-1 break-words w-full">
-                                    {(() => {
-                                        const display = getDisplayContent();
-                                        if (isCommentContentEmpty(display)) return null;
-                                        if (isHtmlContent(display)) {
-                                            return (
-                                                <StaticContent
-                                                    content={display}
-                                                    className="prose prose-sm max-w-none text-gray-800 [&_p]:my-0.5 [&_table]:w-full [&_table]:border-collapse [&_table]:text-sm [&_th]:border [&_th]:border-gray-300 [&_th]:bg-slate-100 [&_th]:px-2 [&_th]:py-1.5 [&_td]:border [&_td]:border-gray-200 [&_td]:px-2 [&_td]:py-1.5"
-                                                />
-                                            );
-                                        }
+                            <div className="relative shrink-0">
+                                <button
+                                    ref={moreButtonRef}
+                                    onClick={() => (showMoreMenu ? closeMoreMenu() : openMoreMenu())}
+                                    className="p-1.5 rounded-full hover:bg-gray-200 transition text-gray-400 hover:text-gray-600"
+                                    aria-expanded={showMoreMenu}
+                                    aria-haspopup="menu"
+                                >
+                                    <MoreHorizontal size={14} />
+                                </button>
+                            </div>
+                        </div>
+
+                        {isEditing ? (
+                            <div className="mt-1 w-full">
+                                <CustomTextCmt
+                                    value={editContent}
+                                    onChange={setEditContent}
+                                    rows={3}
+                                    placeholder="Chỉnh sửa bình luận..."
+                                    autoFocus
+                                    onSubmit={handleSubmitEdit}
+                                    onCancel={() => setIsEditing(false)}
+                                    submitLabel="Lưu"
+                                    cancelLabel="Hủy"
+                                    isSubmitting={isSubmitting}
+                                />
+                            </div>
+                        ) : (
+                            <div className="break-words w-full leading-snug">
+                                {(() => {
+                                    const display = getDisplayContent();
+                                    if (isCommentContentEmpty(display)) return null;
+                                    if (isHtmlContent(display)) {
                                         return (
-                                            <div
-                                                className="text-sm text-gray-700 prose prose-sm max-w-none [&_code]:bg-gray-100 [&_code]:px-1 [&_code]:rounded [&_a]:text-blue-600"
-                                                dangerouslySetInnerHTML={{ __html: commentMarkdownToHtml(display) }}
+                                            <StaticContent
+                                                content={sanitizeCommentHtml(display)}
+                                                compact
+                                                className="text-gray-800 [&_table]:w-full [&_table]:border-collapse [&_table]:text-sm [&_th]:border [&_th]:border-gray-300 [&_th]:bg-slate-100 [&_th]:px-2 [&_th]:py-1.5 [&_td]:border [&_td]:border-gray-200 [&_td]:px-2 [&_td]:py-1.5"
                                             />
                                         );
-                                    })()}
-                                    <CommentAttachments attachments={comment.attachments || []} />
-                                </div>
-                            )}
-                        </div>
-                    </div>
+                                    }
+                                    return (
+                                        <div
+                                            className="text-sm text-gray-700 [&_code]:bg-gray-100 [&_code]:px-1 [&_code]:rounded [&_a]:text-blue-600"
+                                            dangerouslySetInnerHTML={{ __html: commentMarkdownToHtml(display) }}
+                                        />
+                                    );
+                                })()}
+                                <CommentAttachments attachments={comment.attachments || []} />
+                            </div>
+                        )}
 
-                    {!comment.isDeleted && (
-                        <div className="relative mt-2">
-                            {showReactionPicker && (
-                                <div
-                                    ref={reactionPickerRef}
-                                    className="absolute bottom-8 left-0 z-20 bg-white rounded-full shadow-lg border border-gray-200 flex p-1 gap-1"
-                                >
-                                    {REACTION_TYPES.map((rt) => (
-                                        <button
-                                            key={rt.type}
-                                            onClick={() => handleLike(rt.type)}
-                                            className="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center transition-transform hover:scale-110"
-                                        >
-                                            <img src={rt.icon} alt={rt.label} className="w-5 h-5" />
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
+                        {!comment.isDeleted && !isEditing && (
+                            <div className="relative mt-1.5">
+                                {showReactionPicker && (
+                                    <div
+                                        ref={reactionPickerRef}
+                                        className="absolute bottom-8 left-0 z-20 bg-white rounded-full shadow-lg border border-gray-200 flex p-1 gap-1"
+                                    >
+                                        {REACTION_TYPES.map((rt) => (
+                                            <button
+                                                key={rt.type}
+                                                onClick={() => handleLike(rt.type)}
+                                                className="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center transition-transform hover:scale-110"
+                                            >
+                                                <img src={rt.icon} alt={rt.label} className="w-5 h-5" />
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
 
-                            <div className="flex flex-wrap items-center gap-2 px-1">
+                                <div className="flex flex-wrap items-center gap-1 -ml-1">
                                 {/* Like, Reply, Reaction count buttons... giữ nguyên như cũ */}
                                 <button
                                     onClick={() => setShowReactionPicker(!showReactionPicker)}
@@ -661,6 +659,7 @@ export default function CommentItem({
                             </div>
                         </div>
                     )}
+                    </div>
                 </div>
             </div>
 

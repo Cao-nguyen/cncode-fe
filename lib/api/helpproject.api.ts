@@ -1,129 +1,123 @@
-import { HelpProject, CreateHelpProjectDto, UpdateHelpProjectDto } from '@/types/helpproject.type';
+import axios from 'axios';
+import { HelpProject, CreateHelpProjectDto, UpdateHelpProjectDto, HelpProjectStats } from '@/types/helpproject.type';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
 const getToken = (): string | null => {
     if (typeof window === 'undefined') return null;
     try {
         const raw = localStorage.getItem('auth-storage');
         if (!raw) return null;
-        const parsed = JSON.parse(raw);
-        return parsed?.state?.token ?? null;
+        return JSON.parse(raw)?.state?.token ?? null;
     } catch {
         return null;
     }
 };
 
-const getAuthHeaders = (): HeadersInit => {
+const apiClient = axios.create({
+    baseURL: `${API_URL}/api`,
+    headers: { 'Content-Type': 'application/json' },
+});
+
+apiClient.interceptors.request.use((config) => {
     const token = getToken();
-    const headers: HeadersInit = { 'Content-Type': 'application/json' };
-    if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-    }
-    return headers;
-};
+    if (token) config.headers.Authorization = `Bearer ${token}`;
+    return config;
+});
+
+export interface HelpProjectListParams {
+    page?: number;
+    limit?: number;
+    status?: string;
+    search?: string;
+}
+
+export interface HelpProjectListResponse {
+    success: boolean;
+    data: HelpProject[];
+    pagination: {
+        page: number;
+        limit: number;
+        total: number;
+        totalPages: number;
+    };
+}
+
+export interface HelpProjectAdminStats {
+    total: number;
+    pending: number;
+    answered: number;
+    totalViews: number;
+}
 
 export const helpProjectApi = {
     createProject: async (data: CreateHelpProjectDto) => {
-        const response = await fetch(`${API_URL}/api/helpproject`, {
-            method: 'POST',
-            headers: getAuthHeaders(),
-            body: JSON.stringify(data)
-        });
-        return response.json();
+        const res = await apiClient.post('/helpproject', data);
+        return res.data;
     },
 
-    getUserProjects: async (
-        params: { page?: number; limit?: number; status?: string; search?: string } = {}
-    ) => {
-        const query = new URLSearchParams();
+    getUserProjects: async (params: HelpProjectListParams = {}): Promise<HelpProjectListResponse> => {
+        const res = await apiClient.get('/helpproject/my-projects', { params });
+        return res.data;
+    },
 
-        if (params.page) query.append('page', params.page.toString());
-        if (params.limit) query.append('limit', params.limit.toString());
-        if (params.status) query.append('status', params.status);
-        if (params.search) query.append('search', params.search);
-
-        const url = `${API_URL}/api/helpproject/my-projects${query.toString() ? `?${query}` : ''}`;
-
-        const response = await fetch(url, { headers: getAuthHeaders() });
-        return response.json();
+    getMyStats: async (): Promise<{ success: boolean; data: HelpProjectStats }> => {
+        const res = await apiClient.get('/helpproject/my-stats');
+        return res.data;
     },
 
     getProjectById: async (id: string) => {
-        const response = await fetch(`${API_URL}/api/helpproject/${id}`, {
-            headers: getAuthHeaders()
-        });
-        return response.json();
+        const res = await apiClient.get(`/helpproject/${id}`);
+        return res.data;
+    },
+
+    incrementView: async (id: string) => {
+        const res = await apiClient.post(`/helpproject/${id}/increment-view`);
+        return res.data;
     },
 
     updateProject: async (id: string, data: UpdateHelpProjectDto) => {
-        const response = await fetch(`${API_URL}/api/helpproject/${id}`, {
-            method: 'PUT',
-            headers: getAuthHeaders(),
-            body: JSON.stringify(data)
-        });
-        return response.json();
+        const res = await apiClient.put(`/helpproject/${id}`, data);
+        return res.data;
     },
 
     deleteProject: async (id: string) => {
-        const response = await fetch(`${API_URL}/api/helpproject/${id}`, {
-            method: 'DELETE',
-            headers: getAuthHeaders()
-        });
-        return response.json();
+        const res = await apiClient.delete(`/helpproject/${id}`);
+        return res.data;
     },
 
-    getAllProjects: async (params: { page?: number; limit?: number; status?: string; search?: string } = {}) => {
-        const query = new URLSearchParams();
-        if (params.page) query.append('page', params.page.toString());
-        if (params.limit) query.append('limit', params.limit.toString());
-        if (params.status) query.append('status', params.status);
-        if (params.search) query.append('search', params.search);
-
-        const url = `${API_URL}/api/admin/helpproject/all${query.toString() ? `?${query}` : ''}`;
-        const response = await fetch(url, { headers: getAuthHeaders() });
-        return response.json();
+    addReply: async (id: string, content: string, parentId?: string) => {
+        const res = await apiClient.post(`/helpproject/${id}/reply`, { content, parentId });
+        return res.data;
     },
 
-    getStatistics: async () => {
-        const response = await fetch(`${API_URL}/api/admin/helpproject/statistics`, {
-            headers: getAuthHeaders()
-        });
-        return response.json();
+    getAllProjects: async (params: HelpProjectListParams = {}): Promise<HelpProjectListResponse> => {
+        const res = await apiClient.get('/admin/helpproject/all', { params });
+        return res.data;
     },
 
-    addReply: async (id: string, content: string) => {
-        const response = await fetch(`${API_URL}/api/helpproject/${id}/reply`, {
-            method: 'POST',
-            headers: getAuthHeaders(),
-            body: JSON.stringify({ content })
-        });
-        return response.json();
+    getStatistics: async (): Promise<{ success: boolean; data: HelpProjectAdminStats }> => {
+        const res = await apiClient.get('/admin/helpproject/statistics');
+        return res.data;
     },
 
-    adminAddReply: async (id: string, content: string) => {
-        const response = await fetch(`${API_URL}/api/helpproject/${id}/reply`, {
-            method: 'POST',
-            headers: getAuthHeaders(),
-            body: JSON.stringify({ content })
-        });
-        return response.json();
+    adminGetProjectById: async (id: string) => {
+        const res = await apiClient.get(`/admin/helpproject/${id}`);
+        return res.data;
+    },
+
+    adminAddReply: async (id: string, content: string, parentId?: string) => {
+        const res = await apiClient.post(`/admin/helpproject/${id}/reply`, { content, parentId });
+        return res.data;
     },
 
     updateStatus: async (id: string, status: string) => {
-        const response = await fetch(`${API_URL}/api/admin/helpproject/${id}/status`, {
-            method: 'PUT',
-            headers: getAuthHeaders(),
-            body: JSON.stringify({ status })
-        });
-        return response.json();
+        const res = await apiClient.put(`/admin/helpproject/${id}/status`, { status });
+        return res.data;
     },
 
     adminDeleteProject: async (id: string) => {
-        const response = await fetch(`${API_URL}/api/admin/helpproject/${id}`, {
-            method: 'DELETE',
-            headers: getAuthHeaders()
-        });
-        return response.json();
-    }
+        const res = await apiClient.delete(`/admin/helpproject/${id}`);
+        return res.data;
+    },
 };

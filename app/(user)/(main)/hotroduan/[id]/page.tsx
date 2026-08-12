@@ -1,98 +1,85 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-
 import { helpProjectApi } from '@/lib/api/helpproject.api';
-import { HelpProject, Reply } from '@/types/helpproject.type';
+import { HelpProject } from '@/types/helpproject.type';
 import { CustomButton } from '@/components/custom/CustomButton';
-import { CustomBadge } from '@/components/custom/CustomBadge';
-import CustomEditor, { CustomEditorRef } from '@/components/custom/CustomEditor';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { toast } from 'sonner';
-import { ArrowLeft, Calendar, MessageCircle, Edit2, Trash2, Send } from 'lucide-react';
-import StaticContent from '@/components/common/StaticContent';
 import { ConfirmModalDelete } from '@/components/custom/ConfirmationModal';
+import CommentSection from '@/components/comment/CommentSection';
+import StaticContent from '@/components/common/StaticContent';
+import { useAuthStore } from '@/store/auth.store';
+import { toast } from 'sonner';
+import {
+    Home,
+    ChevronRight,
+    FolderKanban,
+    Calendar,
+    Edit2,
+    Trash2,
+    Eye,
+    Globe,
+    Lock,
+    Loader2,
+    Clock,
+    CheckCircle2,
+} from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { getImageUrl } from '@/lib/utils/imageUrl';
+import { cn } from '@/lib/utils';
 
-const getUserInitial = (name: string): string => name?.charAt(0).toUpperCase() || '?';
-const formatDate = (date: string) => new Date(date).toLocaleDateString('vi-VN', {
-    day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
-});
-
-const ReplyItem = ({ reply, isAdmin }: { reply: Reply; isAdmin: boolean }) => {
-    const isAdminReply = reply.userId?.role === 'admin';
-    const displayName = reply.userId?.fullName || (isAdminReply ? 'Admin' : 'Người dùng');
-    const avatarUrl = reply.userId?.avatar;
-
-    return (
-        <div className={`flex gap-3 ${isAdminReply ? 'bg-blue-50' : 'bg-gray-50'} p-4 rounded-lg`}>
-            <Avatar className="w-8 h-8 border-2 border-gray-200">
-                {avatarUrl ? <AvatarImage src={getImageUrl(avatarUrl)} alt={displayName} /> : null}
-                <AvatarFallback className={isAdminReply ? 'bg-purple-500 text-white' : 'bg-gray-400 text-white'}>
-                    {getUserInitial(displayName)}
-                </AvatarFallback>
-            </Avatar>
-            <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                    <span className="font-medium text-gray-800 text-sm">{displayName}</span>
-                    {isAdminReply && <CustomBadge variant="admin">Admin</CustomBadge>}
-                    <span className="text-xs text-gray-400">{formatDate(reply.createdAt)}</span>
-                </div>
-                <StaticContent content={reply.content} />
-            </div>
-        </div>
-    );
+const STATUS: Record<string, { label: string; className: string; icon: React.ElementType }> = {
+    pending: { label: 'Chờ trả lời', className: 'bg-amber-50 text-amber-700', icon: Clock },
+    answered: { label: 'Đã trả lời', className: 'bg-emerald-50 text-emerald-700', icon: CheckCircle2 },
 };
+
+function fmtDate(s: string) {
+    return new Date(s).toLocaleString('vi-VN', {
+        day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit',
+    });
+}
+
+function getInitial(name?: string) {
+    return name?.charAt(0).toUpperCase() || '?';
+}
 
 export default function HelpProjectDetailPage() {
     const params = useParams();
     const router = useRouter();
-    const editorRef = useRef<CustomEditorRef>(null);
+    const user = useAuthStore((s) => s.user);
     const [project, setProject] = useState<HelpProject | null>(null);
     const [loading, setLoading] = useState(true);
-    const [submitting, setSubmitting] = useState(false);
+    const [commentCount, setCommentCount] = useState(0);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [deleting, setDeleting] = useState(false);
-    const currentUserId = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('auth-storage') || '{}')?.state?.user?._id : null;
 
     useEffect(() => {
         fetchData();
     }, [params.id]);
+
+    useEffect(() => {
+        if (!project?._id) return;
+
+        helpProjectApi.incrementView(project._id)
+            .then((res) => {
+                if (res.success && res.data?.views != null) {
+                    setProject((prev) => (prev ? { ...prev, viewCount: res.data.views } : prev));
+                }
+            })
+            .catch(() => {});
+    }, [project?._id]);
 
     const fetchData = async () => {
         setLoading(true);
         try {
             const res = await helpProjectApi.getProjectById(params.id as string);
             if (res.success) setProject(res.data);
+            else toast.error('Không tìm thấy dự án');
         } catch {
             toast.error('Không thể tải dự án');
         } finally {
             setLoading(false);
-        }
-    };
-
-    const handleReply = async () => {
-        const content = editorRef.current?.getContent() || '';
-        if (!content.trim() || content === '<p><br></p>') {
-            toast.error('Vui lòng nhập nội dung phản hồi');
-            return;
-        }
-
-        setSubmitting(true);
-        try {
-            const res = await helpProjectApi.addReply(project!._id, content);
-            if (res.success && res.data) {
-                toast.success('Đã gửi phản hồi');
-                editorRef.current?.setContent('');
-                // Update project state without full reload
-                setProject(res.data);
-            }
-        } catch {
-            toast.error('Có lỗi xảy ra');
-        } finally {
-            setSubmitting(false);
         }
     };
 
@@ -110,114 +97,185 @@ export default function HelpProjectDetailPage() {
         }
     };
 
-    const isOwner = currentUserId === project?.userId?._id;
-
     if (loading) {
         return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-                <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+            <div className="flex min-h-screen items-center justify-center pt-16" style={{ backgroundColor: 'var(--cn-bg-main)' }}>
+                <Loader2 className="h-8 w-8 animate-spin text-[var(--cn-primary)]" />
             </div>
         );
     }
 
     if (!project) {
         return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-                <p className="text-gray-500">Không tìm thấy dự án</p>
+            <div className="flex min-h-screen flex-col items-center justify-center gap-4 pt-16" style={{ backgroundColor: 'var(--cn-bg-main)' }}>
+                <FolderKanban className="h-12 w-12 text-[var(--cn-text-muted)] opacity-40" />
+                <p className="text-[var(--cn-text-sub)]">Không tìm thấy dự án</p>
+                <CustomButton variant="secondary" onClick={() => router.push('/hotroduan')}>
+                    Quay lại danh sách
+                </CustomButton>
             </div>
         );
     }
 
-    const displayName = project.userId?.fullName || 'Người dùng';
-    const avatarUrl = project.userId?.avatar;
+    const isOwner = user?._id === project.userId?._id;
+    const authorName = project.userId?.fullName || 'Người dùng';
+    const st = STATUS[project.status] || STATUS.pending;
+    const StatusIcon = st.icon;
 
     return (
-        <div className="min-h-screen bg-gray-50 pt-14 pb-8 lg:pt-8">
-            <div className="container mx-auto px-4 max-w-4xl">
-                <div className="flex items-center justify-between mb-6">
-                    <Link href="/hotroduan" className="inline-flex items-center gap-2 text-gray-500 hover:text-gray-700 transition">
-                        <ArrowLeft className="w-4 h-4" /> Quay lại
+        <div className="min-h-screen pb-8 pt-16 md:pt-14 lg:pt-8" style={{ backgroundColor: 'var(--cn-bg-main)' }}>
+            <div className="container mx-auto max-w-5xl px-4">
+                <nav className="mb-6 flex items-center gap-2 text-xs text-[var(--cn-text-sub)] md:text-sm">
+                    <Link href="/" className="flex items-center gap-1 transition hover:text-[var(--cn-text-main)]">
+                        <Home className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                        <span className="hidden sm:inline">Trang chủ</span>
                     </Link>
-                    {isOwner && (
-                        <div className="flex items-center gap-2">
-                            <Link href={`/hotroduan/edit/${project._id}`}>
-                                <CustomButton variant="secondary" size="small" className="!px-3 !py-1.5">
-                                    <Edit2 className="w-3.5 h-3.5" /> Chỉnh sửa
-                                </CustomButton>
-                            </Link>
-                            <button
-                                onClick={() => setShowDeleteConfirm(true)}
-                                className="px-3 py-1.5 text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition"
-                            >
-                                <Trash2 className="w-3.5 h-3.5 inline mr-1" /> Xóa
-                            </button>
-                        </div>
-                    )}
-                </div>
+                    <ChevronRight className="h-3.5 w-3.5 text-[var(--cn-text-muted)] md:h-4 md:w-4" />
+                    <Link href="/hotroduan" className="transition hover:text-[var(--cn-text-main)]">
+                        Hỗ trợ dự án
+                    </Link>
+                    <ChevronRight className="h-3.5 w-3.5 text-[var(--cn-text-muted)] md:h-4 md:w-4" />
+                    <span className="line-clamp-1 font-medium text-[var(--cn-text-main)]">{project.title}</span>
+                </nav>
 
-                <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                    {project.thumbnail && (
-                        <div className="relative h-80 w-full bg-gray-100">
-                            \
-                        </div>
-                    )}
+                <div className="grid gap-6 lg:grid-cols-[1fr_260px]">
+                    <div className="space-y-6">
+                        <article className="overflow-hidden rounded-xl border border-[var(--cn-border)] bg-[var(--cn-bg-card)] shadow-sm">
+                            {project.thumbnail && (
+                                <div className="aspect-[21/9] w-full overflow-hidden bg-[var(--cn-bg-section)]">
+                                    <img
+                                        src={getImageUrl(project.thumbnail)}
+                                        alt={project.title}
+                                        className="h-full w-full object-cover"
+                                    />
+                                </div>
+                            )}
 
-                    <div className="p-6">
-                        <div className="mb-4">
-                            <CustomBadge variant={project.status === 'answered' ? 'solved' : 'pending'}>
-                                {project.status === 'answered' ? 'Đã trả lời' : 'Chờ trả lời'}
-                            </CustomBadge>
-                        </div>
+                            <div className="p-5 md:p-6">
+                                <div className="mb-4 flex flex-wrap items-center gap-2">
+                                    <span className={cn('inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-semibold', st.className)}>
+                                        <StatusIcon className="h-3.5 w-3.5" />
+                                        {st.label}
+                                    </span>
+                                    <span className={cn(
+                                        'inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-semibold',
+                                        project.isPublic
+                                            ? 'bg-blue-50 text-blue-700'
+                                            : 'bg-gray-100 text-gray-600'
+                                    )}>
+                                        {project.isPublic ? <Globe className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" />}
+                                        {project.isPublic ? 'Công khai' : 'Riêng tư'}
+                                    </span>
+                                </div>
 
-                        <h1 className="text-2xl font-bold text-gray-800 mb-4">{project.title}</h1>
+                                <h1 className="text-2xl font-bold leading-snug text-[var(--cn-text-main)] md:text-3xl">
+                                    {project.title}
+                                </h1>
 
-                        <div className="flex items-center gap-4 mb-6 pb-4 border-b border-gray-200">
-                            <div className="flex items-center gap-3">
-                                <Avatar className="w-10 h-10 border-2 border-gray-200">
-                                    {avatarUrl ? <AvatarImage src={getImageUrl(avatarUrl)} alt={displayName} /> : null}
-                                    <AvatarFallback className="bg-blue-500 text-white">{getUserInitial(displayName)}</AvatarFallback>
-                                </Avatar>
-                                <div>
-                                    <p className="text-sm font-medium text-gray-800">{displayName}</p>
-                                    <div className="flex items-center gap-1 text-xs text-gray-400">
-                                        <Calendar className="w-3 h-3" />
-                                        <span>{formatDate(project.createdAt)}</span>
+                                <div className="mt-4 flex flex-wrap items-center gap-4 border-b border-[var(--cn-border)] pb-4 text-sm text-[var(--cn-text-sub)]">
+                                    <div className="flex items-center gap-2">
+                                        <Avatar className="h-8 w-8 border border-[var(--cn-border)]">
+                                            {project.userId?.avatar ? (
+                                                <AvatarImage src={getImageUrl(project.userId.avatar)} alt={authorName} />
+                                            ) : null}
+                                            <AvatarFallback className="bg-[var(--cn-primary)] text-xs text-white">
+                                                {getInitial(authorName)}
+                                            </AvatarFallback>
+                                        </Avatar>
+                                        <span className="font-medium text-[var(--cn-text-main)]">{authorName}</span>
                                     </div>
+                                    <span className="flex items-center gap-1.5">
+                                        <Calendar className="h-3.5 w-3.5" />
+                                        {fmtDate(project.createdAt)}
+                                    </span>
+                                    <span className="flex items-center gap-1.5">
+                                        <Eye className="h-3.5 w-3.5" />
+                                        {project.viewCount} lượt xem
+                                    </span>
+                                </div>
+
+                                <div className="mt-5">
+                                    <StaticContent content={project.content} />
                                 </div>
                             </div>
+                        </article>
+
+                        <section className="rounded-xl border border-[var(--cn-border)] bg-[var(--cn-bg-card)] p-5 shadow-sm md:p-6">
+                            <CommentSection
+                                targetType="help_project"
+                                targetId={project._id}
+                                title="Phản hồi"
+                                onCommentCountChange={setCommentCount}
+                            />
+                        </section>
+                    </div>
+
+                    <aside className="space-y-4">
+                        <div className="rounded-xl border border-[var(--cn-border)] bg-[var(--cn-bg-card)] p-5 shadow-sm lg:sticky lg:top-24">
+                            <p className="mb-3 text-sm font-semibold text-[var(--cn-text-main)]">Thông tin dự án</p>
+                            <dl className="space-y-3 text-sm">
+                                <div className="flex items-center justify-between gap-2">
+                                    <dt className="text-[var(--cn-text-muted)]">Trạng thái</dt>
+                                    <dd className={cn('inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-semibold', st.className)}>
+                                        {st.label}
+                                    </dd>
+                                </div>
+                                <div className="flex items-center justify-between gap-2">
+                                    <dt className="text-[var(--cn-text-muted)]">Quyền riêng tư</dt>
+                                    <dd className="font-medium text-[var(--cn-text-main)]">
+                                        {project.isPublic ? 'Công khai' : 'Riêng tư'}
+                                    </dd>
+                                </div>
+                                <div className="flex items-center justify-between gap-2">
+                                    <dt className="text-[var(--cn-text-muted)]">Phản hồi</dt>
+                                    <dd className="font-medium text-[var(--cn-text-main)]">{commentCount}</dd>
+                                </div>
+                                <div className="flex items-center justify-between gap-2">
+                                    <dt className="text-[var(--cn-text-muted)]">Lượt xem</dt>
+                                    <dd className="font-medium text-[var(--cn-text-main)]">{project.viewCount}</dd>
+                                </div>
+                                <div className="flex items-center justify-between gap-2">
+                                    <dt className="text-[var(--cn-text-muted)]">Cập nhật</dt>
+                                    <dd className="text-right text-xs text-[var(--cn-text-sub)]">{fmtDate(project.updatedAt)}</dd>
+                                </div>
+                            </dl>
+
+                            {isOwner && (
+                                <div className="mt-5 space-y-2 border-t border-[var(--cn-border)] pt-4">
+                                    <CustomButton
+                                        variant="secondary"
+                                        size="small"
+                                        fullWidth
+                                        onClick={() => router.push(`/hotroduan/edit/${project._id}`)}
+                                    >
+                                        <Edit2 className="h-3.5 w-3.5" />
+                                        Chỉnh sửa
+                                    </CustomButton>
+                                    <CustomButton
+                                        variant="danger"
+                                        size="small"
+                                        fullWidth
+                                        onClick={() => setShowDeleteConfirm(true)}
+                                    >
+                                        <Trash2 className="h-3.5 w-3.5" />
+                                        Xóa dự án
+                                    </CustomButton>
+                                </div>
+                            )}
                         </div>
-
-                        <StaticContent content={project.content} />
-                    </div>
-                </div>
-
-                {project.replies.length > 0 && (
-                    <div className="mt-8 bg-white rounded-xl border border-gray-200 p-6">
-                        <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                            <MessageCircle className="w-5 h-5 text-blue-500" /> Phản hồi ({project.replies.length})
-                        </h3>
-                        <div className="space-y-3">
-                            {project.replies.map((reply) => (
-                                <ReplyItem key={reply._id} reply={reply} isAdmin={reply.userId?.role === 'admin'} />
-                            ))}
-                        </div>
-                    </div>
-                )}
-
-                <div className="mt-6 bg-white rounded-xl border border-gray-200 p-6">
-                    <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                        <Send className="w-4 h-4 text-green-500" /> Phản hồi của bạn
-                    </h3>
-                    <CustomEditor ref={editorRef} />
-                    <div className="flex justify-end mt-4">
-                        <CustomButton onClick={handleReply} loading={submitting}>
-                            <Send className="w-4 h-4" /> Gửi phản hồi
-                        </CustomButton>
-                    </div>
+                    </aside>
                 </div>
             </div>
 
-            <ConfirmModalDelete isOpen={showDeleteConfirm} onClose={() => setShowDeleteConfirm(false)} onConfirm={handleDelete} title="Xóa dự án" message={`Bạn có chắc chắn muốn xóa dự án "${project.title}"?`} warning="Hành động này không thể hoàn tác." isDeleting={deleting} />
+            <ConfirmModalDelete
+                isOpen={showDeleteConfirm}
+                onClose={() => setShowDeleteConfirm(false)}
+                onConfirm={handleDelete}
+                title="Xóa dự án"
+                message={`Bạn có chắc chắn muốn xóa dự án "${project.title}"?`}
+                warning="Hành động này không thể hoàn tác."
+                isDeleting={deleting}
+            />
         </div>
     );
 }

@@ -13,8 +13,9 @@ import { toast } from 'sonner';
 import { isCommentContentEmpty } from '@/lib/comment-content';
 
 interface CommentSectionProps {
-    targetType: 'post' | 'lesson' | 'workspace' | 'task' | 'feedback' | 'feed' | 'short_video' | 'blog';
+    targetType: 'post' | 'lesson' | 'workspace' | 'task' | 'feedback' | 'feed' | 'short_video' | 'blog' | 'help_project';
     targetId: string;
+    title?: string;
     onCommentCountChange?: (count: number) => void;
 }
 
@@ -47,7 +48,7 @@ const removeCommentFromTree = (items: CommentType[], commentId: string): Comment
                 : item.replyCount,
         }));
 
-export default function CommentSection({ targetType, targetId, onCommentCountChange }: CommentSectionProps) {
+export default function CommentSection({ targetType, targetId, title = 'Bình luận', onCommentCountChange }: CommentSectionProps) {
     const { user, token } = useAuthStore();
     const { socket, isConnected } = useSocket();
     const [comments, setComments] = useState<CommentType[]>([]);
@@ -357,7 +358,7 @@ export default function CommentSection({ targetType, targetId, onCommentCountCha
     return (
         <div className="bg-white rounded-xl pt-2">
             <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                Bình luận ({comments.length})
+                {title} ({comments.length})
             </h3>
 
             {user ? (

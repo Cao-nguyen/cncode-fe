@@ -1,405 +1,178 @@
-
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
-import { helpProjectApi } from '@/lib/api/helpproject.api';
+import React, { useEffect, useState } from 'react';
+import { helpProjectApi, HelpProjectAdminStats } from '@/lib/api/helpproject.api';
 import { HelpProject } from '@/types/helpproject.type';
-import { CustomButton } from '@/components/custom/CustomButton';
-import { CustomInput } from '@/components/custom/CustomInput';
 import { CustomSelect } from '@/components/custom/CustomSelect';
-import { CustomEditorRef } from '@/components/custom/CustomEditor';
 import { ConfirmModalDelete } from '@/components/custom/ConfirmationModal';
+import { DashboardCard } from '@/components/custom/DashboardCard';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import StaticContent from '@/components/common/StaticContent';
+import CommentSection from '@/components/comment/CommentSection';
 import { toast } from 'sonner';
 import { getImageUrl } from '@/lib/utils/imageUrl';
-import { Eye, MessageCircle, CheckCircle, Clock, ChevronLeft, ChevronRight, Search, ShieldCheck, Send, FileText, Trash2, X } from 'lucide-react';
-import StaticContent from '@/components/common/StaticContent';
-import CustomEditor from '@/components/custom/CustomEditor';
-import { DashboardCard } from '@/components/custom/DashboardCard';
+import { cn } from '@/lib/utils';
+import {
+    Eye,
+    MessageCircle,
+    CheckCircle2,
+    Clock,
+    Search,
+    Trash2,
+    X,
+    FolderKanban,
+    Users,
+    Globe,
+    Lock,
+} from 'lucide-react';
 
 const STATUS_OPTIONS = [
     { value: 'all', label: 'Tất cả' },
     { value: 'pending', label: 'Chờ trả lời' },
-    { value: 'answered', label: 'Đã trả lời' }
+    { value: 'answered', label: 'Đã trả lời' },
 ];
 
-const STATUS_LABELS: Record<string, string> = {
-    pending: 'Chờ trả lời',
-    answered: 'Đã trả lời'
+const STATUS: Record<string, { label: string; className: string }> = {
+    pending: { label: 'Chờ trả lời', className: 'bg-amber-50 text-amber-700' },
+    answered: { label: 'Đã trả lời', className: 'bg-emerald-50 text-emerald-700' },
 };
 
-const STATUS_COLORS: Record<string, string> = {
-    pending: 'bg-yellow-100 text-yellow-700',
-    answered: 'bg-green-100 text-green-700'
-};
-
-interface StatisticsData {
-    total: number;
-    pending: number;
-    answered: number;
+function fmtDate(s: string) {
+    return new Date(s).toLocaleString('vi-VN', {
+        day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit',
+    });
 }
 
-const ViewProjectModal = ({ isOpen, onClose, project }: { isOpen: boolean; onClose: () => void; project: HelpProject | null }) => {
-    if (!isOpen || !project) return null;
+function stripHtml(html: string) {
+    return html.replace(/<[^>]*>/g, '').trim();
+}
 
-    const formatDate = (date: string) => new Date(date).toLocaleDateString('vi-VN', {
-        day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
-    });
+function getInitial(name?: string) {
+    return name?.charAt(0).toUpperCase() || '?';
+}
 
-    const getUserInitial = (name: string): string => name?.charAt(0).toUpperCase() || '?';
-    const displayName = project.userId?.fullName || 'Người dùng';
-    const avatarUrl = project.userId?.avatar ? getImageUrl(project.userId.avatar) : undefined;
-
-    return (
-        <>
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
-                <div className="bg-white rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-                    <div className="sticky top-0 z-50 bg-white px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-                        <h2 className="text-xl font-bold text-gray-800">Chi tiết dự án</h2>
-                        <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-lg"><X className="w-6 h-6" /></button>
-                    </div>
-                    <div className="p-6">
-                        {project.thumbnail && (
-                            <div className="relative h-64 w-full bg-gray-100 rounded-lg mb-4 overflow-hidden">
-                                <img src={project.thumbnail} alt={project.title} className="w-full h-full object-cover" />
-                            </div>
-                        )}
-                        <div className="mb-4">
-                            <span className={`px-2 py-1 rounded-full text-xs ${STATUS_COLORS[project.status]}`}>{STATUS_LABELS[project.status]}</span>
-                        </div>
-                        <h1 className="text-2xl font-bold text-gray-800 mb-4">{project.title}</h1>
-                        <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-200">
-                            <Avatar className="w-10 h-10 border-2 border-gray-200">
-                                {avatarUrl ? <AvatarImage src={avatarUrl} alt={displayName} /> : null}
-                                <AvatarFallback className="bg-blue-500 text-white">{getUserInitial(displayName)}</AvatarFallback>
-                            </Avatar>
-                            <div>
-                                <p className="text-sm font-medium text-gray-800">{displayName}</p>
-                                <div className="flex items-center gap-1 text-xs text-gray-400"><Clock className="w-3 h-3" /><span>{formatDate(project.createdAt)}</span></div>
-                            </div>
-                        </div>
-                        <StaticContent content={project.content} />
-
-                        { }
-                        {project.replies.length > 0 && (
-                            <div className="mt-6 pt-4 border-t border-gray-200">
-                                <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                                    <MessageCircle className="w-4 h-4 text-blue-500" />
-                                    Phản hồi ({project.replies.length})
-                                </h3>
-                                <div className="space-y-3 max-h-[300px] overflow-y-auto">
-                                    {project.replies.map((reply, idx) => {
-                                        const isAdmin = reply.userId?.role === 'admin';
-                                        const replyName = reply.userId?.fullName || (isAdmin ? 'Admin' : 'Người dùng');
-                                        const replyAvatar = reply.userId?.avatar ? getImageUrl(reply.userId.avatar) : undefined;
-                                        return (
-                                            <div key={idx} className={`flex gap-3 p-3 rounded-lg ${isAdmin ? 'bg-blue-50' : 'bg-gray-50'}`}>
-                                                <Avatar className="w-7 h-7 border-2 border-gray-200">
-                                                    {replyAvatar ? <AvatarImage src={replyAvatar} alt={replyName} /> : null}
-                                                    <AvatarFallback className={isAdmin ? 'bg-purple-500 text-white text-xs' : 'bg-gray-400 text-white text-xs'}>
-                                                        {replyName.charAt(0).toUpperCase()}
-                                                    </AvatarFallback>
-                                                </Avatar>
-                                                <div className="flex-1">
-                                                    <div className="flex items-center gap-2 mb-1">
-                                                        <span className="font-medium text-gray-800 text-sm">{replyName}</span>
-                                                        {isAdmin && <span className="text-xs bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded">Admin</span>}
-                                                        <span className="text-xs text-gray-400">{formatDate(reply.createdAt)}</span>
-                                                    </div>
-                                                    <StaticContent content={reply.content} />
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            </div>
-        </>
-    );
-};
-
-const ReplyModal = ({ isOpen, onClose, project, onSuccess }: { isOpen: boolean; onClose: () => void; project: HelpProject | null; onSuccess: () => void }) => {
-    const editorRef = useRef<CustomEditorRef>(null);
-    const [submitting, setSubmitting] = useState(false);
-
-    if (!isOpen || !project) return null;
-
-    const handleSubmit = async () => {
-        const content = editorRef.current?.getContent() || '';
-        if (!content.trim() || content === '<p><br></p>') {
-            toast.error('Vui lòng nhập nội dung phản hồi');
-            return;
-        }
-        setSubmitting(true);
-        try {
-            const res = await helpProjectApi.adminAddReply(project._id, content);
-            if (res.success) {
-                toast.success('Đã gửi phản hồi');
-                onSuccess();
-                onClose();
-            }
-        } catch {
-            toast.error('Có lỗi xảy ra');
-        } finally {
-            setSubmitting(false);
-        }
-    };
-
+function ModalShell({
+    open,
+    onClose,
+    title,
+    children,
+    footer,
+    wide,
+}: {
+    open: boolean;
+    onClose: () => void;
+    title: string;
+    children: React.ReactNode;
+    footer?: React.ReactNode;
+    wide?: boolean;
+}) {
+    if (!open) return null;
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
-            <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-                <div className="sticky top-0 z-50 bg-white px-5 py-4 border-b border-gray-200 flex justify-between items-center">
-                    <h3 className="text-lg font-semibold text-gray-800">Phản hồi dự án</h3>
-                    <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded"><X className="w-5 h-5" /></button>
-                </div>
-                <div className="p-5">
-                    <p className="text-sm text-gray-600 mb-3"><strong>Dự án:</strong> {project.title}</p>
-                    <CustomEditor ref={editorRef} />
-                </div>
-                <div className="flex justify-end gap-3 p-5 pt-0">
-                    <CustomButton variant="secondary" onClick={onClose}>Hủy</CustomButton>
-                    <CustomButton onClick={handleSubmit} loading={submitting}><Send className="w-4 h-4" /> Gửi phản hồi</CustomButton>
-                </div>
-            </div>
-        </div>
-    );
-};
-
-const StatusModal = ({ isOpen, onClose, project, onSuccess }: { isOpen: boolean; onClose: () => void; project: HelpProject | null; onSuccess: () => void }) => {
-    const [status, setStatus] = useState<HelpProject['status']>(project?.status || 'pending');
-    const [submitting, setSubmitting] = useState(false);
-
-    if (!isOpen || !project) return null;
-
-    const handleSubmit = async () => {
-        setSubmitting(true);
-        try {
-            const res = await helpProjectApi.updateStatus(project._id, status);
-            if (res.success) {
-                toast.success('Cập nhật trạng thái thành công');
-                onSuccess();
-                onClose();
-            }
-        } catch {
-            toast.error('Có lỗi xảy ra');
-        } finally {
-            setSubmitting(false);
-        }
-    };
-
-    const statusOptions = [
-        { value: 'pending', label: 'Chờ trả lời' },
-        { value: 'answered', label: 'Đã trả lời' }
-    ];
-
-    return (
-        <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-            onClick={onClose}
-        >
             <div
-                className="bg-white rounded-2xl w-full max-w-md overflow-hidden"
+                className={cn(
+                    'flex max-h-[90vh] w-full flex-col overflow-hidden rounded-2xl bg-white shadow-xl',
+                    wide ? 'max-w-3xl' : 'max-w-2xl'
+                )}
                 onClick={(e) => e.stopPropagation()}
             >
-                { }
-                <div className="sticky top-0 z-50 bg-white px-5 py-4 border-b border-gray-200 flex justify-between items-center rounded-t-2xl">
-                    <h3 className="text-lg font-semibold text-gray-800">
-                        Cập nhật trạng thái
-                    </h3>
-
-                    <button
-                        onClick={onClose}
-                        className="p-1 hover:bg-gray-100 rounded"
-                    >
-                        <X className="w-5 h-5" />
+                <div className="flex items-center justify-between border-b border-gray-200 px-5 py-4">
+                    <h3 className="text-lg font-semibold text-gray-800">{title}</h3>
+                    <button type="button" onClick={onClose} className="rounded-lg p-1 hover:bg-gray-100">
+                        <X className="h-5 w-5 text-gray-500" />
                     </button>
                 </div>
-
-                { }
-                <div className="p-5 space-y-4">
-                    <CustomSelect
-                        label="Trạng thái"
-                        options={statusOptions}
-                        value={status}
-                        onChange={(val) =>
-                            setStatus(val as HelpProject['status'])
-                        }
-                    />
-                </div>
-
-                { }
-                <div className="flex justify-end gap-3 p-5 pt-0">
-                    <CustomButton variant="secondary" onClick={onClose}>
-                        Hủy
-                    </CustomButton>
-                    <CustomButton onClick={handleSubmit} loading={submitting}>
-                        Cập nhật
-                    </CustomButton>
-                </div>
+                <div className="flex-1 overflow-y-auto p-5">{children}</div>
+                {footer && <div className="border-t border-gray-200 px-5 py-4">{footer}</div>}
             </div>
         </div>
     );
-};
+}
 
-const ViewRepliesModal = ({ isOpen, onClose, project, onSuccess }: { isOpen: boolean; onClose: () => void; project: HelpProject | null; onSuccess: () => void }) => {
-    if (!isOpen || !project) return null;
-
-    const formatDate = (date: string) => new Date(date).toLocaleDateString('vi-VN', {
-        day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
-    });
-
-    const getUserInitial = (name: string): string => name?.charAt(0).toUpperCase() || '?';
+function ViewProjectModal({
+    project,
+    onClose,
+    onCommentCountChange,
+}: {
+    project: HelpProject | null;
+    onClose: () => void;
+    onCommentCountChange?: (projectId: string, count: number) => void;
+}) {
+    if (!project) return null;
+    const st = STATUS[project.status] || STATUS.pending;
+    const name = project.userId?.fullName || 'Người dùng';
 
     return (
-        <>
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
-                <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
-                    <div className="sticky top-0 z-50 bg-white px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-                        <div className="flex items-center gap-2">
-                            <MessageCircle className="w-5 h-5 text-blue-500" />
-                            <h2 className="text-xl font-bold text-gray-800">Phản hồi dự án</h2>
-                        </div>
-                        <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-lg transition">
-                            <X className="w-6 h-6 text-gray-500" />
-                        </button>
-                    </div>
-
-                    <div className="p-4 border-b border-gray-200 bg-gray-50">
-                        <p className="text-sm text-gray-600">
-                            <strong className="text-gray-800">Dự án:</strong> {project.title}
-                        </p>
-                    </div>
-
-                    <div className="flex-1 overflow-y-auto p-6">
-                        {project.replies.length === 0 ? (
-                            <div className="text-center py-12">
-                                <MessageCircle className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                                <p className="text-gray-400">Chưa có phản hồi nào</p>
-                            </div>
-                        ) : (
-                            <div className="space-y-4">
-                                {project.replies.map((reply, idx) => {
-                                    const isAdmin = reply.userId?.role === 'admin';
-                                    const displayName = reply.userId?.fullName || (isAdmin ? 'Admin' : 'Người dùng');
-                                    const avatarUrl = reply.userId?.avatar ? getImageUrl(reply.userId.avatar) : undefined;
-                                    return (
-                                        <div key={idx} className={`flex gap-3 p-4 rounded-lg ${isAdmin ? 'bg-blue-50' : 'bg-gray-50'}`}>
-                                            <Avatar className="w-8 h-8 flex-shrink-0 border-2 border-gray-200">
-                                                {avatarUrl ? <AvatarImage src={avatarUrl} alt={displayName} /> : null}
-                                                <AvatarFallback className={isAdmin ? 'bg-purple-500 text-white' : 'bg-gray-400 text-white'}>
-                                                    {getUserInitial(displayName)}
-                                                </AvatarFallback>
-                                            </Avatar>
-                                            <div className="flex-1">
-                                                <div className="flex items-center gap-2 mb-1">
-                                                    <span className="font-medium text-gray-800 text-sm">{displayName}</span>
-                                                    {isAdmin && <span className="text-xs bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded">Admin</span>}
-                                                    <span className="text-xs text-gray-400">{formatDate(reply.createdAt)}</span>
-                                                </div>
-                                                <StaticContent content={reply.content} />
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        )}
-                    </div>
+        <ModalShell open={!!project} onClose={onClose} title="Chi tiết dự án" wide>
+            {project.thumbnail && (
+                <div className="mb-4 h-56 overflow-hidden rounded-xl bg-gray-100">
+                    <img src={getImageUrl(project.thumbnail)} alt={project.title} className="h-full w-full object-cover" />
+                </div>
+            )}
+            <div className="mb-3 flex flex-wrap items-center gap-2">
+                <span className={cn('inline-flex rounded-md px-2 py-0.5 text-xs font-semibold', st.className)}>{st.label}</span>
+                <span className={cn(
+                    'inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-semibold',
+                    project.isPublic ? 'bg-blue-50 text-blue-700' : 'bg-gray-100 text-gray-600'
+                )}>
+                    {project.isPublic ? <Globe className="h-3 w-3" /> : <Lock className="h-3 w-3" />}
+                    {project.isPublic ? 'Công khai' : 'Riêng tư'}
+                </span>
+            </div>
+            <h2 className="text-xl font-bold text-gray-800">{project.title}</h2>
+            <div className="mt-4 flex items-center gap-3 border-b border-gray-200 pb-4">
+                <Avatar className="h-9 w-9 border-2 border-gray-200">
+                    {project.userId?.avatar ? <AvatarImage src={getImageUrl(project.userId.avatar)} alt={name} /> : null}
+                    <AvatarFallback className="bg-blue-500 text-white">{getInitial(name)}</AvatarFallback>
+                </Avatar>
+                <div>
+                    <p className="text-sm font-medium text-gray-800">{name}</p>
+                    <p className="text-xs text-gray-400">{fmtDate(project.createdAt)}</p>
                 </div>
             </div>
-        </>
+            <div className="mt-4">
+                <StaticContent content={project.content} />
+            </div>
+            <div className="mt-6 border-t border-gray-200 pt-5">
+                <CommentSection
+                    targetType="help_project"
+                    targetId={project._id}
+                    title="Phản hồi"
+                    onCommentCountChange={(count) => onCommentCountChange?.(project._id, count)}
+                />
+            </div>
+        </ModalShell>
     );
-};
-
-const AdminProjectRow = ({ project, onView, onViewReplies, onReply, onStatus, onDelete }: {
-    project: HelpProject;
-    onView: (p: HelpProject) => void;
-    onViewReplies: (p: HelpProject) => void;
-    onReply: (p: HelpProject) => void;
-    onStatus: (p: HelpProject) => void;
-    onDelete: (p: HelpProject) => void;
-}) => {
-    const getUserInitial = (name: string): string => name?.charAt(0).toUpperCase() || '?';
-
-    return (
-        <tr className="hover:bg-gray-50">
-            <td className="px-4 py-3">
-                <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded bg-gray-100 flex items-center justify-center overflow-hidden flex-shrink-0">
-                        {project.thumbnail ? (
-                            <img src={project.thumbnail} className="w-full h-full object-cover" alt="" />
-                        ) : (
-                            <FileText className="w-5 h-5 text-gray-400" />
-                        )}
-                    </div>
-                    <div>
-                        <p className="font-medium text-gray-800 line-clamp-1 max-w-xs">{project.title}</p>
-                        <p className="text-xs text-gray-400 line-clamp-1 max-w-xs">{project.content.replace(/<[^>]*>/g, '').substring(0, 50)}...</p>
-                    </div>
-                </div>
-            </td>
-            <td className="px-4 py-3">
-                <div className="flex items-center gap-2">
-                    <Avatar className="w-6 h-6 border-2 border-gray-200">
-                        {project.userId?.avatar ? <AvatarImage src={getImageUrl(project.userId.avatar)} alt={project.userId?.fullName} /> : null}
-                        <AvatarFallback className="bg-blue-500 text-white text-xs">{getUserInitial(project.userId?.fullName || '')}</AvatarFallback>
-                    </Avatar>
-                    <span className="text-sm text-gray-700">{project.userId?.fullName || 'Ẩn danh'}</span>
-                </div>
-            </td>
-            <td className="px-4 py-3 text-center">
-                <span className={`px-2 py-0.5 rounded-full text-xs ${STATUS_COLORS[project.status]}`}>{STATUS_LABELS[project.status]}</span>
-            </td>
-            <td className="px-4 py-3 text-center">
-                <button
-                    onClick={() => onViewReplies(project)}
-                    className="text-blue-500 hover:text-blue-700 text-sm font-medium flex items-center gap-1 mx-auto"
-                >
-                    <MessageCircle className="w-3.5 h-3.5" />
-                    {project.replies.length}
-                </button>
-            </td>
-            <td className="px-4 py-3 text-center">
-                <div className="flex items-center justify-center gap-1">
-                    <button onClick={() => onView(project)} className="p-1.5 text-blue-500 hover:bg-blue-50 rounded" title="Xem chi tiết"><Eye className="w-4 h-4" /></button>
-                    <button onClick={() => onReply(project)} className="p-1.5 text-green-500 hover:bg-green-50 rounded" title="Phản hồi"><MessageCircle className="w-4 h-4" /></button>
-                    <button onClick={() => onStatus(project)} className="p-1.5 text-purple-500 hover:bg-purple-50 rounded" title="Cập nhật trạng thái"><CheckCircle className="w-4 h-4" /></button>
-                    <button onClick={() => onDelete(project)} className="p-1.5 text-red-500 hover:bg-red-50 rounded" title="Xóa"><Trash2 className="w-4 h-4" /></button>
-                </div>
-            </td>
-        </tr>
-    );
-};
+}
 
 export default function AdminHelpProjectPage() {
     const [projects, setProjects] = useState<HelpProject[]>([]);
-    const [statistics, setStatistics] = useState<StatisticsData | null>(null);
+    const [statistics, setStatistics] = useState<HelpProjectAdminStats | null>(null);
     const [loading, setLoading] = useState(true);
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [statusFilter, setStatusFilter] = useState('all');
     const [search, setSearch] = useState('');
-    const [searchInput, setSearchInput] = useState('');
-    const [selectedProject, setSelectedProject] = useState<HelpProject | null>(null);
-    const [showViewModal, setShowViewModal] = useState(false);
-    const [showViewRepliesModal, setShowViewRepliesModal] = useState(false);
-    const [showReplyModal, setShowReplyModal] = useState(false);
-    const [showStatusModal, setShowStatusModal] = useState(false);
+    const [debouncedSearch, setDebouncedSearch] = useState('');
+    const [viewProject, setViewProject] = useState<HelpProject | null>(null);
     const [deleteTarget, setDeleteTarget] = useState<HelpProject | null>(null);
+
+    useEffect(() => {
+        const t = setTimeout(() => { setDebouncedSearch(search); setPage(1); }, 400);
+        return () => clearTimeout(t);
+    }, [search]);
 
     useEffect(() => {
         fetchStatistics();
         fetchProjects();
-    }, [page, statusFilter, search]);
+    }, [page, statusFilter, debouncedSearch]);
 
     const fetchStatistics = async () => {
         try {
             const res = await helpProjectApi.getStatistics();
-            if (res.success && res.data) setStatistics(res.data);
+            if (res.success) setStatistics(res.data);
         } catch {
-            console.error('Failed to fetch stats');
+            /* ignore */
         }
     };
 
@@ -410,11 +183,11 @@ export default function AdminHelpProjectPage() {
                 page,
                 limit: 10,
                 status: statusFilter !== 'all' ? statusFilter : undefined,
-                search: search || undefined
+                search: debouncedSearch || undefined,
             });
             if (res.success) {
-                setProjects(res.projects);
-                setTotalPages(res.totalPages);
+                setProjects(res.data);
+                setTotalPages(res.pagination.totalPages);
             }
         } catch {
             toast.error('Không thể tải dự án');
@@ -423,13 +196,24 @@ export default function AdminHelpProjectPage() {
         }
     };
 
-    useEffect(() => {
-        const timeout = setTimeout(() => {
-            setSearch(searchInput);
-            setPage(1);
-        }, 500);
-        return () => clearTimeout(timeout);
-    }, [searchInput]);
+    const refresh = () => {
+        fetchProjects();
+        fetchStatistics();
+    };
+
+    const handleCommentCountChange = (projectId: string, count: number) => {
+        setProjects((prev) => prev.map((p) => (
+            p._id === projectId ? { ...p, commentCount: count } : p
+        )));
+        setViewProject((prev) => (
+            prev && prev._id === projectId ? { ...prev, commentCount: count } : prev
+        ));
+    };
+
+    const handleCloseViewModal = () => {
+        setViewProject(null);
+        refresh();
+    };
 
     const handleDelete = async () => {
         if (!deleteTarget) return;
@@ -437,230 +221,164 @@ export default function AdminHelpProjectPage() {
             await helpProjectApi.adminDeleteProject(deleteTarget._id);
             toast.success('Xóa thành công');
             setDeleteTarget(null);
-            fetchProjects();
-            fetchStatistics();
+            refresh();
         } catch {
             toast.error('Có lỗi xảy ra');
         }
     };
 
-    const handleReplySuccess = () => {
-        fetchProjects();
-        fetchStatistics();
-    };
-
-    const handleStatusSuccess = () => {
-        fetchProjects();
-        fetchStatistics();
-    };
-
     return (
-        <div className="space-y-6 pb-8 px-3 sm:px-4">
+        <div className="space-y-6 pb-8">
             <div>
-                <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">Quản lý hỗ trợ dự án</h1>
-                <p className="text-sm text-gray-500 mt-1">Quản lý yêu cầu hỗ trợ dự án từ người dùng</p>
+                <h1 className="text-2xl font-bold text-gray-800 sm:text-3xl">Quản lý hỗ trợ dự án</h1>
+                <p className="mt-1 text-sm text-gray-500">Xem và phản hồi yêu cầu hỗ trợ dự án từ người dùng</p>
             </div>
 
             {statistics && (
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                    <DashboardCard title="Tổng dự án" value={statistics.total} icon={<FileText size={18} />} iconBgColor="#EFF6FF" iconColor="#3B82F6" />
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                    <DashboardCard title="Tổng dự án" value={statistics.total} icon={<FolderKanban size={18} />} iconBgColor="#EFF6FF" iconColor="#3B82F6" />
                     <DashboardCard title="Chờ trả lời" value={statistics.pending} icon={<Clock size={18} />} iconBgColor="#FFF7ED" iconColor="#F97316" />
-                    <DashboardCard title="Đã trả lời" value={statistics.answered} icon={<CheckCircle size={18} />} iconBgColor="#F0FDF4" iconColor="#22C55E" />
+                    <DashboardCard title="Đã trả lời" value={statistics.answered} icon={<CheckCircle2 size={18} />} iconBgColor="#F0FDF4" iconColor="#22C55E" />
+                    <DashboardCard title="Lượt xem" value={statistics.totalViews} icon={<Eye size={18} />} iconBgColor="#F5F3FF" iconColor="#8B5CF6" />
                 </div>
             )}
 
-            <div className="bg-white rounded-xl p-4 border border-gray-200">
-                <div className="flex flex-wrap gap-4">
-                    <div className="flex-1">
-                        <CustomInput
-                            placeholder="Tìm kiếm dự án..."
-                            value={searchInput}
-                            onChange={(e) => setSearchInput(e.target.value)}
-                            icon={<Search className="w-4 h-4" />}
-                        />
-                    </div>
-                    <div className="w-48">
-                        <CustomSelect options={STATUS_OPTIONS} value={statusFilter} onChange={setStatusFilter} placeholder="Trạng thái" />
-                    </div>
+            <div className="flex flex-wrap items-center gap-3">
+                <div className="relative min-w-[200px] flex-1">
+                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                    <input
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        placeholder="Tìm dự án, nội dung..."
+                        className="w-full rounded-lg border border-gray-200 bg-white py-2 pl-9 pr-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                    />
+                </div>
+                <div className="w-48">
+                    <CustomSelect
+                        options={STATUS_OPTIONS}
+                        value={statusFilter}
+                        onChange={(v) => { setStatusFilter(v); setPage(1); }}
+                        placeholder="Trạng thái"
+                    />
                 </div>
             </div>
 
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-                {/* Desktop Table */}
-                <div className="hidden md:block overflow-x-auto">
-                    <table className="w-full min-w-[800px]">
-                        <thead className="bg-gray-50 border-b border-gray-200">
-                            <tr className="text-left">
-                                <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Dự án</th>
-                                <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Người gửi</th>
-                                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase">Trạng thái</th>
-                                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase">Phản hồi</th>
-                                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase">Thao tác</th>
+            <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+                <div className="overflow-x-auto">
+                    <table className="w-full min-w-[880px] border-collapse">
+                        <thead>
+                            <tr className="border-b border-gray-200 bg-gray-50/80">
+                                <th className="px-3 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Dự án</th>
+                                <th className="px-3 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Người gửi</th>
+                                <th className="px-3 py-3 text-center text-[11px] font-semibold uppercase tracking-wider text-gray-500">Trạng thái</th>
+                                <th className="px-3 py-3 text-center text-[11px] font-semibold uppercase tracking-wider text-gray-500">Phản hồi</th>
+                                <th className="px-3 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Ngày gửi</th>
+                                <th className="px-3 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-gray-500">Thao tác</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
                             {loading ? (
                                 [...Array(5)].map((_, i) => (
                                     <tr key={i}>
-                                        <td className="px-4 py-3">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 animate-pulse" />
-                                                <div className="space-y-2">
-                                                    <div className="h-4 w-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-                                                    <div className="h-3 w-24 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td className="px-4 py-3">
-                                            <div className="space-y-2">
-                                                <div className="h-4 w-48 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-                                                <div className="h-3 w-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-                                            </div>
-                                        </td>
-                                        <td className="px-4 py-3 text-center">
-                                            <div className="h-6 w-20 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse mx-auto" />
-                                        </td>
-                                        <td className="px-4 py-3 text-center">
-                                            <div className="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mx-auto" />
-                                        </td>
-                                        <td className="px-4 py-3">
-                                            <div className="flex items-center justify-center gap-2">
-                                                <div className="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse" />
-                                                <div className="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse" />
-                                                <div className="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse" />
-                                            </div>
+                                        <td colSpan={6} className="px-3 py-4">
+                                            <div className="h-10 animate-pulse rounded-lg bg-gray-100" />
                                         </td>
                                     </tr>
                                 ))
                             ) : projects.length === 0 ? (
-                                <tr><td colSpan={5} className="px-4 py-12 text-center text-gray-400">Không có dự án nào</td></tr>
+                                <tr>
+                                    <td colSpan={6} className="px-3 py-16 text-center text-gray-400">
+                                        <Users className="mx-auto mb-2 h-8 w-8 opacity-40" />
+                                        Không có dự án nào
+                                    </td>
+                                </tr>
                             ) : (
-                                projects.map((project) => (
-                                    <AdminProjectRow
-                                        key={project._id}
-                                        project={project}
-                                        onView={(p) => { setSelectedProject(p); setShowViewModal(true); }}
-                                        onViewReplies={(p) => { setSelectedProject(p); setShowViewRepliesModal(true); }}
-                                        onReply={(p) => { setSelectedProject(p); setShowReplyModal(true); }}
-                                        onStatus={(p) => { setSelectedProject(p); setShowStatusModal(true); }}
-                                        onDelete={(p) => setDeleteTarget(p)}
-                                    />
-                                ))
+                                projects.map((project, i) => {
+                                    const st = STATUS[project.status] || STATUS.pending;
+                                    const name = project.userId?.fullName || 'Ẩn danh';
+                                    return (
+                                        <tr key={project._id} className={cn('hover:bg-gray-50/80', i % 2 === 1 && 'bg-gray-50/30')}>
+                                            <td className="px-3 py-3">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-gray-100">
+                                                        {project.thumbnail ? (
+                                                            <img src={getImageUrl(project.thumbnail)} alt="" className="h-full w-full object-cover" />
+                                                        ) : (
+                                                            <FolderKanban className="h-5 w-5 text-gray-400" />
+                                                        )}
+                                                    </div>
+                                                    <div className="min-w-0">
+                                                        <p className="line-clamp-1 font-medium text-gray-800">{project.title}</p>
+                                                        <p className="line-clamp-1 text-xs text-gray-400">{stripHtml(project.content).slice(0, 60)}</p>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="px-3 py-3">
+                                                <div className="flex items-center gap-2">
+                                                    <Avatar className="h-6 w-6 border border-gray-200">
+                                                        {project.userId?.avatar ? <AvatarImage src={getImageUrl(project.userId.avatar)} alt={name} /> : null}
+                                                        <AvatarFallback className="bg-blue-500 text-[10px] text-white">{getInitial(name)}</AvatarFallback>
+                                                    </Avatar>
+                                                    <span className="text-sm text-gray-700">{name}</span>
+                                                </div>
+                                            </td>
+                                            <td className="px-3 py-3 text-center">
+                                                <span className={cn('inline-flex rounded-md px-2 py-0.5 text-xs font-semibold', st.className)}>
+                                                    {st.label}
+                                                </span>
+                                            </td>
+                                            <td className="px-3 py-3 text-center">
+                                                <span className="inline-flex items-center gap-1 text-sm text-gray-600">
+                                                    <MessageCircle className="h-3.5 w-3.5" />
+                                                    {project.commentCount ?? 0}
+                                                </span>
+                                            </td>
+                                            <td className="whitespace-nowrap px-3 py-3 text-sm text-gray-500">
+                                                {fmtDate(project.createdAt)}
+                                            </td>
+                                            <td className="px-3 py-3">
+                                                <div className="flex items-center justify-end gap-1">
+                                                    <button type="button" onClick={() => setViewProject(project)} className="rounded-lg p-2 text-blue-500 hover:bg-blue-50" title="Xem & phản hồi">
+                                                        <Eye className="h-4 w-4" />
+                                                    </button>
+                                                    <button type="button" onClick={() => setDeleteTarget(project)} className="rounded-lg p-2 text-red-500 hover:bg-red-50" title="Xóa">
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })
                             )}
                         </tbody>
                     </table>
                 </div>
 
-                {/* Mobile Card Layout */}
-                <div className="md:hidden divide-y divide-gray-100">
-                    {loading ? (
-                        [...Array(3)].map((_, i) => (
-                            <div key={i} className="p-4 space-y-3">
-                                <div className="flex items-start gap-3">
-                                    <div className="w-16 h-16 rounded-lg bg-gray-200 animate-pulse" />
-                                    <div className="flex-1 space-y-2">
-                                        <div className="h-4 bg-gray-200 rounded animate-pulse w-3/4" />
-                                        <div className="h-3 bg-gray-200 rounded animate-pulse w-1/2" />
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <div className="w-6 h-6 rounded-full bg-gray-200 animate-pulse" />
-                                    <div className="h-3 bg-gray-200 rounded animate-pulse w-24" />
-                                </div>
-                                <div className="flex items-center justify-between">
-                                    <div className="h-6 bg-gray-200 rounded-full animate-pulse w-20" />
-                                    <div className="h-6 bg-gray-200 rounded-full animate-pulse w-12" />
-                                </div>
-                            </div>
-                        ))
-                    ) : projects.length === 0 ? (
-                        <div className="px-4 py-12 text-center text-gray-400">Không có dự án nào</div>
-                    ) : (
-                        projects.map((project) => {
-                            const getUserInitial = (name: string): string => name?.charAt(0).toUpperCase() || '?';
-                            return (
-                                <div key={project._id} className="p-4 space-y-3">
-                                    <div className="flex items-start gap-3">
-                                        <div className="w-16 h-16 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden flex-shrink-0">
-                                            {project.thumbnail ? (
-                                                <img src={project.thumbnail} className="w-full h-full object-cover" alt="" />
-                                            ) : (
-                                                <FileText className="w-6 h-6 text-gray-400" />
-                                            )}
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <h3 className="font-medium text-gray-800 line-clamp-2 text-sm mb-1">{project.title}</h3>
-                                            <p className="text-xs text-gray-500 line-clamp-1">{project.content.replace(/<[^>]*>/g, '').substring(0, 60)}...</p>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex items-center gap-2 text-sm">
-                                        <Avatar className="w-5 h-5 border-2 border-gray-200">
-                                            {project.userId?.avatar ? <AvatarImage src={getImageUrl(project.userId.avatar)} alt={project.userId?.fullName} /> : null}
-                                            <AvatarFallback className="bg-blue-500 text-white text-[10px]">{getUserInitial(project.userId?.fullName || '')}</AvatarFallback>
-                                        </Avatar>
-                                        <span className="text-xs text-gray-600">{project.userId?.fullName || 'Ẩn danh'}</span>
-                                    </div>
-
-                                    <div className="flex items-center justify-between">
-                                        <span className={`px-2 py-0.5 rounded-full text-xs ${STATUS_COLORS[project.status]}`}>
-                                            {STATUS_LABELS[project.status]}
-                                        </span>
-                                        <button
-                                            onClick={() => { setSelectedProject(project); setShowViewRepliesModal(true); }}
-                                            className="text-blue-500 hover:text-blue-700 text-xs font-medium flex items-center gap-1"
-                                        >
-                                            <MessageCircle className="w-3 h-3" />
-                                            {project.replies.length} phản hồi
-                                        </button>
-                                    </div>
-
-                                    <div className="flex items-center gap-1 pt-2 border-t border-gray-100">
-                                        <button
-                                            onClick={() => { setSelectedProject(project); setShowViewModal(true); }}
-                                            className="flex-1 px-3 py-1.5 text-blue-500 hover:bg-blue-50 rounded-lg text-xs font-medium flex items-center justify-center gap-1"
-                                        >
-                                            <Eye className="w-3.5 h-3.5" /> Xem
-                                        </button>
-                                        <button
-                                            onClick={() => { setSelectedProject(project); setShowReplyModal(true); }}
-                                            className="flex-1 px-3 py-1.5 text-green-500 hover:bg-green-50 rounded-lg text-xs font-medium flex items-center justify-center gap-1"
-                                        >
-                                            <MessageCircle className="w-3.5 h-3.5" /> Phản hồi
-                                        </button>
-                                        <button
-                                            onClick={() => { setSelectedProject(project); setShowStatusModal(true); }}
-                                            className="flex-1 px-3 py-1.5 text-purple-500 hover:bg-purple-50 rounded-lg text-xs font-medium flex items-center justify-center gap-1"
-                                        >
-                                            <CheckCircle className="w-3.5 h-3.5" /> Trạng thái
-                                        </button>
-                                        <button
-                                            onClick={() => setDeleteTarget(project)}
-                                            className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg"
-                                        >
-                                            <Trash2 className="w-3.5 h-3.5" />
-                                        </button>
-                                    </div>
-                                </div>
-                            );
-                        })
-                    )}
-                </div>
-
                 {totalPages > 1 && (
-                    <div className="flex justify-center gap-2 px-4 py-4 border-t border-gray-200">
-                        <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="p-2 border border-gray-200 rounded-lg disabled:opacity-50"><ChevronLeft className="w-4 h-4" /></button>
-                        <span className="px-4 py-2 text-sm text-gray-600">Trang {page} / {totalPages}</span>
-                        <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} className="p-2 border border-gray-200 rounded-lg disabled:opacity-50"><ChevronRight className="w-4 h-4" /></button>
+                    <div className="flex items-center justify-between border-t border-gray-200 px-3 py-3 text-sm text-gray-500">
+                        <span>Trang {page} / {totalPages}</span>
+                        <div className="flex gap-2">
+                            <button type="button" disabled={page <= 1} onClick={() => setPage((p) => p - 1)} className="rounded-lg border border-gray-200 px-3 py-1 disabled:opacity-40">Trước</button>
+                            <button type="button" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)} className="rounded-lg border border-gray-200 px-3 py-1 disabled:opacity-40">Sau</button>
+                        </div>
                     </div>
                 )}
             </div>
 
-            <ViewProjectModal isOpen={showViewModal} onClose={() => setShowViewModal(false)} project={selectedProject} />
-            <ViewRepliesModal isOpen={showViewRepliesModal} onClose={() => setShowViewRepliesModal(false)} project={selectedProject} onSuccess={fetchProjects} />
-            <ReplyModal isOpen={showReplyModal} onClose={() => setShowReplyModal(false)} project={selectedProject} onSuccess={handleReplySuccess} />
-            <StatusModal isOpen={showStatusModal} onClose={() => setShowStatusModal(false)} project={selectedProject} onSuccess={handleStatusSuccess} />
-            <ConfirmModalDelete isOpen={!!deleteTarget} onClose={() => setDeleteTarget(null)} onConfirm={handleDelete} title="Xóa dự án" message={`Bạn có chắc chắn muốn xóa dự án "${deleteTarget?.title}"?`} warning="Tất cả dữ liệu liên quan sẽ bị xóa vĩnh viễn." />
+            <ViewProjectModal
+                project={viewProject}
+                onClose={handleCloseViewModal}
+                onCommentCountChange={handleCommentCountChange}
+            />
+
+            <ConfirmModalDelete
+                isOpen={!!deleteTarget}
+                onClose={() => setDeleteTarget(null)}
+                onConfirm={handleDelete}
+                title="Xóa dự án"
+                message={`Bạn có chắc chắn muốn xóa dự án "${deleteTarget?.title}"?`}
+                warning="Tất cả dữ liệu liên quan sẽ bị xóa vĩnh viễn."
+            />
         </div>
     );
 }

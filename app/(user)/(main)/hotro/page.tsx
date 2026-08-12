@@ -62,7 +62,7 @@ export default function HelpCenterPage() {
     const [previewSrc, setPreviewSrc] = useState<string | null>(null);
     const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
-    const { faqs, loading, error, fetchFAQs, toggleHelpful } = useHelpCenter();
+    const { faqs, loading, error, fetchFAQs, toggleHelpful, incrementView } = useHelpCenter();
 
     useEffect(() => {
         fetchFAQs(selectedCategory, searchTerm);
@@ -110,6 +110,14 @@ export default function HelpCenterPage() {
     const getCategoryLabel = (category: string) =>
         CATEGORIES.find(c => c.value === category)?.label || 'Khác';
 
+    const handleToggleFaq = (faqId: string) => {
+        const isExpanding = expandedId !== faqId;
+        setExpandedId(isExpanding ? faqId : null);
+        if (isExpanding) {
+            void incrementView(faqId);
+        }
+    };
+
     const renderFaqRow = (faq: HelpCenterFAQ, index: number) => {
         const iconConfig = CATEGORY_ICON[faq.category] || CATEGORY_ICON.other;
         const IconComponent = iconConfig.icon;
@@ -118,7 +126,7 @@ export default function HelpCenterPage() {
         return (
             <div key={faq._id} className={index > 0 ? 'border-t border-gray-100' : ''}>
                 <button
-                    onClick={() => setExpandedId(isExpanded ? null : faq._id)}
+                    onClick={() => handleToggleFaq(faq._id)}
                     className="w-full px-5 py-4 md:px-6 md:py-5 flex items-center gap-4 text-left hover:bg-gray-50/80 transition-colors"
                 >
                     <div className={`w-10 h-10 rounded-full ${iconConfig.bg} flex items-center justify-center flex-shrink-0`}>

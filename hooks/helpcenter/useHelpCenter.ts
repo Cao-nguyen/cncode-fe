@@ -60,12 +60,33 @@ export function useHelpCenter() {
         }
     }, []);
 
+    const incrementView = useCallback(async (id: string): Promise<number | null> => {
+        try {
+            const response = await helpCenterApi.incrementView(id) as {
+                success?: boolean;
+                data?: { views: number; counted?: boolean };
+            };
+
+            if (response.success && response.data) {
+                setFaqs(prev => prev.map(faq =>
+                    faq._id === id ? { ...faq, views: response.data!.views } : faq
+                ));
+                return response.data.views;
+            }
+        } catch (err) {
+            console.error('Increment view error:', err);
+        }
+
+        return null;
+    }, []);
+
     return {
         faqs,
         loading,
         error,
         pagination,
         fetchFAQs,
-        toggleHelpful
+        toggleHelpful,
+        incrementView,
     };
 }

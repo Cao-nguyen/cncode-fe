@@ -1,11 +1,11 @@
-
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useAuthStore } from '@/store/auth.store';
 import { toast } from 'sonner';
 import { Loader2, Save, FileText, Shield, Wallet, Settings, Lock, Info } from 'lucide-react';
 import CustomEditor, { CustomEditorRef } from '@/components/custom/CustomEditor';
+import { systemSettingsApi } from '@/lib/api/systemSettings.api';
+import { ISystemSettings } from '@/types/systemSettings.type';
 
 interface TabConfig {
     id: string;
@@ -21,47 +21,16 @@ const TABS: TabConfig[] = [
     { id: 'payment', label: 'Hướng dẫn thanh toán', key: 'huongDanThanhToan', icon: <Wallet size={18} />, description: 'Các phương thức thanh toán và hướng dẫn' },
     { id: 'usage', label: 'Quy trình sử dụng', key: 'quyTrinhSuDung', icon: <Settings size={18} />, description: 'Hướng dẫn sử dụng các tính năng' },
     { id: 'security', label: 'An toàn bảo mật', key: 'anToanBaoMat', icon: <Lock size={18} />, description: 'Chính sách bảo mật thông tin' },
-    { id: 'terms', label: 'Điều khoản sử dụng', key: 'dieuKhoanSuDung', icon: <FileText size={18} />, description: 'Điều khoản và điều kiện sử dụng dịch vụ' }
+    { id: 'terms', label: 'Điều khoản sử dụng', key: 'dieuKhoanSuDung', icon: <FileText size={18} />, description: 'Điều khoản và điều kiện sử dụng dịch vụ' },
 ];
 
-const settingApi = {
-    getAll: async (token: string): Promise<{ success: boolean; data?: Record<string, string>; message?: string }> => {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/system-settings/settings`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        return response.json();
-    },
-    update: async (token: string, key: string, value: string): Promise<{ success: boolean; message?: string }> => {
-        const keyToEndpoint = {
-            'gioiThieu': 'gioi-thieu',
-            'dieuKhoanSuDung': 'dieu-khoan-su-dung',
-            'anToanBaoMat': 'an-toan-bao-mat',
-            'chinhSachBaoHanh': 'chinh-sach-bao-hanh',
-            'huongDanThanhToan': 'huong-dan-thanh-toan',
-            'quyTrinhSuDung': 'quy-trinh-su-dung'
-        };
-        const endpoint = keyToEndpoint[key as keyof typeof keyToEndpoint] || key;
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/system-settings/settings/${endpoint}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({ content: value })
-        });
-        return response.json();
-    }
-};
-
 export default function AdminAllSettingsPage() {
-    const { token } = useAuthStore();
     const [activeTab, setActiveTab] = useState<string>('about');
     const [settings, setSettings] = useState<Record<string, string>>({});
     const [loading, setLoading] = useState<boolean>(true);
     const [saving, setSaving] = useState<boolean>(false);
     const [savedTab, setSavedTab] = useState<string | null>(null);
     const editorRefs = useRef<Record<string, CustomEditorRef | null>>({});
-
     const activeTabRef = useRef<string>(activeTab);
 
     useEffect(() => {
@@ -69,12 +38,19 @@ export default function AdminAllSettingsPage() {
     }, [activeTab]);
 
     const fetchSettings = useCallback(async () => {
-        if (!token) return;
         setLoading(true);
         try {
-            const result = await settingApi.getAll(token);
+            const result = await systemSettingsApi.getSettings();
             if (result.success && result.data) {
-                setSettings(result.data);
+                const data = result.data as ISystemSettings;
+                setSettings({
+                    gioiThieu: data.gioiThieu || '',
+                    dieuKhoanSuDung: data.dieuKhoanSuDung || '',
+                    anToanBaoMat: data.anToanBaoMat || '',
+                    quyTrinhSuDung: data.quyTrinhSuDung || '',
+                    huongDanThanhToan: data.huongDanThanhToan || '',
+                    chinhSachBaoHanh: data.chinhSachBaoHanh || '',
+                });
             }
         } catch (error) {
             console.error('Fetch settings error:', error);
@@ -82,31 +58,27 @@ export default function AdminAllSettingsPage() {
         } finally {
             setLoading(false);
         }
-    }, [token]);
+    }, []);
 
     useEffect(() => {
         fetchSettings();
     }, [fetchSettings]);
 
-    const currentTab = TABS.find(tab => tab.id === activeTab);
+    const currentTab = TABS.find((tab) => tab.id === activeTab);
     const currentKey = currentTab?.key || '';
     const currentValue = settings[currentKey] || '';
 
-    console.log('Debug:', { activeTab, currentKey, currentValue, settings });
-
     const handleSave = async () => {
-        if (!token) return;
-
         const editor = editorRefs.current[activeTab];
-        if (!editor) return;
+        if (!editor || !currentKey) return;
 
         const content = editor.getContent();
 
         setSaving(true);
         try {
-            const result = await settingApi.update(token, currentKey, content);
+            const result = await systemSettingsApi.updateSetting(currentKey, content);
             if (result.success) {
-                setSettings(prev => ({ ...prev, [currentKey]: content }));
+                setSettings((prev) => ({ ...prev, [currentKey]: content }));
                 setSavedTab(activeTab);
                 toast.success(`Đã lưu ${currentTab?.label}`);
                 setTimeout(() => setSavedTab(null), 2000);
@@ -114,6 +86,7 @@ export default function AdminAllSettingsPage() {
                 toast.error(result.message || 'Lưu thất bại');
             }
         } catch (error) {
+            console.error('Save settings error:', error);
             toast.error('Có lỗi xảy ra');
         } finally {
             setSaving(false);
@@ -127,23 +100,18 @@ export default function AdminAllSettingsPage() {
     const handleEditorRef = (el: CustomEditorRef | null) => {
         if (el) {
             editorRefs.current[activeTabRef.current] = el;
-            // Set content immediately when ref is set
             setTimeout(() => {
-                const currentTab = TABS.find(tab => tab.id === activeTabRef.current);
-                const currentKey = currentTab?.key || '';
-                const currentValue = settings[currentKey] || '';
-                console.log('handleEditorRef setting content:', { activeTab: activeTabRef.current, currentValue });
-                el.setContent(currentValue);
+                const tab = TABS.find((item) => item.id === activeTabRef.current);
+                const key = tab?.key || '';
+                el.setContent(settings[key] || '');
             }, 100);
         }
     };
 
     useEffect(() => {
         const editor = editorRefs.current[activeTab];
-        console.log('setContent useEffect:', { activeTab, editor, currentValue });
         if (editor) {
             setTimeout(() => {
-                console.log('Calling setContent with:', currentValue);
                 editor.setContent(currentValue);
             }, 200);
         }
@@ -165,14 +133,15 @@ export default function AdminAllSettingsPage() {
             </div>
 
             <div className="flex flex-wrap gap-2 border-b border-gray-200">
-                {TABS.map(tab => (
+                {TABS.map((tab) => (
                     <button
                         key={tab.id}
                         onClick={() => handleTabChange(tab.id)}
-                        className={`flex items-center gap-2 px-4 py-2 text-sm font-medium transition border-b-2 ${activeTab === tab.id
-                            ? 'text-blue-600 border-blue-600'
-                            : 'text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300'
-                            }`}
+                        className={`flex items-center gap-2 px-4 py-2 text-sm font-medium transition border-b-2 ${
+                            activeTab === tab.id
+                                ? 'text-blue-600 border-blue-600'
+                                : 'text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300'
+                        }`}
                     >
                         {tab.icon}
                         {tab.label}

@@ -6,6 +6,7 @@ import { ImagePreviewModal } from '@/components/custom/ImagePreviewModal';
 interface StaticContentProps {
   content: string;
   className?: string;
+  compact?: boolean;
 }
 
 const editorStyles = `
@@ -223,9 +224,37 @@ const editorStyles = `
     transform: scale(1.02);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   }
+
+  .static-editor.static-editor-compact {
+    padding: 0 !important;
+    font-size: 14px !important;
+    line-height: 1.4 !important;
+  }
+
+  .static-editor.static-editor-compact * {
+    line-height: 1.4 !important;
+  }
+
+  .static-editor.static-editor-compact p {
+    margin: 0 !important;
+    font-size: 14px !important;
+    line-height: 1.4 !important;
+  }
+
+  .static-editor.static-editor-compact p + p {
+    margin-top: 0.25em !important;
+  }
+
+  .static-editor.static-editor-compact p:empty,
+  .static-editor.static-editor-compact p:has(> br:only-child) {
+    display: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    height: 0 !important;
+  }
 `;
 
-export default function StaticContent({ content, className }: StaticContentProps) {
+export default function StaticContent({ content, className, compact = false }: StaticContentProps) {
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
@@ -247,7 +276,7 @@ export default function StaticContent({ content, className }: StaticContentProps
     <>
       <style jsx global>{editorStyles}</style>
       <div
-        className={`static-editor${className ? ` ${className}` : ''}`}
+        className={`static-editor${compact ? ' static-editor-compact' : ''}${className ? ` ${className}` : ''}`}
         dangerouslySetInnerHTML={{ __html: content }}
         onClick={handleClick}
       />

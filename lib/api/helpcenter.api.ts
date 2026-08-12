@@ -1,3 +1,4 @@
+import { getGuestViewerId } from '@/lib/utils/viewerId';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -47,6 +48,28 @@ export const helpCenterApi = {
         } catch (error) {
             console.error('Get FAQ error:', error);
             return { success: false, message: 'Không thể tải câu hỏi' };
+        }
+    },
+
+    incrementView: async (id: string) => {
+        try {
+            const token = getToken();
+            const headers: HeadersInit = { 'Content-Type': 'application/json' };
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
+
+            const body = token ? {} : { guestId: getGuestViewerId() };
+
+            const response = await fetch(`${API_URL}/api/helpcenter/${id}/increment-view`, {
+                method: 'POST',
+                headers,
+                body: JSON.stringify(body),
+            });
+            return await response.json();
+        } catch (error) {
+            console.error('Increment help center view error:', error);
+            return { success: false, message: 'Không thể cập nhật lượt xem' };
         }
     },
 
