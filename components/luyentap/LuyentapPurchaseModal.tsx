@@ -10,7 +10,13 @@ import { cn } from '@/lib/utils';
 import { DIFFICULTY_LABELS } from '@/lib/luyentap/exercise-config.constants';
 import type { PracticeSet } from '@/types/luyentap.type';
 
-type PurchaseExercise = Pick<PracticeSet, '_id' | 'title' | 'description' | 'tier' | 'price' | 'discountPrice' | 'discountType' | 'discountValue' | 'allowCoinPayment' | 'duration' | 'timeLimit' | 'questionCount' | 'questions' | 'difficulty'>;
+export type PurchaseExercise = Pick<
+    PracticeSet,
+    '_id' | 'title' | 'description' | 'tier' | 'price' | 'discountPrice' | 'discountType' | 'discountValue' | 'allowCoinPayment' | 'timeLimit' | 'questionCount' | 'questions'
+> & {
+    duration?: number;
+    difficulty?: string;
+};
 
 interface LuyentapPurchaseModalProps {
     exercise: PurchaseExercise | null;
