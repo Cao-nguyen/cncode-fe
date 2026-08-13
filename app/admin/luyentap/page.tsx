@@ -780,12 +780,12 @@ export default function AdminLuyenTapPage() {
             />
 
             {showFolderModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={closeFolderModal}>
-                    <div className="w-full max-w-sm rounded-2xl bg-white shadow-xl" onClick={(e) => e.stopPropagation()}>
-                        <div className="border-b border-slate-100 px-5 py-4">
+                <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-3 sm:items-center sm:p-4" onClick={closeFolderModal}>
+                    <div className="max-h-[90dvh] w-full max-w-sm overflow-y-auto rounded-t-2xl bg-white shadow-xl sm:rounded-2xl" onClick={(e) => e.stopPropagation()}>
+                        <div className="border-b border-slate-100 px-4 py-4 sm:px-5">
                             <h3 className="font-bold text-slate-900">{editFolderTarget ? 'Đổi tên thư mục' : 'Tạo thư mục mới'}</h3>
                         </div>
-                        <div className="px-5 py-4">
+                        <div className="px-4 py-4 sm:px-5">
                             <CustomInput
                                 label="Tên thư mục"
                                 value={folderForm.name}
@@ -795,9 +795,9 @@ export default function AdminLuyenTapPage() {
                                 autoFocus
                             />
                         </div>
-                        <div className="flex justify-end gap-2 border-t border-slate-100 px-5 py-4">
-                            <CustomButton variant="secondary" onClick={closeFolderModal}>Hủy</CustomButton>
-                            <CustomButton onClick={handleSaveFolder} loading={savingFolder}>
+                        <div className="flex flex-col-reverse gap-2 border-t border-slate-100 px-4 py-4 sm:flex-row sm:justify-end sm:px-5">
+                            <CustomButton variant="secondary" onClick={closeFolderModal} className="w-full sm:w-auto">Hủy</CustomButton>
+                            <CustomButton onClick={handleSaveFolder} loading={savingFolder} className="w-full sm:w-auto">
                                 {editFolderTarget ? 'Lưu' : 'Tạo'}
                             </CustomButton>
                         </div>
@@ -806,13 +806,13 @@ export default function AdminLuyenTapPage() {
             )}
 
             {moveTarget && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={closeMoveModal}>
-                    <div className="w-full max-w-sm rounded-2xl bg-white shadow-xl" onClick={(e) => e.stopPropagation()}>
-                        <div className="border-b border-slate-100 px-5 py-4">
+                <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-3 sm:items-center sm:p-4" onClick={closeMoveModal}>
+                    <div className="max-h-[90dvh] w-full max-w-sm overflow-y-auto rounded-t-2xl bg-white shadow-xl sm:rounded-2xl" onClick={(e) => e.stopPropagation()}>
+                        <div className="border-b border-slate-100 px-4 py-4 sm:px-5">
                             <h3 className="font-bold text-slate-900">Chuyển vào thư mục</h3>
                             <p className="mt-1 truncate text-sm text-slate-500">{moveTarget.title}</p>
                         </div>
-                        <div className="px-5 py-4">
+                        <div className="px-4 py-4 sm:px-5">
                             <CustomSelect
                                 label="Thư mục đích"
                                 value={moveFolderId}
@@ -820,21 +820,21 @@ export default function AdminLuyenTapPage() {
                                 options={folderSelectOptions}
                             />
                         </div>
-                        <div className="flex justify-end gap-2 border-t border-slate-100 px-5 py-4">
-                            <CustomButton variant="secondary" onClick={closeMoveModal}>Hủy</CustomButton>
-                            <CustomButton onClick={handleMoveToFolder} loading={moving}>Chuyển</CustomButton>
+                        <div className="flex flex-col-reverse gap-2 border-t border-slate-100 px-4 py-4 sm:flex-row sm:justify-end sm:px-5">
+                            <CustomButton variant="secondary" onClick={closeMoveModal} className="w-full sm:w-auto">Hủy</CustomButton>
+                            <CustomButton onClick={handleMoveToFolder} loading={moving} className="w-full sm:w-auto">Chuyển</CustomButton>
                         </div>
                     </div>
                 </div>
             )}
 
             {showCreateModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={closeCreateModal}>
-                    <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white shadow-xl" onClick={(e) => e.stopPropagation()}>
-                        <div className="border-b border-slate-100 px-6 py-4">
+                <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-3 sm:items-center sm:p-4" onClick={closeCreateModal}>
+                    <div className="max-h-[90dvh] w-full max-w-lg overflow-y-auto rounded-t-2xl bg-white shadow-xl sm:rounded-2xl" onClick={(e) => e.stopPropagation()}>
+                        <div className="border-b border-slate-100 px-4 py-4 sm:px-6">
                             <h3 className="text-lg font-bold text-slate-900">Tạo đề mới</h3>
                         </div>
-                        <div className="space-y-4 px-6 py-5">
+                        <div className="space-y-4 px-4 py-5 sm:px-6">
                             <CustomInput
                                 label="Tên đề"
                                 value={createForm.title}
@@ -886,7 +886,7 @@ export default function AdminLuyenTapPage() {
                                     </div>
                                 </div>
                             )}
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                 <button type="button" onClick={() => handleCreate('editor')} disabled={creating || !!parsingMessage} className="flex flex-col items-center gap-2 rounded-xl border-2 border-blue-200 p-4 transition hover:border-blue-500 hover:bg-blue-50 disabled:opacity-50">
                                     <FileText className="h-7 w-7 text-blue-600" />
                                     <span className="text-sm font-semibold">Soạn đề</span>
@@ -898,8 +898,8 @@ export default function AdminLuyenTapPage() {
                                 </label>
                             </div>
                         </div>
-                        <div className="border-t border-slate-100 px-6 py-4">
-                            <CustomButton variant="secondary" onClick={closeCreateModal}>Đóng</CustomButton>
+                        <div className="border-t border-slate-100 px-4 py-4 sm:px-6">
+                            <CustomButton variant="secondary" onClick={closeCreateModal} className="w-full sm:w-auto">Đóng</CustomButton>
                         </div>
                     </div>
                 </div>
@@ -924,13 +924,13 @@ export default function AdminLuyenTapPage() {
             )}
 
             {rejectTarget && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-                    <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+                <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-3 sm:items-center sm:p-4">
+                    <div className="max-h-[90dvh] w-full max-w-md overflow-y-auto rounded-t-2xl bg-white p-4 shadow-xl sm:rounded-2xl sm:p-6">
                         <h3 className="mb-3 font-bold">Từ chối bài tập</h3>
                         <textarea value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} className="mb-4 w-full rounded-lg border border-slate-200 p-3 text-sm" rows={3} placeholder="Lý do..." />
-                        <div className="flex gap-2">
-                            <CustomButton onClick={handleReject}>Từ chối</CustomButton>
-                            <CustomButton variant="secondary" onClick={() => setRejectTarget(null)}>Hủy</CustomButton>
+                        <div className="flex flex-col-reverse gap-2 sm:flex-row">
+                            <CustomButton variant="secondary" onClick={() => setRejectTarget(null)} className="w-full sm:w-auto">Hủy</CustomButton>
+                            <CustomButton onClick={handleReject} className="w-full sm:w-auto">Từ chối</CustomButton>
                         </div>
                     </div>
                 </div>

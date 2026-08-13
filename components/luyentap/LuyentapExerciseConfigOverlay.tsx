@@ -31,16 +31,16 @@ export default function LuyentapExerciseConfigOverlay({
     onSubmit,
 }: LuyentapExerciseConfigOverlayProps) {
     return (
-        <div className="fixed inset-0 z-[10000] bg-black/40 flex items-center justify-center p-4">
-            <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden flex flex-col">
-                <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-100">
+        <div className="fixed inset-0 z-[10000] flex items-end justify-center bg-black/40 p-3 sm:items-center sm:p-4">
+            <div className="flex max-h-[90dvh] w-full max-w-md flex-col overflow-hidden rounded-t-2xl bg-white shadow-xl sm:rounded-xl">
+                <div className="flex items-center justify-between border-b border-gray-100 px-4 py-2.5">
                     <h2 className="text-base font-semibold text-gray-900">Thông tin cơ bản</h2>
-                    <button type="button" onClick={onBack} className="p-1 rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100">
+                    <button type="button" onClick={onBack} className="rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700">
                         <X size={18} />
                     </button>
                 </div>
 
-                <div className="px-4 py-3 space-y-2.5">
+                <div className="overflow-y-auto px-4 py-3 space-y-2.5">
                     <CustomInput
                         label="Tên bài tập"
                         placeholder="Nhập tên..."
@@ -48,7 +48,7 @@ export default function LuyentapExerciseConfigOverlay({
                         onChange={(e) => onChange({ title: e.target.value })}
                         required
                     />
-                    <div className="grid grid-cols-2 gap-2.5">
+                    <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
                         <CustomSelect
                             label="Khối học"
                             placeholder="Chọn"
@@ -75,11 +75,11 @@ export default function LuyentapExerciseConfigOverlay({
                     />
                 </div>
 
-                <div className="px-4 py-2.5 border-t border-gray-100 flex items-center justify-end gap-2">
-                    <CustomButton variant="secondary" size="small" onClick={onBack} disabled={saving}>
+                <div className="flex flex-col-reverse gap-2 border-t border-gray-100 px-4 py-2.5 sm:flex-row sm:items-center sm:justify-end">
+                    <CustomButton variant="secondary" size="small" onClick={onBack} disabled={saving} className="w-full sm:w-auto">
                         Quay lại
                     </CustomButton>
-                    <CustomButton size="small" onClick={onSubmit} loading={saving}>
+                    <CustomButton size="small" onClick={onSubmit} loading={saving} className="w-full sm:w-auto">
                         Lưu
                     </CustomButton>
                 </div>

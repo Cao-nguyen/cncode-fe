@@ -441,6 +441,36 @@ export default function LuyentapAdminOverviewClient({ exerciseId, onClose }: Luy
                         </div>
                     </div>
 
+                    <div className="shrink-0 border-b border-gray-200 bg-[#f8fafc] px-4 py-3 lg:hidden">
+                        <div className="flex flex-wrap items-center gap-2">
+                            <span
+                                className={cn(
+                                    'inline-flex shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset',
+                                    statusBadgeClass(exercise.status),
+                                )}
+                            >
+                                {statusLabel(exercise.status)}
+                            </span>
+                            <button
+                                type="button"
+                                onClick={handleCopyLink}
+                                disabled={!exercise.slug}
+                                className="inline-flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                                <Link2 className="h-3.5 w-3.5 shrink-0" />
+                                Link đề thi
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setDeleteOpen(true)}
+                                className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-xl border border-red-200 bg-white px-3 py-2 text-xs font-medium text-red-600 transition-colors hover:bg-red-50"
+                            >
+                                <Trash2 className="h-3.5 w-3.5 shrink-0" />
+                                Xóa
+                            </button>
+                        </div>
+                    </div>
+
                     {activeTab === 'stats' ? (
                         <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 lg:px-6">
                             {overview?.basicStats && (
@@ -453,7 +483,7 @@ export default function LuyentapAdminOverviewClient({ exerciseId, onClose }: Luy
                         </div>
                     ) : (
                     <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 lg:px-6">
-                        <div className="mb-4 flex items-center justify-between">
+                        <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                             <h2 className="text-sm font-semibold text-gray-800">
                                 Danh sách đã thi ({submissions.length}/{submissionTotal})
                             </h2>

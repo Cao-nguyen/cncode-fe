@@ -66,20 +66,20 @@ export default function LuyentapExerciseSettingsOverlay({
     const busy = saving || publishing;
 
     return (
-        <div className="fixed inset-0 z-[10001] bg-white flex flex-col">
-            <header className="flex-shrink-0 flex items-center justify-between px-4 py-2.5 border-b border-gray-100">
-                <div className="flex items-center gap-2">
+        <div className="fixed inset-0 z-[10001] flex h-dvh w-full flex-col overflow-hidden bg-white">
+            <header className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-gray-100 px-3 py-2.5 sm:px-4">
+                <div className="flex min-w-0 flex-1 items-center gap-2">
                     <button
                         type="button"
                         onClick={onBack}
                         disabled={busy}
-                        className="p-1.5 rounded-md hover:bg-gray-100 text-gray-600"
+                        className="shrink-0 rounded-md p-1.5 text-gray-600 hover:bg-gray-100"
                     >
                         <ArrowLeft className="w-4 h-4" />
                     </button>
-                    <h2 className="text-base font-semibold text-gray-900">Cấu hình bài tập</h2>
+                    <h2 className="truncate text-base font-semibold text-gray-900">Cấu hình bài tập</h2>
                 </div>
-                <CustomButton size="small" onClick={onPublish} loading={publishing} disabled={busy}>
+                <CustomButton size="small" onClick={onPublish} loading={publishing} disabled={busy} className="shrink-0">
                     Xuất bản
                 </CustomButton>
             </header>

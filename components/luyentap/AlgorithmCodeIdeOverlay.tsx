@@ -33,6 +33,7 @@ function hasSampleTestData(tc: { isSample?: boolean; input?: string; expectedOut
 }
 
 type ConsoleTab = 'stdout' | 'testcase';
+type MobilePanel = 'question' | 'editor';
 
 interface TestcaseResult {
     index: number;
@@ -62,6 +63,7 @@ export default function AlgorithmCodeIdeOverlay({
 
     const [stdin, setStdin] = useState('');
     const [consoleTab, setConsoleTab] = useState<ConsoleTab>('stdout');
+    const [mobilePanel, setMobilePanel] = useState<MobilePanel>('question');
     const [stdout, setStdout] = useState('');
     const [running, setRunning] = useState(false);
     const [testcaseResults, setTestcaseResults] = useState<TestcaseResult[] | null>(null);
@@ -153,6 +155,7 @@ export default function AlgorithmCodeIdeOverlay({
     useEffect(() => {
         if (open && !wasOpenRef.current) {
             setSelectedLanguage(resolveInitialLanguage(question.language));
+            setMobilePanel('question');
             setStdout('');
             setTestcaseResults(null);
             setConsoleTab('stdout');
@@ -166,11 +169,40 @@ export default function AlgorithmCodeIdeOverlay({
     const passedCount = testcaseResults?.filter((r) => r.passed).length ?? 0;
 
     return (
-        <div className="fixed inset-0 z-[10000] flex flex-col bg-[#f3f4f6]">
-            <div className="flex flex-1 min-h-0 overflow-hidden">
+        <div className="fixed inset-0 z-[10000] flex h-dvh w-full flex-col overflow-hidden bg-[#f3f4f6]">
+            <div className="flex shrink-0 gap-2 border-b border-gray-200 bg-white px-3 py-2 lg:hidden">
+                <button
+                    type="button"
+                    onClick={() => setMobilePanel('question')}
+                    className={`flex-1 rounded-lg px-3 py-2 text-xs font-semibold transition-colors ${
+                        mobilePanel === 'question'
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-gray-100 text-gray-600'
+                    }`}
+                >
+                    Nội dung
+                </button>
+                <button
+                    type="button"
+                    onClick={() => setMobilePanel('editor')}
+                    className={`flex-1 rounded-lg px-3 py-2 text-xs font-semibold transition-colors ${
+                        mobilePanel === 'editor'
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-gray-100 text-gray-600'
+                    }`}
+                >
+                    Trình soạn
+                </button>
+            </div>
+
+            <div className="flex min-h-0 flex-1 overflow-hidden flex-col lg:flex-row">
                 {/* Left — đề bài + test mẫu */}
-                <div className="w-[38%] shrink-0 flex flex-col bg-white border-r border-gray-200 min-w-0">
-                    <div className="flex items-center justify-between px-6 pt-4 pb-3 border-b border-gray-200">
+                <div
+                    className={`w-full shrink-0 flex-col border-b border-gray-200 bg-white min-w-0 lg:flex lg:h-auto lg:w-[38%] lg:border-b-0 lg:border-r ${
+                        mobilePanel === 'question' ? 'flex flex-1 min-h-0' : 'hidden lg:flex'
+                    }`}
+                >
+                    <div className="flex items-center justify-between border-b border-gray-200 px-4 pb-3 pt-4 sm:px-6">
                         <h2 className="text-sm font-semibold tracking-wide text-gray-800">NỘI DUNG</h2>
                         <button
                             type="button"
@@ -181,7 +213,7 @@ export default function AlgorithmCodeIdeOverlay({
                             <X className="w-5 h-5" />
                         </button>
                     </div>
-                    <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6 select-text">
+                    <div className="flex-1 space-y-6 overflow-y-auto px-4 py-4 select-text sm:px-6 sm:py-5">
                         <AlgorithmQuestionPanel question={question.question} />
 
                         <AlgorithmSampleTestPanel testCases={sampleCases} />
@@ -190,25 +222,27 @@ export default function AlgorithmCodeIdeOverlay({
 
                 {/* Right — editor + console */}
                 <div
-                    className="flex-1 flex flex-col min-w-0"
+                    className={`min-w-0 flex-col lg:flex lg:flex-1 ${
+                        mobilePanel === 'editor' ? 'flex flex-1 min-h-0' : 'hidden lg:flex'
+                    }`}
                     style={{ backgroundColor: WEB_IDE_COLORS.editorBg }}
                 >
                     {/* Toolbar */}
                     <div
-                        className="flex items-center justify-between gap-4 px-4 py-2 border-b shrink-0"
+                        className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b px-3 py-2 sm:gap-4 sm:px-4"
                         style={{
                             backgroundColor: WEB_IDE_COLORS.panelBg,
                             borderColor: WEB_IDE_COLORS.border,
                         }}
                     >
-                        <div className="flex items-center gap-2 text-sm" style={{ color: WEB_IDE_COLORS.tabInactiveText }}>
-                            <Code2 className="w-4 h-4" style={{ color: '#569cd6' }} />
-                            <span>Ngôn ngữ</span>
+                        <div className="flex min-w-0 flex-wrap items-center gap-2 text-sm" style={{ color: WEB_IDE_COLORS.tabInactiveText }}>
+                            <Code2 className="h-4 w-4 shrink-0" style={{ color: '#569cd6' }} />
+                            <span className="hidden sm:inline">Ngôn ngữ</span>
                             <select
                                 value={selectedLanguage}
                                 onChange={(e) => setSelectedLanguage(e.target.value as AlgorithmLang)}
                                 disabled={disabled}
-                                className="px-3 py-1.5 rounded-md font-semibold text-sm outline-none cursor-pointer disabled:opacity-50"
+                                className="max-w-[140px] cursor-pointer rounded-md px-2 py-1.5 text-sm font-semibold outline-none disabled:opacity-50 sm:max-w-none sm:px-3"
                                 style={{
                                     backgroundColor: WEB_IDE_COLORS.tabInactiveBg,
                                     color: WEB_IDE_COLORS.tabActiveText,
@@ -222,12 +256,12 @@ export default function AlgorithmCodeIdeOverlay({
                                 ))}
                             </select>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex shrink-0 items-center gap-1 sm:gap-2">
                             <button
                                 type="button"
                                 onClick={handleReset}
                                 disabled={disabled}
-                                className="p-2 rounded disabled:opacity-40"
+                                className="rounded p-2 disabled:opacity-40"
                                 style={{ color: WEB_IDE_COLORS.mutedText }}
                                 title="Reset code"
                             >
@@ -237,11 +271,12 @@ export default function AlgorithmCodeIdeOverlay({
                                 type="button"
                                 onClick={handleRun}
                                 disabled={disabled || running || !value.trim()}
-                                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white disabled:opacity-50"
+                                className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold text-white disabled:opacity-50 sm:gap-2 sm:px-4 sm:text-sm"
                                 style={{ backgroundColor: '#2563eb' }}
                             >
                                 {running ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
-                                Chạy CODE
+                                <span className="sm:hidden">Chạy</span>
+                                <span className="hidden sm:inline">Chạy CODE</span>
                             </button>
                         </div>
                     </div>
@@ -270,12 +305,12 @@ export default function AlgorithmCodeIdeOverlay({
 
                     {/* Console */}
                     <div
-                        className="flex-[2] min-h-[180px] max-h-[40%] flex border-t shrink-0"
+                        className="flex max-h-[45%] min-h-[160px] shrink-0 flex-col border-t sm:max-h-[40%] sm:flex-row lg:min-h-[180px]"
                         style={{ borderColor: WEB_IDE_COLORS.border }}
                     >
                         {/* STDIN */}
                         <div
-                            className="w-1/2 flex flex-col border-r min-w-0"
+                            className="flex min-h-[120px] w-full flex-col border-b min-w-0 sm:min-h-0 sm:w-1/2 sm:border-b-0 sm:border-r"
                             style={{ borderColor: WEB_IDE_COLORS.border }}
                         >
                             <div
@@ -296,7 +331,7 @@ export default function AlgorithmCodeIdeOverlay({
                         </div>
 
                         {/* STDOUT / TESTCASE */}
-                        <div className="w-1/2 flex flex-col min-w-0">
+                        <div className="flex min-h-[120px] w-full min-w-0 flex-col sm:min-h-0 sm:w-1/2">
                             <div
                                 className="flex items-center gap-4 px-3 border-b shrink-0"
                                 style={{

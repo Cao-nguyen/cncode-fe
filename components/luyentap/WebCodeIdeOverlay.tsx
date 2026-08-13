@@ -29,6 +29,7 @@ interface WebCodeIdeOverlayProps {
 }
 
 type LeftTab = 'content' | 'browser';
+type MobilePanel = 'question' | 'editor';
 
 export default function WebCodeIdeOverlay({
     open,
@@ -39,6 +40,7 @@ export default function WebCodeIdeOverlay({
     disabled = false,
 }: WebCodeIdeOverlayProps) {
     const [leftTab, setLeftTab] = useState<LeftTab>('content');
+    const [mobilePanel, setMobilePanel] = useState<MobilePanel>('question');
     const [activeFile, setActiveFile] = useState<WebEditorFile>('index.html');
     const [files, setFiles] = useState(() => parseWebProject(value, question.starterCode));
     const [running, setRunning] = useState(false);
@@ -118,6 +120,7 @@ export default function WebCodeIdeOverlay({
     useEffect(() => {
         if (open && !wasOpenRef.current) {
             setLeftTab('content');
+            setMobilePanel('question');
             setTestResults(null);
             setActiveFile('index.html');
             setFiles(parseWebProject(value, question.starterCode));
@@ -128,11 +131,40 @@ export default function WebCodeIdeOverlay({
     if (!open) return null;
 
     return (
-        <div className="fixed inset-0 z-[10000] flex flex-col bg-[#f3f4f6]">
-            <div className="flex flex-1 min-h-0 overflow-hidden">
+        <div className="fixed inset-0 z-[10000] flex h-dvh w-full flex-col overflow-hidden bg-[#f3f4f6]">
+            <div className="flex shrink-0 gap-2 border-b border-gray-200 bg-white px-3 py-2 lg:hidden">
+                <button
+                    type="button"
+                    onClick={() => setMobilePanel('question')}
+                    className={`flex-1 rounded-lg px-3 py-2 text-xs font-semibold transition-colors ${
+                        mobilePanel === 'question'
+                            ? 'bg-orange-500 text-white'
+                            : 'bg-gray-100 text-gray-600'
+                    }`}
+                >
+                    Nội dung
+                </button>
+                <button
+                    type="button"
+                    onClick={() => setMobilePanel('editor')}
+                    className={`flex-1 rounded-lg px-3 py-2 text-xs font-semibold transition-colors ${
+                        mobilePanel === 'editor'
+                            ? 'bg-orange-500 text-white'
+                            : 'bg-gray-100 text-gray-600'
+                    }`}
+                >
+                    Trình soạn
+                </button>
+            </div>
+
+            <div className="flex min-h-0 flex-1 overflow-hidden flex-col lg:flex-row">
                 {/* Left — Nội dung / Trình duyệt */}
-                <div className="w-[42%] shrink-0 flex flex-col bg-white border-r border-gray-200 min-w-0">
-                    <div className="flex items-center gap-6 px-6 pt-4 border-b border-gray-200">
+                <div
+                    className={`w-full shrink-0 flex-col border-b border-gray-200 bg-white min-w-0 lg:flex lg:h-auto lg:w-[42%] lg:border-b-0 lg:border-r ${
+                        mobilePanel === 'question' ? 'flex flex-1 min-h-0' : 'hidden lg:flex'
+                    }`}
+                >
+                    <div className="flex items-center gap-3 overflow-x-auto border-b border-gray-200 px-3 pt-3 sm:gap-6 sm:px-6 sm:pt-4">
                         <button
                             type="button"
                             onClick={() => setLeftTab('content')}
@@ -168,7 +200,7 @@ export default function WebCodeIdeOverlay({
 
                     <div className="flex-1 overflow-y-auto">
                         {leftTab === 'content' ? (
-                            <div className="px-6 py-5 space-y-5 select-text">
+                            <div className="space-y-5 px-4 py-4 select-text sm:px-6 sm:py-5">
                                 <StaticContent
                                     content={question.question}
                                     className="prose prose-sm max-w-none text-gray-800"
@@ -221,7 +253,9 @@ export default function WebCodeIdeOverlay({
 
                 {/* Right — Editor */}
                 <div
-                    className="flex-1 flex flex-col min-w-0"
+                    className={`min-w-0 flex-col lg:flex lg:flex-1 ${
+                        mobilePanel === 'editor' ? 'flex flex-1 min-h-0' : 'hidden lg:flex'
+                    }`}
                     style={{ backgroundColor: WEB_IDE_COLORS.editorBg }}
                 >
                     <div
@@ -293,15 +327,15 @@ export default function WebCodeIdeOverlay({
             </div>
 
             {/* Footer */}
-            <div className="shrink-0 flex items-center justify-between px-6 py-3 bg-white border-t border-gray-200 shadow-[0_-2px_8px_rgba(0,0,0,0.04)]">
-                <p className="text-sm text-gray-600">
+            <div className="flex shrink-0 flex-col gap-2 border-t border-gray-200 bg-white px-4 py-3 shadow-[0_-2px_8px_rgba(0,0,0,0.04)] sm:flex-row sm:items-center sm:justify-between sm:px-6">
+                <p className="text-center text-sm text-gray-600 sm:text-left">
                     Bài kiểm tra ({passedCount} / {totalTests || 0})
                 </p>
                 <button
                     type="button"
                     onClick={handleRunTests}
                     disabled={disabled || running || totalTests === 0}
-                    className="inline-flex items-center gap-2 px-8 py-2.5 rounded-full bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold disabled:opacity-50 transition-colors"
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-orange-500 px-8 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-600 disabled:opacity-50 sm:w-auto"
                 >
                     {running && <Loader2 className="w-4 h-4 animate-spin" />}
                     Kiểm tra

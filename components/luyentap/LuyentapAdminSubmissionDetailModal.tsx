@@ -87,9 +87,9 @@ export default function LuyentapAdminSubmissionDetailModal({
     if (!open || !submission) return null;
 
     return (
-        <div className="fixed inset-0 z-[10001] flex items-center justify-center bg-black/50 p-3 sm:p-4">
-            <div className="flex h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
-                <div className="flex shrink-0 items-start justify-between gap-4 border-b border-gray-100 px-5 py-4">
+        <div className="fixed inset-0 z-[10001] flex items-end justify-center bg-black/50 p-3 sm:items-center sm:p-4">
+            <div className="flex h-[92dvh] w-full max-w-5xl flex-col overflow-hidden rounded-t-2xl bg-white shadow-2xl sm:h-[92vh] sm:rounded-2xl">
+                <div className="flex shrink-0 items-start justify-between gap-3 border-b border-gray-100 px-4 py-4 sm:gap-4 sm:px-5">
                     <div className="flex min-w-0 items-center gap-3">
                         <Avatar className="h-11 w-11">
                             <AvatarImage src={getImageUrl(submission.userAvatar)} />

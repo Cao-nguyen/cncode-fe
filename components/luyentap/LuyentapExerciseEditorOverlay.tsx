@@ -499,53 +499,65 @@ export default function LuyentapExerciseEditorOverlay({
     }, [saveStatus, editorContent, parsedQuestions, exercise, saveExercise, title, showConfigOverlay, showSettingsOverlay, configForm]);
 
     return (
-        <div className="fixed inset-0 z-[9999] bg-white flex flex-col">
-            <header className="flex-shrink-0 grid grid-cols-[1fr_minmax(0,72rem)_1fr] items-center gap-3 sm:gap-6 px-4 sm:px-6 py-3 border-b border-gray-100 bg-white">
-                <div className="flex items-center gap-3 sm:gap-4 min-w-0 justify-self-start">
-                    <button
-                        type="button"
-                        onClick={handleClose}
-                        className="p-2 rounded-lg hover:bg-gray-100 text-gray-600 transition-colors shrink-0"
-                        title="Quay lại"
-                    >
-                        <ArrowLeft className="w-5 h-5" />
-                    </button>
+        <div className="fixed inset-0 z-[9999] flex h-dvh w-full flex-col overflow-hidden bg-white">
+            <header className="flex-shrink-0 border-b border-gray-100 bg-white px-3 py-2.5 sm:px-6 sm:py-3">
+                <div className="flex flex-col gap-3 sm:grid sm:grid-cols-[1fr_minmax(0,72rem)_1fr] sm:items-center sm:gap-6">
+                    <div className="flex items-center justify-between gap-2 min-w-0 sm:justify-self-start sm:gap-4">
+                        <div className="flex items-center gap-2 min-w-0 sm:gap-4">
+                            <button
+                                type="button"
+                                onClick={handleClose}
+                                className="shrink-0 rounded-lg p-2 text-gray-600 transition-colors hover:bg-gray-100"
+                                title="Quay lại"
+                            >
+                                <ArrowLeft className="w-5 h-5" />
+                            </button>
 
-                    <Image
-                        src="/images/logo.png"
-                        alt="CNcode"
-                        width={90}
-                        height={36}
-                        className="h-8 w-auto shrink-0 hidden sm:block"
-                    />
-                    <Image
-                        src="/images/logo.png"
-                        alt="CNcode"
-                        width={60}
-                        height={24}
-                        className="h-6 w-auto shrink-0 sm:hidden"
-                    />
-                </div>
-
-                <div className="flex items-center gap-4 w-full min-w-0 px-2 sm:px-6">
-                    <div className="flex-1 min-w-0">
-                        <CustomInput
-                            placeholder="Nhập tên bài tập..."
-                            value={title}
-                            onChange={handleTitleChange}
-                            disabled={loading || !exercise}
-                        />
+                            <Image
+                                src="/images/logo.png"
+                                alt="CNcode"
+                                width={90}
+                                height={36}
+                                className="hidden h-8 w-auto shrink-0 sm:block"
+                            />
+                            <Image
+                                src="/images/logo.png"
+                                alt="CNcode"
+                                width={60}
+                                height={24}
+                                className="h-6 w-auto shrink-0 sm:hidden"
+                            />
+                        </div>
+                        <CustomButton
+                            onClick={handleContinue}
+                            disabled={loading || !exercise || !canContinue}
+                            className="shrink-0 whitespace-nowrap sm:hidden"
+                            size="small"
+                        >
+                            Tiếp tục
+                        </CustomButton>
                     </div>
-                    <CustomButton
-                        onClick={handleContinue}
-                        disabled={loading || !exercise || !canContinue}
-                        className="shrink-0 whitespace-nowrap"
-                    >
-                        Tiếp tục
-                    </CustomButton>
-                </div>
 
-                <div aria-hidden="true" />
+                    <div className="flex w-full min-w-0 items-center gap-2 sm:gap-4 sm:px-6">
+                        <div className="min-w-0 flex-1">
+                            <CustomInput
+                                placeholder="Nhập tên bài tập..."
+                                value={title}
+                                onChange={handleTitleChange}
+                                disabled={loading || !exercise}
+                            />
+                        </div>
+                        <CustomButton
+                            onClick={handleContinue}
+                            disabled={loading || !exercise || !canContinue}
+                            className="hidden shrink-0 whitespace-nowrap sm:inline-flex"
+                        >
+                            Tiếp tục
+                        </CustomButton>
+                    </div>
+
+                    <div className="hidden sm:block" aria-hidden="true" />
+                </div>
             </header>
             <div className="flex-1 min-h-0 bg-white overflow-hidden">
                 {loading ? (

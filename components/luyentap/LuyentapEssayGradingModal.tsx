@@ -106,8 +106,9 @@ export default function LuyentapEssayGradingModal({
     if (!open || !submission) return null;
 
     return (
-        <div className="fixed inset-0 z-[10002] flex items-center justify-center bg-black/50 p-4">
-            <div className="flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">                <div className="flex items-start justify-between border-b border-gray-100 px-5 py-4">
+        <div className="fixed inset-0 z-[10002] flex items-end justify-center bg-black/50 p-3 sm:items-center sm:p-4">
+            <div className="flex max-h-[90dvh] w-full max-w-4xl flex-col overflow-hidden rounded-t-2xl bg-white shadow-2xl sm:max-h-[90vh] sm:rounded-2xl">
+                <div className="flex items-start justify-between gap-3 border-b border-gray-100 px-4 py-4 sm:px-5">
                     <div>
                         <h2 className="text-lg font-semibold text-gray-900">Nhận xét toàn bài</h2>
                         <p className="mt-1 text-sm text-gray-500">
@@ -297,11 +298,11 @@ export default function LuyentapEssayGradingModal({
                     )}
                 </div>
 
-                <div className="flex justify-end gap-2 border-t border-gray-100 px-5 py-4">
-                    <CustomButton variant="secondary" onClick={onClose} disabled={saving}>
+                <div className="flex flex-col-reverse gap-2 border-t border-gray-100 px-4 py-4 sm:flex-row sm:justify-end sm:px-5">
+                    <CustomButton variant="secondary" onClick={onClose} disabled={saving} className="w-full sm:w-auto">
                         Hủy
                     </CustomButton>
-                    <CustomButton onClick={handleSave} loading={saving} disabled={loading}>
+                    <CustomButton onClick={handleSave} loading={saving} disabled={loading} className="w-full sm:w-auto">
                         Lưu nhận xét
                     </CustomButton>
                 </div>
