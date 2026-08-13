@@ -145,13 +145,12 @@ export function ShopProductGallery({
                                 className={cn(
                                     'shop-gallery-stage flex shrink-0 items-center justify-center overflow-hidden rounded-xl transition',
                                     i === selectedIndex
-                                        ? 'ring-2 ring-[var(--cn-primary)] ring-offset-2'
+                                        ? 'ring-2 ring-[var(--cn-primary)] ring-offset-2 ring-offset-[var(--cn-bg-main)]'
                                         : 'opacity-60 hover:opacity-100',
                                 )}
                                 style={{
                                     width: THUMB_SIZE,
                                     height: THUMB_SIZE,
-                                    ringOffsetColor: 'var(--cn-bg-main)',
                                     border: '1px solid var(--cn-border)',
                                 }}
                             >

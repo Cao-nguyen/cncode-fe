@@ -104,7 +104,16 @@ function CreateProductPageContent() {
                 setCategory(product.category || '');
                 setCoverImage(product.coverImage || '');
                 setImages(product.images || []);
-                setFiles(product.files || []);
+                setFiles(
+                    (product.files || [])
+                        .filter((file) => file.url)
+                        .map((file) => ({
+                            url: file.url!,
+                            name: file.name,
+                            size: file.size,
+                            type: file.type,
+                        })),
+                );
                 setPreview(product.preview || null);
                 setDescriptionInitial(product.description || '');
                 setEditProductStatus(product.status);

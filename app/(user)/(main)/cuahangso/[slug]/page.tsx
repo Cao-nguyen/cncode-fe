@@ -108,6 +108,7 @@ export default function ProductDetailPage() {
     };
 
     const handleOpenPurchase = () => {
+        if (!product) return;
         if (!user) {
             toast.error('Vui lòng đăng nhập để mua sản phẩm');
             router.push('/login');
