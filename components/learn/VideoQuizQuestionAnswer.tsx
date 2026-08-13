@@ -141,13 +141,16 @@ export default function VideoQuizQuestionAnswer({
     if (question.type === 'code') {
         const codeValue = answer || '';
         const hasCode = codeValue.trim().length > 0;
-        const isWeb = question.codeMode === 'web';
+        const codeMode = question.codeMode === 'web' || question.codeMode === 'algorithm'
+            ? question.codeMode
+            : undefined;
+        const isWeb = codeMode === 'web';
 
         return (
             <div className="space-y-4">
                 <CodeQuestionDisplay
                     question={codeQuestionText}
-                    codeMode={question.codeMode}
+                    codeMode={codeMode}
                     testCases={question.testCases}
                     webRequirements={(question.webRequirements || []) as WebRequirement[]}
                     variant="cards"
