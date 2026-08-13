@@ -54,7 +54,7 @@ interface CustomEditorVideoQuizProps {
 }
 
 export default function CustomEditorVideoQuiz({
-    initialContent,
+    initialContent = '',
     onContentChange,
     saveStatus,
 }: CustomEditorVideoQuizProps) {

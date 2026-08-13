@@ -267,9 +267,15 @@ export default function LessonForm({
         try {
             setSaving(true);
 
+            const trimmedQuizContent = quizEditorContent.trim();
             const resolvedQuestions =
-                quizQuestions.length > 0 ? quizQuestions : parseVideoQuizQuestionsFromEditor(quizEditorContent);
-            const quizzes = convertQuestionsToBackendFormat(resolvedQuestions);
+                quizQuestions.length > 0
+                    ? quizQuestions
+                    : parseVideoQuizQuestionsFromEditor(trimmedQuizContent);
+            const quizzes =
+                resolvedQuestions.length > 0
+                    ? convertQuestionsToBackendFormat(resolvedQuestions)
+                    : [];
 
             // Use the appropriate video source based on tab
             const videoSource = videoTab === 'youtube' ? youtubeUrl : videoFileId || uploadedVideoUrl;
@@ -282,7 +288,7 @@ export default function LessonForm({
                 description: descriptionEditorRef.current?.getContent() || '',
                 videoFileId: videoSource,
                 duration,
-                quizMarkdown: quizEditorContent,
+                quizMarkdown: quizzes.length > 0 ? trimmedQuizContent : '',
                 quizQuestions: quizzes,
             };
 

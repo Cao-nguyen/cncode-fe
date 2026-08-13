@@ -140,27 +140,33 @@ export default function VideoQuizEditorOverlay({
     const persistQuestions = useCallback(
         async (content: string, questions: VideoQuizQuestion[]) => {
             setSaveStatus('saving');
+            const trimmedContent = content.trim();
+            const hasQuestions = questions.length > 0;
             try {
                 let persistedLesson: Lesson | undefined;
                 if (lessonId) {
                     persistedLesson = await updateAdminLesson(lessonId, {
-                        quizMarkdown: content,
-                        quizQuestions: convertQuestionsToBackendFormat(questions),
+                        quizMarkdown: hasQuestions ? trimmedContent : '',
+                        quizQuestions: hasQuestions
+                            ? convertQuestionsToBackendFormat(questions)
+                            : [],
                     });
-                } else {
+                } else if (hasQuestions) {
                     const storageKey = `lesson_draft_${chapterId}`;
                     localStorage.setItem(
                         storageKey,
                         JSON.stringify({
-                            content,
+                            content: trimmedContent,
                             questions,
                             timestamp: Date.now(),
                         }),
                     );
+                } else {
+                    localStorage.removeItem(`lesson_draft_${chapterId}`);
                 }
-                initialContentRef.current = content;
+                initialContentRef.current = hasQuestions ? trimmedContent : '';
                 setSaveStatus('saved');
-                onSaved(content, questions, persistedLesson);
+                onSaved(hasQuestions ? trimmedContent : '', questions, persistedLesson);
                 return true;
             } catch (error) {
                 console.error('Auto-save quiz failed:', error);

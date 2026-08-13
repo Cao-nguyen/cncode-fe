@@ -1192,13 +1192,6 @@ B. Phương án B
 C. Phương án C
 D. Phương án D`;
 
-const DEFAULT_VIDEO_QUIZ_CODE = `Câu 1. Nhập nội dung câu hỏi ở đây
-{TIME:0:0:0}
-A. Phương án A
-B. Phương án B
-C. Phương án C
-D. Phương án D`;
-
 const injectTimeIntoTemplate = (content: string): string => {
     if (/\{TIME:/i.test(content)) return content;
     const lines = content.split('\n');
@@ -1234,7 +1227,7 @@ const CustomEditorContest: React.FC<{
     const isVideoQuiz = variant === 'video-quiz';
     const [code, setCode] = useState<string>(() => {
         if (initialContent !== undefined) return initialContent;
-        return isVideoQuiz ? DEFAULT_VIDEO_QUIZ_CODE : DEFAULT_CODE;
+        return isVideoQuiz ? '' : DEFAULT_CODE;
     });
     const [scoreOverrides, setScoreOverrides] = useState<Record<number, number>>(
         () => initialScoreOverrides ?? {},
