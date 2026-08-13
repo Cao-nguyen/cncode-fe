@@ -4,7 +4,6 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
     Send, Search,
     AlertCircle, Loader2,
-    ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { CustomInput } from '@/components/custom/CustomInput';
@@ -14,6 +13,8 @@ import CustomEditor, { CustomEditorRef } from '@/components/custom/CustomEditor'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { ListSkeleton } from '@/components/ui/skeleton';
+import { AdminPageHeader, adminPageClass } from '@/components/admin/AdminPageShell';
+import { AdminPagination } from '@/components/admin/AdminPagination';
 
 interface User {
     _id: string;
@@ -242,11 +243,16 @@ export default function AdminSendMailPage() {
     };
 
     return (
-        <div className="h-[calc(100vh-150px)] flex flex-col overflow-hidden bg-gray-50/50">
+        <div className={adminPageClass}>
+            <AdminPageHeader
+                title="Gửi Email"
+                description="Gửi email hàng loạt tới người dùng trên hệ thống"
+            />
+            <div className="-mx-3 -mb-3 flex min-h-0 flex-1 flex-col overflow-hidden sm:-mx-4 sm:-mb-4 lg:-mx-6 lg:-mb-6">
             {/* Full-height split layout */}
-            <div className="flex-1 grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-4 overflow-hidden px-4 sm:px-6">
+            <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 overflow-hidden lg:grid-cols-[340px_1fr]">
                 {/* Left: User List */}
-                <div className="flex flex-col h-full overflow-hidden bg-white rounded-2xl border border-gray-200 shadow-sm">
+                <div className="flex max-h-[45vh] flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm lg:max-h-none lg:h-full">
                     {/* Search bar — overflow-visible for dropdown */}
                     <div className="flex-shrink-0 flex flex-col sm:flex-row gap-2 p-4 border-b border-gray-100 overflow-visible">
                         <div className="flex-1">
@@ -333,39 +339,26 @@ export default function AdminSendMailPage() {
                         )}
                     </div>
 
-                    {/* Pagination */}
-                    {totalPages > 1 && (
-                        <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-t border-gray-100 bg-gray-50/50">
-                            <p className="text-xs text-gray-500">Trang {page} / {totalPages}</p>
-                            <div className="flex gap-1">
-                                <button
-                                    onClick={() => setPage(p => Math.max(1, p - 1))}
-                                    disabled={page === 1}
-                                    className="p-1.5 border border-gray-200 rounded-lg hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                                >
-                                    <ChevronLeft size={16} />
-                                </button>
-                                <button
-                                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                                    disabled={page === totalPages}
-                                    className="p-1.5 border border-gray-200 rounded-lg hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                                >
-                                    <ChevronRight size={16} />
-                                </button>
-                            </div>
-                        </div>
-                    )}
+                    <AdminPagination
+                        page={page}
+                        totalPages={totalPages}
+                        totalItems={totalUsers}
+                        pageSize={20}
+                        onPageChange={setPage}
+                        itemLabel="người dùng"
+                        className="flex-shrink-0 border-t border-gray-100 bg-gray-50/50 px-4 py-3"
+                    />
                 </div>
 
                 {/* Right: Compose */}
-                <div className="flex flex-col h-full overflow-hidden bg-white rounded-2xl border border-gray-200 shadow-sm">
+                <div className="flex min-h-[320px] flex-1 flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm lg:h-full">
                     {/* Compose header */}
-                    <div className="flex-shrink-0 flex items-center justify-between gap-2 px-5 py-4 border-b border-gray-100">
-                        <div className="flex items-center gap-2">
-                            <Send className="w-5 h-5 text-blue-500" />
-                            <h2 className="font-bold text-gray-800 text-lg">Soạn thảo nội dung</h2>
+                    <div className="flex-shrink-0 flex flex-col gap-3 border-b border-gray-100 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex min-w-0 items-center gap-2">
+                            <Send className="w-5 h-5 shrink-0 text-blue-500" />
+                            <h2 className="truncate font-bold text-gray-800 text-base sm:text-lg">Soạn thảo nội dung</h2>
                         </div>
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2 sm:gap-3">
                             {selectedUsers.size > 0 && (
                                 <span className="text-xs text-amber-600 bg-amber-50 px-2.5 py-1 rounded-lg font-medium whitespace-nowrap">
                                     Gửi đến {selectedUsers.size} người
@@ -375,7 +368,7 @@ export default function AdminSendMailPage() {
                                 onClick={handleSendMail}
                                 loading={sending}
                                 disabled={selectedUsers.size === 0 || !subject.trim()}
-                                className="rounded-lg shadow-md shadow-blue-200"
+                                className="w-full rounded-lg shadow-md shadow-blue-200 sm:w-auto"
                             >
                                 <Send className="w-4 h-4 mr-1.5" />
                                 Gửi ngay
@@ -411,6 +404,7 @@ export default function AdminSendMailPage() {
 
                 </div>
             </div>
+        </div>
         </div>
     );
 }

@@ -8,6 +8,7 @@ import { ProductModal } from '@/components/linkedProduct/ProductModal';
 import { CustomButton } from '@/components/custom/CustomButton';
 import { ConfirmModalDelete } from '@/components/custom/ConfirmationModal';
 import { LinkedProduct, CreateLinkedProductDto, UpdateLinkedProductDto } from '@/types/linkedProduct.type';
+import { AdminPageShell } from '@/components/admin/AdminPageShell';
 
 export default function AdminSanPhamLienKetPage() {
     const { products, loading, submitting, createProduct, updateProduct, deleteProduct } = useAdminLinkedProducts();
@@ -42,23 +43,22 @@ export default function AdminSanPhamLienKetPage() {
     };
 
     return (
-        <div className="space-y-6 pb-8 px-3 sm:px-4">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">Quản lý sản phẩm liên kết</h1>
-                    <p className="text-sm text-gray-500 mt-1">Tổng {products.length} sản phẩm</p>
-                </div>
+        <AdminPageShell
+            title="Quản lý sản phẩm liên kết"
+            description={`Tổng ${products.length} sản phẩm`}
+            action={
                 <CustomButton
                     onClick={() => {
                         setEditingProduct(null);
                         setShowModal(true);
                     }}
+                    className="w-full sm:w-auto"
                 >
                     <Plus className="h-4 w-4" />
                     Thêm sản phẩm
                 </CustomButton>
-            </div>
-
+            }
+        >
             {loading ? (
                 <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:gap-6 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
                     {[...Array(10)].map((_, i) => (
@@ -123,6 +123,6 @@ export default function AdminSanPhamLienKetPage() {
                 title="Xác nhận xoá sản phẩm"
                 message={`Bạn có chắc chắn muốn xoá sản phẩm "${deleteConfirm?.name}"? Hành động này không thể hoàn tác.`}
             />
-        </div>
+        </AdminPageShell>
     );
 }

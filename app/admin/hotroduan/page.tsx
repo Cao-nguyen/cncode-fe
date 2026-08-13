@@ -7,6 +7,9 @@ import { CustomSelect } from '@/components/custom/CustomSelect';
 import { ConfirmModalDelete } from '@/components/custom/ConfirmationModal';
 import { DashboardCard } from '@/components/custom/DashboardCard';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { AdminPageShell } from '@/components/admin/AdminPageShell';
+import { AdminPagination } from '@/components/admin/AdminPagination';
+import { AdminTableScroll } from '@/components/admin/AdminTableScroll';
 import StaticContent from '@/components/common/StaticContent';
 import CommentSection from '@/components/comment/CommentSection';
 import { toast } from 'sonner';
@@ -151,6 +154,7 @@ export default function AdminHelpProjectPage() {
     const [loading, setLoading] = useState(true);
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
+    const [total, setTotal] = useState(0);
     const [statusFilter, setStatusFilter] = useState('all');
     const [search, setSearch] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -188,6 +192,7 @@ export default function AdminHelpProjectPage() {
             if (res.success) {
                 setProjects(res.data);
                 setTotalPages(res.pagination.totalPages);
+                setTotal(res.pagination.total);
             }
         } catch {
             toast.error('Không thể tải dự án');
@@ -228,12 +233,10 @@ export default function AdminHelpProjectPage() {
     };
 
     return (
-        <div className="space-y-6 pb-8">
-            <div>
-                <h1 className="text-2xl font-bold text-gray-800 sm:text-3xl">Quản lý hỗ trợ dự án</h1>
-                <p className="mt-1 text-sm text-gray-500">Xem và phản hồi yêu cầu hỗ trợ dự án từ người dùng</p>
-            </div>
-
+        <AdminPageShell
+            title="Quản lý hỗ trợ dự án"
+            description="Xem và phản hồi yêu cầu hỗ trợ dự án từ người dùng"
+        >
             {statistics && (
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                     <DashboardCard title="Tổng dự án" value={statistics.total} icon={<FolderKanban size={18} />} iconBgColor="#EFF6FF" iconColor="#3B82F6" />
@@ -264,7 +267,7 @@ export default function AdminHelpProjectPage() {
             </div>
 
             <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-                <div className="overflow-x-auto">
+                <AdminTableScroll minWidth={880}>
                     <table className="w-full min-w-[880px] border-collapse">
                         <thead>
                             <tr className="border-b border-gray-200 bg-gray-50/80">
@@ -352,17 +355,15 @@ export default function AdminHelpProjectPage() {
                             )}
                         </tbody>
                     </table>
-                </div>
+                </AdminTableScroll>
 
-                {totalPages > 1 && (
-                    <div className="flex items-center justify-between border-t border-gray-200 px-3 py-3 text-sm text-gray-500">
-                        <span>Trang {page} / {totalPages}</span>
-                        <div className="flex gap-2">
-                            <button type="button" disabled={page <= 1} onClick={() => setPage((p) => p - 1)} className="rounded-lg border border-gray-200 px-3 py-1 disabled:opacity-40">Trước</button>
-                            <button type="button" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)} className="rounded-lg border border-gray-200 px-3 py-1 disabled:opacity-40">Sau</button>
-                        </div>
-                    </div>
-                )}
+                <AdminPagination
+                    page={page}
+                    totalPages={totalPages}
+                    totalItems={total}
+                    pageSize={10}
+                    onPageChange={setPage}
+                />
             </div>
 
             <ViewProjectModal
@@ -379,6 +380,6 @@ export default function AdminHelpProjectPage() {
                 message={`Bạn có chắc chắn muốn xóa dự án "${deleteTarget?.title}"?`}
                 warning="Tất cả dữ liệu liên quan sẽ bị xóa vĩnh viễn."
             />
-        </div>
+        </AdminPageShell>
     );
 }

@@ -20,8 +20,6 @@ import {
     Mail,
     Phone,
     Globe,
-    ChevronLeft,
-    ChevronRight,
     Share2,
 } from 'lucide-react';
 import {
@@ -47,6 +45,10 @@ import { ConfirmModalDelete } from '@/components/custom/ConfirmationModal';
 import { DashboardCard } from '@/components/custom/DashboardCard';
 import StaticContent from '@/components/common/StaticContent';
 import { TableSkeleton } from '@/components/ui/skeleton';
+import { AdminPageShell } from '@/components/admin/AdminPageShell';
+import { AdminPagination } from '@/components/admin/AdminPagination';
+import { AdminTableScroll } from '@/components/admin/AdminTableScroll';
+import { AdminChartScroll } from '@/components/admin/AdminChartScroll';
 
 const PAGE_SIZE = 20;
 
@@ -326,18 +328,10 @@ function AdminCrossPromotionPageContent() {
     ];
 
     return (
-        <div className="space-y-6 pb-8 px-4">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-gray-100">
-                        Quản lý Truyền thông chéo
-                    </h1>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                        Quản lý yêu cầu hợp tác truyền thông
-                    </p>
-                </div>
-            </div>
-
+        <AdminPageShell
+            title="Quản lý Truyền thông chéo"
+            description="Quản lý yêu cầu hợp tác truyền thông"
+        >
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {cardConfigs.map((card) => (
                     <DashboardCard
@@ -360,6 +354,7 @@ function AdminCrossPromotionPageContent() {
                         </h3>
                     </div>
                     {growthChartData.length > 0 ? (
+                        <AdminChartScroll>
                         <ResponsiveContainer width="100%" height={250}>
                             <RechartsLineChart data={growthChartData}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.1} />
@@ -392,6 +387,7 @@ function AdminCrossPromotionPageContent() {
                                 />
                             </RechartsLineChart>
                         </ResponsiveContainer>
+                        </AdminChartScroll>
                     ) : (
                         <div className="flex items-center justify-center h-[250px] text-gray-400 dark:text-gray-500">
                             <div className="text-center">
@@ -409,6 +405,7 @@ function AdminCrossPromotionPageContent() {
                             Phân bố trạng thái
                         </h3>
                     </div>
+                    <AdminChartScroll>
                     <ResponsiveContainer width="100%" height={300}>
                         <RechartsBarChart data={statusChartData}>
                             <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.1} />
@@ -430,6 +427,7 @@ function AdminCrossPromotionPageContent() {
                             </Bar>
                         </RechartsBarChart>
                     </ResponsiveContainer>
+                    </AdminChartScroll>
                 </div>
             </div>
 
@@ -462,8 +460,8 @@ function AdminCrossPromotionPageContent() {
                 </div>
             ) : (
                 <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-                    <div className="overflow-x-auto">
-                        <table className="w-full min-w-[900px]">
+                    <AdminTableScroll minWidth={900}>
+                        <table className="w-full">
                             <thead className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
                                 <tr>
                                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
@@ -560,34 +558,15 @@ function AdminCrossPromotionPageContent() {
                                 )}
                             </tbody>
                         </table>
-                    </div>
+                    </AdminTableScroll>
 
-                    {totalPages > 1 && (
-                        <div className="border-t border-gray-200 dark:border-gray-700 px-4 py-4 flex items-center justify-between">
-                            <div className="text-sm text-gray-500 dark:text-gray-400">
-                                Hiển thị {(page - 1) * PAGE_SIZE + 1} - {Math.min(page * PAGE_SIZE, total)} trên {total}
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <button
-                                    onClick={() => setPage((prev) => Math.max(1, prev - 1))}
-                                    disabled={page === 1}
-                                    className="p-2 border border-gray-200 dark:border-gray-700 rounded-lg disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-900 transition"
-                                >
-                                    <ChevronLeft className="w-4 h-4" />
-                                </button>
-                                <span className="px-3 text-sm font-medium text-gray-700 dark:text-gray-300">
-                                    {page} / {totalPages}
-                                </span>
-                                <button
-                                    onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
-                                    disabled={page === totalPages}
-                                    className="p-2 border border-gray-200 dark:border-gray-700 rounded-lg disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-900 transition"
-                                >
-                                    <ChevronRight className="w-4 h-4" />
-                                </button>
-                            </div>
-                        </div>
-                    )}
+                    <AdminPagination
+                        page={page}
+                        totalPages={totalPages}
+                        totalItems={total}
+                        pageSize={PAGE_SIZE}
+                        onPageChange={setPage}
+                    />
                 </div>
             )}
 
@@ -753,7 +732,7 @@ function AdminCrossPromotionPageContent() {
                     message={`Bạn có chắc chắn muốn xóa yêu cầu "${deleteConfirm.title}"?`}
                 />
             )}
-        </div>
+        </AdminPageShell>
     );
 }
 

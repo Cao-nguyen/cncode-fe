@@ -50,6 +50,8 @@ import { CustomSelect } from '@/components/custom/CustomSelect';
 import { ConfirmModalDelete } from '@/components/custom/ConfirmationModal';
 import { DashboardCard } from '@/components/custom/DashboardCard';
 import { CardSkeleton } from '@/components/ui/skeleton';
+import { AdminPageShell } from '@/components/admin/AdminPageShell';
+import { AdminChartScroll } from '@/components/admin/AdminChartScroll';
 import { uploadApi } from '@/lib/upload';
 import { getImageUrl } from '@/lib/utils/imageUrl';
 import { cn } from '@/lib/utils';
@@ -439,14 +441,10 @@ function AdminShopPageContent() {
 
     if (loading) {
         return (
-            <div className="space-y-6 pb-8">
-                <div className="flex items-center justify-between">
-                    <div className="space-y-2">
-                        <div className="h-8 w-56 animate-pulse rounded-lg bg-gray-200 dark:bg-gray-800" />
-                        <div className="h-4 w-72 animate-pulse rounded bg-gray-100 dark:bg-gray-800/80" />
-                    </div>
-                    <div className="h-10 w-36 animate-pulse rounded-lg bg-gray-200 dark:bg-gray-800" />
-                </div>
+            <AdminPageShell
+                title="Cửa hàng quà tặng"
+                description="Thống kê doanh thu và quản lý quà tặng"
+            >
                 <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
                     {[...Array(4)].map((_, i) => (
                         <div key={i} className="h-24 animate-pulse rounded-xl bg-gray-100 dark:bg-gray-800" />
@@ -460,28 +458,21 @@ function AdminShopPageContent() {
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
                     <CardSkeleton count={6} />
                 </div>
-            </div>
+            </AdminPageShell>
         );
     }
 
     return (
-        <div className="space-y-6 pb-8">
-            {/* Header */}
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white sm:text-3xl">
-                        Cửa hàng quà tặng
-                    </h1>
-                    <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                        Thống kê doanh thu và quản lý quà tặng
-                    </p>
-                </div>
-                <CustomButton onClick={openModal} className="shrink-0">
+        <AdminPageShell
+            title="Cửa hàng quà tặng"
+            description="Thống kê doanh thu và quản lý quà tặng"
+            action={
+                <CustomButton onClick={openModal} className="w-full sm:w-auto shrink-0">
                     <Plus className="h-4 w-4" />
                     Thêm quà tặng
                 </CustomButton>
-            </div>
-
+            }
+        >
             {/* Stats */}
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
                 <DashboardCard
@@ -528,6 +519,7 @@ function AdminShopPageContent() {
                     </h3>
                 </div>
                 {revenueData.some((d) => d.revenue > 0 || d.count > 0) ? (
+                    <AdminChartScroll>
                     <ResponsiveContainer width="100%" height={260}>
                         <RechartsLineChart data={revenueData}>
                             <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" opacity={0.5} />
@@ -583,6 +575,7 @@ function AdminShopPageContent() {
                             />
                         </RechartsLineChart>
                     </ResponsiveContainer>
+                    </AdminChartScroll>
                 ) : (
                     <ChartEmpty icon={LineChart} />
                 )}
@@ -599,6 +592,7 @@ function AdminShopPageContent() {
                         </h3>
                     </div>
                     {topGifts.length > 0 ? (
+                        <AdminChartScroll>
                         <ResponsiveContainer width="100%" height={280}>
                             <RechartsBarChart data={topGifts} layout="vertical" margin={{ left: 8, right: 16 }}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" opacity={0.5} />
@@ -621,6 +615,7 @@ function AdminShopPageContent() {
                                 <Bar dataKey="revenue" name="Doanh thu (xu)" fill="#F59E0B" radius={[0, 4, 4, 0]} />
                             </RechartsBarChart>
                         </ResponsiveContainer>
+                        </AdminChartScroll>
                     ) : (
                         <ChartEmpty icon={BarChart3} />
                     )}
@@ -635,6 +630,7 @@ function AdminShopPageContent() {
                         </h3>
                     </div>
                     {categoryChartData.length > 0 ? (
+                        <AdminChartScroll>
                         <ResponsiveContainer width="100%" height={280}>
                             <PieChart>
                                 <Pie
@@ -664,6 +660,7 @@ function AdminShopPageContent() {
                                 <Legend />
                             </PieChart>
                         </ResponsiveContainer>
+                        </AdminChartScroll>
                     ) : (
                         <ChartEmpty icon={Award} />
                     )}
@@ -982,7 +979,7 @@ function AdminShopPageContent() {
                 title="Xóa quà tặng"
                 message={`Bạn có chắc muốn xóa quà tặng "${deleteConfirm?.name}"? Hành động này không thể hoàn tác.`}
             />
-        </div>
+        </AdminPageShell>
     );
 }
 

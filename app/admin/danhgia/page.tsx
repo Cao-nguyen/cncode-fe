@@ -12,8 +12,11 @@ import { CustomSelect } from '@/components/custom/CustomSelect';
 import { ConfirmModalDelete } from '@/components/custom/ConfirmationModal';
 import { DashboardCard } from '@/components/custom/DashboardCard';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { AdminPageShell } from '@/components/admin/AdminPageShell';
+import { AdminPagination } from '@/components/admin/AdminPagination';
+import { AdminTableScroll } from '@/components/admin/AdminTableScroll';
 import {
-    Star, Trash2, X, ChevronLeft, ChevronRight, Eye, MessageSquare,
+    Star, Trash2, X, Eye, MessageSquare,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
@@ -219,12 +222,10 @@ export default function AdminRatingsPage() {
     const distributionPercent = (count: number) => (stats.total > 0 ? (count / stats.total) * 100 : 0);
 
     return (
-        <div className="space-y-6 pb-8">
-            <div>
-                <h1 className="text-2xl font-bold text-gray-800 sm:text-3xl">Quản lý đánh giá</h1>
-                <p className="mt-1 text-sm text-gray-500">Theo dõi và quản lý đánh giá từ học viên</p>
-            </div>
-
+        <AdminPageShell
+            title="Quản lý đánh giá"
+            description="Theo dõi và quản lý đánh giá từ học viên"
+        >
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
                 <DashboardCard
                     title="Điểm trung bình"
@@ -299,7 +300,7 @@ export default function AdminRatingsPage() {
             </div>
 
             <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-                <div className="overflow-x-auto">
+                <AdminTableScroll minWidth={860}>
                     <table className="w-full">
                         <thead className="border-b bg-gray-50 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
                             <tr>
@@ -365,35 +366,16 @@ export default function AdminRatingsPage() {
                             )}
                         </tbody>
                     </table>
-                </div>
+                </AdminTableScroll>
             </div>
 
-            {totalPages > 1 && (
-                <div className="flex flex-col items-center justify-between gap-3 sm:flex-row">
-                    <p className="text-sm text-gray-500">
-                        {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, total)} / {total}
-                    </p>
-                    <div className="flex items-center gap-2">
-                        <button
-                            type="button"
-                            onClick={() => setPage((p) => Math.max(1, p - 1))}
-                            disabled={page === 1}
-                            className="rounded-lg border p-2 disabled:opacity-40"
-                        >
-                            <ChevronLeft className="h-4 w-4" />
-                        </button>
-                        <span className="text-sm text-gray-600">{page} / {totalPages}</span>
-                        <button
-                            type="button"
-                            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                            disabled={page === totalPages}
-                            className="rounded-lg border p-2 disabled:opacity-40"
-                        >
-                            <ChevronRight className="h-4 w-4" />
-                        </button>
-                    </div>
-                </div>
-            )}
+            <AdminPagination
+                page={page}
+                totalPages={totalPages}
+                totalItems={total}
+                pageSize={PAGE_SIZE}
+                onPageChange={setPage}
+            />
 
             <DetailModal
                 review={detailTarget}
@@ -411,6 +393,6 @@ export default function AdminRatingsPage() {
                 warning="Đánh giá sẽ bị xóa vĩnh viễn khỏi hệ thống."
                 isDeleting={deleting}
             />
-        </div>
+        </AdminPageShell>
     );
 }

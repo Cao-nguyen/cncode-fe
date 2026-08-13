@@ -21,6 +21,8 @@ import { CustomInput } from '@/components/custom/CustomInput';
 import { CustomToggle } from '@/components/custom/CustomToggle';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { AdminPageShell, adminTitleClass } from '@/components/admin/AdminPageShell';
+import { AdminTableScroll } from '@/components/admin/AdminTableScroll';
 import type { PracticeTier } from '@/types/luyentap.type';
 import type { Exercise } from '@/lib/api/luyentap.api';
 
@@ -612,42 +614,37 @@ export default function AdminLuyenTapPage() {
         : !loading && items.length === 0;
 
     return (
-        <div className="pb-10">
-            <div className="mx-auto max-w-6xl px-4 pt-2">
-                <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                        {view.type === 'folder' && activeFolder ? (
-                            <div className="flex items-center gap-2">
-                                <button
-                                    type="button"
-                                    onClick={() => setView({ type: 'root' })}
-                                    className="flex items-center gap-1 rounded-lg px-2 py-1 text-sm text-[var(--cn-text-sub)] hover:bg-[var(--cn-hover)]"
-                                >
-                                    <ChevronLeft className="h-4 w-4" />
-                                    Quay lại
-                                </button>
-                                <h1 className="text-xl font-bold text-[var(--cn-text-main)]">{activeFolder.name}</h1>
-                            </div>
-                        ) : (
-                            <>
-                                <h1 className="text-xl font-bold text-[var(--cn-text-main)]">Quản lý luyện tập</h1>
-                                <p className="mt-0.5 text-sm text-[var(--cn-text-sub)]">
-                                    {folderStats.totalCount} đề · {folders.length} thư mục
-                                </p>
-                            </>
-                        )}
+        <>
+        <AdminPageShell
+            title="Quản lý luyện tập"
+            description={`${folderStats.totalCount} đề · ${folders.length} thư mục`}
+            titleSlot={
+                view.type === 'folder' && activeFolder ? (
+                    <div className="flex items-center gap-2">
+                        <button
+                            type="button"
+                            onClick={() => setView({ type: 'root' })}
+                            className="flex items-center gap-1 rounded-lg px-2 py-1 text-sm text-gray-500 hover:bg-gray-100"
+                        >
+                            <ChevronLeft className="h-4 w-4" />
+                            Quay lại
+                        </button>
+                        <h1 className={adminTitleClass}>{activeFolder.name}</h1>
                     </div>
-                    <div className="flex flex-wrap gap-2">
-                        <CustomButton variant="secondary" onClick={() => openFolderModal()}>
-                            <FolderPlus className="h-4 w-4" /> Tạo thư mục
-                        </CustomButton>
-                        <CustomButton onClick={openCreateModal}>
-                            <Plus className="h-4 w-4" /> Tạo đề
-                        </CustomButton>
-                    </div>
+                ) : undefined
+            }
+            action={
+                <div className="flex flex-wrap gap-2">
+                    <CustomButton variant="secondary" onClick={() => openFolderModal()} className="w-full sm:w-auto">
+                        <FolderPlus className="h-4 w-4" /> Tạo thư mục
+                    </CustomButton>
+                    <CustomButton onClick={openCreateModal} className="w-full sm:w-auto">
+                        <Plus className="h-4 w-4" /> Tạo đề
+                    </CustomButton>
                 </div>
-
-                <div className="mb-4 flex flex-col gap-3 sm:flex-row">
+            }
+        >
+                <div className="flex flex-col gap-3 sm:flex-row">
                     <div className="min-w-0 flex-1">
                         <CustomInputSearch placeholder="Tìm kiếm..." value={search} onChange={setSearch} size="medium" />
                     </div>
@@ -686,6 +683,7 @@ export default function AdminLuyenTapPage() {
                     </div>
                 ) : (
                     <div className="overflow-hidden rounded-xl border border-[var(--cn-border)] bg-white">
+                        <AdminTableScroll minWidth={720}>
                         <table className="w-full text-sm">
                             <thead>
                                 <tr className="border-b border-[var(--cn-border)] text-left text-xs font-medium text-[var(--cn-text-muted)]">
@@ -765,9 +763,10 @@ export default function AdminLuyenTapPage() {
                                 ))}
                             </tbody>
                         </table>
+                        </AdminTableScroll>
                     </div>
                 )}
-            </div>
+        </AdminPageShell>
 
             <ConfirmModalDelete isOpen={!!deleteTarget} onClose={() => setDeleteTarget(null)} onConfirm={handleDelete} title="Xóa bài tập" message={`Xóa "${deleteTarget?.title}"?`} />
 
@@ -936,6 +935,6 @@ export default function AdminLuyenTapPage() {
                     </div>
                 </div>
             )}
-        </div>
+        </>
     );
 }

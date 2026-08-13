@@ -8,6 +8,7 @@ import { CustomButton } from '@/components/custom/CustomButton';
 import { toast } from 'sonner';
 import * as dautruongApi from '@/lib/api/dautruong.api';
 import { Contest, Question as ApiQuestion } from '@/lib/api/dautruong.api';
+import { AdminPageShell, adminTitleClass, adminDescriptionClass } from '@/components/admin/AdminPageShell';
 import CustomEditorQuestion from '@/components/custom/CustomEditorQuestion';
 
 // Editor question format (from CustomEditorQuestion component)
@@ -173,7 +174,7 @@ export default function ContestEditorPage() {
 
     if (loading) {
         return (
-            <div className="p-6 flex items-center justify-center min-h-[50vh]">
+            <div className="flex items-center justify-center min-h-[400px]">
                 <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
             </div>
         );
@@ -181,44 +182,44 @@ export default function ContestEditorPage() {
 
     if (!contest) {
         return (
-            <div className="p-6">
+            <AdminPageShell title="Soạn câu hỏi" description="Cuộc thi không tồn tại">
                 <div className="text-center py-10">
-                    <p className="text-gray-500">Cuộc thi không tồn tại</p>
                     <Link href="/admin/dautruong" className="mt-4 inline-block">
                         <CustomButton>
                             <ArrowLeft className="w-4 h-4 mr-2" /> Quay lại
                         </CustomButton>
                     </Link>
                 </div>
-            </div>
+            </AdminPageShell>
         );
     }
 
     return (
-        <div className="flex flex-col" style={{ height: '83vh' }}>
-            {/* Header */}
-            <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex-shrink-0">
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                        <Link href="/admin/dautruong" className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg">
-                            <ArrowLeft className="w-5 h-5" />
-                        </Link>
-                        <div>
-                            <h1 className="text-xl font-semibold">Soạn câu hỏi: {contest.title}</h1>
-                            <p className="text-sm text-gray-500">{contest.description}</p>
-                        </div>
+        <AdminPageShell
+            titleSlot={
+                <div className="flex items-center gap-3">
+                    <Link href="/admin/dautruong" className="rounded-lg p-2 hover:bg-gray-100">
+                        <ArrowLeft className="h-5 w-5 text-gray-600" />
+                    </Link>
+                    <div>
+                        <h1 className={adminTitleClass}>Soạn câu hỏi: {contest.title}</h1>
+                        {contest.description ? (
+                            <p className={adminDescriptionClass}>{contest.description}</p>
+                        ) : null}
                     </div>
                 </div>
+            }
+            title=""
+        >
+            <div className="flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white" style={{ height: 'calc(100dvh - 220px)' }}>
+                <div className="flex-1 overflow-hidden bg-gray-50">
+                    <CustomEditorQuestion
+                        initialContent={initialContent}
+                        onContentChange={handleContentChange}
+                        saveStatus={saveStatus}
+                    />
+                </div>
             </div>
-
-            {/* Custom Editor Question */}
-            <div className="flex-1 overflow-hidden bg-gray-50 dark:bg-gray-900">
-                <CustomEditorQuestion
-                    initialContent={initialContent}
-                    onContentChange={handleContentChange}
-                    saveStatus={saveStatus}
-                />
-            </div>
-        </div>
+        </AdminPageShell>
     );
 }

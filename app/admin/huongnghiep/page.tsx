@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Plus, Briefcase, GraduationCap, X, Upload, X as XIcon, Edit2, Trash2, Eye, ChevronDown, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Check } from 'lucide-react';
+import { Plus, Briefcase, GraduationCap, X, Upload, X as XIcon, Edit2, Trash2, Eye } from 'lucide-react';
 import { CustomButton } from '@/components/custom/CustomButton';
 import { CustomInput } from '@/components/custom/CustomInput';
 import { CustomSelect } from '@/components/custom/CustomSelect';
@@ -10,6 +10,9 @@ import { huongnghiepApi, TrainingPlace, Industry } from '@/lib/api/huongnghiep.a
 import { uploadApi } from '@/lib/upload';
 import { toast } from 'sonner';
 import { TableSkeleton, IndustryCardSkeleton } from '@/components/ui/skeleton';
+import { AdminPageShell } from '@/components/admin/AdminPageShell';
+import { AdminPagination } from '@/components/admin/AdminPagination';
+import { AdminTableScroll } from '@/components/admin/AdminTableScroll';
 
 const PROVINCES = [
   { value: 'Hà Nội', label: 'Hà Nội' },
@@ -59,7 +62,6 @@ const TYPE_OPTIONS = [
   { value: 'Tư thục', label: 'Tư thục' },
 ];
 
-const PAGINATION_OPTIONS = [5, 10, 25, 50];
 
 export default function HuongNghiepAdminPage() {
   const [activeTab, setActiveTab] = useState<'all' | 'industries' | 'training'>('all');
@@ -71,7 +73,6 @@ export default function HuongNghiepAdminPage() {
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
-  const [isPerPageOpen, setIsPerPageOpen] = useState(false);
 
   // Training place states
   const [logo, setLogo] = useState('');
@@ -93,12 +94,9 @@ export default function HuongNghiepAdminPage() {
   const [editingIndustry, setEditingIndustry] = useState<Industry | null>(null);
   const [industryCurrentPage, setIndustryCurrentPage] = useState(1);
   const [industryItemsPerPage, setIndustryItemsPerPage] = useState(8);
-  const [isIndustryPerPageOpen, setIsIndustryPerPageOpen] = useState(false);
 
   const editorRef = useRef<CustomEditorRef>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const perPageDropdownRef = useRef<HTMLDivElement>(null);
-  const industryPerPageDropdownRef = useRef<HTMLDivElement>(null);
   const industryFileInputRef = useRef<HTMLInputElement>(null);
   const industryBasicInfoRef = useRef<CustomEditorRef>(null);
   const industryCareerPathRef = useRef<CustomEditorRef>(null);
@@ -398,19 +396,16 @@ export default function HuongNghiepAdminPage() {
   };
 
   return (
-    <div className="space-y-6 pb-8 px-4">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-gray-100">Quản lý hướng nghiệp</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Quản lý ngành nghề và nơi đào tạo</p>
-        </div>
-        <CustomButton onClick={() => setShowCreateModal(true)}>
+    <AdminPageShell
+      title="Quản lý hướng nghiệp"
+      description="Quản lý ngành nghề và nơi đào tạo"
+      action={
+        <CustomButton onClick={() => setShowCreateModal(true)} className="w-full sm:w-auto">
           <Plus className="w-4 h-4 mr-2" />
           Tạo bản ghi
         </CustomButton>
-      </div>
-
+      }
+    >
       {/* Create Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4 overflow-y-auto h-screen w-screen">
@@ -857,7 +852,7 @@ export default function HuongNghiepAdminPage() {
               ) : trainingPlaces.length === 0 ? (
                 <div className="p-8 text-center text-gray-500 dark:text-gray-400">Chưa có nơi đào tạo nào</div>
               ) : (
-                <div className="overflow-x-auto">
+                <AdminTableScroll minWidth={860}>
                   <table className="w-full">
                     <thead className="bg-gray-50 dark:bg-gray-900">
                       <tr>
@@ -921,7 +916,7 @@ export default function HuongNghiepAdminPage() {
                       ))}
                     </tbody>
                   </table>
-                </div>
+                </AdminTableScroll>
               )}
             </div>
           </div>
@@ -973,89 +968,15 @@ export default function HuongNghiepAdminPage() {
                 ))}
               </div>
 
-              {/* Industry Pagination */}
-              {industries.length > 0 && (
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 border-t border-gray-200 dark:border-gray-800">
-                  <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                    <span>Hiển thị</span>
-                    <div className="relative" ref={industryPerPageDropdownRef}>
-                      <button
-                        type="button"
-                        onClick={() => setIsIndustryPerPageOpen(!isIndustryPerPageOpen)}
-                        className="min-w-[60px] px-3 py-1 text-sm font-medium border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 transition-all duration-200 focus:outline-none cursor-pointer flex items-center justify-between gap-2 border-gray-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 dark:focus:border-blue-400"
-                      >
-                        <span>{industryItemsPerPage}</span>
-                        <ChevronDown className={`w-3.5 h-3.5 text-gray-600 dark:text-gray-400 transition-transform duration-200 ${isIndustryPerPageOpen ? 'rotate-180' : ''}`} />
-                      </button>
-                      {isIndustryPerPageOpen && (
-                        <div className="absolute z-[9999] w-full bottom-full mb-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg overflow-hidden">
-                          {PAGINATION_OPTIONS.map((option) => (
-                            <button
-                              key={option}
-                              type="button"
-                              onClick={() => {
-                                handleIndustryItemsPerPageChange(option);
-                                setIsIndustryPerPageOpen(false);
-                              }}
-                              className="w-full px-3 py-2 text-sm text-left hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center justify-between transition-colors"
-                            >
-                              <span className="text-gray-900 dark:text-gray-100">{option}</span>
-                              {industryItemsPerPage === option && (
-                                <Check className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-                              )}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                    <span>{industryStartIndex + 1} - {Math.min(industryEndIndex, industries.length)} của {industries.length} bản ghi</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {/* Về trang đầu */}
-                    <button
-                      onClick={() => handleIndustryPageChange(1)}
-                      disabled={industryCurrentPage === 1}
-                      className="p-2 rounded-md border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                      title="Trang đầu"
-                    >
-                      <ChevronsLeft className="w-4 h-4" />
-                    </button>
-
-                    {/* Lùi 1 trang */}
-                    <button
-                      onClick={() => handleIndustryPageChange(Math.max(1, industryCurrentPage - 1))}
-                      disabled={industryCurrentPage === 1}
-                      className="p-2 rounded-md border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                    >
-                      <ChevronLeft className="w-4 h-4" />
-                    </button>
-
-                    {/* Hiển thị trang hiện tại / tổng trang */}
-                    <div className="px-3 py-1.5 text-sm font-medium rounded-md bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800">
-                      {industryCurrentPage} / {industryTotalPages}
-                    </div>
-
-                    {/* Tới 1 trang */}
-                    <button
-                      onClick={() => handleIndustryPageChange(Math.min(industryTotalPages, industryCurrentPage + 1))}
-                      disabled={industryCurrentPage === industryTotalPages}
-                      className="p-2 rounded-md border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                    >
-                      <ChevronRight className="w-4 h-4" />
-                    </button>
-
-                    {/* Về trang cuối */}
-                    <button
-                      onClick={() => handleIndustryPageChange(industryTotalPages)}
-                      disabled={industryCurrentPage === industryTotalPages}
-                      className="p-2 rounded-md border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                      title="Trang cuối"
-                    >
-                      <ChevronsRight className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              )}
+              <AdminPagination
+                page={industryCurrentPage}
+                totalPages={industryTotalPages}
+                totalItems={industries.length}
+                pageSize={industryItemsPerPage}
+                onPageChange={handleIndustryPageChange}
+                onPageSizeChange={handleIndustryItemsPerPageChange}
+                pageSizeOptions={[4, 8, 12, 16]}
+              />
             </>
           )}
         </>
@@ -1071,7 +992,7 @@ export default function HuongNghiepAdminPage() {
             ) : trainingPlaces.length === 0 ? (
               <div className="p-8 text-center text-gray-500 dark:text-gray-400">Chưa có nơi đào tạo nào</div>
             ) : (
-              <div className="overflow-x-auto">
+              <AdminTableScroll minWidth={860}>
                 <table className="w-full">
                   <thead className="bg-gray-50 dark:bg-gray-900">
                     <tr>
@@ -1135,92 +1056,17 @@ export default function HuongNghiepAdminPage() {
                     ))}
                   </tbody>
                 </table>
-              </div>
+              </AdminTableScroll>
             )}
 
-            {/* Pagination */}
-            {trainingPlaces.length > 0 && (
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 border-t border-gray-200 dark:border-gray-800">
-                <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                  <span>Hiển thị</span>
-                  <div className="relative" ref={perPageDropdownRef}>
-                    <button
-                      type="button"
-                      onClick={() => setIsPerPageOpen(!isPerPageOpen)}
-                      className="min-w-[60px] px-3 py-1 text-sm font-medium border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 transition-all duration-200 focus:outline-none cursor-pointer flex items-center justify-between gap-2 border-gray-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 dark:focus:border-blue-400"
-                    >
-                      <span>{itemsPerPage}</span>
-                      <ChevronDown className={`w-3.5 h-3.5 text-gray-600 dark:text-gray-400 transition-transform duration-200 ${isPerPageOpen ? 'rotate-180' : ''}`} />
-                    </button>
-                    {isPerPageOpen && (
-                      <div className="absolute z-[9999] w-full bottom-full mb-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg overflow-hidden">
-                        {PAGINATION_OPTIONS.map((option) => (
-                          <button
-                            key={option}
-                            type="button"
-                            onClick={() => {
-                              handleItemsPerPageChange(option);
-                              setIsPerPageOpen(false);
-                            }}
-                            className="w-full px-3 py-2 text-sm text-left hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center justify-between transition-colors"
-                          >
-                            <span className="text-gray-900 dark:text-gray-100">{option}</span>
-                            {itemsPerPage === option && (
-                              <Check className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-                            )}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  <span>{startIndex + 1} - {Math.min(endIndex, trainingPlaces.length)} của {trainingPlaces.length} bản ghi</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  {/* Về trang đầu */}
-                  <button
-                    onClick={() => handlePageChange(1)}
-                    disabled={currentPage === 1}
-                    className="p-2 rounded-md border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                    title="Trang đầu"
-                  >
-                    <ChevronsLeft className="w-4 h-4" />
-                  </button>
-
-                  {/* Lùi 1 trang */}
-                  <button
-                    onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
-                    disabled={currentPage === 1}
-                    className="p-2 rounded-md border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                  </button>
-
-                  {/* Hiển thị trang hiện tại / tổng trang */}
-                  <div className="px-3 py-1.5 text-sm font-medium rounded-md bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800">
-                    {currentPage} / {totalPages}
-                  </div>
-
-                  {/* Tới 1 trang */}
-                  <button
-                    onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
-                    disabled={currentPage === totalPages}
-                    className="p-2 rounded-md border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                  >
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-
-                  {/* Về trang cuối */}
-                  <button
-                    onClick={() => handlePageChange(totalPages)}
-                    disabled={currentPage === totalPages}
-                    className="p-2 rounded-md border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                    title="Trang cuối"
-                  >
-                    <ChevronsRight className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            )}
+            <AdminPagination
+              page={currentPage}
+              totalPages={totalPages}
+              totalItems={trainingPlaces.length}
+              pageSize={itemsPerPage}
+              onPageChange={handlePageChange}
+              onPageSizeChange={handleItemsPerPageChange}
+            />
           </div>
         </>
       )}
@@ -1302,6 +1148,6 @@ export default function HuongNghiepAdminPage() {
           </div>
         </div>
       )}
-    </div>
+    </AdminPageShell>
   );
 }

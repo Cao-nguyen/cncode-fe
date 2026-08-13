@@ -23,8 +23,11 @@ import { CustomInputSearch } from '@/components/custom/CustomInputSearch';
 import { ConfirmModalDelete } from '@/components/custom/ConfirmationModal';
 import { DashboardCard } from '@/components/custom/DashboardCard';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { AdminPageShell } from '@/components/admin/AdminPageShell';
+import { AdminPagination } from '@/components/admin/AdminPagination';
+import { AdminTableScroll } from '@/components/admin/AdminTableScroll';
 import {
-    Eye, Settings, Trash2, X, ChevronLeft, ChevronRight,
+    Eye, Settings, Trash2, X,
     MessageSquare, Clock, Pin, Lock, AlertTriangle,
 } from 'lucide-react';
 import { format } from 'date-fns';
@@ -248,12 +251,10 @@ export default function AdminFeedbackPage() {
     const fmtDate = (date: string) => format(new Date(date), 'dd/MM/yyyy HH:mm', { locale: vi });
 
     return (
-        <div className="space-y-6 pb-8">
-            <div>
-                <h1 className="text-2xl font-bold text-gray-800 sm:text-3xl">Quản lý góp ý</h1>
-                <p className="mt-1 text-sm text-gray-500">Theo dõi, phản hồi và xử lý góp ý từ người dùng</p>
-            </div>
-
+        <AdminPageShell
+            title="Quản lý góp ý"
+            description="Theo dõi, phản hồi và xử lý góp ý từ người dùng"
+        >
             <div className="inline-flex rounded-lg border border-gray-200 bg-white p-0.5 shadow-sm">
                 {[
                     { value: 'feedbacks', label: 'Góp ý' },
@@ -298,8 +299,8 @@ export default function AdminFeedbackPage() {
             </div>
 
             <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-                <div className="overflow-x-auto">
-                    <table className="w-full min-w-[980px]">
+                <AdminTableScroll minWidth={980}>
+                    <table className="w-full">
                         <thead className="border-b bg-gray-50 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
                             <tr>
                                 <th className="px-5 py-3">Người dùng</th>
@@ -345,17 +346,14 @@ export default function AdminFeedbackPage() {
                             ))}
                         </tbody>
                     </table>
-                </div>
-                {totalPages > 1 && (
-                    <div className="flex items-center justify-between border-t border-gray-200 px-5 py-3">
-                        <p className="text-xs text-gray-500">{(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, total)} / {total}</p>
-                        <div className="flex items-center gap-2">
-                            <button type="button" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1} className="rounded-lg border p-2 disabled:opacity-40"><ChevronLeft className="h-4 w-4" /></button>
-                            <span className="text-xs text-gray-500">{page} / {totalPages}</span>
-                            <button type="button" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages} className="rounded-lg border p-2 disabled:opacity-40"><ChevronRight className="h-4 w-4" /></button>
-                        </div>
-                    </div>
-                )}
+                </AdminTableScroll>
+                <AdminPagination
+                    page={page}
+                    totalPages={totalPages}
+                    totalItems={total}
+                    pageSize={PAGE_SIZE}
+                    onPageChange={setPage}
+                />
             </div>
 
             {detailTarget && (
@@ -426,6 +424,6 @@ export default function AdminFeedbackPage() {
             />
                 </>
             )}
-        </div>
+        </AdminPageShell>
     );
 }

@@ -18,6 +18,8 @@ import { uploadApi } from '@/lib/upload';
 import { toast } from 'sonner';
 import * as dautruongApi from '@/lib/api/dautruong.api';
 import { Contest } from '@/lib/api/dautruong.api';
+import { AdminPageShell } from '@/components/admin/AdminPageShell';
+import { AdminTableScroll } from '@/components/admin/AdminTableScroll';
 
 interface AdminContest extends Contest {
     createdBy?: { _id: string; name: string; email: string };
@@ -283,32 +285,30 @@ export default function AdminDauTruongPage() {
     );
 
     return (
-        <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Đấu trường học tập</h1>
-                    <p className="text-gray-500 dark:text-gray-400">Quản lý các cuộc thi</p>
-                </div>
-                <CustomButton onClick={handleCreate} className="gap-2">
+        <AdminPageShell
+            title="Đấu trường học tập"
+            description="Quản lý các cuộc thi"
+            action={
+                <CustomButton onClick={handleCreate} className="w-full gap-2 sm:w-auto">
                     <Plus className="h-4 w-4" />
                     Tạo cuộc thi
                 </CustomButton>
-            </div>
-
-            <div className="flex items-center gap-4">
-                <div className="flex-1">
+            }
+        >
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+                <div className="flex-1 min-w-0">
                     <CustomInputSearch
                         placeholder="Tìm kiếm cuộc thi..."
                         value={searchQuery}
                         onChange={setSearchQuery}
                     />
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 overflow-x-auto pb-1 sm:pb-0">
                     {STATUS_TABS.map(tab => (
                         <button
                             key={tab.value}
                             onClick={() => setStatusFilter(tab.value)}
-                            className={`px-4 py-2 rounded-lg font-medium transition-colors ${statusFilter === tab.value
+                            className={`shrink-0 px-3 py-2 rounded-lg text-sm font-medium transition-colors sm:px-4 ${statusFilter === tab.value
                                 ? 'bg-blue-500 text-white'
                                 : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
                                 }`}
@@ -323,6 +323,7 @@ export default function AdminDauTruongPage() {
                 <TableSkeleton />
             ) : (
                 <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden">
+                    <AdminTableScroll minWidth={860}>
                     <table className="w-full">
                         <thead className="bg-gray-50 dark:bg-gray-900">
                             <tr>
@@ -427,6 +428,7 @@ export default function AdminDauTruongPage() {
                             ))}
                         </tbody>
                     </table>
+                    </AdminTableScroll>
                     {filteredContests.length === 0 && (
                         <div className="text-center py-12 text-gray-500 dark:text-gray-400">
                             Không có cuộc thi nào
@@ -840,6 +842,6 @@ export default function AdminDauTruongPage() {
                     </div>
                 </div>
             )}
-        </div>
+        </AdminPageShell>
     );
 }

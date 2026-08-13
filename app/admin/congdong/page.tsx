@@ -28,6 +28,9 @@ import { ReminderDisplay } from '@/components/custom/ReminderDisplay';
 import { FileDisplay } from '@/components/custom/FileDisplay';
 import { FriendRequestModal } from '@/components/custom/FriendRequestModal';
 import { io, Socket } from 'socket.io-client';
+import { AdminPageShell } from '@/components/admin/AdminPageShell';
+import { AdminPagination } from '@/components/admin/AdminPagination';
+import { AdminTableScroll } from '@/components/admin/AdminTableScroll';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
@@ -109,6 +112,7 @@ export default function AdminCommunityPage() {
     const [deleting, setDeleting] = useState(false);
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
+    const [totalConversations, setTotalConversations] = useState(0);
 
     // Create/Edit group modal
     const [showModal, setShowModal] = useState(false);
@@ -294,6 +298,7 @@ export default function AdminCommunityPage() {
             if (data.success) {
                 setConversations(data.data);
                 setTotalPages(data.pagination.pages);
+                setTotalConversations(data.pagination.total ?? data.data.length);
             }
         } catch (error) {
             console.error('Error fetching conversations:', error);
@@ -854,19 +859,16 @@ export default function AdminCommunityPage() {
     }
 
     return (
-        <div className="space-y-6 pb-8 px-3 sm:px-4">
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <div>
-                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">Quản lý nhóm chat</h1>
-                    <p className="text-sm text-gray-500 mt-1">Quản lý các nhóm chat cộng đồng</p>
-                </div>
+        <AdminPageShell
+            title="Quản lý nhóm chat"
+            description="Quản lý các nhóm chat cộng đồng"
+            action={
                 <Button onClick={() => setShowModal(true)} className="gap-2 bg-[var(--cn-primary)] hover:bg-[var(--cn-primary-hover)] w-full sm:w-auto">
                     <Plus className="w-4 h-4" />
                     Tạo nhóm chat
                 </Button>
-            </div>
-
+            }
+        >
             {/* Stats Cards */}
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
                 <DashboardCard title="Tổng cuộc trò chuyện" value={stats.totalConversations} icon={<MessageCircle size={18} />} iconBgColor="#EFF6FF" iconColor="#3B82F6" />
@@ -891,7 +893,7 @@ export default function AdminCommunityPage() {
 
             {/* Groups Table - Desktop */}
             <div className="bg-white dark:bg-gray-900 rounded-xl border border-main/20 shadow-sm overflow-hidden hidden md:block">
-                <div className="overflow-x-auto">
+                <AdminTableScroll minWidth={900}>
                     <table className="w-full">
                         <thead className="bg-main/5 border-b border-main/20">
                             <tr>
@@ -983,7 +985,7 @@ export default function AdminCommunityPage() {
                             )}
                         </tbody>
                     </table>
-                </div>
+                </AdminTableScroll>
             </div>
 
             {/* Groups Cards - Mobile */}
@@ -1057,30 +1059,15 @@ export default function AdminCommunityPage() {
                 )}
             </div>
 
-            {/* Pagination */}
-            {totalPages > 1 && (
-                <div className="flex justify-center gap-2 mt-6">
-                    <Button
-                        variant="outline"
-                        onClick={() => setPage(p => Math.max(1, p - 1))}
-                        disabled={page === 1}
-                        className="text-sm"
-                    >
-                        Trước
-                    </Button>
-                    <span className="flex items-center px-4 text-sm text-[var(--cn-text-sub)]">
-                        Trang {page} / {totalPages}
-                    </span>
-                    <Button
-                        variant="outline"
-                        onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                        disabled={page === totalPages}
-                        className="text-sm"
-                    >
-                        Sau
-                    </Button>
-                </div>
-            )}
+            <AdminPagination
+                page={page}
+                totalPages={totalPages}
+                totalItems={totalConversations}
+                pageSize={20}
+                onPageChange={setPage}
+                itemLabel="nhóm chat"
+                className="mt-6 border-0"
+            />
 
             {/* Create/Edit Group Modal */}
             {showModal && (
@@ -1602,6 +1589,6 @@ export default function AdminCommunityPage() {
                     />
                 </div>
             )}
-        </div>
+        </AdminPageShell>
     );
 }

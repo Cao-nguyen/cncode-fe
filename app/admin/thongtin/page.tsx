@@ -27,6 +27,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { DeleteConfirmModal } from '@/components/common/DeleteConfirmModal';
+import { AdminPageShell } from '@/components/admin/AdminPageShell';
+import { AdminPagination } from '@/components/admin/AdminPagination';
 import { forumApi, IForumPost } from '@/lib/api/forum.api';
 import { toast } from 'sonner';
 
@@ -54,6 +56,7 @@ export default function AdminThongtinPage() {
   const [deleting, setDeleting] = useState(false);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
 
   useEffect(() => {
     fetchPosts();
@@ -67,6 +70,7 @@ export default function AdminThongtinPage() {
       const result = await forumApi.getPosts(page, 20);
       setPosts(result.data);
       setTotalPages(result.pagination.totalPages);
+      setTotal(result.pagination.total);
     } catch (error) {
       toast.error('Lỗi khi tải bài viết');
     } finally {
@@ -123,15 +127,10 @@ export default function AdminThongtinPage() {
   );
 
   return (
-    <div className="p-4 sm:p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Quản lý Thông tin</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Quản lý bài viết diễn đàn</p>
-        </div>
-      </div>
-
+    <AdminPageShell
+      title="Quản lý Thông tin"
+      description="Quản lý bài viết diễn đàn"
+    >
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <DashboardCard
@@ -241,30 +240,15 @@ export default function AdminThongtinPage() {
             </div>
           ))}
 
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-center gap-2 pt-4">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage(p => Math.max(1, p - 1))}
-                disabled={page === 1}
-              >
-                Trang trước
-              </Button>
-              <span className="text-sm text-gray-500">
-                Trang {page} / {totalPages}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                disabled={page === totalPages}
-              >
-                Trang sau
-              </Button>
-            </div>
-          )}
+          <AdminPagination
+            page={page}
+            totalPages={totalPages}
+            totalItems={total}
+            pageSize={20}
+            onPageChange={setPage}
+            itemLabel="bài viết"
+            className="border-0 pt-4"
+          />
         </div>
       )}
 
@@ -277,6 +261,6 @@ export default function AdminThongtinPage() {
         message="Bạn có chắc chắn muốn xóa bài viết này không?"
         isDeleting={deleting}
       />
-    </div>
+    </AdminPageShell>
   );
 }

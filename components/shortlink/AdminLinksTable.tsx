@@ -4,10 +4,12 @@
 import { useEffect, useRef, useState } from 'react';
 import {
     Search, ExternalLink, Trash2, MousePointerClick, Calendar,
-    User, Copy, Plus, ChevronLeft, ChevronRight, MoreHorizontal,
+    User, Copy, Plus, MoreHorizontal,
     Link as LinkIcon, Clock, AlertCircle, BarChart3,
-    Crown, Star, ArrowUpRight, Globe, XCircle, ChevronsLeft, ChevronsRight, ChevronDown, Check
+    Crown, Star, ArrowUpRight, Globe, XCircle,
 } from 'lucide-react';
+import { AdminPagination } from '@/components/admin/AdminPagination';
+import { AdminTableScroll } from '@/components/admin/AdminTableScroll';
 import { shortlinkApi } from '@/lib/api/shortlink.api';
 import { toast } from 'sonner';
 import type { ShortLinkWithUser } from '@/types/shortlink.type';
@@ -38,9 +40,7 @@ export function AdminLinksTable() {
     const [selectedLinkForChart, setSelectedLinkForChart] = useState<string | null>(null);
     const [now, setNow] = useState(Date.now());
     const [itemsPerPage, setItemsPerPage] = useState(15);
-    const [isPerPageOpen, setIsPerPageOpen] = useState(false);
     const PAGINATION_OPTIONS = [5, 10, 15, 25, 50];
-    const perPageDropdownRef = useRef<HTMLDivElement>(null);
     const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const fetchLinks = async (p: number, s: string) => {
@@ -184,8 +184,8 @@ export function AdminLinksTable() {
                 ) : (
                     <>
                         {}
-                        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-                            <div className="overflow-x-auto">
+                        <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+                            <AdminTableScroll size="lg">
                                 <table className="w-full">
                                     <thead className="bg-gray-50 border-b border-gray-200">
                                         <tr>
@@ -297,94 +297,18 @@ export function AdminLinksTable() {
                                         })}
                                     </tbody>
                                 </table>
-                            </div>
-                        </div>
+                            </AdminTableScroll>
 
-                        {}
-                        <div className="flex items-center justify-between pt-4">
-                            <div className="flex items-center gap-4">
-                                <div className="relative" ref={perPageDropdownRef}>
-                                    <button
-                                        onClick={() => setIsPerPageOpen(!isPerPageOpen)}
-                                        className="min-w-[60px] px-3 py-1 text-sm font-medium border rounded-lg bg-white text-gray-900 transition-all duration-200 focus:outline-none cursor-pointer flex items-center justify-between gap-2 border-gray-200 hover:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                                    >
-                                        <span>{itemsPerPage}</span>
-                                        <ChevronDown className={`w-3.5 h-3.5 text-gray-600 transition-transform duration-200 ${isPerPageOpen ? 'rotate-180' : ''}`} />
-                                    </button>
-                                    {isPerPageOpen && (
-                                        <div className="absolute z-[9999] w-full bottom-full mb-1 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden">
-                                            {PAGINATION_OPTIONS.map((option) => (
-                                                <button
-                                                    key={option}
-                                                    type="button"
-                                                    onClick={() => {
-                                                        setItemsPerPage(option);
-                                                        setPage(1);
-                                                        setIsPerPageOpen(false);
-                                                    }}
-                                                    className="w-full px-3 py-2 text-sm text-left hover:bg-gray-50 flex items-center justify-between transition-colors"
-                                                >
-                                                    <span className="text-gray-900">{option}</span>
-                                                    {itemsPerPage === option && (
-                                                        <Check className="w-3.5 h-3.5 text-blue-600" />
-                                                    )}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                                <span className="text-sm text-gray-600 dark:text-gray-400">
-                                    {links.length > 0 && (
-                                        <span>
-                                            {((page - 1) * itemsPerPage) + 1} - {Math.min(page * itemsPerPage, total)} của {total} bản ghi
-                                        </span>
-                                    )}
-                                </span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                {/* Về trang đầu */}
-                                <button
-                                    onClick={() => setPage(1)}
-                                    disabled={page === 1}
-                                    className="p-2 rounded-md border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                                    title="Trang đầu"
-                                >
-                                    <ChevronsLeft className="w-4 h-4" />
-                                </button>
-
-                                {/* Lùi 1 trang */}
-                                <button
-                                    onClick={() => setPage((p) => Math.max(1, p - 1))}
-                                    disabled={page === 1}
-                                    className="p-2 rounded-md border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                                >
-                                    <ChevronLeft className="w-4 h-4" />
-                                </button>
-
-                                {/* Hiển thị trang hiện tại / tổng trang */}
-                                <div className="px-3 py-1.5 text-sm font-medium rounded-md bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800">
-                                    {page} / {totalPages}
-                                </div>
-
-                                {/* Tới 1 trang */}
-                                <button
-                                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                                    disabled={page === totalPages}
-                                    className="p-2 rounded-md border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                                >
-                                    <ChevronRight className="w-4 h-4" />
-                                </button>
-
-                                {/* Về trang cuối */}
-                                <button
-                                    onClick={() => setPage(totalPages)}
-                                    disabled={page === totalPages}
-                                    className="p-2 rounded-md border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                                    title="Trang cuối"
-                                >
-                                    <ChevronsRight className="w-4 h-4" />
-                                </button>
-                            </div>
+                            <AdminPagination
+                                page={page}
+                                totalPages={totalPages}
+                                totalItems={total}
+                                pageSize={itemsPerPage}
+                                onPageChange={setPage}
+                                onPageSizeChange={setItemsPerPage}
+                                pageSizeOptions={PAGINATION_OPTIONS}
+                                className="border-t-0"
+                            />
                         </div>
                     </>
                 )}

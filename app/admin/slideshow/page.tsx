@@ -11,6 +11,7 @@ import {
 import { CustomButton } from '@/components/custom/CustomButton';
 import { ConfirmModalDelete } from '@/components/custom/ConfirmationModal';
 import { CardSkeleton } from '@/components/ui/skeleton';
+import { AdminPageShell } from '@/components/admin/AdminPageShell';
 
 const GRADIENT_PRESETS = [
     'from-blue-500 via-indigo-500 to-violet-500',
@@ -222,15 +223,15 @@ export default function AdminSlideshowPage() {
 
     if (loading) {
         return (
-            <div className="space-y-6 pb-8 px-4">
-                <div className="flex items-center justify-between mb-6">
-                    <div className="h-8 w-48 bg-gray-200 rounded animate-pulse"></div>
-                    <div className="h-10 w-32 bg-gray-200 rounded animate-pulse"></div>
+            <AdminPageShell title="Quản lý Slideshow" description="Banner 2 cột: Text + Ảnh góc phải">
+                <div className="flex items-center justify-between">
+                    <div className="h-8 w-48 bg-gray-200 rounded animate-pulse" />
+                    <div className="h-10 w-32 bg-gray-200 rounded animate-pulse" />
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     <CardSkeleton count={6} />
                 </div>
-            </div>
+            </AdminPageShell>
         );
     }
 
@@ -238,19 +239,16 @@ export default function AdminSlideshowPage() {
     const gradientClass = `bg-gradient-to-r ${gradient}`;
 
     return (
-        <div className="space-y-6 pb-8 px-4">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-gray-100">Quản lý Slideshow</h1>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Banner 2 cột: Text + Ảnh góc phải</p>
-                </div>
-                <CustomButton onClick={openCreate}>
+        <AdminPageShell
+            title="Quản lý Slideshow"
+            description="Banner 2 cột: Text + Ảnh góc phải"
+            action={
+                <CustomButton onClick={openCreate} className="w-full sm:w-auto">
                     <Plus size={18} />
                     Thêm slide
                 </CustomButton>
-            </div>
-
+            }
+        >
             {/* Slides list */}
             <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
                 <div className="p-4 space-y-3">
@@ -566,6 +564,6 @@ export default function AdminSlideshowPage() {
                 title="Xác nhận xoá slide"
                 message="Bạn có chắc chắn muốn xoá slide này? Hành động này không thể hoàn tác."
             />
-        </div>
+        </AdminPageShell>
     );
 }

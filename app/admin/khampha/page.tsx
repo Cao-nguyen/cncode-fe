@@ -28,6 +28,9 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { DeleteConfirmModal } from '@/components/common/DeleteConfirmModal';
+import { AdminPageShell } from '@/components/admin/AdminPageShell';
+import { AdminPagination } from '@/components/admin/AdminPagination';
+import { AdminTableScroll } from '@/components/admin/AdminTableScroll';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
@@ -88,6 +91,7 @@ export default function AdminKhamphaPage() {
   const [deleting, setDeleting] = useState(false);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
 
   useEffect(() => {
     fetchStats();
@@ -136,6 +140,7 @@ export default function AdminKhamphaPage() {
       if (data.success) {
         setVideos(data.data);
         setTotalPages(data.pagination?.totalPages || 1);
+        setTotal(data.pagination?.total || 0);
       }
     } catch (error) {
       console.error('Error fetching videos:', error);
@@ -218,15 +223,10 @@ export default function AdminKhamphaPage() {
   }
 
   return (
-    <div className="space-y-6 pb-8 px-3 sm:px-4">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">Quản lý Khám Phá</h1>
-          <p className="text-sm text-gray-500 mt-1">Quản lý video ngắn kiểu TikTok</p>
-        </div>
-      </div>
-
+    <AdminPageShell
+      title="Quản lý Khám Phá"
+      description="Quản lý video ngắn kiểu TikTok"
+    >
       {/* Stats Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         <DashboardCard 
@@ -311,7 +311,7 @@ export default function AdminKhamphaPage() {
 
       {/* Videos Table */}
       <div className="bg-white dark:bg-gray-900 rounded-xl border border-main/20 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
+        <AdminTableScroll minWidth={900}>
           <table className="w-full">
             <thead className="bg-main/5 border-b border-main/20">
               <tr>
@@ -454,34 +454,16 @@ export default function AdminKhamphaPage() {
               )}
             </tbody>
           </table>
-        </div>
+        </AdminTableScroll>
 
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between px-4 py-3 border-t border-main/20">
-            <p className="text-sm text-gray-500">
-              Trang {page} / {totalPages}
-            </p>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage(p => Math.max(1, p - 1))}
-                disabled={page === 1}
-              >
-                Trước
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                disabled={page === totalPages}
-              >
-                Sau
-              </Button>
-            </div>
-          </div>
-        )}
+        <AdminPagination
+          page={page}
+          totalPages={totalPages}
+          totalItems={total}
+          pageSize={20}
+          onPageChange={setPage}
+          itemLabel="video"
+        />
       </div>
 
       {/* Delete Confirm Modal */}
@@ -493,6 +475,6 @@ export default function AdminKhamphaPage() {
         message="Bạn có chắc chắn muốn xóa video này? Hành động này không thể hoàn tác."
         isDeleting={deleting}
       />
-    </div>
+    </AdminPageShell>
   );
 }

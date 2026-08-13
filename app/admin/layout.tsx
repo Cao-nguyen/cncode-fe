@@ -64,13 +64,13 @@ export default function AdminLayout({
                 className={`flex min-h-screen flex-col transition-[padding-left] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${sidebarOpen ? "lg:pl-64" : "lg:pl-0"
                     }`}
             >
-                <div className="m-2.5 flex h-[calc(100vh-20px)] flex-col rounded-2xl bg-white shadow-sm ring-1 ring-black/[0.06] dark:bg-[#0f0f0f] dark:ring-white/[0.06]">
+                <div className="m-1 flex h-[calc(100dvh-8px)] flex-col overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-black/[0.06] dark:bg-[#0f0f0f] dark:ring-white/[0.06] sm:m-2 sm:h-[calc(100vh-16px)] sm:rounded-2xl lg:m-2.5 lg:h-[calc(100vh-20px)]">
                     <NavAdmin
                         open={sidebarOpen}
                         onToggle={() => setSidebarOpen((v) => !v)}
                     />
-                    <div className="h-px w-full bg-black/[0.06] dark:bg-white/[0.06]" />
-                    <main className="flex-1 overflow-y-auto p-4 lg:p-6 scroll-auto no-scrollbar">
+                    <div className="h-px w-full shrink-0 bg-black/[0.06] dark:bg-white/[0.06]" />
+                    <main className="flex min-h-0 flex-1 flex-col overflow-y-auto p-3 scroll-auto no-scrollbar sm:p-4 lg:p-6">
                         {children}
                     </main>
                 </div>

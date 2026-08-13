@@ -21,6 +21,8 @@ import { CustomInputSearch } from '@/components/custom/CustomInputSearch';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DeleteConfirmModal } from '@/components/common/DeleteConfirmModal';
 import { DashboardCard } from '@/components/custom/DashboardCard';
+import { AdminPageShell } from '@/components/admin/AdminPageShell';
+import { AdminTableScroll } from '@/components/admin/AdminTableScroll';
 
 interface AdminChat {
   _id: string;
@@ -200,29 +202,23 @@ export default function AITutorAdminPage() {
 
   if (!token || user?.role !== 'admin') {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
           <Shield className="w-16 h-16 mx-auto mb-4 text-gray-400" />
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Không có quyền truy cập</h2>
-          <p className="text-gray-600">Bạn cần quyền admin để truy cập trang này</p>
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">Không có quyền truy cập</h2>
+          <p className="text-gray-500">Bạn cần quyền admin để truy cập trang này</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen">
-      {/* Header */}
-      <div className="bg-white px-6 py-4">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Quản lý Gia sư AI</h1>
-            <p className="text-sm text-gray-600 mt-1">Theo dõi các cuộc trò chuyện của người dùng</p>
-          </div>
-        </div>
-
-        {/* Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-4">
+    <AdminPageShell
+      title="Quản lý Gia sư AI"
+      description="Theo dõi các cuộc trò chuyện của người dùng"
+    >
+      {/* Stats */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
           {statCards.map((card) => (
             <DashboardCard
               key={card.key}
@@ -235,21 +231,16 @@ export default function AITutorAdminPage() {
               accentColor={card.accentColor}
             />
           ))}
-        </div>
-
       </div>
 
-      {/* Chat List */}
-      <div className="max-w-7xl mx-auto p-6">
-        {/* Search */}
-        <div className="mb-6">
-          <CustomInputSearch
-            placeholder="Tìm kiếm theo tên, email, tiêu đề..."
-            value={searchTerm}
-            onChange={setSearchTerm}
-          />
-        </div>
-        {loading ? (
+      {/* Search */}
+      <CustomInputSearch
+        placeholder="Tìm kiếm theo tên, email, tiêu đề..."
+        value={searchTerm}
+        onChange={setSearchTerm}
+      />
+
+      {loading ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
           </div>
@@ -262,32 +253,33 @@ export default function AITutorAdminPage() {
           </div>
         ) : (
           <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-            <div className="overflow-x-auto">
+            <AdminTableScroll minWidth={860}>
               <table className="w-full">
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Người dùng</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Tin nhắn</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Thời gian</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Hành động</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase sm:px-6">Người dùng</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase sm:px-6">Tin nhắn</th>
+                    <th className="hidden px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase md:table-cell">Thời gian</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase sm:px-6">Hành động</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
                   {filteredMessages.map(({ chat, message, originalIndex }, index) => (
                     <tr key={`${chat._id}-${index}`} className="hover:bg-gray-50 transition">
-                      <td className="px-6 py-4">
+                      <td className="px-4 py-4 sm:px-6">
                         <div>
                           <p className="font-medium text-gray-900">{chat.user?.fullName || 'Unknown'}</p>
-                          <p className="text-sm text-gray-600">{chat.user?.email || ''}</p>
+                          <p className="text-sm text-gray-600 truncate max-w-[140px] sm:max-w-none">{chat.user?.email || ''}</p>
                         </div>
                       </td>
-                      <td className="px-6 py-4">
-                        <p className="text-sm text-gray-900 whitespace-pre-wrap max-w-xl">{message.content}</p>
+                      <td className="px-4 py-4 sm:px-6">
+                        <p className="text-sm text-gray-900 whitespace-pre-wrap line-clamp-3 max-w-[200px] sm:max-w-xl">{message.content}</p>
+                        <p className="mt-1 text-xs text-gray-500 md:hidden">{formatMessageTime(message.timestamp)}</p>
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-600">
+                      <td className="hidden px-6 py-4 text-sm text-gray-600 md:table-cell">
                         {formatMessageTime(message.timestamp)}
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-4 py-4 sm:px-6">
                         <button
                           onClick={() => deleteMessage(chat._id, originalIndex)}
                           className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
@@ -300,10 +292,9 @@ export default function AITutorAdminPage() {
                   ))}
                 </tbody>
               </table>
-            </div>
+            </AdminTableScroll>
           </div>
         )}
-      </div>
 
       <DeleteConfirmModal
         isOpen={deleteModalOpen}
@@ -317,6 +308,6 @@ export default function AITutorAdminPage() {
         title="Xóa tin nhắn"
         message="Bạn có chắc chắn muốn xóa tin nhắn này không?"
       />
-    </div>
+    </AdminPageShell>
   );
 }

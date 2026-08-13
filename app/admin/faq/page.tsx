@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
     Eye, MessageCircle, Heart, Clock, Search, Lock, CheckCircle,
-    ChevronLeft, ChevronRight, Trash2, X, FileQuestion, BarChart3, Award,
+    Trash2, X, FileQuestion, BarChart3, Award,
 } from 'lucide-react';
 import { faqApi, getErrorMessage } from '@/lib/api/faq.api';
 import { Question, FaqStatistics, Answer, GRADE_LABELS } from '@/types/faq.type';
@@ -15,6 +15,10 @@ import { CustomSelect } from '@/components/custom/CustomSelect';
 import { ConfirmModalDelete } from '@/components/custom/ConfirmationModal';
 import { DashboardCard } from '@/components/custom/DashboardCard';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { AdminPageShell } from '@/components/admin/AdminPageShell';
+import { AdminPagination } from '@/components/admin/AdminPagination';
+import { AdminTableScroll } from '@/components/admin/AdminTableScroll';
+import { AdminChartScroll } from '@/components/admin/AdminChartScroll';
 import { toast } from 'sonner';
 import { getImageUrl } from '@/lib/utils/imageUrl';
 import { cn } from '@/lib/utils';
@@ -125,6 +129,7 @@ export default function AdminFAQPage() {
     const [loading, setLoading] = useState(true);
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
+    const [total, setTotal] = useState(0);
     const [status, setStatus] = useState('all');
     const [searchInput, setSearchInput] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
@@ -155,6 +160,7 @@ export default function AdminFAQPage() {
             });
             setQuestions(res.data || []);
             setTotalPages(res.pagination?.totalPages || 1);
+            setTotal(res.pagination?.total || 0);
         } catch {
             toast.error('Không thể tải danh sách');
         } finally {
@@ -201,12 +207,10 @@ export default function AdminFAQPage() {
     };
 
     return (
-        <div className="space-y-6 pb-8">
-            <div>
-                <h1 className="text-2xl font-bold text-gray-800 sm:text-3xl">Quản lý hỏi đáp</h1>
-                <p className="mt-1 text-sm text-gray-500">Quản lý câu hỏi và câu trả lời từ cộng đồng</p>
-            </div>
-
+        <AdminPageShell
+            title="Quản lý hỏi đáp"
+            description="Quản lý câu hỏi và câu trả lời từ cộng đồng"
+        >
             {stats && (
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
                     <DashboardCard title="Tổng câu hỏi" value={stats.totalQuestions} icon={<FileQuestion size={18} />} iconBgColor="#EFF6FF" iconColor="#3B82F6" />
@@ -221,6 +225,7 @@ export default function AdminFAQPage() {
                 <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                     <div className="rounded-xl border border-gray-200 bg-white p-5">
                         <h3 className="mb-4 flex items-center gap-2 text-sm font-medium text-gray-800"><BarChart3 className="h-4 w-4" />Xu hướng theo tháng</h3>
+                        <AdminChartScroll>
                         <ResponsiveContainer width="100%" height={200}>
                             <BarChart data={monthlyChartData}>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
@@ -230,9 +235,11 @@ export default function AdminFAQPage() {
                                 <Bar dataKey="count" fill="#3b82f6" radius={[4, 4, 0, 0]} />
                             </BarChart>
                         </ResponsiveContainer>
+                        </AdminChartScroll>
                     </div>
                     <div className="rounded-xl border border-gray-200 bg-white p-5">
                         <h3 className="mb-4 flex items-center gap-2 text-sm font-medium text-gray-800"><Award className="h-4 w-4" />Theo khối lớp</h3>
+                        <AdminChartScroll>
                         <ResponsiveContainer width="100%" height={200}>
                             <PieChart>
                                 <Pie data={gradeChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={70} label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}>
@@ -241,6 +248,7 @@ export default function AdminFAQPage() {
                                 <Tooltip />
                             </PieChart>
                         </ResponsiveContainer>
+                        </AdminChartScroll>
                     </div>
                 </div>
             )}
@@ -255,7 +263,7 @@ export default function AdminFAQPage() {
             </div>
 
             <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-                <div className="overflow-x-auto">
+                <AdminTableScroll minWidth={900}>
                     <table className="w-full">
                         <thead className="border-b bg-gray-50 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
                             <tr>
@@ -304,21 +312,19 @@ export default function AdminFAQPage() {
                             })}
                         </tbody>
                     </table>
-                </div>
-                {totalPages > 1 && (
-                    <div className="flex items-center justify-between border-t px-5 py-3">
-                        <span className="text-xs text-gray-500">Trang {page} / {totalPages}</span>
-                        <div className="flex gap-2">
-                            <button type="button" disabled={page === 1} onClick={() => setPage((p) => p - 1)} className="rounded-lg border p-2 disabled:opacity-40"><ChevronLeft className="h-4 w-4" /></button>
-                            <button type="button" disabled={page === totalPages} onClick={() => setPage((p) => p + 1)} className="rounded-lg border p-2 disabled:opacity-40"><ChevronRight className="h-4 w-4" /></button>
-                        </div>
-                    </div>
-                )}
+                </AdminTableScroll>
+                <AdminPagination
+                    page={page}
+                    totalPages={totalPages}
+                    totalItems={total}
+                    pageSize={15}
+                    onPageChange={setPage}
+                />
             </div>
 
             <ViewQuestionModal question={viewTarget} onClose={() => setViewTarget(null)} />
             <AnswerModal question={answerTarget} onClose={() => setAnswerTarget(null)} onSuccess={() => { fetchQuestions(true); faqApi.adminGetStatistics().then((r) => { if (r.success) setStats(r.data); }); }} />
             <ConfirmModalDelete isOpen={!!deleteTarget} onClose={() => setDeleteTarget(null)} onConfirm={handleDelete} title="Xóa câu hỏi" message={deleteTarget ? `Xóa "${deleteTarget.title}"?` : ''} />
-        </div>
+        </AdminPageShell>
     );
 }

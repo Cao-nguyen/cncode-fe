@@ -7,10 +7,6 @@ import { useSocket } from '@/providers/socket.provider';
 import { affiliateApi } from '@/lib/api/affiliate.api';
 import { IAffiliateStat } from '@/types/affiliate.type';
 import {
-    ChevronLeft,
-    ChevronRight,
-    ChevronsLeft,
-    ChevronsRight,
     Loader2,
     Users,
     FileText,
@@ -32,6 +28,9 @@ import { toast } from 'sonner';
 import { DashboardCard } from '@/components/custom/DashboardCard';
 import { CustomInputSearch } from '@/components/custom/CustomInputSearch';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { AdminPageShell } from '@/components/admin/AdminPageShell';
+import { AdminPagination } from '@/components/admin/AdminPagination';
+import { AdminTableScroll } from '@/components/admin/AdminTableScroll';
 
 const PAGE_SIZE = 10;
 
@@ -135,31 +134,6 @@ export default function AdminAffiliatePage() {
         return format(new Date(date), 'dd/MM/yyyy HH:mm', { locale: vi });
     };
 
-    const getPageNumbers = () => {
-        const pages: (number | string)[] = [];
-        const maxVisible = isMobile ? 3 : 5;
-        if (totalPages <= maxVisible) {
-            for (let i = 1; i <= totalPages; i++) pages.push(i);
-        } else {
-            if (page <= (isMobile ? 2 : 3)) {
-                for (let i = 1; i <= maxVisible; i++) pages.push(i);
-                pages.push('...');
-                pages.push(totalPages);
-            } else if (page >= totalPages - (isMobile ? 1 : 2)) {
-                pages.push(1);
-                pages.push('...');
-                for (let i = totalPages - (maxVisible - 1); i <= totalPages; i++) pages.push(i);
-            } else {
-                pages.push(1);
-                pages.push('...');
-                for (let i = page - (isMobile ? 0 : 1); i <= page + (isMobile ? 0 : 1); i++) pages.push(i);
-                pages.push('...');
-                pages.push(totalPages);
-            }
-        }
-        return pages;
-    };
-
     const cardConfigs = [
         { key: 'registered', title: 'Đã đăng ký', value: totals.registered.toLocaleString(), icon: <Users size={18} />, iconBgColor: '#EFF6FF', iconColor: '#3B82F6' },
         { key: 'posted', title: 'Bài viết', value: totals.posted.toLocaleString(), icon: <FileText size={18} />, iconBgColor: '#F0FDF4', iconColor: '#22C55E' },
@@ -177,19 +151,15 @@ export default function AdminAffiliatePage() {
     }
 
     return (
-        <div className="space-y-6 pb-8 px-3 sm:px-4">
-            { }
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <div>
-                    <h1 className="text-2xl sm:text-3xl font-bold text-[var(--cn-text-main)]">Tiếp thị liên kết</h1>
-                    <p className="text-sm text-[var(--cn-text-muted)] mt-1">Quản lý link giới thiệu của người dùng</p>
+        <AdminPageShell
+            title="Tiếp thị liên kết"
+            description="Quản lý link giới thiệu của người dùng"
+            extra={
+                <div className="bg-blue-50 px-4 py-2 rounded-full">
+                    <span className="text-sm font-medium text-blue-600">Tổng: {total} người</span>
                 </div>
-                <div className="bg-[var(--cn-primary)]/10 px-4 py-2 rounded-full">
-                    <span className="text-sm font-medium text-[var(--cn-primary)]">Tổng: {total} người</span>
-                </div>
-            </div>
-
-            { }
+            }
+        >
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
                 {cardConfigs.map((card) => (
                     <DashboardCard
@@ -207,8 +177,8 @@ export default function AdminAffiliatePage() {
 
             { }
             <div className="bg-[var(--cn-bg-card)] rounded-xl shadow-sm border border-[var(--cn-border)] overflow-hidden">
-                <div className="overflow-x-auto">
-                    <table className="w-full min-w-[900px]">
+                <AdminTableScroll minWidth={900}>
+                    <table className="w-full">
                         <thead className="bg-[var(--cn-primary)]/5 border-b border-[var(--cn-border)]">
                             <tr>
                                 <th className="text-left px-5 py-4 text-xs font-semibold text-[var(--cn-text-muted)] uppercase">Người dùng</th>
@@ -333,40 +303,15 @@ export default function AdminAffiliatePage() {
                             )}
                         </tbody>
                     </table>
-                </div>
+                </AdminTableScroll>
 
-                { }
-                {totalPages > 1 && (
-                    <div className="border-t border-[var(--cn-border)] px-5 py-4 flex items-center justify-between">
-                        <div className="text-sm text-[var(--cn-text-muted)]">
-                            Hiển thị {(page - 1) * PAGE_SIZE + 1} - {Math.min(page * PAGE_SIZE, total)} trên {total}
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <button onClick={() => setPage(1)} disabled={page === 1} className="p-2 border border-[var(--cn-border)] rounded-lg disabled:opacity-40 hover:bg-[var(--cn-hover)] transition"><ChevronsLeft size={16} /></button>
-                            <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="p-2 border border-[var(--cn-border)] rounded-lg disabled:opacity-40 hover:bg-[var(--cn-hover)] transition"><ChevronLeft size={16} /></button>
-                            <div className="flex items-center gap-1">
-                                {getPageNumbers().map((pageNum, idx) => (
-                                    pageNum === '...' ? (
-                                        <span key={idx} className="px-2 text-[var(--cn-text-muted)]">...</span>
-                                    ) : (
-                                        <button
-                                            key={pageNum}
-                                            onClick={() => setPage(pageNum as number)}
-                                            className={`min-w-[32px] h-8 px-2 rounded-lg text-sm font-medium transition ${page === pageNum
-                                                ? 'bg-[var(--cn-primary)] text-white'
-                                                : 'hover:bg-[var(--cn-hover)] text-[var(--cn-text-sub)]'
-                                                }`}
-                                        >
-                                            {pageNum}
-                                        </button>
-                                    )
-                                ))}
-                            </div>
-                            <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} className="p-2 border border-[var(--cn-border)] rounded-lg disabled:opacity-40 hover:bg-[var(--cn-hover)] transition"><ChevronRight size={16} /></button>
-                            <button onClick={() => setPage(totalPages)} disabled={page === totalPages} className="p-2 border border-[var(--cn-border)] rounded-lg disabled:opacity-40 hover:bg-[var(--cn-hover)] transition"><ChevronsRight size={16} /></button>
-                        </div>
-                    </div>
-                )}
+                <AdminPagination
+                    page={page}
+                    totalPages={totalPages}
+                    totalItems={total}
+                    pageSize={PAGE_SIZE}
+                    onPageChange={setPage}
+                />
             </div>
 
             { }
@@ -445,6 +390,6 @@ export default function AdminAffiliatePage() {
                     </div>
                 </div>
             )}
-        </div>
+        </AdminPageShell>
     );
 }

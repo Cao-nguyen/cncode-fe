@@ -9,6 +9,7 @@ import io, { Socket } from 'socket.io-client';
 import type { AdminChatMessage, AdminChatConversation, UserStatusEvent, OnlineUser, WorkingHours } from '@/types/adminchat.type';
 import { ImagePreviewModal } from '@/components/custom/ImagePreviewModal';
 import { getImageUrl } from '@/lib/utils/imageUrl';
+import { AdminPageHeader, adminPageClass } from '@/components/admin/AdminPageShell';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
@@ -568,11 +569,16 @@ export default function AdminChatPage() {
     const isUserTyping = selectedConvData ? typingUsers.has(selectedConvData.userId?._id || '') : false;
 
     return (
-        <div className="flex h-[calc(100vh-125px)] bg-white">
+        <div className={adminPageClass}>
+            <AdminPageHeader
+                title="Chat với người dùng"
+                description="Quản lý tin nhắn hỗ trợ từ người dùng"
+            />
+            <div className="-mx-3 -mb-3 flex min-h-0 flex-1 flex-col overflow-hidden bg-white md:flex-row sm:-mx-4 sm:-mb-4 lg:-mx-6 lg:-mb-6">
             <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageSelect} className="hidden" />
 
             {/* Sidebar - Conversations */}
-            <aside className={`w-full md:w-80 border-r border-slate-200 flex flex-col bg-slate-50 ${selectedConv ? 'hidden md:flex' : 'flex'}`}>
+            <aside className={`w-full md:w-80 border-r border-slate-200 flex flex-col bg-slate-50 min-h-0 ${selectedConv ? 'hidden md:flex' : 'flex'}`}>
                 <div className="p-4 border-b border-slate-200 bg-white">
                     <div className="flex items-center justify-between mb-3">
                         <h2 className="text-lg font-bold text-slate-800">Tin nhắn hỗ trợ</h2>
@@ -677,7 +683,7 @@ export default function AdminChatPage() {
             </aside>
 
             {/* Main Chat Area */}
-            <main className="flex-1 flex flex-col">
+            <main className={`flex min-h-0 flex-1 flex-col ${selectedConv ? 'flex' : 'hidden md:flex'}`}>
                 {!selectedConv ? (
                     <div className="flex-1 flex items-center justify-center bg-slate-50">
                         <div className="text-center">
@@ -719,7 +725,7 @@ export default function AdminChatPage() {
                         </header>
 
                         {/* Messages */}
-                        <div ref={messagesContainerRef} className="flex-1 overflow-y-auto px-6 py-4 bg-slate-50">
+                        <div ref={messagesContainerRef} className="flex-1 overflow-y-auto px-3 py-4 bg-slate-50 sm:px-6">
                             {messages.length === 0 ? (
                                 <div className="flex items-center justify-center h-full">
                                     <p className="text-slate-400">Chưa có tin nhắn</p>
@@ -1001,6 +1007,7 @@ export default function AdminChatPage() {
                     </div>
                 </div>
             )}
+        </div>
         </div>
     );
 }

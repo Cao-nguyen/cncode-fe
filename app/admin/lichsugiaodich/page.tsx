@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
     Coins, Landmark, TrendingUp, TrendingDown, CheckCircle2, Clock, XCircle,
-    Loader2, ChevronLeft, ChevronRight, Receipt,
+    Loader2, Receipt,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -15,6 +15,9 @@ import {
     type AdminPayOSTransactionRow,
     type AdminTransactionStats,
 } from '@/lib/api/transaction.api';
+import { AdminPageShell } from '@/components/admin/AdminPageShell';
+import { AdminPagination } from '@/components/admin/AdminPagination';
+import { AdminTableScroll } from '@/components/admin/AdminTableScroll';
 
 type TabType = 'xu' | 'payos';
 const PAGE_SIZE = 10;
@@ -104,16 +107,12 @@ export default function AdminTransactionHistoryPage() {
     };
 
     return (
-        <div className="p-4 md:p-6">
-            <div className="mb-6">
-                <h1 className="text-xl font-bold text-[var(--cn-text-main)] md:text-2xl">Lịch sử giao dịch</h1>
-                <p className="mt-1 text-sm text-[var(--cn-text-sub)]">
-                    Theo dõi toàn bộ giao dịch xu và PayOS trên hệ thống
-                </p>
-            </div>
-
+        <AdminPageShell
+            title="Lịch sử giao dịch"
+            description="Theo dõi toàn bộ giao dịch xu và PayOS trên hệ thống"
+        >
             {stats && (
-                <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
+                <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
                     <DashboardCard title="Giao dịch xu" value={stats.totalCoinCount} icon={<Coins size={18} />} iconBgColor="#EFF6FF" iconColor="#2563EB" />
                     <DashboardCard title="Xu phát sinh" value={`+${stats.coinCreditTotal.toLocaleString()}`} icon={<TrendingUp size={18} />} iconBgColor="#ECFDF5" iconColor="#059669" />
                     <DashboardCard title="Xu tiêu" value={`−${stats.coinDebitTotal.toLocaleString()}`} icon={<TrendingDown size={18} />} iconBgColor="#FEF2F2" iconColor="#DC2626" />
@@ -121,7 +120,7 @@ export default function AdminTransactionHistoryPage() {
                 </div>
             )}
 
-            <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                 <div className="inline-flex w-fit rounded-lg border border-[var(--cn-border)] bg-[var(--cn-bg-section)] p-0.5">
                     <button
                         type="button"
@@ -155,7 +154,7 @@ export default function AdminTransactionHistoryPage() {
             </div>
 
             <div className="overflow-hidden rounded-xl border border-[var(--cn-border)] bg-[var(--cn-bg-card)]">
-                <div className="overflow-x-auto">
+                <AdminTableScroll minWidth={880}>
                     {loading ? (
                         <div className="flex justify-center py-20">
                             <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
@@ -248,34 +247,17 @@ export default function AdminTransactionHistoryPage() {
                             </tbody>
                         </table>
                     )}
-                </div>
+                </AdminTableScroll>
 
-                <div className="flex flex-col gap-3 border-t border-[var(--cn-border)] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-                    <span className="text-xs text-[var(--cn-text-muted)]">
-                        {pagination.total === 0
-                            ? 'Không có giao dịch'
-                            : `Trang ${pagination.page} / ${pagination.totalPages} · ${pagination.total} giao dịch`}
-                    </span>
-                    <div className="flex items-center gap-2">
-                        <button
-                            type="button"
-                            onClick={() => setPage((p) => Math.max(1, p - 1))}
-                            disabled={page <= 1 || loading}
-                            className="inline-flex items-center gap-1 rounded-lg border border-[var(--cn-border)] px-3 py-1.5 text-xs font-medium disabled:opacity-40"
-                        >
-                            <ChevronLeft className="h-4 w-4" /> Trước
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => setPage((p) => Math.min(pagination.totalPages, p + 1))}
-                            disabled={page >= pagination.totalPages || loading}
-                            className="inline-flex items-center gap-1 rounded-lg border border-[var(--cn-border)] px-3 py-1.5 text-xs font-medium disabled:opacity-40"
-                        >
-                            Sau <ChevronRight className="h-4 w-4" />
-                        </button>
-                    </div>
-                </div>
+                <AdminPagination
+                    page={page}
+                    totalPages={pagination.totalPages}
+                    totalItems={pagination.total}
+                    pageSize={PAGE_SIZE}
+                    onPageChange={setPage}
+                    itemLabel="giao dịch"
+                />
             </div>
-        </div>
+        </AdminPageShell>
     );
 }

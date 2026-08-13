@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, memo } from 'react';
+import { AdminChartScroll } from '@/components/admin/AdminChartScroll';
 import {
     BarChart3,
     TrendingUp,
@@ -114,6 +115,7 @@ const AdminUsersDashboard = memo(function AdminUsersDashboard({
                             <p className="text-xs text-gray-500">Tỉ lệ người dùng theo vai trò</p>
                         </div>
                     </div>
+                    <AdminChartScroll>
                     <ResponsiveContainer width="100%" height={isMobile ? 250 : 300}>
                         <PieChart>
                             <Pie
@@ -141,6 +143,7 @@ const AdminUsersDashboard = memo(function AdminUsersDashboard({
                             />
                         </PieChart>
                     </ResponsiveContainer>
+                    </AdminChartScroll>
                     <div className="mt-4 grid grid-cols-3 gap-2">
                         {roleDistributionData.map((item, idx) => (
                             <div key={idx} className="text-center p-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
@@ -164,6 +167,7 @@ const AdminUsersDashboard = memo(function AdminUsersDashboard({
                             <p className="text-xs text-gray-500">Tổng người dùng 7 ngày qua</p>
                         </div>
                     </div>
+                    <AdminChartScroll>
                     <ResponsiveContainer width="100%" height={isMobile ? 250 : 300}>
                         <AreaChart data={growthData}>
                             <defs>
@@ -200,6 +204,7 @@ const AdminUsersDashboard = memo(function AdminUsersDashboard({
                             />
                         </AreaChart>
                     </ResponsiveContainer>
+                    </AdminChartScroll>
                     <div className="mt-4 flex items-center justify-between px-2">
                         <div className="text-center">
                             <p className="text-xs text-gray-500">Tuần trước</p>
@@ -227,6 +232,7 @@ const AdminUsersDashboard = memo(function AdminUsersDashboard({
                             <p className="text-xs text-gray-500">Số lượng đăng ký mới mỗi ngày</p>
                         </div>
                     </div>
+                    <AdminChartScroll>
                     <ResponsiveContainer width="100%" height={isMobile ? 250 : 300}>
                         <LineChart data={growthData}>
                             <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
@@ -257,6 +263,7 @@ const AdminUsersDashboard = memo(function AdminUsersDashboard({
                             />
                         </LineChart>
                     </ResponsiveContainer>
+                    </AdminChartScroll>
                     <div className="mt-4 grid grid-cols-2 gap-3">
                         <div className="bg-green-50 p-3 rounded-lg">
                             <p className="text-xs text-gray-600 mb-1">Trung bình/ngày</p>
@@ -280,6 +287,7 @@ const AdminUsersDashboard = memo(function AdminUsersDashboard({
                             <p className="text-xs text-gray-500">Số người dùng theo khoảng xu</p>
                         </div>
                     </div>
+                    <AdminChartScroll>
                     <ResponsiveContainer width="100%" height={isMobile ? 250 : 300}>
                         <BarChart data={coinDistributionData}>
                             <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
@@ -303,6 +311,7 @@ const AdminUsersDashboard = memo(function AdminUsersDashboard({
                             </Bar>
                         </BarChart>
                     </ResponsiveContainer>
+                    </AdminChartScroll>
                     <div className="mt-4 bg-gradient-to-r from-yellow-50 to-orange-50 p-3 rounded-lg">
                         <div className="flex items-center justify-between">
                             <span className="text-xs text-gray-600">Tổng người dùng</span>
@@ -332,6 +341,7 @@ const AdminUsersDashboard = memo(function AdminUsersDashboard({
                     </div>
                 ) : (
                     <>
+                        <AdminChartScroll size="lg">
                         <ResponsiveContainer width="100%" height={isMobile ? 300 : 350}>
                             <BarChart data={topProvinces} layout="vertical">
                                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
@@ -357,6 +367,7 @@ const AdminUsersDashboard = memo(function AdminUsersDashboard({
                                 </Bar>
                             </BarChart>
                         </ResponsiveContainer>
+                        </AdminChartScroll>
                         <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-2">
                             {topProvinces.slice(0, 4).map((province, idx) => (
                                 <div key={idx} className="bg-gray-50 p-2 rounded-lg hover:bg-gray-100 transition-colors">

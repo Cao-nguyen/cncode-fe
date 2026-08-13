@@ -12,6 +12,8 @@ import {
     XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
     Area, AreaChart, LineChart, Line
 } from 'recharts';
+import { AdminPageShell } from '@/components/admin/AdminPageShell';
+import { AdminChartScroll } from '@/components/admin/AdminChartScroll';
 
 interface ComprehensiveStats {
     users: {
@@ -272,14 +274,11 @@ function AdminDashboardContent() {
 
     if (loading) {
         return (
-            <div className="min-h-screen p-3 sm:p-4 lg:p-6">
+            <AdminPageShell
+                title="Tổng quan hệ thống"
+                description="Thống kê và phân tích hoạt động của CNcode"
+            >
                 <div className="max-w-[1800px] mx-auto">
-                    {/* Header Skeleton */}
-                    <div className="mb-6 sm:mb-8">
-                        <div className="h-8 sm:h-10 lg:h-12 bg-gradient-to-r from-gray-200 to-gray-300 rounded-lg w-64 mb-2 animate-pulse"></div>
-                        <div className="h-4 sm:h-5 bg-gray-200 rounded w-48 animate-pulse"></div>
-                    </div>
-
                     {/* Main Stats Grid Skeleton */}
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-8">
                         {[1, 2, 3, 4].map((i) => (
@@ -345,21 +344,16 @@ function AdminDashboardContent() {
                         ))}
                     </div>
                 </div>
-            </div>
+            </AdminPageShell>
         );
     }
 
     return (
-        <div className="min-h-screen p-3 sm:p-4 lg:p-6">
+        <AdminPageShell
+            title="Tổng quan hệ thống"
+            description="Thống kê và phân tích hoạt động của CNcode"
+        >
             <div className="max-w-[1800px] mx-auto">
-                {/* Header */}
-                <div className="mb-6 sm:mb-8">
-                    <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[var(--cn-text-main)] mb-2 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                        Tổng quan hệ thống
-                    </h1>
-                    <p className="text-sm sm:text-base text-[var(--cn-text-sub)]">Thống kê và phân tích hoạt động của CNcode</p>
-                </div>
-
                 {/* Main Stats Grid */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-8">
                     <StatCard
@@ -400,6 +394,7 @@ function AdminDashboardContent() {
                             <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-blue-500" />
                             <span className="text-sm sm:text-base">Lượt truy cập 7 ngày qua</span>
                         </h2>
+                        <AdminChartScroll>
                         <ResponsiveContainer width="100%" height={250}>
                             <AreaChart data={stats.visits.weeklyData}>
                                 <defs>
@@ -432,6 +427,7 @@ function AdminDashboardContent() {
                                 />
                             </AreaChart>
                         </ResponsiveContainer>
+                        </AdminChartScroll>
                     </div>
 
                     {/* User Distribution Pie Chart */}
@@ -440,6 +436,7 @@ function AdminDashboardContent() {
                             <PieChartIcon className="w-4 h-4 sm:w-5 sm:h-5 text-purple-500" />
                             <span className="text-sm sm:text-base">Phân bố người dùng</span>
                         </h2>
+                        <AdminChartScroll>
                         <ResponsiveContainer width="100%" height={200}>
                             <PieChart>
                                 <Pie
@@ -460,6 +457,7 @@ function AdminDashboardContent() {
                                 <Tooltip contentStyle={{ fontSize: '12px' }} />
                             </PieChart>
                         </ResponsiveContainer>
+                        </AdminChartScroll>
                         <div className="mt-4 space-y-2">
                             {userDistributionData.map((item, index) => (
                                 <div key={index} className="flex items-center justify-between text-xs sm:text-sm">
@@ -480,6 +478,7 @@ function AdminDashboardContent() {
                         <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5 text-orange-500" />
                         <span className="text-sm sm:text-base">Phân bố nội dung</span>
                     </h2>
+                    <AdminChartScroll>
                     <ResponsiveContainer width="100%" height={250}>
                         <BarChart data={contentData}>
                             <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
@@ -500,6 +499,7 @@ function AdminDashboardContent() {
                             </Bar>
                         </BarChart>
                     </ResponsiveContainer>
+                    </AdminChartScroll>
                 </div>
 
                 {/* Detailed Stats Grid */}
@@ -604,7 +604,7 @@ function AdminDashboardContent() {
                     </div>
                 </div>
             </div>
-        </div>
+        </AdminPageShell>
     );
 }
 

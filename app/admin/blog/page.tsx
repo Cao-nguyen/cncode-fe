@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { blogApi, Blog } from '@/lib/api/blog.api';
 import { commentApi } from '@/lib/api/comment.api';
 import { toast } from 'sonner';
-import { Plus, Edit2, Trash2, Eye, EyeOff, Loader2, FileText, TrendingUp, X, BarChart3, LineChart, Heart, MessageSquare, CheckCircle, XCircle, AlertCircle, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ChevronDown, Check } from 'lucide-react';
+import { Plus, Edit2, Trash2, Eye, EyeOff, Loader2, FileText, TrendingUp, X, BarChart3, LineChart, Heart, MessageSquare, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { LineChart as RechartsLineChart, Line, BarChart as RechartsBarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, Legend } from 'recharts';
 import { CustomButton } from '@/components/custom/CustomButton';
 import { CustomInput } from '@/components/custom/CustomInput';
@@ -16,6 +16,10 @@ import { DashboardCard } from '@/components/custom/DashboardCard';
 import StaticContent from '@/components/common/StaticContent';
 import CommentSection from '@/components/comment/CommentSection';
 import { TableSkeleton } from '@/components/ui/skeleton';
+import { AdminPageShell } from '@/components/admin/AdminPageShell';
+import { AdminPagination } from '@/components/admin/AdminPagination';
+import { AdminTableScroll } from '@/components/admin/AdminTableScroll';
+import { AdminChartScroll } from '@/components/admin/AdminChartScroll';
 
 const CATEGORIES = [
     { value: 'technology', label: 'Công nghệ' },
@@ -60,9 +64,6 @@ function AdminBlogPageContent() {
     const [filterPublished, setFilterPublished] = useState('all');
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(5);
-    const [isPerPageOpen, setIsPerPageOpen] = useState(false);
-    const PAGINATION_OPTIONS = [5, 10, 25, 50];
-    const perPageDropdownRef = useRef<HTMLDivElement>(null);
 
     const [showModal, setShowModal] = useState(false);
     const [editingBlog, setEditingBlog] = useState<Blog | null>(null);
@@ -105,17 +106,6 @@ function AdminBlogPageContent() {
     useEffect(() => {
         fetchStats();
         fetchCharts();
-    }, []);
-
-    // Click outside handler for items per page dropdown
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (perPageDropdownRef.current && !perPageDropdownRef.current.contains(event.target as Node)) {
-                setIsPerPageOpen(false);
-            }
-        };
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
     // Client-side filtering with normalized search
@@ -514,19 +504,16 @@ function AdminBlogPageContent() {
     ];
 
     return (
-        <div className="space-y-6 pb-8 px-4">
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <div>
-                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-gray-100">Quản lý Blog</h1>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Quản lý bài viết blog</p>
-                </div>
-                <CustomButton onClick={() => handleOpenModal()}>
+        <AdminPageShell
+            title="Quản lý Blog"
+            description="Quản lý bài viết blog"
+            action={
+                <CustomButton onClick={() => handleOpenModal()} className="w-full sm:w-auto">
                     <Plus className="w-4 h-4 mr-2" />
                     Tạo bài viết
                 </CustomButton>
-            </div>
-
+            }
+        >
             {/* Stats Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {cardConfigs.map((card) => (
@@ -561,6 +548,7 @@ function AdminBlogPageContent() {
                         </h3>
                     </div>
                     {growthData.length > 0 ? (
+                        <AdminChartScroll>
                         <ResponsiveContainer width="100%" height={250}>
                             <RechartsLineChart data={growthData}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" opacity={0.5} />
@@ -595,6 +583,7 @@ function AdminBlogPageContent() {
                                 />
                             </RechartsLineChart>
                         </ResponsiveContainer>
+                        </AdminChartScroll>
                     ) : (
                         <div className="flex items-center justify-center h-[250px] text-gray-400 dark:text-gray-600">
                             <div className="text-center">
@@ -613,6 +602,7 @@ function AdminBlogPageContent() {
                             <BarChart3 className="w-4 h-4 text-gray-500 dark:text-gray-400 flex-shrink-0" />
                             <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">Top 5 lượt xem</h3>
                         </div>
+                        <AdminChartScroll>
                         <ResponsiveContainer width="100%" height={300}>
                             <RechartsBarChart data={topViewedData}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" opacity={0.5} />
@@ -638,6 +628,7 @@ function AdminBlogPageContent() {
                                 <Bar dataKey="viewCount" fill="#10B981" radius={[4, 4, 0, 0]} />
                             </RechartsBarChart>
                         </ResponsiveContainer>
+                        </AdminChartScroll>
                     </div>
 
                     {/* Top Liked Chart */}
@@ -646,6 +637,7 @@ function AdminBlogPageContent() {
                             <Heart data-filled={true} fill="#EC4899" className="w-4 h-4 text-gray-500 dark:text-gray-400 flex-shrink-0" />
                             <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">Top 5 yêu thích</h3>
                         </div>
+                        <AdminChartScroll>
                         <ResponsiveContainer width="100%" height={300}>
                             <RechartsBarChart data={topLikedData}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" opacity={0.5} />
@@ -671,6 +663,7 @@ function AdminBlogPageContent() {
                                 <Bar dataKey="likeCount" fill="#EC4899" radius={[4, 4, 0, 0]} />
                             </RechartsBarChart>
                         </ResponsiveContainer>
+                        </AdminChartScroll>
                     </div>
                 </div>
             </div>
@@ -725,8 +718,8 @@ function AdminBlogPageContent() {
                 </div>
             ) : (
                 <div className="bg-white dark:bg-gray-950 rounded-lg border border-gray-200 dark:border-gray-800">
-                    <div className="overflow-x-auto">
-                        <table className="w-full min-w-[800px]">
+                    <AdminTableScroll minWidth={800}>
+                        <table className="w-full">
                             <thead className="bg-gray-50 dark:bg-gray-900/50 border-b border-gray-200 dark:border-gray-800">
                                 <tr>
                                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase" style={{ width: '100px' }}>Ảnh</th>
@@ -836,92 +829,16 @@ function AdminBlogPageContent() {
                                 )}
                             </tbody>
                         </table>
-                    </div>
+                    </AdminTableScroll>
 
-                    {/* Pagination Controls */}
-                    {filteredBlogs.length > 0 && (
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 border-t border-gray-200 dark:border-gray-800">
-                            <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                                <span>Hiển thị</span>
-                                <div className="relative" ref={perPageDropdownRef}>
-                                    <button
-                                        type="button"
-                                        onClick={() => setIsPerPageOpen(!isPerPageOpen)}
-                                        className="min-w-[60px] px-3 py-1 text-sm font-medium border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 transition-all duration-200 focus:outline-none cursor-pointer flex items-center justify-between gap-2 border-gray-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 dark:focus:border-blue-400"
-                                    >
-                                        <span>{itemsPerPage}</span>
-                                        <ChevronDown className={`w-3.5 h-3.5 text-gray-600 dark:text-gray-400 transition-transform duration-200 ${isPerPageOpen ? 'rotate-180' : ''}`} />
-                                    </button>
-                                    {isPerPageOpen && (
-                                        <div className="absolute z-[9999] w-full bottom-full mb-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg overflow-hidden">
-                                            {PAGINATION_OPTIONS.map((option) => (
-                                                <button
-                                                    key={option}
-                                                    type="button"
-                                                    onClick={() => {
-                                                        setItemsPerPage(option);
-                                                        setCurrentPage(1);
-                                                        setIsPerPageOpen(false);
-                                                    }}
-                                                    className="w-full px-3 py-2 text-sm text-left hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center justify-between transition-colors"
-                                                >
-                                                    <span className="text-gray-900 dark:text-gray-100">{option}</span>
-                                                    {itemsPerPage === option && (
-                                                        <Check className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-                                                    )}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                                <span>{startIndex + 1} - {Math.min(endIndex, filteredBlogs.length)} của {filteredBlogs.length} bản ghi</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                {/* Về trang đầu */}
-                                <button
-                                    onClick={() => setCurrentPage(1)}
-                                    disabled={currentPage === 1}
-                                    className="p-2 rounded-md border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                                    title="Trang đầu"
-                                >
-                                    <ChevronsLeft className="w-4 h-4" />
-                                </button>
-
-                                {/* Lùi 1 trang */}
-                                <button
-                                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                                    disabled={currentPage === 1}
-                                    className="p-2 rounded-md border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                                >
-                                    <ChevronLeft className="w-4 h-4" />
-                                </button>
-
-                                {/* Hiển thị trang hiện tại / tổng trang */}
-                                <div className="px-3 py-1.5 text-sm font-medium rounded-md bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800">
-                                    {currentPage} / {totalFilteredPages}
-                                </div>
-
-                                {/* Tới 1 trang */}
-                                <button
-                                    onClick={() => setCurrentPage(prev => Math.min(totalFilteredPages, prev + 1))}
-                                    disabled={currentPage === totalFilteredPages}
-                                    className="p-2 rounded-md border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                                >
-                                    <ChevronRight className="w-4 h-4" />
-                                </button>
-
-                                {/* Về trang cuối */}
-                                <button
-                                    onClick={() => setCurrentPage(totalFilteredPages)}
-                                    disabled={currentPage === totalFilteredPages}
-                                    className="p-2 rounded-md border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                                    title="Trang cuối"
-                                >
-                                    <ChevronsRight className="w-4 h-4" />
-                                </button>
-                            </div>
-                        </div>
-                    )}
+                    <AdminPagination
+                        page={currentPage}
+                        totalPages={totalFilteredPages}
+                        totalItems={filteredBlogs.length}
+                        pageSize={itemsPerPage}
+                        onPageChange={setCurrentPage}
+                        onPageSizeChange={setItemsPerPage}
+                    />
                 </div>
             )}
 
@@ -1231,7 +1148,7 @@ function AdminBlogPageContent() {
                     </div>
                 </div>
             )}
-        </div>
+        </AdminPageShell>
     );
 }
 

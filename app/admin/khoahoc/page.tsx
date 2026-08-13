@@ -22,6 +22,9 @@ import { uploadApi } from '@/lib/upload';
 import { toast } from 'sonner';
 import * as khoahocApi from '@/lib/api/khoahoc.api';
 import CourseBuilderOverlay from '@/components/admin/CourseBuilderOverlay';
+import { AdminPageShell } from '@/components/admin/AdminPageShell';
+import { AdminChartScroll } from '@/components/admin/AdminChartScroll';
+import { AdminTableScroll } from '@/components/admin/AdminTableScroll';
 import { getImageUrl } from '@/lib/utils/imageUrl';
 
 interface AdminCourse {
@@ -407,19 +410,16 @@ export default function AdminCoursesPage() {
     }
 
     return (
-        <div className="space-y-6 pb-8 px-4">
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-gray-100">Quản lý khoá học</h1>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">Duyệt và quản lý khoá học</p>
-                </div>
-                <CustomButton onClick={() => setCreateModal(true)} className="shrink-0">
+        <AdminPageShell
+            title="Quản lý khoá học"
+            description="Duyệt và quản lý khoá học"
+            action={
+                <CustomButton onClick={() => setCreateModal(true)} className="w-full sm:w-auto shrink-0">
                     <Plus className="w-4 h-4 mr-2" />
                     Thêm khoá học
                 </CustomButton>
-            </div>
-
+            }
+        >
             {/* Stats Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {cardConfigs.map(card => (
@@ -442,6 +442,7 @@ export default function AdminCoursesPage() {
                             <BarChart3 className="w-5 h-5 text-blue-500" />
                             <h3 className="text-base font-semibold text-gray-800 dark:text-gray-100">Doanh thu 12 tháng</h3>
                         </div>
+                        <AdminChartScroll>
                         <ResponsiveContainer width="100%" height={220}>
                             <RechartsBarChart data={stats.revenueByMonth}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.1} />
@@ -454,6 +455,7 @@ export default function AdminCoursesPage() {
                                 <Bar dataKey="revenue" fill="#3B82F6" radius={[6, 6, 0, 0]} />
                             </RechartsBarChart>
                         </ResponsiveContainer>
+                        </AdminChartScroll>
                     </div>
 
                     <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
@@ -461,6 +463,7 @@ export default function AdminCoursesPage() {
                             <TrendingUp className="w-5 h-5 text-green-500" />
                             <h3 className="text-base font-semibold text-gray-800 dark:text-gray-100">Khoá học mới theo tháng</h3>
                         </div>
+                        <AdminChartScroll>
                         <ResponsiveContainer width="100%" height={220}>
                             <RechartsLineChart data={stats.coursesByMonth}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.1} />
@@ -473,6 +476,7 @@ export default function AdminCoursesPage() {
                                 <Line type="monotone" dataKey="count" stroke="#10B981" strokeWidth={2} dot={{ fill: '#10B981', r: 4 }} activeDot={{ r: 6 }} />
                             </RechartsLineChart>
                         </ResponsiveContainer>
+                        </AdminChartScroll>
                     </div>
                 </div>
             )}
@@ -511,8 +515,9 @@ export default function AdminCoursesPage() {
             ) : (
                 <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
                     {/* Desktop table */}
-                    <div className="hidden sm:block overflow-x-auto">
-                        <table className="w-full min-w-[900px]">
+                    <div className="hidden sm:block">
+                        <AdminTableScroll minWidth={900}>
+                        <table className="w-full">
                             <thead className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
                                 <tr>
                                     {['Khoá học', 'Giáo viên', 'Loại', 'Giá', 'Học viên', 'Trạng thái', 'Ngày tạo', 'Thao tác'].map(h => (
@@ -610,6 +615,7 @@ export default function AdminCoursesPage() {
                                 ))}
                             </tbody>
                         </table>
+                        </AdminTableScroll>
                     </div>
 
                     {/* Mobile card list */}
@@ -1404,6 +1410,6 @@ export default function AdminCoursesPage() {
                     onClose={() => setBuilderOverlay(null)}
                 />
             )}
-        </div>
+        </AdminPageShell>
     );
 }

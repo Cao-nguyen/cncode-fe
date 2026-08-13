@@ -6,23 +6,22 @@ import { AdminLinksTable } from '@/components/shortlink/AdminLinksTable';
 import { CreateShortLink } from '@/components/shortlink/CreateShortLink';
 import { CustomButton } from '@/components/custom/CustomButton';
 import { Plus, X } from 'lucide-react';
+import { AdminPageShell } from '@/components/admin/AdminPageShell';
 
 export default function AdminShortLinkPage() {
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
     return (
-        <div className="space-y-6 p-6">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-2xl font-bold text-[var(--cn-text-main)]">Quản lý Short Link</h1>
-                    <p className="text-sm text-[var(--cn-text-muted)] mt-1">Quản lý tất cả link rút gọn trên hệ thống</p>
-                </div>
-                <CustomButton onClick={() => setIsCreateModalOpen(true)}>
+        <AdminPageShell
+            title="Quản lý Short Link"
+            description="Quản lý tất cả link rút gọn trên hệ thống"
+            action={
+                <CustomButton onClick={() => setIsCreateModalOpen(true)} className="w-full sm:w-auto">
                     <Plus className="w-4 h-4 mr-2" />
                     Tạo link mới
                 </CustomButton>
-            </div>
-
+            }
+        >
             <AdminStatsCards />
             <AdminLinksTable />
 
@@ -47,6 +46,6 @@ export default function AdminShortLinkPage() {
                     </div>
                 </div>
             )}
-        </div>
+        </AdminPageShell>
     );
 }

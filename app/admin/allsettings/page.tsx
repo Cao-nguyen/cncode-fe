@@ -6,6 +6,7 @@ import { Loader2, Save, FileText, Shield, Wallet, Settings, Lock, Info } from 'l
 import CustomEditor, { CustomEditorRef } from '@/components/custom/CustomEditor';
 import { systemSettingsApi } from '@/lib/api/systemSettings.api';
 import { ISystemSettings } from '@/types/systemSettings.type';
+import { AdminPageShell } from '@/components/admin/AdminPageShell';
 
 interface TabConfig {
     id: string;
@@ -126,18 +127,16 @@ export default function AdminAllSettingsPage() {
     }
 
     return (
-        <div className="space-y-6 pb-8 px-4">
-            <div>
-                <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">Cài đặt chung</h1>
-                <p className="text-sm text-gray-500 mt-1">Quản lý nội dung tĩnh của website</p>
-            </div>
-
-            <div className="flex flex-wrap gap-2 border-b border-gray-200">
+        <AdminPageShell
+            title="Cài đặt chung"
+            description="Quản lý nội dung tĩnh của website"
+        >
+            <div className="-mx-3 flex gap-1 overflow-x-auto border-b border-gray-200 px-3 pb-px sm:-mx-0 sm:flex-wrap sm:gap-2 sm:px-0">
                 {TABS.map((tab) => (
                     <button
                         key={tab.id}
                         onClick={() => handleTabChange(tab.id)}
-                        className={`flex items-center gap-2 px-4 py-2 text-sm font-medium transition border-b-2 ${
+                        className={`flex shrink-0 items-center gap-2 whitespace-nowrap px-3 py-2 text-sm font-medium transition border-b-2 sm:px-4 ${
                             activeTab === tab.id
                                 ? 'text-blue-600 border-blue-600'
                                 : 'text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300'
@@ -187,6 +186,6 @@ export default function AdminAllSettingsPage() {
                     />
                 </div>
             </div>
-        </div>
+        </AdminPageShell>
     );
 }

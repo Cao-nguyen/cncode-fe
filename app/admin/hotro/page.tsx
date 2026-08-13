@@ -3,9 +3,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuthStore } from '@/store/auth.store';
 import {
-    Plus, Edit2, Trash2, Eye, EyeOff, Search, ChevronLeft, ChevronRight,
-    Heart, Loader2, User, CreditCard, GraduationCap, Wrench, MessageSquare, X, HelpCircle,
-    Layers, ChevronsLeft, ChevronsRight, ChevronDown, Check
+    Plus, Edit2, Trash2, Eye, EyeOff, Search, Loader2, User, CreditCard, GraduationCap, Wrench, MessageSquare, X, HelpCircle,
+    Layers, Heart
 } from 'lucide-react';
 import { toast } from 'sonner';
 import dynamic from 'next/dynamic';
@@ -21,6 +20,9 @@ import { ConfirmModalDelete } from '@/components/custom/ConfirmationModal';
 import { DashboardCard } from '@/components/custom/DashboardCard';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
+import { AdminPageShell } from '@/components/admin/AdminPageShell';
+import { AdminPagination } from '@/components/admin/AdminPagination';
+import { AdminTableScroll } from '@/components/admin/AdminTableScroll';
 
 const CustomEditor = dynamic(() => import('@/components/custom/CustomEditor'), {
     ssr: false,
@@ -48,8 +50,6 @@ const CATEGORY_OPTIONS = [
     { value: 'other', label: 'Khác' }
 ];
 
-const PAGINATION_OPTIONS = [10, 20, 50, 100];
-
 const CATEGORY_ICONS: Record<string, React.ReactNode> = {
     account: <User size={14} />,
     payment: <CreditCard size={14} />,
@@ -63,8 +63,6 @@ export default function AdminHoTroPage() {
     const editorRef = useRef<CustomEditorRef | null>(null);
     const [page, setPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(20);
-    const [isPerPageOpen, setIsPerPageOpen] = useState(false);
-    const perPageDropdownRef = useRef<HTMLDivElement>(null);
     const [selectedCategory, setSelectedCategory] = useState('all');
     const [searchInput, setSearchInput] = useState('');
     const [search, setSearch] = useState('');
@@ -127,7 +125,6 @@ export default function AdminHoTroPage() {
     const handleItemsPerPageChange = (value: number) => {
         setItemsPerPage(value);
         setPage(1);
-        setIsPerPageOpen(false);
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -267,28 +264,16 @@ export default function AdminHoTroPage() {
     ];
 
     return (
-        <div className="space-y-6 pb-8 px-4">
-            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-50 to-indigo-50/30 p-6 border border-blue-100">
-                <div className="absolute top-0 right-0 w-80 h-80 bg-gradient-to-br from-blue-200/30 to-transparent rounded-full blur-3xl" />
-                <div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                    <div>
-                        <div className="flex items-center gap-3 mb-2">
-                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
-                                <MessageSquare className="w-5 h-5 text-white" />
-                            </div>
-                            <div>
-                                <h1 className="text-2xl font-bold text-gray-800">Trung tâm hỗ trợ</h1>
-                                <p className="text-sm text-gray-500">Quản lý câu hỏi thường gặp (FAQ)</p>
-                            </div>
-                        </div>
-                    </div>
-                    <CustomButton variant="primary" size="medium" onClick={openCreateModal}>
-                        <Plus size={16} />
-                        Thêm câu hỏi
-                    </CustomButton>
-                </div>
-            </div>
-
+        <AdminPageShell
+            title="Trung tâm hỗ trợ"
+            description="Quản lý câu hỏi thường gặp (FAQ)"
+            action={
+                <CustomButton variant="primary" size="medium" onClick={openCreateModal} className="w-full sm:w-auto">
+                    <Plus size={16} />
+                    Thêm câu hỏi
+                </CustomButton>
+            }
+        >
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
                 {statCards.map((card) => (
                     <DashboardCard
@@ -324,8 +309,8 @@ export default function AdminHoTroPage() {
             </div>
 
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                <div className="overflow-x-auto">
-                    <table className="w-full min-w-[900px]">
+                <AdminTableScroll minWidth={900}>
+                    <table className="w-full">
                         <thead className="bg-gray-50 border-b border-gray-200">
                             <tr className="text-left">
                                 <th className="px-5 py-4 text-xs font-semibold text-gray-500 uppercase text-center w-[50px]">STT</th>
@@ -379,55 +364,17 @@ export default function AdminHoTroPage() {
                             ))}
                         </tbody>
                     </table>
-                </div>
+                </AdminTableScroll>
 
-                <div className="border-t border-gray-200 px-5 py-4 flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                        <div className="relative" ref={perPageDropdownRef}>
-                            <button
-                                type="button"
-                                onClick={() => setIsPerPageOpen(!isPerPageOpen)}
-                                className="min-w-[60px] px-3 py-1.5 text-sm font-medium border rounded-lg bg-white text-gray-900 transition-all duration-200 focus:outline-none cursor-pointer flex items-center justify-between gap-2 border-gray-200 hover:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                            >
-                                <span>{itemsPerPage}</span>
-                                <ChevronDown className={`w-3.5 h-3.5 text-gray-600 transition-transform duration-200 ${isPerPageOpen ? 'rotate-180' : ''}`} />
-                            </button>
-                            {isPerPageOpen && (
-                                <div className="absolute z-[9999] w-full bottom-full mb-1 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden">
-                                    {PAGINATION_OPTIONS.map((option) => (
-                                        <button
-                                            key={option}
-                                            type="button"
-                                            onClick={() => handleItemsPerPageChange(option)}
-                                            className="w-full px-3 py-2 text-sm text-left hover:bg-gray-50 flex items-center justify-between transition-colors"
-                                        >
-                                            <span className="text-gray-900">{option}</span>
-                                            {itemsPerPage === option && (
-                                                <Check className="w-3.5 h-3.5 text-blue-600" />
-                                            )}
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                        <span className="text-sm text-gray-500">Tổng: {pagination.total} câu hỏi</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <button onClick={() => setPage(1)} disabled={page === 1} className="p-2 border border-gray-200 rounded-lg disabled:opacity-40 hover:bg-gray-50 transition" title="Trang đầu">
-                            <ChevronsLeft size={16} />
-                        </button>
-                        <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="p-2 border border-gray-200 rounded-lg disabled:opacity-40 hover:bg-gray-50 transition" title="Trang trước">
-                            <ChevronLeft size={16} />
-                        </button>
-                        <span className="px-3 text-sm font-medium text-gray-700">{page} / {pagination.totalPages || 1}</span>
-                        <button onClick={() => setPage(p => Math.min(pagination.totalPages || 1, p + 1))} disabled={page === (pagination.totalPages || 1)} className="p-2 border border-gray-200 rounded-lg disabled:opacity-40 hover:bg-gray-50 transition" title="Trang sau">
-                            <ChevronRight size={16} />
-                        </button>
-                        <button onClick={() => setPage(pagination.totalPages || 1)} disabled={page === (pagination.totalPages || 1)} className="p-2 border border-gray-200 rounded-lg disabled:opacity-40 hover:bg-gray-50 transition" title="Trang cuối">
-                            <ChevronsRight size={16} />
-                        </button>
-                    </div>
-                </div>
+                <AdminPagination
+                    page={page}
+                    totalPages={pagination.totalPages || 1}
+                    totalItems={pagination.total}
+                    pageSize={itemsPerPage}
+                    onPageChange={setPage}
+                    onPageSizeChange={handleItemsPerPageChange}
+                    itemLabel="câu hỏi"
+                />
             </div>
 
             {showModal && (
@@ -487,6 +434,6 @@ export default function AdminHoTroPage() {
                     100% { transform: translateX(100%); }
                 }
             `}</style>
-        </div>
+        </AdminPageShell>
     );
 }
