@@ -142,7 +142,7 @@ export function exerciseQuestionsToMarkdown(questions: ExerciseQuestion[] | unde
                 if (codeMode === 'web' || q.type === 'code') {
                     markdown += '{web}\n';
                     webRequirements?.forEach((req) => {
-                        markdown += `${serializeWebRequirement(req)}\n`;
+                        markdown += `${serializeWebRequirement(req as WebRequirement)}\n`;
                     });
                 } else {
                     serializeAlgorithmQuestionBody({

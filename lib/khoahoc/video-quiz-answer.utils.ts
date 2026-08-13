@@ -102,7 +102,7 @@ export function normalizeVideoQuizPlaybackQuestion(q: BackendVideoQuizQuestion):
         algoOutputDesc: parsed.algoOutputDesc || q.algoOutputDesc,
         webRequirements: parsed.webRequirements?.length ? parsed.webRequirements : q.webRequirements,
         score: q.score ?? parsed.score,
-        explanation: q.explanation || parsed.explanation,
+        explanation: q.explanation || parsed.explanation || '',
     };
 }
 
