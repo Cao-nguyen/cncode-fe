@@ -905,7 +905,7 @@ export default function AdminLuyenTapPage() {
                             </div>
                             {createForm.tier === 'pro' && (
                                 <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
-                                    <CustomInput label="Giá (VNĐ)" value={createForm.price} onChange={(e) => setCreateForm((f) => ({ ...f, price: e.target.value }))} />
+                                    <CustomInput label="Giá (xu = VNĐ)" value={createForm.price} onChange={(e) => setCreateForm((f) => ({ ...f, price: e.target.value }))} />
                                     <div className="flex gap-2">
                                         <div className="w-20">
                                             <CustomSelect value={createForm.discountType} onChange={(v) => setCreateForm((f) => ({ ...f, discountType: v as 'percent' | 'vnd' }))} options={[{ value: 'percent', label: '%' }, { value: 'vnd', label: 'VNĐ' }]} />

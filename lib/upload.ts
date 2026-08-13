@@ -62,8 +62,16 @@ export const compressImage = (base64: string, maxWidth: number = 1200, quality: 
 // Progress callback type
 type UploadProgressCallback = (progress: number, status: string) => void;
 
+const readFileAsDataUrl = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = () => reject(new Error('Không đọc được file'));
+        reader.readAsDataURL(file);
+    });
+
 export const uploadApi = {
-    // Upload file with progress (FormData - faster than base64)
+    // Upload file — đọc base64 rồi gọi API JSON (backend không hỗ trợ FormData)
     uploadFileWithProgress: async (
         file: File,
         folder: string = 'general',
@@ -75,32 +83,60 @@ export const uploadApi = {
         }
 
         try {
-            const formData = new FormData();
-            formData.append('file', file);
-            formData.append('folder', folder);
+            onProgress?.(10, 'Đang đọc file...');
+            const base64 = await readFileAsDataUrl(file);
+            onProgress?.(45, 'Đang tải lên...');
+
+            if (file.type.startsWith('image/')) {
+                const compressed = await compressImage(base64, 1200, 0.7);
+                const response = await fetch(`${API_URL}/api/upload/image`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({ image: compressed, folder }),
+                });
+                const data = await response.json();
+                onProgress?.(100, 'Hoàn tất');
+
+                if (!response.ok || !data.success) {
+                    return { success: false, message: data.message || 'Upload thất bại' };
+                }
+
+                let imageUrl = data.data?.url;
+                if (imageUrl && imageUrl.startsWith('/')) {
+                    imageUrl = `${API_URL}${imageUrl}`;
+                }
+
+                return {
+                    success: true,
+                    url: imageUrl,
+                    messageId: data.data?.messageId,
+                    message: data.message,
+                };
+            }
 
             const response = await fetch(`${API_URL}/api/upload/file`, {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${token}`
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`,
                 },
-                body: formData
+                body: JSON.stringify({ file: base64, folder, fileName: file.name }),
             });
-
             const data = await response.json();
+            onProgress?.(100, 'Hoàn tất');
 
             if (!response.ok || !data.success) {
-                return {
-                    success: false,
-                    message: data.message || 'Upload thất bại'
-                };
+                return { success: false, message: data.message || 'Upload thất bại' };
             }
 
             return {
                 success: true,
                 url: data.data?.url,
                 messageId: data.data?.messageId,
-                message: data.message
+                message: data.message,
             };
         } catch (error) {
             console.error('Upload error:', error);

@@ -20,6 +20,7 @@ import {
 import {
     type WebRequirement,
     serializeWebRequirement,
+    questionIncomplete,
     questionMissingAnswer,
     resolveEditorQuestionText,
 } from '@/lib/luyentap/question-markdown';
@@ -362,6 +363,12 @@ export default function LuyentapExerciseEditorOverlay({
             toast.error('Đề chưa có câu hỏi');
             return;
         }
+        const incomplete = parsedQuestions.filter(questionIncomplete);
+        if (incomplete.length > 0) {
+            const list = incomplete.map((q) => `Câu ${q.number}`).join(', ');
+            toast.error(`Câu chưa đủ nội dung hoặc phương án: ${list}`);
+            return;
+        }
         const missing = parsedQuestions.filter(questionMissingAnswer);
         if (missing.length > 0) {
             const list = missing.map((q) => `Câu ${q.number}`).join(', ');
@@ -419,7 +426,8 @@ export default function LuyentapExerciseEditorOverlay({
     };
 
     const canContinue = useMemo(
-        () => parsedQuestions.length > 0 && parsedQuestions.every((q) => !questionMissingAnswer(q)),
+        () => parsedQuestions.length > 0
+            && parsedQuestions.every((q) => !questionIncomplete(q) && !questionMissingAnswer(q)),
         [parsedQuestions]
     );
 

@@ -190,7 +190,50 @@ export type AnswerCheckQuestion = {
 
 };
 
+export type IncompleteCheckQuestion = AnswerCheckQuestion & {
+    content?: string;
+    options?: string[];
+    webRequirements?: WebRequirement[];
+    testCases?: Array<{ input: string; expectedOutput: string; isSample: boolean }>;
+    algoRequirement?: string;
+    algoInputDesc?: string;
+    algoOutputDesc?: string;
+    codeMode?: 'algorithm' | 'web';
+};
 
+/** Trả về true nếu câu chỉ có header "Câu *." mà thiếu nội dung hoặc phương án. */
+export function questionIncomplete(q: IncompleteCheckQuestion): boolean {
+    const content = (q.content || '').trim();
+
+    if (q.type === 'multiple-choice' || q.type === 'multiple-select' || q.type === 'true-false') {
+        const hasOptions = (q.options?.length ?? 0) > 0;
+        return !content || !hasOptions;
+    }
+
+    if (q.type === 'matching') {
+        const hasLeft = (q.leftItems?.length ?? 0) > 0;
+        const hasRight = (q.rightItems?.length ?? 0) > 0;
+        return !content || !hasLeft || !hasRight;
+    }
+
+    if (q.type === 'short-answer' || q.type === 'essay') {
+        return !content;
+    }
+
+    if (q.type === 'code') {
+        if (q.codeMode === 'web') {
+            return !content && !(q.webRequirements?.length);
+        }
+        const hasAlgo = Boolean(
+            q.algoRequirement?.trim()
+            || q.algoInputDesc?.trim()
+            || q.algoOutputDesc?.trim(),
+        );
+        return !content && !hasAlgo && !(q.testCases?.length);
+    }
+
+    return !content;
+}
 
 /** Trả về true nếu câu cần đáp án mà chưa có (tự luận & code không bắt buộc). */
 

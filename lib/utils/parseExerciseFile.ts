@@ -7,8 +7,21 @@ export async function parseExerciseFile(file: File): Promise<string> {
     if (ext === 'docx' || ext === 'doc') {
         const mammoth = await import('mammoth');
         const arrayBuffer = await file.arrayBuffer();
-        const result = await mammoth.extractRawText({ arrayBuffer });
-        return normalizeParsedText(result.value);
+        const header = new Uint8Array(arrayBuffer.slice(0, 2));
+        if (header[0] !== 0x50 || header[1] !== 0x4b) {
+            throw new Error('File Word cũ (.doc) chưa hỗ trợ import. Vui lòng lưu lại dạng .docx hoặc dùng PDF/TXT.');
+        }
+        const result = await mammoth.convertToHtml(
+            { arrayBuffer },
+            {
+                styleMap: [
+                    'u => u',
+                    "r[style-name='Strong'] => strong",
+                    "r[style-name='Emphasis'] => em",
+                ],
+            },
+        );
+        return normalizeParsedText(htmlInlineToMarkdown(result.value));
     }
 
     if (ext === 'txt' || ext === 'md') {
@@ -44,6 +57,55 @@ async function parsePdfInBrowser(arrayBuffer: ArrayBuffer): Promise<string> {
     }
 
     return pages.join('\n\n');
+}
+
+/** Chuyển HTML từ mammoth sang markdown inline: **bold**, *italic*, __underline__ */
+function htmlInlineToMarkdown(html: string): string {
+    if (!html.trim()) return '';
+
+    if (typeof DOMParser === 'undefined') {
+        return html.replace(/<[^>]+>/g, '');
+    }
+
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+
+    const walk = (node: Node): string => {
+        if (node.nodeType === Node.TEXT_NODE) {
+            return node.textContent ?? '';
+        }
+        if (node.nodeType !== Node.ELEMENT_NODE) return '';
+
+        const el = node as HTMLElement;
+        const tag = el.tagName.toLowerCase();
+        const inner = Array.from(el.childNodes).map(walk).join('');
+
+        switch (tag) {
+            case 'strong':
+            case 'b':
+                return inner ? `**${inner}**` : '';
+            case 'em':
+            case 'i':
+                return inner ? `*${inner}*` : '';
+            case 'u':
+                return inner ? `__${inner}__` : '';
+            case 'br':
+                return '\n';
+            case 'p':
+            case 'div':
+            case 'li':
+                return `${inner}\n`;
+            case 'ul':
+            case 'ol':
+                return inner;
+            default:
+                return inner;
+        }
+    };
+
+    return walk(doc.body)
+        .replace(/\u00a0/g, ' ')
+        .replace(/\n{3,}/g, '\n\n')
+        .trim();
 }
 
 const STRUCTURAL_LINE_RE = /^(\*)?(Câu\s*\d+|[A-Da-d][).]|\{|\?|\*[^\s])/i;

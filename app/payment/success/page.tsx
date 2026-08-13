@@ -14,6 +14,7 @@ export default function PaymentSuccessPage() {
   const orderCode = searchParams.get('orderCode');
   const course = searchParams.get('course');
   const exercise = searchParams.get('exercise');
+  const shopProduct = searchParams.get('product');
   const purchaseType = searchParams.get('type');
 
   const [status, setStatus] = useState<PageStatus>(() =>
@@ -70,7 +71,9 @@ export default function PaymentSuccessPage() {
 
   const courseHref = course ? `/khoahoc/${course}` : '/me/khoahoc';
   const exerciseHref = exercise ? `/luyentap/${exercise}` : '/luyentap';
+  const shopHref = shopProduct ? `/cuahangso/${shopProduct}` : '/cuahangso';
   const isLuyentap = purchaseType === 'luyentap' || !!exercise;
+  const isShop = purchaseType === 'cuahangso' || !!shopProduct;
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-black">
@@ -97,7 +100,22 @@ export default function PaymentSuccessPage() {
               Mã đơn hàng: {orderCode}
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-              {isLuyentap ? (
+              {isShop ? (
+                <>
+                  <Link
+                    href={shopHref}
+                    className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-6 py-3 text-white hover:bg-blue-700"
+                  >
+                    Xem sản phẩm
+                  </Link>
+                  <Link
+                    href="/cuahangso"
+                    className="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-6 py-3 text-gray-700 hover:bg-gray-100 dark:border-gray-800 dark:text-gray-200 dark:hover:bg-gray-900"
+                  >
+                    Cửa hàng số
+                  </Link>
+                </>
+              ) : isLuyentap ? (
                 <>
                   <Link
                     href={exerciseHref}

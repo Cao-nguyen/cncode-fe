@@ -159,6 +159,11 @@ const menuItems = [
                 icon: <ShoppingBag size={18} variant="Outline" />,
             },
             {
+                title: "Cửa hàng số",
+                link: "/admin/cuahangso",
+                icon: <ShoppingBag size={18} variant="Outline" />,
+            },
+            {
                 title: "Tiếp thị liên kết",
                 link: "/admin/affiliate",
                 icon: <ShoppingBag size={18} variant="Outline" />,

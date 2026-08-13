@@ -17,6 +17,7 @@ import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { formatXu, getPayableAmount } from '@/lib/utils/currency.utils';
 import { DIFFICULTY_LABELS, DIFFICULTY_OPTIONS } from '@/lib/luyentap/exercise-config.constants';
 import LuyentapPurchaseModal from '@/components/luyentap/LuyentapPurchaseModal';
 
@@ -63,6 +64,7 @@ function ExerciseCard({
     const isVip = exercise.type === 'vip' || exercise.tier === 'pro';
     const isCompleted = exercise.completionStatus === 'completed';
     const needsPurchase = isVip && !purchased;
+    const payableAmount = getPayableAmount(exercise);
 
     const renderAction = () => {
         if (needsPurchase && !isCompleted) {
@@ -147,13 +149,20 @@ function ExerciseCard({
                 </div>
 
                 <div className="mt-3 flex items-center justify-between gap-3">
-                    <Link
-                        href={exerciseDetailPath(exercise)}
-                        className="inline-flex items-center gap-1 text-xs font-medium text-[var(--cn-primary)] transition hover:underline"
-                    >
-                        Xem chi tiết
-                        <ChevronRight className="h-3.5 w-3.5" />
-                    </Link>
+                    <div className="min-w-0">
+                        <Link
+                            href={exerciseDetailPath(exercise)}
+                            className="inline-flex items-center gap-1 text-xs font-medium text-[var(--cn-primary)] transition hover:underline"
+                        >
+                            Xem chi tiết
+                            <ChevronRight className="h-3.5 w-3.5" />
+                        </Link>
+                        {isVip && needsPurchase && payableAmount > 0 && (
+                            <p className="mt-1 text-sm font-semibold text-purple-700 dark:text-purple-300">
+                                {formatXu(payableAmount)}
+                            </p>
+                        )}
+                    </div>
                     {renderAction()}
                 </div>
             </div>

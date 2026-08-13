@@ -20,6 +20,7 @@ import LuyentapExerciseStatsPanel from '@/components/luyentap/LuyentapExerciseSt
 import LuyentapSlugDetailSkeleton from '@/components/luyentap/LuyentapSlugDetailSkeleton';
 import { useAuthStore } from '@/store/auth.store';
 import { cn } from '@/lib/utils';
+import { formatXu, getPayableAmount } from '@/lib/utils/currency.utils';
 import {
     resolveExerciseAvailability,
     resolveEnterExamButtonLabel,
@@ -128,6 +129,7 @@ export default function LuyentapSlugDetailClient({ id }: LuyentapSlugDetailClien
 
     const isVip = exercise?.tier === 'pro' || exercise?.type === 'vip';
     const needsPurchase = isVip && !owned;
+    const payableAmount = getPayableAmount(exercise);
     const questionCount = exercise?.questionCount || exercise?.questions?.length || 0;
     const duration = exercise?.duration || exercise?.timeLimit || 0;
 
@@ -401,7 +403,12 @@ export default function LuyentapSlugDetailClient({ id }: LuyentapSlugDetailClien
                                 )}
                             </ul>
 
-                            <div className="mt-8 flex justify-end">
+                            <div className="mt-8 flex flex-col items-end gap-2 sm:flex-row sm:items-center sm:justify-end">
+                                {needsPurchase && payableAmount > 0 && (
+                                    <p className="text-sm font-semibold text-purple-700 dark:text-purple-300 sm:mr-auto">
+                                        Giá: {formatXu(payableAmount)} <span className="font-normal text-[var(--cn-text-sub)]">(1 xu = 1 VNĐ)</span>
+                                    </p>
+                                )}
                                 <CustomButton
                                     size="large"
                                     className="gap-2 px-6"

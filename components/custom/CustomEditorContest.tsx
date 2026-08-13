@@ -1216,32 +1216,24 @@ const CustomEditorContest: React.FC<{
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const highlightRef = useRef<HTMLDivElement>(null);
     const lineNumbersRef = useRef<HTMLDivElement>(null);
-    const lastActiveQuestionRef = useRef<number | null>(null);
+    const previewPanelRef = useRef<HTMLDivElement>(null);
 
     const editorScrollClass =
         'overflow-y-auto overflow-x-hidden [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden';
 
     const scrollPreviewToQuestion = (questionId: number) => {
-        if (lastActiveQuestionRef.current === questionId) return;
-        lastActiveQuestionRef.current = questionId;
-        const el = document.getElementById(`azota-question-${questionId}`);
-        el?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    };
+        requestAnimationFrame(() => {
+            const container = previewPanelRef.current;
+            const el = document.getElementById(`azota-question-${questionId}`);
+            if (!container || !el) return;
 
-    const syncPreviewScrollFromCursor = (textarea: HTMLTextAreaElement) => {
-        const questionId = getQuestionIdAtPosition(textarea.value, textarea.selectionStart);
-        if (questionId !== null) {
-            scrollPreviewToQuestion(questionId);
-        }
+            const top = el.getBoundingClientRect().top - container.getBoundingClientRect().top + container.scrollTop;
+            container.scrollTo({ top, behavior: 'smooth' });
+        });
     };
 
     const handleCodeChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
         setCode(e.target.value);
-        requestAnimationFrame(() => syncPreviewScrollFromCursor(e.target));
-    };
-
-    const handleCodeCursorMove = (e: React.SyntheticEvent<HTMLTextAreaElement>) => {
-        syncPreviewScrollFromCursor(e.currentTarget);
     };
 
     const syncEditorScroll = () => {
@@ -1695,9 +1687,7 @@ Mô tả kết quả cần in
         const num = parseInt(gotoQuestion, 10);
         const target = questions.find((q) => q.number === num) ?? questions.find((q) => q.id === num);
         const targetId = target?.id ?? num;
-        lastActiveQuestionRef.current = targetId;
-        const el = document.getElementById(`azota-question-${targetId}`);
-        el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        scrollPreviewToQuestion(targetId);
     };
 
     // --------------------------------------------------------------------
@@ -1754,12 +1744,12 @@ Mô tả kết quả cần in
             <div className="flex min-h-0 flex-1 overflow-hidden flex-col xl:flex-row">
                 {/* LEFT — Hiển thị câu hỏi (40%) */}
                 <div
+                    ref={previewPanelRef}
                     className={cn(
-                        'min-h-0 shrink-0 space-y-3 overflow-y-auto border-gray-200 bg-white p-3 sm:p-4',
-                        'xl:flex xl:w-[40%] xl:border-r',
+                        'custom-scroll min-h-0 space-y-3 overflow-y-auto border-gray-200 bg-white p-3 sm:p-4',
                         compactView === 'preview'
-                            ? 'flex flex-1 flex-col'
-                            : 'hidden xl:flex',
+                            ? 'flex-1'
+                            : 'hidden xl:block xl:w-[40%] xl:shrink-0 xl:border-r',
                     )}
                 >
                     {questions.length === 0 && (
@@ -1773,13 +1763,13 @@ Mô tả kết quả cần in
                     {questions.map((q, index) => (
                         <React.Fragment key={`q-${q.id}`}>
                             {q.groupTitle && q.groupTitle !== questions[index - 1]?.groupTitle && (
-                                <div className="bg-white rounded-xl border border-gray-200 shadow-sm px-4 py-3">
+                                <div className="rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-sm">
                                     <p className="text-sm font-semibold text-gray-800">
                                         {formatGroupTitleDisplay(q.groupTitle)}
                                     </p>
                                 </div>
                             )}
-                        <div id={`azota-question-${q.id}`} className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                        <div id={`azota-question-${q.id}`} className="rounded-xl border border-gray-200 bg-white shadow-sm">
                             <div className="flex items-stretch border-b border-gray-200 text-sm">
                                 <div className="px-3 py-2.5 flex items-center justify-center shrink-0 border-r border-gray-200">
                                     <span className="inline-flex items-center px-2.5 py-1 border border-gray-300 rounded-md text-blue-600 font-semibold whitespace-nowrap">
@@ -2067,11 +2057,10 @@ Mô tả kết quả cần in
                 {/* RIGHT — Soạn thảo (60%) */}
                 <div
                     className={cn(
-                        'min-h-0 min-w-0 shrink-0 flex-col bg-white',
-                        'xl:flex xl:w-[60%]',
+                        'min-h-0 min-w-0 shrink-0 flex flex-col bg-white',
                         compactView === 'editor'
-                            ? 'flex flex-1'
-                            : 'hidden xl:flex',
+                            ? 'flex-1'
+                            : 'hidden xl:flex xl:w-[60%]',
                     )}
                 >
                     <div className="flex items-center gap-1 overflow-x-auto px-2 py-2 bg-gray-50 border-b border-gray-200 sm:px-3">
@@ -2136,9 +2125,6 @@ Mô tả kết quả cần in
                                 value={code}
                                 onChange={handleCodeChange}
                                 onKeyDown={handleKeyDown}
-                                onKeyUp={handleCodeCursorMove}
-                                onClick={handleCodeCursorMove}
-                                onSelect={handleCodeCursorMove}
                                 onScroll={syncEditorScroll}
                                 spellCheck={false}
                             />

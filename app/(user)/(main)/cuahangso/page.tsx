@@ -1,204 +1,272 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { ShoppingCart, Eye, Plus } from 'lucide-react';
+import { Plus, ShoppingBag } from 'lucide-react';
+import { shopApi, Product } from '@/lib/api/shop.api';
+import CuaHangSoProductCard from '@/components/cuahangso/CuaHangSoProductCard';
 import { CustomButton } from '@/components/custom/CustomButton';
 import { CustomInputSearch } from '@/components/custom/CustomInputSearch';
 import { CustomSelect } from '@/components/custom/CustomSelect';
-import { getProducts, ShopProduct } from '@/lib/utils/shopHistory';
-import { initializeShopData } from '@/lib/data/shop.data';
+import {
+    CATEGORY_TABS,
+    getSortParams,
+    type SortOption,
+    SORT_OPTIONS,
+} from '@/lib/cuahangso/cuahangso-display.utils';
 import { useAuthStore } from '@/store/auth.store';
+import { toast } from 'sonner';
 
-const CATEGORIES = ['Tài liệu', 'Bài thuyết trình', 'Code', 'Thiết kế', 'Khác'];
-const CATEGORY_OPTIONS = [
-    { value: '', label: 'Tất cả danh mục' },
-    ...CATEGORIES.map(cat => ({ value: cat, label: cat }))
-];
-
-export default function ShopPage() {
+export default function CuaHangSoPage() {
     const router = useRouter();
-    const { user } = useAuthStore();
+    const { user, _hasHydrated } = useAuthStore();
+    const [products, setProducts] = useState<Product[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
     const [search, setSearch] = useState('');
-    const [categoryFilter, setCategoryFilter] = useState('');
+    const [category, setCategory] = useState<(typeof CATEGORY_TABS)[number]['value']>('all');
+    const [sortBy, setSortBy] = useState<SortOption>('newest');
 
-    const allProducts = useMemo(() => {
-        initializeShopData();
-        return getProducts();
-    }, []);
+    const matchesFilters = useCallback((product: Product) => {
+        if (category !== 'all' && product.category !== category) return false;
+        const q = search.trim().toLowerCase();
+        if (q && !product.title.toLowerCase().includes(q)) return false;
+        return true;
+    }, [category, search]);
 
-    const products = useMemo(() => {
-        return allProducts.filter(p => p.status === 'approved');
-    }, [allProducts]);
-
-    const filteredProducts = useMemo(() => {
-        return products.filter(product => {
-            const matchesSearch = !search ||
-                product.title.toLowerCase().includes(search.toLowerCase()) ||
-                product.description.toLowerCase().includes(search.toLowerCase()) ||
-                product.tags.some(tag => tag.toLowerCase().includes(search.toLowerCase()));
-
-            const matchesCategory = !categoryFilter || product.category === categoryFilter;
-
-            return matchesSearch && matchesCategory;
+    const mergeOwnProducts = useCallback((
+        approved: Product[],
+        ownProducts: Product[],
+    ): Product[] => {
+        const map = new Map<string, Product>();
+        ownProducts.forEach((item) => {
+            if (matchesFilters(item)) map.set(item._id, item);
         });
-    }, [products, search, categoryFilter]);
+        approved.forEach((item) => {
+            map.set(item._id, item);
+        });
+        const merged = Array.from(map.values());
+        merged.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        return merged;
+    }, [matchesFilters]);
 
-    const formatPrice = (price: number) => {
-        return new Intl.NumberFormat('vi-VN', {
-            style: 'currency',
-            currency: 'VND'
-        }).format(price);
+    const fetchProducts = useCallback(async () => {
+        setLoading(true);
+        try {
+            const sort = getSortParams(sortBy);
+            const requests: [
+                Promise<Awaited<ReturnType<typeof shopApi.getProducts>>>,
+                Promise<Awaited<ReturnType<typeof shopApi.getMyProducts>> | null>,
+            ] = [
+                shopApi.getProducts({
+                    page,
+                    limit: 12,
+                    search: search.trim() || undefined,
+                    category: category === 'all' ? undefined : category,
+                    sortBy: sort.sortBy,
+                    sortOrder: sort.sortOrder,
+                }),
+                user?._id
+                    ? shopApi.getMyProducts({ limit: 50, page: 1 })
+                    : Promise.resolve(null),
+            ];
+
+            const [res, myProductsRes] = await Promise.all(requests);
+
+            if (res.success) {
+                let list = res.data || [];
+                if (myProductsRes?.success && myProductsRes.data?.length) {
+                    const ownDrafts = myProductsRes.data.filter(
+                        (item) => item.status === 'pending' || item.status === 'rejected',
+                    );
+                    list = mergeOwnProducts(list, ownDrafts);
+                }
+                setProducts(list);
+                setTotalPages(res.pagination?.pages || 1);
+            } else {
+                toast.error('Không thể tải danh sách sản phẩm');
+            }
+        } catch {
+            toast.error('Lỗi kết nối máy chủ');
+        } finally {
+            setLoading(false);
+        }
+    }, [page, search, category, sortBy, user?._id, mergeOwnProducts]);
+
+    useEffect(() => {
+        if (!_hasHydrated) return;
+        const timer = setTimeout(fetchProducts, 300);
+        return () => clearTimeout(timer);
+    }, [fetchProducts, _hasHydrated]);
+
+    const handleDeleteProduct = async (product: Product) => {
+        if (!window.confirm(`Xóa sản phẩm "${product.title}"?`)) return;
+
+        try {
+            const res = await shopApi.deleteProduct(product._id);
+            if (res.success) {
+                toast.success(res.message || 'Đã xóa sản phẩm');
+                fetchProducts();
+            } else {
+                toast.error('Không thể xóa sản phẩm');
+            }
+        } catch {
+            toast.error('Lỗi khi xóa sản phẩm');
+        }
+    };
+
+    const handleSearch = (value: string) => {
+        setSearch(value);
+        setPage(1);
     };
 
     return (
-        <div className="max-w-7xl mx-auto px-4 py-8">
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-                <div>
-                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Cửa hàng số</h1>
-                    <p className="text-gray-600 dark:text-gray-400 mt-1">
-                        Mua và bán tài liệu, code, thiết kế số
-                    </p>
+        <div className="min-h-screen pb-8 pt-16 md:pt-14 lg:pt-8" style={{ backgroundColor: 'var(--cn-bg-main)' }}>
+            <div className="container mx-auto max-w-7xl px-4">
+                <div className="mb-8">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                            <h1
+                                className="mb-2 flex items-center gap-2 text-3xl font-bold"
+                                style={{ color: 'var(--cn-text-main)' }}
+                            >
+                                <ShoppingBag className="h-8 w-8" style={{ color: 'var(--cn-primary)' }} />
+                                Cửa hàng số
+                            </h1>
+                            <p style={{ color: 'var(--cn-text-sub)' }}>
+                                Mua và bán tài liệu, PowerPoint, code và sản phẩm số khác
+                            </p>
+                        </div>
+                        {user && (
+                            <CustomButton onClick={() => router.push('/cuahangso/create')}>
+                                <Plus className="mr-2 h-4 w-4" />
+                                Đăng bán sản phẩm
+                            </CustomButton>
+                        )}
+                    </div>
                 </div>
-                {user && (
-                    <CustomButton
-                        onClick={() => router.push('/cuahangso/dang-san-pham')}
-                        className="gap-2"
-                    >
-                        <Plus className="w-4 h-4" />
-                        Đăng bán sản phẩm
-                    </CustomButton>
+
+                <div className="mb-6 rounded-xl">
+                    <div className="flex flex-col gap-3 md:flex-row">
+                        <div className="flex-1">
+                            <CustomInputSearch
+                                placeholder="Tìm kiếm sản phẩm..."
+                                value={search}
+                                onChange={handleSearch}
+                                size="medium"
+                            />
+                        </div>
+                        <div className="w-full md:w-44">
+                            <CustomSelect
+                                value={sortBy}
+                                onChange={(v) => {
+                                    setSortBy(v as SortOption);
+                                    setPage(1);
+                                }}
+                                options={SORT_OPTIONS}
+                            />
+                        </div>
+                        <div
+                            className="overflow-x-auto rounded-lg p-1"
+                            style={{ backgroundColor: 'var(--cn-bg-card)', border: '1px solid var(--cn-border)' }}
+                        >
+                            <div className="flex min-w-max items-center gap-1">
+                                {CATEGORY_TABS.map((cat) => (
+                                    <button
+                                        key={cat.value}
+                                        type="button"
+                                        onClick={() => {
+                                            setCategory(cat.value);
+                                            setPage(1);
+                                        }}
+                                        className="whitespace-nowrap rounded-md px-3 py-1.5 text-xs font-semibold transition-colors"
+                                        style={{
+                                            backgroundColor: category === cat.value ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
+                                            color: category === cat.value ? 'var(--cn-primary)' : 'var(--cn-text-sub)',
+                                        }}
+                                    >
+                                        {cat.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {loading ? (
+                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+                        {[...Array(6)].map((_, i) => (
+                            <div
+                                key={i}
+                                className="overflow-hidden rounded-xl"
+                                style={{ backgroundColor: 'var(--cn-bg-card)', border: '1px solid var(--cn-border)' }}
+                            >
+                                <div className="h-[200px] animate-pulse bg-gray-200 dark:bg-gray-700" />
+                                <div className="space-y-3 p-5">
+                                    <div className="flex justify-between">
+                                        <div className="h-3 w-24 animate-pulse rounded bg-gray-200 dark:bg-gray-700" />
+                                        <div className="h-3 w-16 animate-pulse rounded bg-gray-200 dark:bg-gray-700" />
+                                    </div>
+                                    <div className="h-5 w-full animate-pulse rounded bg-gray-200 dark:bg-gray-700" />
+                                    <div className="h-5 w-3/4 animate-pulse rounded bg-gray-200 dark:bg-gray-700" />
+                                    <div className="space-y-2">
+                                        <div className="h-3 w-full animate-pulse rounded bg-gray-200 dark:bg-gray-700" />
+                                        <div className="h-3 w-2/3 animate-pulse rounded bg-gray-200 dark:bg-gray-700" />
+                                    </div>
+                                    <div className="flex items-center justify-between pt-2">
+                                        <div className="h-8 w-24 animate-pulse rounded bg-gray-200 dark:bg-gray-700" />
+                                        <div className="h-6 w-16 animate-pulse rounded bg-gray-200 dark:bg-gray-700" />
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                ) : products.length === 0 ? (
+                    <div className="py-20 text-center">
+                        <ShoppingBag className="mx-auto mb-4 h-16 w-16" style={{ color: 'var(--cn-border)' }} />
+                        <p style={{ color: 'var(--cn-text-sub)' }}>Không tìm thấy sản phẩm nào</p>
+                    </div>
+                ) : (
+                    <>
+                        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+                            {products.map((product) => (
+                                <CuaHangSoProductCard
+                                    key={product._id}
+                                    product={product}
+                                    currentUserId={user?._id}
+                                    onDelete={handleDeleteProduct}
+                                />
+                            ))}
+                        </div>
+
+                        {totalPages > 1 && (
+                            <div className="mt-8 flex justify-center gap-2">
+                                <CustomButton
+                                    variant="secondary"
+                                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                                    disabled={page === 1}
+                                >
+                                    Trước
+                                </CustomButton>
+                                <span
+                                    className="flex items-center px-4 py-2 text-sm"
+                                    style={{ color: 'var(--cn-text-sub)' }}
+                                >
+                                    Trang {page} / {totalPages}
+                                </span>
+                                <CustomButton
+                                    variant="secondary"
+                                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                                    disabled={page === totalPages}
+                                >
+                                    Sau
+                                </CustomButton>
+                            </div>
+                        )}
+                    </>
                 )}
             </div>
-
-            {/* Filters */}
-            <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 mb-6 shadow-sm">
-                <div className="flex flex-col sm:flex-row gap-3">
-                    <div className="flex-1">
-                        <CustomInputSearch
-                            placeholder="Tìm kiếm sản phẩm..."
-                            value={search}
-                            onChange={setSearch}
-                        />
-                    </div>
-                    <div className="sm:w-64">
-                        <CustomSelect
-                            options={CATEGORY_OPTIONS}
-                            value={categoryFilter}
-                            onChange={setCategoryFilter}
-                            placeholder="Chọn danh mục"
-                        />
-                    </div>
-                </div>
-            </div>
-
-            {/* Stats */}
-            <div className="mb-6">
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Tìm thấy <span className="font-semibold text-gray-900 dark:text-white">{filteredProducts.length}</span> sản phẩm
-                </p>
-            </div>
-
-            {/* Products Grid */}
-            {filteredProducts.length === 0 ? (
-                <div className="text-center py-16 bg-white dark:bg-gray-800 rounded-2xl">
-                    <ShoppingCart className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-                    <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                        Không tìm thấy sản phẩm
-                    </h3>
-                    <p className="text-gray-500 dark:text-gray-400">
-                        Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm
-                    </p>
-                </div>
-            ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {filteredProducts.map((product) => (
-                        <Link
-                            key={product._id}
-                            href={`/cuahangso/${product._id}`}
-                            className="bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 group"
-                        >
-                            {/* Product Image */}
-                            <div className="relative h-48 bg-gray-100 dark:bg-gray-700 overflow-hidden">
-                                {product.images && product.images.length > 0 ? (
-                                    <img
-                                        src={product.images[0]}
-                                        alt={product.title}
-                                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                                    />
-                                ) : (
-                                    <div className="flex items-center justify-center h-full">
-                                        <ShoppingCart className="w-16 h-16 text-gray-300" />
-                                    </div>
-                                )}
-                                <div className="absolute top-2 left-2">
-                                    <span className="px-3 py-1 text-xs font-medium rounded-full bg-white/90 text-gray-800">
-                                        {product.category}
-                                    </span>
-                                </div>
-                            </div>
-
-                            {/* Product Info */}
-                            <div className="p-4">
-                                <h3 className="font-semibold text-gray-900 dark:text-white mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors">
-                                    {product.title}
-                                </h3>
-                                <p className="text-sm text-gray-600 dark:text-gray-400 mb-3 line-clamp-2">
-                                    {product.description}
-                                </p>
-
-                                {/* Price */}
-                                <div className="mb-3">
-                                    {product.price === 0 ? (
-                                        <span className="text-2xl font-bold text-green-600 dark:text-green-400">
-                                            Miễn phí
-                                        </span>
-                                    ) : (
-                                        <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                                            {formatPrice(product.price)}
-                                        </span>
-                                    )}
-                                </div>
-
-                                {/* Stats */}
-                                <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
-                                    <div className="flex items-center gap-1">
-                                        <Eye className="w-4 h-4" />
-                                        <span>{product.views}</span>
-                                    </div>
-                                    <div className="flex items-center gap-1">
-                                        <ShoppingCart className="w-4 h-4" />
-                                        <span>{product.purchases} đã mua</span>
-                                    </div>
-                                </div>
-
-                                {/* Seller */}
-                                <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
-                                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                                        Người bán: <span className="font-medium text-gray-700 dark:text-gray-300">{product.sellerName}</span>
-                                    </p>
-                                </div>
-
-                                {/* Tags */}
-                                {product.tags && product.tags.length > 0 && (
-                                    <div className="flex flex-wrap gap-1 mt-3">
-                                        {product.tags.slice(0, 3).map((tag, idx) => (
-                                            <span
-                                                key={idx}
-                                                className="px-2 py-0.5 text-xs rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400"
-                                            >
-                                                {tag}
-                                            </span>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        </Link>
-                    ))}
-                </div>
-            )}
         </div>
     );
 }

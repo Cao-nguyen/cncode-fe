@@ -38,8 +38,6 @@ export const DashboardCard: React.FC<DashboardCardProps> = ({
     const displayChange = change ? Math.abs(change) : null;
     const borderAccent = accentColor || iconColor;
 
-    const formattedValue = `${prefix}${typeof value === 'number' ? value.toLocaleString('vi-VN') : value}${suffix}`;
-
     return (
         <div
             className="group relative overflow-hidden bg-white rounded-xl p-4 sm:p-5 shadow-sm border border-gray-100 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
@@ -60,9 +58,17 @@ export const DashboardCard: React.FC<DashboardCardProps> = ({
                     </div>
                     <div className="min-w-0">
                         <p className="text-xs sm:text-sm text-gray-500 font-medium">{title}</p>
-                        <p className="text-2xl sm:text-[28px] font-bold text-gray-900 leading-tight mt-0.5">
-                            {formattedValue}
-                        </p>
+                        <div className="mt-0.5 inline-flex max-w-full items-baseline gap-1">
+                            <span className="truncate text-2xl font-bold leading-tight text-gray-900 sm:text-[28px]">
+                                {prefix}
+                                {typeof value === 'number' ? value.toLocaleString('vi-VN') : value}
+                            </span>
+                            {suffix ? (
+                                <span className="shrink-0 text-sm font-semibold text-gray-500 sm:text-base">
+                                    {suffix.trim()}
+                                </span>
+                            ) : null}
+                        </div>
                         {description && (
                             <p className="text-xs text-gray-400 mt-1.5 truncate">{description}</p>
                         )}

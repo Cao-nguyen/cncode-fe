@@ -10,6 +10,8 @@ import { cn } from '@/lib/utils';
 import { DIFFICULTY_LABELS } from '@/lib/luyentap/exercise-config.constants';
 import type { PracticeSet } from '@/types/luyentap.type';
 
+import { formatXu, getPayableAmount } from '@/lib/utils/currency.utils';
+
 export type PurchaseExercise = Pick<
     PracticeSet,
     '_id' | 'title' | 'description' | 'tier' | 'price' | 'discountPrice' | 'discountType' | 'discountValue' | 'allowCoinPayment' | 'timeLimit' | 'questionCount' | 'questions'
@@ -25,10 +27,6 @@ interface LuyentapPurchaseModalProps {
     onSuccess?: (exerciseId: string) => void;
 }
 
-function fmtVnd(value?: number) {
-    return `${(value || 0).toLocaleString('vi-VN')}đ`;
-}
-
 export default function LuyentapPurchaseModal({
     exercise,
     open,
@@ -38,10 +36,7 @@ export default function LuyentapPurchaseModal({
     const { token, user, coins, updateCoins } = useAuthStore();
     const [payingMethod, setPayingMethod] = useState<'payos' | 'coin' | null>(null);
 
-    const payableAmount = useMemo(() => {
-        if (!exercise) return 0;
-        return exercise.discountPrice ?? exercise.price ?? 0;
-    }, [exercise]);
+    const payableAmount = useMemo(() => getPayableAmount(exercise), [exercise]);
 
     const originalPrice = exercise?.price || 0;
     const hasDiscount = payableAmount > 0 && originalPrice > payableAmount;
@@ -150,11 +145,12 @@ export default function LuyentapPurchaseModal({
                     <div className="rounded-xl border border-[var(--cn-border)] bg-[var(--cn-bg-section)]/50 p-4">
                         <p className="text-xs font-medium uppercase tracking-wide text-[var(--cn-text-muted)]">Giá đề thi</p>
                         <div className="mt-2 flex items-end gap-2">
-                            <span className="text-2xl font-bold text-[var(--cn-primary)]">{fmtVnd(payableAmount)}</span>
+                            <span className="text-2xl font-bold text-[var(--cn-primary)]">{formatXu(payableAmount)}</span>
                             {hasDiscount && (
-                                <span className="pb-0.5 text-sm text-[var(--cn-text-muted)] line-through">{fmtVnd(originalPrice)}</span>
+                                <span className="pb-0.5 text-sm text-[var(--cn-text-muted)] line-through">{formatXu(originalPrice)}</span>
                             )}
                         </div>
+                        <p className="mt-1 text-xs text-[var(--cn-text-sub)]">1 xu = 1 VNĐ</p>
                         {token && (
                             <p className="mt-2 text-xs text-[var(--cn-text-sub)]">
                                 Số dư xu: <span className="font-semibold text-[var(--cn-text-main)]">{(coins ?? user?.coins ?? 0).toLocaleString('vi-VN')}</span>
@@ -175,7 +171,7 @@ export default function LuyentapPurchaseModal({
                                 disabled={!!payingMethod}
                             >
                                 <CreditCard className="h-4 w-4" />
-                                Thanh toán PayOS
+                                Thanh toán bằng ngân hàng
                             </CustomButton>
                             {exercise.allowCoinPayment && (
                                 <CustomButton
