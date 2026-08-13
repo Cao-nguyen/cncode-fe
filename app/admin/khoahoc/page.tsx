@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useCallback, useEffect, useState, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
     Loader2, Search, CheckCircle2, XCircle, Eye, Edit, Trash2,
@@ -16,7 +16,11 @@ import { CustomInput } from '@/components/custom/CustomInput';
 import { CustomSelect } from '@/components/custom/CustomSelect';
 import { DashboardCard } from '@/components/custom/DashboardCard';
 import { ConfirmModalDelete } from '@/components/custom/ConfirmationModal';
-import { TableSkeleton } from '@/components/ui/skeleton';
+import {
+    AdminKhoahocStatsSkeleton,
+    AdminKhoahocChartsSkeleton,
+    AdminKhoahocTableSectionSkeleton,
+} from '@/components/ui/skeleton';
 import CustomEditor, { CustomEditorRef } from '@/components/custom/CustomEditor';
 import { uploadApi } from '@/lib/upload';
 import { toast } from 'sonner';
@@ -25,7 +29,15 @@ import CourseBuilderOverlay from '@/components/admin/CourseBuilderOverlay';
 import { AdminPageShell } from '@/components/admin/AdminPageShell';
 import { AdminChartScroll } from '@/components/admin/AdminChartScroll';
 import { AdminTableScroll } from '@/components/admin/AdminTableScroll';
+import { AdminPagination } from '@/components/admin/AdminPagination';
 import { getImageUrl } from '@/lib/utils/imageUrl';
+import {
+    readBuilderOverlay,
+    writeBuilderOverlay,
+    type BuilderOverlayState,
+} from '@/lib/courseBuilderStorage';
+
+const PAGE_SIZE = 10;
 
 interface AdminCourse {
     _id: string;
@@ -48,6 +60,12 @@ interface AdminStats {
     monthlyRevenue: number;
     coursesByMonth: { month: string; count: number }[];
     revenueByMonth: { month: string; revenue: number }[];
+    statusCounts?: {
+        all: number;
+        pending: number;
+        approved: number;
+        rejected: number;
+    };
 }
 
 type StatusFilter = 'all' | 'pending' | 'approved' | 'rejected';
@@ -66,9 +84,15 @@ export default function AdminCoursesPage() {
 
     const [courses, setCourses] = useState<AdminCourse[]>([]);
     const [stats, setStats] = useState<AdminStats | null>(null);
-    const [loading, setLoading] = useState(true);
+    const [statsLoading, setStatsLoading] = useState(true);
+    const [coursesLoading, setCoursesLoading] = useState(true);
     const [statusFilter, setStatusFilter] = useState<StatusFilter>(initialStatus);
+    const [searchInput, setSearchInput] = useState('');
     const [searchQuery, setSearchQuery] = useState('');
+    const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [totalItems, setTotalItems] = useState(0);
+    const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const [deleteConfirm, setDeleteConfirm] = useState<AdminCourse | null>(null);
     const [rejectModal, setRejectModal] = useState<{ courseId: string; reason: string } | null>(null);
     const [createModal, setCreateModal] = useState(false);
@@ -87,7 +111,8 @@ export default function AdminCoursesPage() {
     const [submitting, setSubmitting] = useState(false);
     const editorRef = useRef<CustomEditorRef>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
-    const [builderOverlay, setBuilderOverlay] = useState<{ courseId: string; courseName: string } | null>(null);
+    const [builderOverlay, setBuilderOverlay] = useState<BuilderOverlayState | null>(null);
+    const builderHydratedRef = useRef(false);
     const [editCourse, setEditCourse] = useState<AdminCourse | null>(null);
     const [previewCourse, setPreviewCourse] = useState<AdminCourse | null>(null);
     const [editStep, setEditStep] = useState(1);
@@ -124,64 +149,178 @@ export default function AdminCoursesPage() {
         }
     }, [editCourse]);
 
-    // Persist builderOverlay across page reloads via localStorage
+    const openBuilder = useCallback((state: BuilderOverlayState) => {
+        setBuilderOverlay(state);
+        writeBuilderOverlay(state);
+        const params = new URLSearchParams(searchParams.toString());
+        params.set('builder', state.courseId);
+        params.set('content', 'tongquan');
+        params.delete('lesson');
+        router.replace(`/admin/khoahoc?${params.toString()}`, { scroll: false });
+    }, [router, searchParams]);
+
+    const closeBuilder = useCallback(() => {
+        setBuilderOverlay(null);
+        writeBuilderOverlay(null);
+        const params = new URLSearchParams(searchParams.toString());
+        params.delete('builder');
+        params.delete('content');
+        params.delete('lesson');
+        params.delete('quiz');
+        const qs = params.toString();
+        router.replace(qs ? `/admin/khoahoc?${qs}` : '/admin/khoahoc', { scroll: false });
+    }, [router, searchParams]);
+
     useEffect(() => {
-        const saved = localStorage.getItem('courseBuilderOpen');
+        if (builderHydratedRef.current) return;
+        builderHydratedRef.current = true;
+
+        const urlBuilderId = searchParams.get('builder');
+        const saved = readBuilderOverlay();
+
+        if (urlBuilderId) {
+            if (saved?.courseId === urlBuilderId) {
+                setBuilderOverlay(saved);
+            } else {
+                setBuilderOverlay({
+                    courseId: urlBuilderId,
+                    courseName: saved?.courseName ?? 'Khoá học',
+                });
+            }
+            return;
+        }
+
         if (saved) {
-            try {
-                const parsed = JSON.parse(saved);
-                if (parsed.courseId && parsed.courseName) {
-                    setBuilderOverlay(parsed);
-                }
-            } catch { /* ignore */ }
+            setBuilderOverlay(saved);
+            const params = new URLSearchParams(searchParams.toString());
+            params.set('builder', saved.courseId);
+            if (!searchParams.get('content')) {
+                params.set('content', 'tongquan');
+            }
+            router.replace(`/admin/khoahoc?${params.toString()}`, { scroll: false });
         }
-    }, []);
+    }, [router, searchParams]);
 
     useEffect(() => {
-        if (builderOverlay) {
-            localStorage.setItem('courseBuilderOpen', JSON.stringify(builderOverlay));
-        } else {
-            localStorage.removeItem('courseBuilderOpen');
+        if (!builderOverlay || builderOverlay.courseName !== 'Khoá học') return;
+        const course = courses.find((c) => c._id === builderOverlay.courseId);
+        if (course) {
+            const next = { courseId: course._id, courseName: course.title };
+            setBuilderOverlay(next);
+            writeBuilderOverlay(next);
         }
-    }, [builderOverlay]);
+    }, [courses, builderOverlay]);
 
     useEffect(() => {
-        const fetchData = async () => {
+        const fetchStats = async () => {
             try {
-                setLoading(true);
-                const [coursesData, statsData] = await Promise.all([
-                    khoahocApi.getAdminCourses(statusFilter === 'all' ? undefined : statusFilter),
-                    khoahocApi.getAdminStats(),
-                ]);
-                setCourses(coursesData || []);
+                setStatsLoading(true);
+                const statsData = await khoahocApi.getAdminStats();
                 setStats(statsData);
             } catch (error) {
                 console.error(error);
-                toast.error('Có lỗi xảy ra khi tải dữ liệu!');
+                toast.error('Có lỗi xảy ra khi tải thống kê!');
             } finally {
-                setLoading(false);
+                setStatsLoading(false);
             }
         };
-        fetchData();
-    }, [statusFilter]);
+        fetchStats();
+    }, []);
 
-    const filteredCourses = Array.isArray(courses) ? courses.filter(c =>
-        c.title.toLowerCase().includes(searchQuery.toLowerCase())
-    ) : [];
+    useEffect(() => {
+        if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+        searchTimeoutRef.current = setTimeout(() => {
+            setSearchQuery(searchInput);
+            setPage(1);
+        }, 400);
+        return () => {
+            if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+        };
+    }, [searchInput]);
+
+    const fetchCourses = useCallback(async () => {
+        try {
+            setCoursesLoading(true);
+            const result = await khoahocApi.getAdminCourses({
+                status: statusFilter === 'all' ? undefined : statusFilter,
+                page,
+                limit: PAGE_SIZE,
+                search: searchQuery.trim() || undefined,
+            });
+            setCourses(result.courses || []);
+            setTotalPages(result.pagination.totalPages);
+            setTotalItems(result.pagination.total);
+        } catch (error) {
+            console.error(error);
+            toast.error('Có lỗi xảy ra khi tải danh sách khoá học!');
+        } finally {
+            setCoursesLoading(false);
+        }
+    }, [statusFilter, page, searchQuery]);
+
+    useEffect(() => {
+        fetchCourses();
+    }, [fetchCourses]);
+
+    const handleStatusFilterChange = (next: StatusFilter) => {
+        setStatusFilter(next);
+        setPage(1);
+    };
+
+    const getTabCount = (tab: StatusFilter) => stats?.statusCounts?.[tab] ?? 0;
+
+    const updateStatusCounts = (
+        updater: (counts: NonNullable<AdminStats['statusCounts']>) => NonNullable<AdminStats['statusCounts']>,
+    ) => {
+        setStats((prev) => {
+            if (!prev?.statusCounts) return prev;
+            return { ...prev, statusCounts: updater(prev.statusCounts) };
+        });
+    };
+
+    const removeCourseFromFilteredList = (courseId: string) => {
+        if (statusFilter === 'all') return;
+        setCourses((prev) => prev.filter((c) => c._id !== courseId));
+        setTotalItems((prev) => Math.max(0, prev - 1));
+    };
 
     const handleApprove = async (courseId: string) => {
+        const course = courses.find((c) => c._id === courseId);
         try {
             await khoahocApi.approveCourse(courseId);
-            setCourses(prev => prev.map(c => c._id === courseId ? { ...c, status: 'approved' } : c));
+            if (statusFilter === 'all') {
+                setCourses(prev => prev.map(c => c._id === courseId ? { ...c, status: 'approved' } : c));
+            } else {
+                removeCourseFromFilteredList(courseId);
+            }
+            if (course?.status === 'pending') {
+                updateStatusCounts((counts) => ({
+                    ...counts,
+                    pending: Math.max(0, counts.pending - 1),
+                    approved: counts.approved + 1,
+                }));
+            }
             toast.success('Đã duyệt khoá học');
         } catch { toast.error('Có lỗi xảy ra!'); }
     };
 
     const handleReject = async () => {
         if (!rejectModal?.reason.trim()) { toast.error('Vui lòng nhập lý do từ chối!'); return; }
+        const course = courses.find((c) => c._id === rejectModal.courseId);
         try {
             await khoahocApi.rejectCourse(rejectModal.courseId, rejectModal.reason);
-            setCourses(prev => prev.map(c => c._id === rejectModal.courseId ? { ...c, status: 'rejected' } : c));
+            if (statusFilter === 'all') {
+                setCourses(prev => prev.map(c => c._id === rejectModal.courseId ? { ...c, status: 'rejected' } : c));
+            } else {
+                removeCourseFromFilteredList(rejectModal.courseId);
+            }
+            if (course?.status === 'pending') {
+                updateStatusCounts((counts) => ({
+                    ...counts,
+                    pending: Math.max(0, counts.pending - 1),
+                    rejected: counts.rejected + 1,
+                }));
+            }
             setRejectModal(null);
             toast.success('Đã từ chối khoá học');
         } catch { toast.error('Có lỗi xảy ra!'); }
@@ -190,8 +329,21 @@ export default function AdminCoursesPage() {
     const handleDelete = async () => {
         if (!deleteConfirm) return;
         try {
+            const deletedStatus = deleteConfirm.status;
             await khoahocApi.deleteAdminCourse(deleteConfirm._id);
-            setCourses(prev => prev.filter(c => c._id !== deleteConfirm._id));
+            if (courses.length === 1 && page > 1) {
+                setPage((prev) => prev - 1);
+            } else {
+                setCourses(prev => prev.filter(c => c._id !== deleteConfirm._id));
+            }
+            setTotalItems(prev => Math.max(0, prev - 1));
+            updateStatusCounts((counts) => {
+                const next = { ...counts, all: Math.max(0, counts.all - 1) };
+                if (deletedStatus === 'pending') next.pending = Math.max(0, counts.pending - 1);
+                if (deletedStatus === 'approved') next.approved = Math.max(0, counts.approved - 1);
+                if (deletedStatus === 'rejected') next.rejected = Math.max(0, counts.rejected - 1);
+                return next;
+            });
             setDeleteConfirm(null);
             toast.success('Đã xoá khoá học');
         } catch { toast.error('Có lỗi xảy ra!'); }
@@ -275,9 +427,16 @@ export default function AdminCoursesPage() {
                 discountValue: 0,
                 allowCoinPayment: false
             });
-            setCourses(prev => [newCourse, ...prev]);
+            updateStatusCounts((counts) => ({
+                ...counts,
+                all: counts.all + 1,
+            }));
+            if (page === 1 && statusFilter === 'all') {
+                setCourses(prev => [newCourse, ...prev].slice(0, PAGE_SIZE));
+                setTotalItems(prev => prev + 1);
+            }
             // Automatically open the builder for the newly created course
-            setBuilderOverlay({ courseId: newCourse._id, courseName: newCourse.title });
+            openBuilder({ courseId: newCourse._id, courseName: newCourse.title });
         } catch {
             toast.error('Tạo khoá học thất bại');
         } finally {
@@ -372,8 +531,6 @@ export default function AdminCoursesPage() {
         }
     };
 
-    console.log('Courses:', courses);
-
     const cardConfigs = [
         {
             key: 'courses', title: 'Tổng khoá học',
@@ -395,19 +552,11 @@ export default function AdminCoursesPage() {
         },
         {
             key: 'pending', title: 'Chờ duyệt',
-            value: Array.isArray(courses) ? courses.filter(c => c.status === 'pending').length : 0,
+            value: stats?.statusCounts?.pending ?? 0,
             icon: <TrendingUp className="w-4 h-4" />,
             iconBgColor: '#FFFBEB', iconColor: '#D97706',
         },
     ];
-
-    if (loading) {
-        return (
-            <div className="min-h-[60vh] flex items-center justify-center">
-                <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
-            </div>
-        );
-    }
 
     return (
         <AdminPageShell
@@ -421,21 +570,27 @@ export default function AdminCoursesPage() {
             }
         >
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {cardConfigs.map(card => (
-                    <DashboardCard
-                        key={card.key}
-                        title={card.title}
-                        value={card.value}
-                        icon={card.icon}
-                        iconBgColor={card.iconBgColor}
-                        iconColor={card.iconColor}
-                    />
-                ))}
-            </div>
+            {statsLoading && !stats ? (
+                <AdminKhoahocStatsSkeleton />
+            ) : (
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    {cardConfigs.map(card => (
+                        <DashboardCard
+                            key={card.key}
+                            title={card.title}
+                            value={card.value}
+                            icon={card.icon}
+                            iconBgColor={card.iconBgColor}
+                            iconColor={card.iconColor}
+                        />
+                    ))}
+                </div>
+            )}
 
             {/* Charts */}
-            {stats && (
+            {statsLoading && !stats ? (
+                <AdminKhoahocChartsSkeleton />
+            ) : stats ? (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                     <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
                         <div className="flex items-center gap-2 mb-4">
@@ -479,38 +634,44 @@ export default function AdminCoursesPage() {
                         </AdminChartScroll>
                     </div>
                 </div>
-            )}
+            ) : null}
 
             {/* Filters */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-                <div className="flex flex-col sm:flex-row gap-3">
-                    <div className="flex-1">
-                        <CustomInputSearch
-                            placeholder="Tìm kiếm khoá học..."
-                            value={searchQuery}
-                            onChange={setSearchQuery}
-                            size="medium"
-                        />
-                    </div>
-                    <div className="flex gap-2 flex-wrap">
-                        {STATUS_TABS.map(tab => (
+            <div className="flex items-center gap-3">
+                <div className="min-w-0 flex-1">
+                    <CustomInputSearch
+                        placeholder="Tìm kiếm khoá học..."
+                        value={searchInput}
+                        onChange={setSearchInput}
+                        size="medium"
+                        variant="filled"
+                    />
+                </div>
+                <div className="flex shrink-0 items-center gap-2 overflow-x-auto no-scrollbar">
+                    {STATUS_TABS.map((tab) => {
+                        const count = getTabCount(tab.value);
+                        const active = statusFilter === tab.value;
+
+                        return (
                             <CustomButton
                                 key={tab.value}
-                                onClick={() => setStatusFilter(tab.value)}
-                                variant={statusFilter === tab.value ? 'primary' : 'secondary'}
-                                size="small"
+                                type="button"
+                                onClick={() => handleStatusFilterChange(tab.value)}
+                                variant={active ? 'primary' : 'secondary'}
+                                size="medium"
+                                className="shrink-0"
                             >
-                                {tab.label}
+                                {tab.label} ({count})
                             </CustomButton>
-                        ))}
-                    </div>
+                        );
+                    })}
                 </div>
             </div>
 
             {/* Table */}
-            {loading ? (
-                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
-                    <TableSkeleton rows={10} cols={8} />
+            {coursesLoading ? (
+                <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
+                    <AdminKhoahocTableSectionSkeleton />
                 </div>
             ) : (
                 <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
@@ -528,19 +689,19 @@ export default function AdminCoursesPage() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                                {filteredCourses.length === 0 ? (
+                                {courses.length === 0 ? (
                                     <tr>
                                         <td colSpan={8} className="px-4 py-10 text-center text-gray-500 dark:text-gray-400">
                                             Không tìm thấy khoá học nào
                                         </td>
                                     </tr>
-                                ) : filteredCourses.map(course => (
+                                ) : courses.map(course => (
                                     <tr key={course._id} className="hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors">
                                         <td className="px-4 py-3">
                                             <div className="flex items-center gap-3">
                                                 <div
                                                     className="w-16 h-10 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden shrink-0 cursor-pointer hover:opacity-80 transition"
-                                                    onClick={() => setBuilderOverlay({ courseId: course._id, courseName: course.title })}
+                                                    onClick={() => openBuilder({ courseId: course._id, courseName: course.title })}
                                                 >
                                                     {course.thumbnail
                                                         ? <img src={getImageUrl(course.thumbnail)} alt="" className="w-full h-full object-cover" />
@@ -549,7 +710,7 @@ export default function AdminCoursesPage() {
                                                 </div>
                                                 <span
                                                     className="font-medium text-sm text-gray-800 dark:text-gray-200 line-clamp-1 cursor-pointer hover:text-blue-500 transition"
-                                                    onClick={() => setBuilderOverlay({ courseId: course._id, courseName: course.title })}
+                                                    onClick={() => openBuilder({ courseId: course._id, courseName: course.title })}
                                                 >
                                                     {course.title}
                                                 </span>
@@ -620,17 +781,17 @@ export default function AdminCoursesPage() {
 
                     {/* Mobile card list */}
                     <div className="sm:hidden divide-y divide-gray-200 dark:divide-gray-700">
-                        {filteredCourses.length === 0 ? (
+                        {courses.length === 0 ? (
                             <div className="px-4 py-10 text-center text-gray-500 dark:text-gray-400">
                                 Không tìm thấy khoá học nào
                             </div>
-                        ) : filteredCourses.map(course => (
+                        ) : courses.map(course => (
                             <div key={course._id} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors space-y-3">
                                 {/* Title row */}
                                 <div className="flex items-start gap-3">
                                     <div
                                         className="w-20 h-12 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden shrink-0 cursor-pointer hover:opacity-80 transition"
-                                        onClick={() => setBuilderOverlay({ courseId: course._id, courseName: course.title })}
+                                        onClick={() => openBuilder({ courseId: course._id, courseName: course.title })}
                                     >
                                         {course.thumbnail
                                             ? <img src={getImageUrl(course.thumbnail)} alt="" className="w-full h-full object-cover" />
@@ -640,7 +801,7 @@ export default function AdminCoursesPage() {
                                     <div className="flex-1 min-w-0">
                                         <h4
                                             className="font-medium text-sm text-gray-800 dark:text-gray-200 line-clamp-2 cursor-pointer hover:text-blue-500 transition"
-                                            onClick={() => setBuilderOverlay({ courseId: course._id, courseName: course.title })}
+                                            onClick={() => openBuilder({ courseId: course._id, courseName: course.title })}
                                         >
                                             {course.title}
                                         </h4>
@@ -702,6 +863,15 @@ export default function AdminCoursesPage() {
                             </div>
                         ))}
                     </div>
+
+                    <AdminPagination
+                        page={page}
+                        totalPages={totalPages}
+                        totalItems={totalItems}
+                        pageSize={PAGE_SIZE}
+                        onPageChange={setPage}
+                        itemLabel="khoá học"
+                    />
                 </div>
             )}
 
@@ -820,9 +990,7 @@ export default function AdminCoursesPage() {
                                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                             Mô tả <span className="text-red-500">*</span>
                                         </label>
-                                        <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
-                                            <CustomEditor ref={editorRef} initialValue={createForm.description} />
-                                        </div>
+                                        <CustomEditor ref={editorRef} initialValue={createForm.description} />
                                     </div>
                                 </>
                             )}
@@ -1094,9 +1262,7 @@ export default function AdminCoursesPage() {
                                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                             Mô tả <span className="text-red-500">*</span>
                                         </label>
-                                        <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
-                                            <CustomEditor ref={editEditorRef} initialValue={editCourse.description || editForm.description} />
-                                        </div>
+                                        <CustomEditor ref={editEditorRef} initialValue={editCourse.description || editForm.description} />
                                     </div>
                                 </>
                             )}
@@ -1407,7 +1573,7 @@ export default function AdminCoursesPage() {
                 <CourseBuilderOverlay
                     courseId={builderOverlay.courseId}
                     courseName={builderOverlay.courseName}
-                    onClose={() => setBuilderOverlay(null)}
+                    onClose={closeBuilder}
                 />
             )}
         </AdminPageShell>

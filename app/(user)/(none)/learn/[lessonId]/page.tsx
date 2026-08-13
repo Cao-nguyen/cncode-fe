@@ -6,33 +6,43 @@ import {
     getLessonDetail,
     saveProgress,
     getProgress,
-    submitExercise,
     getCourseLearnData,
     getExerciseByLessonId,
     getCourseProgress,
     createNote,
     getNotesByLesson
 } from '@/lib/api/khoahoc.api';
-import { Lesson, Progress, Exercise, ChapterWithLessons, ExerciseAnswer } from '@/types/khoahoc.type';
+import { Lesson, Progress, Exercise, ChapterWithLessons, ExerciseSubmitResult } from '@/types/khoahoc.type';
 import { setCourseLastLesson, removeCourseLastLesson } from '@/lib/localProgress';
 import {
     clampWatchTime,
     getAnsweredQuizTimes,
-    getEarliestPendingQuiz,
-    getQuizToShowAtTime,
+    getPlaybackPrevTimeForCrossing,
     markQuizAnswered,
+    resolveQuizDuringPlayback,
+    skipQuizzesBeforeTime,
+    skipQuizzesBetweenTimes,
 } from '@/lib/lessonQuizProgress';
 import {
-    Loader2, Play, CheckCircle2, ChevronLeft, ChevronRight,
-    AlertCircle, ChevronDown, ChevronUp, HelpCircle, MessageSquare, X, FileText, Lock, StickyNote
+    Loader2, ChevronLeft, ChevronRight,
+    AlertCircle, MessageCircle, X, FileText, NotebookPen, BookOpen
 } from 'lucide-react';
 
+import CourseExercisePanel from '@/components/learn/CourseExercisePanel';
 import StaticContent from '@/components/common/StaticContent';
 import { CustomButton } from '@/components/custom/CustomButton';
 import CustomEditor, { CustomEditorRef } from '@/components/custom/CustomEditor';
 import CommentSection from '@/components/comment/CommentSection';
 import QuizPopup from '@/components/learn/QuizPopup';
+import {
+    gradeVideoQuizAnswerAsync,
+    normalizeVideoQuizPlaybackQuestion,
+    normalizeVideoQuizPlaybackQuestions,
+    type VideoQuizPlaybackQuestion,
+} from '@/lib/khoahoc/video-quiz-answer.utils';
+import { LearnCourseSidebar } from '@/components/learn/LearnCourseSidebar';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -40,25 +50,7 @@ interface LessonWithExercise extends Lesson {
     exercise?: Exercise;
 }
 
-interface ExerciseQuestion {
-    type: 'quiz' | 'true-false' | 'short-answer' | 'ide';
-    question: string;
-    options?: { text: string; isCorrect: boolean }[];
-    correctAnswer?: string;
-    language?: string;
-    starterCode?: string;
-}
-
-interface QuizQuestion {
-    time: number;
-    type: 'multiple-choice' | 'true-false' | 'short-answer';
-    question: string;
-    options?: string[];
-    correctAnswer?: number;
-    correctAnswers?: string[];
-    score: number;
-    explanation?: string;
-}
+interface QuizQuestion extends VideoQuizPlaybackQuestion {}
 
 // YouTube Player Types
 interface YTPlayer {
@@ -329,13 +321,13 @@ export default function LearnPage() {
 
     // Exercise
     const [exercise, setExercise] = useState<Exercise | null>(null);
-    const [currentQuestion, setCurrentQuestion] = useState<ExerciseQuestion | null>(null);
-    const [quizSelected, setQuizSelected] = useState<string | null>(null);
-    const [tfSelected, setTfSelected] = useState<Record<string, boolean>>({});
-    const [shortAnswerText, setShortAnswerText] = useState('');
-    const [ideCode, setIdeCode] = useState('');
-    const [exerciseSubmitting, setExerciseSubmitting] = useState(false);
-    const [exerciseResult, setExerciseResult] = useState<{ isCorrect: boolean; canProceed: boolean } | null>(null);
+    const [exerciseCanProceed, setExerciseCanProceed] = useState(true);
+
+    useEffect(() => {
+        if (progress?.isCompleted) {
+            setExerciseCanProceed(true);
+        }
+    }, [progress?.isCompleted]);
 
     // Notes
     const [notes, setNotes] = useState<{ time: number; timeStr: string; text: string; _id?: string }[]>([]);
@@ -345,6 +337,7 @@ export default function LearnPage() {
 
     // Sidebar
     const [expandedChapters, setExpandedChapters] = useState<Set<string>>(new Set());
+    const [sidebarOpen, setSidebarOpen] = useState(false);
 
     // Comment popup
     const [showCommentPopup, setShowCommentPopup] = useState(false);
@@ -359,12 +352,75 @@ export default function LearnPage() {
     const [quizAnswer, setQuizAnswer] = useState<string | null>(null);
     const [quizAnswered, setQuizAnswered] = useState(false);
     const [quizCorrect, setQuizCorrect] = useState<boolean | null>(null);
+    const [quizSubmitting, setQuizSubmitting] = useState(false);
     const answeredQuizIds = useRef<Set<number>>(new Set());
+    const skippedQuizTimesRef = useRef<Set<number>>(new Set());
     const quizQuestionsRef = useRef<QuizQuestion[]>([]);
 
     useEffect(() => {
         quizQuestionsRef.current = quizQuestions;
     }, [quizQuestions]);
+
+    const skipPastQuizzes = useCallback((beforeTime: number) => {
+        skipQuizzesBeforeTime(
+            quizQuestionsRef.current,
+            skippedQuizTimesRef.current,
+            answeredQuizIds.current,
+            beforeTime,
+        );
+    }, []);
+
+    const skipQuizzesOnSeek = useCallback((fromTime: number, toTime: number) => {
+        if (toTime > fromTime) {
+            skipQuizzesBetweenTimes(
+                quizQuestionsRef.current,
+                skippedQuizTimesRef.current,
+                answeredQuizIds.current,
+                fromTime,
+                toTime,
+            );
+        }
+        skipPastQuizzes(toTime);
+    }, [skipPastQuizzes]);
+
+    const openQuizPopup = useCallback((question: QuizQuestion) => {
+        setCurrentQuizQuestion(normalizeVideoQuizPlaybackQuestion(question));
+        setShowQuizPopup(true);
+        setQuizAnswer(null);
+        setQuizAnswered(false);
+        setQuizCorrect(null);
+        if (isYouTubeVideo && youtubePlayerRef.current?.pauseVideo) {
+            youtubePlayerRef.current.pauseVideo();
+        } else if (videoRef.current) {
+            videoRef.current.pause();
+        }
+    }, [isYouTubeVideo]);
+
+    const handleQuizPlaybackTick = useCallback((
+        rawTime: number,
+        prevTime: number,
+        seekTo: (time: number) => void
+    ): boolean => {
+        const decision = resolveQuizDuringPlayback(
+            quizQuestionsRef.current,
+            answeredQuizIds.current,
+            skippedQuizTimesRef.current,
+            prevTime,
+            rawTime
+        );
+
+        if (decision.action === 'none') {
+            lastValidTimeRef.current = rawTime;
+            setCurrentVideoTime(rawTime);
+            return false;
+        }
+
+        seekTo(decision.seekTo);
+        lastValidTimeRef.current = decision.seekTo;
+        setCurrentVideoTime(decision.seekTo);
+        openQuizPopup(decision.quiz);
+        return true;
+    }, [openQuizPopup]);
 
     // ─── Navigation helpers ───────────────────────────────────────────────────
 
@@ -390,7 +446,9 @@ export default function LearnPage() {
 
         // Load quiz questions from lesson
         if (lessonData.quizQuestions && lessonData.quizQuestions.length > 0) {
-            setQuizQuestions(lessonData.quizQuestions as QuizQuestion[]);
+            setQuizQuestions(
+                normalizeVideoQuizPlaybackQuestions(lessonData.quizQuestions as VideoQuizPlaybackQuestion[]),
+            );
         } else {
             setQuizQuestions([]);
         }
@@ -420,14 +478,10 @@ export default function LearnPage() {
 
         if (lessonData.type === 'exercise' && lessonData.exercise) {
             setExercise(lessonData.exercise);
-            const firstQ = lessonData.exercise.questions?.[0];
-            if (firstQ) {
-                setCurrentQuestion(firstQ as ExerciseQuestion);
-                if (firstQ.type === 'ide') setIdeCode(firstQ.starterCode || '');
-            }
+            setExerciseCanProceed(!lessonData.exercise.mustPassToNext);
         } else {
             setExercise(null);
-            setCurrentQuestion(null);
+            setExerciseCanProceed(true);
         }
     }, []);
 
@@ -439,16 +493,14 @@ export default function LearnPage() {
         // Reset states khi chuyển lesson
         setLoadError(null);
         setFailedCourseId(null);
-        setQuizSelected(null);
-        setTfSelected({});
-        setShortAnswerText('');
-        setExerciseResult(null);
+        setExerciseCanProceed(true);
         setShowQuizPopup(false);
         setCurrentQuizQuestion(null);
         setQuizAnswer(null);
         setQuizAnswered(false);
         setQuizCorrect(null);
         answeredQuizIds.current = getAnsweredQuizTimes(lessonId);
+        skippedQuizTimesRef.current = new Set();
         lastValidTimeRef.current = 0;
         watchedSecondsRef.current = 0;
         initialSeekDone.current = null;
@@ -526,29 +578,18 @@ export default function LearnPage() {
     // ─── YouTube Player handlers ──────────────────────────────────────────────
 
     const handlePlayerReady = useCallback((event: YTPlayerEvent) => {
-        const questions = quizQuestionsRef.current;
-        const answered = answeredQuizIds.current;
         const savedTime = watchedSecondsRef.current;
-        const clamped = clampWatchTime(savedTime, questions, answered);
-        const pending = getEarliestPendingQuiz(questions, answered, savedTime);
 
         if (savedTime > 0 && initialSeekDone.current !== lessonId) {
-            event.target.seekTo(clamped, true);
-            lastValidTimeRef.current = clamped;
-            setCurrentVideoTime(clamped);
+            skipPastQuizzes(savedTime);
+            event.target.seekTo(savedTime, true);
+            lastValidTimeRef.current = getPlaybackPrevTimeForCrossing(savedTime);
+            setCurrentVideoTime(savedTime);
             initialSeekDone.current = lessonId;
         }
 
         setVideoLoading(false);
-
-        if (pending && savedTime >= pending.time) {
-            setCurrentQuizQuestion(pending);
-            setShowQuizPopup(true);
-            setQuizAnswer(null);
-            setQuizAnswered(false);
-            setQuizCorrect(null);
-        }
-    }, [lessonId]);
+    }, [lessonId, skipPastQuizzes]);
 
     const handleStateChange = useCallback((event: YTPlayerEvent) => {
         const player = event.target;
@@ -561,6 +602,9 @@ export default function LearnPage() {
 
         // Update time when playing
         if (event.data === window.YT!.PlayerState.PLAYING) {
+            const currentTime = Math.floor(player.getCurrentTime());
+            lastValidTimeRef.current = getPlaybackPrevTimeForCrossing(currentTime);
+
             // Clear any existing interval
             if (videoTimeIntervalRef.current) {
                 clearInterval(videoTimeIntervalRef.current);
@@ -568,38 +612,31 @@ export default function LearnPage() {
 
             // Start new interval to track time from YouTube player
             videoTimeIntervalRef.current = setInterval(() => {
+                const prevTime = lastValidTimeRef.current;
                 const rawTime = Math.floor(player.getCurrentTime());
                 const questions = quizQuestionsRef.current;
                 const answered = answeredQuizIds.current;
-                const pending = getEarliestPendingQuiz(questions, answered, rawTime);
 
-                if (pending && rawTime > pending.time) {
-                    player.seekTo(pending.time, true);
-                    lastValidTimeRef.current = pending.time;
-                    setCurrentVideoTime(pending.time);
-                    setCurrentQuizQuestion(pending);
-                    setShowQuizPopup(true);
-                    setQuizAnswer(null);
-                    setQuizAnswered(false);
-                    setQuizCorrect(null);
-                    player.pauseVideo();
-                    return;
-                }
-
-                const currentTime = rawTime;
-                const timeDiff = currentTime - lastValidTimeRef.current;
-
-                // Check if user seeked forward more than 30 seconds
+                const timeDiff = rawTime - prevTime;
                 if (timeDiff > 30) {
-                    player.seekTo(lastValidTimeRef.current, true);
+                    player.seekTo(prevTime, true);
                     toast.error('Không thể tua bài học! Bạn cần xem từ đầu.', {
                         duration: 3000,
                     });
                     return;
                 }
 
-                lastValidTimeRef.current = currentTime;
-                setCurrentVideoTime(currentTime);
+                const handled = handleQuizPlaybackTick(
+                    rawTime,
+                    prevTime,
+                    (time) => player.seekTo(time, true)
+                );
+                if (handled) {
+                    player.pauseVideo();
+                    return;
+                }
+
+                const currentTime = rawTime;
 
                 if (currentTime > 0 && currentTime % 10 === 0 && currentTime !== watchedSecondsRef.current) {
                     const savableTime = clampWatchTime(currentTime, questions, answered);
@@ -624,7 +661,7 @@ export default function LearnPage() {
                         }).catch(console.error);
                     }
                 }
-            }, 1000);
+            }, 250);
         } else {
             // Pause or ended - stop interval
             if (videoTimeIntervalRef.current) {
@@ -642,7 +679,7 @@ export default function LearnPage() {
                 saveProgress(lessonId, update).catch(console.error);
             }
         }
-    }, [lessonId, lesson]);
+    }, [lessonId, lesson, handleQuizPlaybackTick]);
 
     // ─── Load YouTube IFrame API ──────────────────────────────────────────────
 
@@ -781,7 +818,7 @@ export default function LearnPage() {
                     }
                     return newTime;
                 });
-            }, 1000);
+            }, 250);
         }
 
         return () => {
@@ -809,62 +846,6 @@ export default function LearnPage() {
             videoRef.current.play();
         }
     }, [isYouTubeVideo]);
-
-    // ─── Quiz popup logic ─────────────────────────────────────────────────────
-
-    useEffect(() => {
-        if (!quizQuestions.length || showQuizPopup) return;
-
-        const question = getQuizToShowAtTime(quizQuestions, answeredQuizIds.current, currentVideoTime);
-        if (!question) return;
-
-        if (currentVideoTime > question.time) {
-            if (isYouTubeVideo && youtubePlayerRef.current) {
-                youtubePlayerRef.current.seekTo(question.time, true);
-            } else if (videoRef.current) {
-                videoRef.current.currentTime = question.time;
-            }
-            lastValidTimeRef.current = question.time;
-            setCurrentVideoTime(question.time);
-        }
-
-        setCurrentQuizQuestion(question);
-        setShowQuizPopup(true);
-        setQuizAnswer(null);
-        setQuizAnswered(false);
-        setQuizCorrect(null);
-        pauseVideo();
-    }, [currentVideoTime, quizQuestions, showQuizPopup, pauseVideo, isYouTubeVideo]);
-
-    // Sau reload: nếu tiến độ đã vượt câu hỏi chưa trả lời thì ép hiện popup ngay
-    useEffect(() => {
-        if (!lesson || !quizQuestions.length || showQuizPopup) return;
-
-        answeredQuizIds.current = getAnsweredQuizTimes(lessonId);
-        const savedTime = progress?.watchedSeconds ?? watchedSecondsRef.current;
-        if (savedTime <= 0) return;
-
-        const pending = getEarliestPendingQuiz(quizQuestions, answeredQuizIds.current, savedTime);
-        if (!pending) return;
-
-        const clamped = pending.time;
-        watchedSecondsRef.current = clamped;
-        lastValidTimeRef.current = clamped;
-        setCurrentVideoTime(clamped);
-
-        if (isYouTubeVideo && youtubePlayerRef.current && typeof youtubePlayerRef.current.seekTo === 'function') {
-            youtubePlayerRef.current.seekTo(clamped, true);
-        } else if (videoRef.current) {
-            videoRef.current.currentTime = clamped;
-        }
-
-        setCurrentQuizQuestion(pending);
-        setShowQuizPopup(true);
-        setQuizAnswer(null);
-        setQuizAnswered(false);
-        setQuizCorrect(null);
-        pauseVideo();
-    }, [quizQuestions, lessonId, lesson, showQuizPopup, isYouTubeVideo, pauseVideo, progress?.watchedSeconds]);
 
     // ─── Notes ───────────────────────────────────────────────────────────────
 
@@ -946,71 +927,17 @@ export default function LearnPage() {
 
     // ─── Quiz answer handlers ─────────────────────────────────────────────────
 
-    const handleQuizSubmit = useCallback(() => {
+    const handleQuizSubmit = useCallback(async () => {
         if (!currentQuizQuestion || !quizAnswer) return;
 
-        setQuizAnswered(true);
-
-        // Check if answer is correct
-        let isCorrect = false;
-        if (currentQuizQuestion.type === 'multiple-choice') {
-            const correctLetter = currentQuizQuestion.correctAnswers?.[0];
-            isCorrect = quizAnswer === correctLetter;
-        } else if (currentQuizQuestion.type === 'true-false') {
-            // For true-false, compare answers
-            // Handle 3 formats:
-            // 1. ["a:true", "b:false", "c:true", "d:false"] - letter:value format
-            // 2. ["true", "true", "false", "false"] - direct boolean array
-            // 3. ["a", "b"] - only correct answer letters (rest are false)
-
-            const correctAnswers = currentQuizQuestion.correctAnswers || [];
-
-            if (correctAnswers[0]?.includes(':')) {
-                // Format 1: "a:true,b:false,c:true,d:false"
-                const userAnswers = quizAnswer.split(',').sort().join(',');
-                const correctAnswersStr = correctAnswers.sort().join(',');
-                isCorrect = userAnswers === correctAnswersStr;
-            } else if (correctAnswers.length < 4 && !correctAnswers[0]?.includes('true') && !correctAnswers[0]?.includes('false')) {
-                // Format 3: ["a", "b"] - only letters of correct answers
-                // Parse user answers
-                const userAnswersObj: Record<string, boolean> = {};
-                quizAnswer.split(',').forEach(part => {
-                    const [letter, value] = part.split(':');
-                    if (letter && value !== undefined) {
-                        userAnswersObj[letter] = value === 'true';
-                    }
-                });
-
-                // Check if all correct letters are marked true and all others are marked false
-                const correctLetters = new Set(correctAnswers);
-                const allLetters = ['a', 'b', 'c', 'd'];
-                isCorrect = allLetters.every(letter =>
-                    userAnswersObj[letter] === correctLetters.has(letter)
-                );
-            } else {
-                // Format 2: ["true", "true", "false", "false"]
-                // Parse user answers
-                const userAnswersObj: Record<string, boolean> = {};
-                quizAnswer.split(',').forEach(part => {
-                    const [letter, value] = part.split(':');
-                    if (letter && value !== undefined) {
-                        userAnswersObj[letter] = value === 'true';
-                    }
-                });
-
-                // Get user answers in order a, b, c, d
-                const correctValues = correctAnswers.map(ans => ans === 'true');
-
-                // Compare each letter's answer
-                const userAnswerArray = ['a', 'b', 'c', 'd'].map(letter => userAnswersObj[letter]);
-                isCorrect = userAnswerArray.every((userVal, idx) => userVal === correctValues[idx]);
-            }
-        } else if (currentQuizQuestion.type === 'short-answer') {
-            // For short-answer, compare trimmed values
-            isCorrect = quizAnswer.trim() === currentQuizQuestion.correctAnswers?.[0]?.trim();
+        setQuizSubmitting(true);
+        try {
+            const isCorrect = await gradeVideoQuizAnswerAsync(currentQuizQuestion, quizAnswer);
+            setQuizAnswered(true);
+            setQuizCorrect(isCorrect);
+        } finally {
+            setQuizSubmitting(false);
         }
-
-        setQuizCorrect(isCorrect);
     }, [currentQuizQuestion, quizAnswer]);
 
     const handleQuizContinue = useCallback(() => {
@@ -1023,32 +950,22 @@ export default function LearnPage() {
         setQuizAnswer(null);
         setQuizAnswered(false);
         setQuizCorrect(null);
+        setQuizSubmitting(false);
         playVideo();
     }, [currentQuizQuestion, playVideo, lessonId]);
 
     // ─── Exercise submit ──────────────────────────────────────────────────────
 
-    const handleExerciseSubmit = useCallback(async () => {
-        if (!exercise || !currentQuestion) return;
-        setExerciseSubmitting(true);
-        try {
-            let answer: ExerciseAnswer;
-            if (currentQuestion.type === 'quiz') answer = quizSelected as string;
-            else if (currentQuestion.type === 'true-false') answer = tfSelected as Record<string, boolean>;
-            else if (currentQuestion.type === 'short-answer') answer = shortAnswerText;
-            else if (currentQuestion.type === 'ide') answer = ideCode;
-            else answer = shortAnswerText;
+    const handleExerciseSubmitSuccess = useCallback(async (res: ExerciseSubmitResult) => {
+        setExerciseCanProceed(res.canProceed);
 
-            const res = await submitExercise(exercise._id as string, { answer }) as { isCorrect: boolean; canProceed: boolean };
-            setExerciseResult(res);
-
-            if (res.isCorrect) {
+        if (res.isCorrect) {
+            try {
                 const saved = await saveProgress(lessonId, { isCompleted: true, watchedSeconds: 0 });
                 const next = (saved as Progress) ?? { ...progressCache.get(lessonId), isCompleted: true } as Progress;
                 progressCache.set(lessonId, next);
                 setProgress(next);
 
-                // Refresh course progress after completing exercise
                 if (lesson?.courseId) {
                     try {
                         const courseProg = await getCourseProgress(lesson.courseId);
@@ -1057,19 +974,18 @@ export default function LearnPage() {
                         console.error('[LearnPage] Failed to refresh course progress:', err);
                     }
                 }
+            } catch (err) {
+                console.error('[LearnPage] Failed to save exercise progress:', err);
             }
-        } catch (err) {
-            console.error(err);
-        } finally {
-            setExerciseSubmitting(false);
         }
-    }, [exercise, currentQuestion, quizSelected, tfSelected, shortAnswerText, ideCode, lessonId]);
+    }, [lesson?.courseId, lessonId]);
 
     // ─── Navigation actions ───────────────────────────────────────────────────
 
     // Instant — không có loading state, cache đã lo
     const handleNavigateToLesson = useCallback((id: string) => {
         router.push(`/learn/${id}`);
+        setSidebarOpen(false);
     }, [router]);
 
     const handlePrevLesson = useCallback(() => { if (prevLesson?._id) handleNavigateToLesson(prevLesson._id); }, [prevLesson, handleNavigateToLesson]);
@@ -1104,6 +1020,10 @@ export default function LearnPage() {
         }
     }, [chapters, lessonId]);
 
+    useEffect(() => {
+        setSidebarOpen(false);
+    }, [lessonId]);
+
     // ─── Render ───────────────────────────────────────────────────────────────
 
     if (!initialLoading && loadError) {
@@ -1137,25 +1057,24 @@ export default function LearnPage() {
         <div className="flex flex-col h-screen bg-gray-50 text-gray-900 overflow-hidden">
 
             {/* Header */}
-            <header className="h-14 bg-white border-b border-gray-200 flex items-center justify-between px-6 shrink-0 shadow-sm">
-                <div className="flex items-center gap-4">
-                    <button onClick={handleBackToCourses} className="hover:text-blue-600 transition-colors">
-                        <ChevronLeft className="w-6 h-6" />
+            <header className="flex h-12 shrink-0 items-center justify-between border-b border-gray-200 bg-white px-3 shadow-sm sm:h-14 sm:px-6">
+                <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-4">
+                    <button onClick={handleBackToCourses} className="shrink-0 transition-colors hover:text-blue-600">
+                        <ChevronLeft className="h-6 w-6" />
                     </button>
-                    <img src="/images/logo.png" alt="CNCode" width={100} height={32} className="h-8 w-auto" />
-                    <span className="text-gray-400">|</span>
-                    <div className="flex items-center gap-3 text-xs text-gray-600 font-semibold max-w-2xl">
-                        <span className="truncate">
+                    <img src="/images/logo.png" alt="CNCode" width={100} height={32} className="hidden h-7 w-auto sm:block sm:h-8" />
+                    <span className="hidden text-gray-400 sm:inline">|</span>
+                    <div className="min-w-0 flex-1 text-xs font-semibold text-gray-600 sm:max-w-2xl sm:flex-none">
+                        <span className="block truncate">
                             {initialLoading
-                                ? <span className="inline-block h-4 w-32 bg-gray-200 rounded animate-pulse" />
+                                ? <span className="inline-block h-4 w-24 animate-pulse rounded bg-gray-200 sm:w-32" />
                                 : (lesson?.title || 'Đang tải...')}
                         </span>
                     </div>
                 </div>
-                <div className="flex items-center gap-4">
-                    {/* Progress Circle */}
-                    <div className="relative w-10 h-10">
-                        <svg className="w-10 h-10 transform -rotate-90">
+                <div className="flex shrink-0 items-center gap-2 sm:gap-4">
+                    <div className="relative h-9 w-9 sm:h-10 sm:w-10">
+                        <svg viewBox="0 0 40 40" className="h-full w-full -rotate-90 transform">
                             <circle
                                 cx="20"
                                 cy="20"
@@ -1179,7 +1098,7 @@ export default function LearnPage() {
                             />
                         </svg>
                         <div className="absolute inset-0 flex items-center justify-center">
-                            <span className="text-[10px] font-bold text-gray-700">
+                            <span className="text-[9px] font-bold text-gray-700 sm:text-[10px]">
                                 {courseProgress?.percent || 0}%
                             </span>
                         </div>
@@ -1187,31 +1106,56 @@ export default function LearnPage() {
 
                     <button
                         onClick={() => setShowNotesInline(!showNotesInline)}
-                        className={`flex items-center gap-2 transition-colors ${showNotesInline ? 'text-blue-600' : 'text-gray-600 hover:text-blue-600'}`}
+                        className={cn(
+                            'flex items-center gap-1.5 rounded-xl p-2 transition-all sm:rounded-2xl sm:px-3',
+                            showNotesInline
+                                ? 'bg-amber-50 text-amber-600'
+                                : 'text-gray-500 hover:bg-amber-50 hover:text-amber-600',
+                        )}
                         title="Ghi chú"
                     >
-                        <StickyNote className="w-4 h-4" />
-                        <span className="text-sm font-semibold">Ghi chú</span>
+                        <NotebookPen className="h-[18px] w-[18px]" strokeWidth={2.25} />
+                        <span className="hidden text-sm font-semibold sm:inline">Ghi chú</span>
                     </button>
 
                     <button
                         onClick={() => setShowCommentPopup(true)}
-                        className="flex items-center gap-2 text-gray-600 hover:text-blue-600 transition-colors"
+                        className="flex items-center gap-1.5 rounded-xl p-2 text-gray-500 transition-all hover:bg-sky-50 hover:text-sky-600 sm:rounded-2xl sm:px-3"
+                        title="Bình luận"
                     >
-                        <MessageSquare className="w-4 h-4" />
-                        <span className="text-sm font-semibold">Bình luận</span>
+                        <MessageCircle className="h-[18px] w-[18px]" strokeWidth={2.25} />
+                        <span className="hidden text-sm font-semibold sm:inline">Bình luận</span>
+                    </button>
+
+                    <button
+                        onClick={() => setSidebarOpen(true)}
+                        className={cn(
+                            'flex items-center gap-1.5 rounded-xl p-2 transition-all sm:rounded-2xl sm:px-3 lg:hidden',
+                            sidebarOpen
+                                ? 'bg-violet-50 text-violet-600'
+                                : 'text-gray-500 hover:bg-violet-50 hover:text-violet-600',
+                        )}
+                        title="Nội dung khoá học"
+                    >
+                        <BookOpen className="h-[18px] w-[18px]" strokeWidth={2.25} />
+                        <span className="hidden text-sm font-semibold sm:inline">Nội dung</span>
                     </button>
                 </div>
             </header>
 
             {/* Main */}
-            <div className="flex flex-1 overflow-hidden">
+            <div className="relative flex flex-1 overflow-hidden">
 
                 {/* Left content */}
-                <div className="flex-1 overflow-y-auto flex flex-col no-scrollbar">
+                <div className="flex min-h-0 min-w-0 flex-1 flex-col">
 
                     {/* Video / Exercise */}
-                    <div className={`w-full relative shrink-0 ${lesson?.type === 'exercise' ? 'flex-1 bg-gray-50' : 'h-[550px] bg-black'}`}>
+                    <div className={cn(
+                        'relative w-full shrink-0',
+                        lesson?.type === 'exercise'
+                            ? 'min-h-0 flex-1 bg-gray-50'
+                            : 'aspect-video bg-black lg:aspect-auto lg:h-[550px]',
+                    )}>
                         {initialLoading ? (
                             <div className="w-full h-full flex items-center justify-center">
                                 <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
@@ -1241,49 +1185,35 @@ export default function LearnPage() {
                                     onLoadedMetadata={() => {
                                         if (!videoRef.current) return;
 
-                                        const questions = quizQuestionsRef.current;
-                                        const answered = answeredQuizIds.current;
                                         const savedTime = watchedSecondsRef.current;
-                                        const clamped = clampWatchTime(savedTime, questions, answered);
-                                        const pending = getEarliestPendingQuiz(questions, answered, savedTime);
 
                                         if (savedTime > 0) {
-                                            videoRef.current.currentTime = clamped;
-                                            lastValidTimeRef.current = clamped;
-                                            setCurrentVideoTime(clamped);
-                                        }
-
-                                        if (pending && savedTime >= pending.time) {
-                                            setCurrentQuizQuestion(pending);
-                                            setShowQuizPopup(true);
-                                            setQuizAnswer(null);
-                                            setQuizAnswered(false);
-                                            setQuizCorrect(null);
+                                            skipPastQuizzes(savedTime);
+                                            videoRef.current.currentTime = savedTime;
+                                            lastValidTimeRef.current = getPlaybackPrevTimeForCrossing(savedTime);
+                                            setCurrentVideoTime(savedTime);
                                         }
                                     }}
                                     onTimeUpdate={() => {
                                         if (videoRef.current && isVideoPlaying) {
                                             const rawTime = Math.floor(videoRef.current.currentTime);
+                                            const prevTime = lastValidTimeRef.current;
                                             const questions = quizQuestionsRef.current;
                                             const answered = answeredQuizIds.current;
-                                            const pending = getEarliestPendingQuiz(questions, answered, rawTime);
 
-                                            if (pending && rawTime > pending.time) {
-                                                videoRef.current.currentTime = pending.time;
-                                                lastValidTimeRef.current = pending.time;
-                                                setCurrentVideoTime(pending.time);
-                                                setCurrentQuizQuestion(pending);
-                                                setShowQuizPopup(true);
-                                                setQuizAnswer(null);
-                                                setQuizAnswered(false);
-                                                setQuizCorrect(null);
+                                            const handled = handleQuizPlaybackTick(
+                                                rawTime,
+                                                prevTime,
+                                                (time) => {
+                                                    if (videoRef.current) videoRef.current.currentTime = time;
+                                                }
+                                            );
+                                            if (handled) {
                                                 videoRef.current.pause();
                                                 return;
                                             }
 
                                             const currentTime = rawTime;
-                                            setCurrentVideoTime(currentTime);
-                                            lastValidTimeRef.current = currentTime;
 
                                             if (currentTime > 0 && currentTime % 10 === 0 && currentTime !== watchedSecondsRef.current) {
                                                 const savableTime = clampWatchTime(currentTime, questions, answered);
@@ -1312,9 +1242,10 @@ export default function LearnPage() {
                                     }}
                                     onPlay={() => {
                                         setIsVideoPlaying(true);
-                                        // Sync currentVideoTime when play starts
                                         if (videoRef.current) {
-                                            setCurrentVideoTime(Math.floor(videoRef.current.currentTime));
+                                            const t = Math.floor(videoRef.current.currentTime);
+                                            lastValidTimeRef.current = getPlaybackPrevTimeForCrossing(t);
+                                            setCurrentVideoTime(t);
                                         }
                                     }}
                                     onPause={() => {
@@ -1334,27 +1265,12 @@ export default function LearnPage() {
                                         if (!videoRef.current) return;
 
                                         const rawTime = Math.floor(videoRef.current.currentTime);
-                                        const questions = quizQuestionsRef.current;
-                                        const answered = answeredQuizIds.current;
-                                        const clamped = clampWatchTime(rawTime, questions, answered);
+                                        const prevTime = lastValidTimeRef.current;
 
-                                        if (clamped !== rawTime) {
-                                            videoRef.current.currentTime = clamped;
-                                            toast.error('Bạn cần trả lời câu hỏi trong video trước khi tiếp tục.', { duration: 3000 });
-                                        }
+                                        skipQuizzesOnSeek(prevTime, rawTime);
 
-                                        lastValidTimeRef.current = clamped;
-                                        setCurrentVideoTime(clamped);
-
-                                        const pending = getEarliestPendingQuiz(questions, answered, Math.max(rawTime, clamped));
-                                        if (pending && !showQuizPopup) {
-                                            setCurrentQuizQuestion(pending);
-                                            setShowQuizPopup(true);
-                                            setQuizAnswer(null);
-                                            setQuizAnswered(false);
-                                            setQuizCorrect(null);
-                                            videoRef.current.pause();
-                                        }
+                                        lastValidTimeRef.current = getPlaybackPrevTimeForCrossing(rawTime);
+                                        setCurrentVideoTime(rawTime);
                                     }}
                                     onEnded={() => {
                                         setIsVideoPlaying(false);
@@ -1379,309 +1295,117 @@ export default function LearnPage() {
                                 />
                             )
                         ) : (
-                            <div className="w-full h-full flex flex-col p-8 overflow-y-auto">
-                                {currentQuestion ? (
-                                    <div className="max-w-3xl w-full mx-auto bg-white rounded-3xl p-8 border border-gray-200 shadow-lg flex-grow flex flex-col">
-                                        <div className="text-base text-gray-700 mb-6 leading-relaxed">
-                                            <StaticContent content={currentQuestion.question} />
-                                        </div>
-
-                                        {currentQuestion.type === 'quiz' && (
-                                            <div className="space-y-3 mb-6">
-                                                {currentQuestion.options?.map((opt, i) => {
-                                                    // Handle both new format (string) and legacy format (object)
-                                                    let letter: string;
-                                                    let text: string;
-                                                    if (typeof opt === 'string') {
-                                                        const optStr = opt as string;
-                                                        letter = optStr.charAt(0);
-                                                        text = optStr.slice(optStr.indexOf(' ') + 1);
-                                                    } else {
-                                                        letter = String.fromCharCode(65 + i);
-                                                        text = opt.text;
-                                                    }
-                                                    return (
-                                                        <button
-                                                            key={i}
-                                                            onClick={() => setQuizSelected(letter)}
-                                                            className={`w-full flex items-center gap-3 p-3 border rounded-2xl text-left font-semibold text-sm transition-all ${quizSelected === letter ? 'border-blue-500 bg-blue-50 text-blue-600' : 'border-gray-200 hover:border-gray-300 bg-white text-gray-700'}`}
-                                                        >
-                                                            <span className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs shrink-0 ${quizSelected === letter ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'}`}>
-                                                                {letter.toUpperCase()}
-                                                            </span>
-                                                            <span className="flex-1 self-center"><StaticContent content={text} /></span>
-                                                        </button>
-                                                    );
-                                                })}
-                                            </div>
-                                        )}
-
-                                        {currentQuestion.type === 'true-false' && (
-                                            <div className="space-y-4 mb-6">
-                                                {currentQuestion.options?.map((opt, i) => {
-                                                    // Handle both new format (string) and legacy format (object)
-                                                    let letter: string;
-                                                    let text: string;
-                                                    if (typeof opt === 'string') {
-                                                        const optStr = opt as string;
-                                                        letter = optStr.charAt(0).toLowerCase();
-                                                        text = optStr.slice(optStr.indexOf(' ') + 1);
-                                                    } else {
-                                                        letter = String.fromCharCode(97 + i);
-                                                        text = opt.text;
-                                                    }
-                                                    return (
-                                                        <div key={i} className="flex items-center justify-between p-4 bg-gray-50 border border-gray-200 rounded-2xl">
-                                                            <span className="font-semibold text-sm text-gray-700"><StaticContent content={text} /></span>
-                                                            <div className="flex gap-2">
-                                                                <button onClick={() => setTfSelected(prev => ({ ...prev, [letter]: true }))} className={`px-4 py-2 text-xs font-bold rounded-xl transition-all ${tfSelected[letter] === true ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600 hover:bg-gray-300'}`}>Đúng</button>
-                                                                <button onClick={() => setTfSelected(prev => ({ ...prev, [letter]: false }))} className={`px-4 py-2 text-xs font-bold rounded-xl transition-all ${tfSelected[letter] === false ? 'bg-red-600   text-white' : 'bg-gray-200 text-gray-600 hover:bg-gray-300'}`}>Sai</button>
-                                                            </div>
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
-                                        )}
-
-                                        {currentQuestion.type === 'short-answer' && (
-                                            <input
-                                                type="text"
-                                                value={shortAnswerText}
-                                                onChange={e => setShortAnswerText(e.target.value)}
-                                                placeholder="Nhập câu trả lời..."
-                                                className="w-full bg-white border border-gray-300 rounded-2xl px-5 py-4 text-sm text-gray-900 focus:outline-none focus:border-blue-500 mb-6"
-                                            />
-                                        )}
-
-                                        {currentQuestion.type === 'ide' && (
-                                            <div className="flex-grow flex flex-col mb-6">
-                                                <div className="bg-gray-900 border border-gray-300 rounded-2xl overflow-hidden flex flex-col flex-grow min-h-[300px]">
-                                                    <div className="bg-gray-100 px-4 py-2 border-b border-gray-300 text-xs font-mono text-gray-600">
-                                                        {currentQuestion.language || 'javascript'}
-                                                    </div>
-                                                    <textarea
-                                                        value={ideCode}
-                                                        onChange={e => setIdeCode(e.target.value)}
-                                                        className="w-full flex-grow bg-gray-900 text-gray-100 font-mono text-sm p-4 outline-none resize-none"
-                                                    />
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {exerciseResult && (
-                                            <div className={`p-4 rounded-2xl mb-6 text-sm flex items-center gap-3 ${exerciseResult.isCorrect ? 'bg-green-500/10 border border-green-500/20 text-green-400' : 'bg-red-500/10 border border-red-500/20 text-red-400'}`}>
-                                                <AlertCircle className="w-5 h-5 shrink-0" />
-                                                <span>{exerciseResult.isCorrect ? 'Tuyệt vời! Bạn đã hoàn thành đúng bài tập.' : 'Đáp án chưa chính xác, hãy thử lại.'}</span>
-                                            </div>
-                                        )}
-
-                                        <button
-                                            onClick={handleExerciseSubmit}
-                                            disabled={exerciseSubmitting}
-                                            className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold text-sm transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
-                                        >
-                                            {exerciseSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
-                                            Nộp bài tập
-                                        </button>
-                                    </div>
+                            <div className="flex h-full min-h-0 w-full flex-col overflow-y-auto p-4 sm:p-6 lg:p-8">
+                                {exercise ? (
+                                    <CourseExercisePanel
+                                        key={exercise._id}
+                                        exercise={exercise}
+                                        onSubmitSuccess={handleExerciseSubmitSuccess}
+                                    />
                                 ) : (
-                                    <div className="text-gray-600 text-sm">Chưa có bài tập cho bài học này.</div>
+                                    <div className="text-sm text-gray-600">Chưa có bài tập cho bài học này.</div>
                                 )}
                             </div>
                         )}
                     </div>
 
-                    {/* Title Section - Only for video lessons */}
+                    {/* Title + content — white fills remaining height below video */}
                     {lesson?.type === 'video' && (
-                        <div className="p-8 lg:px-12 lg:pt-8 lg:pb-4 w-full bg-white border-b border-gray-200">
-                            <div className="max-w-5xl mx-auto">
-                                {initialLoading ? (
-                                    <div className="space-y-3">
-                                        <div className="h-8 bg-gray-200 rounded w-64 animate-pulse" />
-                                        <div className="h-4 bg-gray-200 rounded w-32 animate-pulse" />
-                                    </div>
-                                ) : lesson ? (
-                                    <div>
-                                        <div className="flex items-center justify-between mb-2">
-                                            <h1 className="text-2xl font-bold text-gray-900">{lesson.title}</h1>
-                                            <CustomButton
-                                                onClick={handleOpenNotePopup}
-                                                variant="outline"
-                                                size="medium"
-                                                className="whitespace-nowrap !text-blue-600 !border-blue-600 hover:!bg-blue-50"
-                                            >
-                                                <FileText className="w-4 h-4 mr-1.5" />
-                                                Ghi chú tại {(() => {
-                                                    const m = Math.floor(currentVideoTime / 60).toString().padStart(2, '0');
-                                                    const s = (currentVideoTime % 60).toString().padStart(2, '0');
-                                                    return `${m}:${s}`;
-                                                })()}
-                                            </CustomButton>
+                        <div className="flex min-h-0 w-full flex-1 flex-col overflow-y-auto bg-white no-scrollbar">
+                            <div className="w-full border-b border-gray-200 p-4 sm:p-6 lg:px-12 lg:pt-8 lg:pb-4">
+                                <div className="mx-auto max-w-5xl">
+                                    {initialLoading ? (
+                                        <div className="space-y-3">
+                                            <div className="h-8 w-64 animate-pulse rounded bg-gray-200" />
+                                            <div className="h-4 w-32 animate-pulse rounded bg-gray-200" />
                                         </div>
-                                        <p className="text-gray-500 text-xs">
-                                            {(() => {
-                                                const date = new Date(lesson.updatedAt || '');
-                                                const day = date.getDate();
-                                                const month = date.getMonth() + 1;
-                                                const year = date.getFullYear();
-                                                return `Cập nhật ngày ${day} tháng ${month} năm ${year}`;
-                                            })()}
-                                        </p>
-                                    </div>
-                                ) : null}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Description Section - Only for video lessons */}
-                    {lesson?.type === 'video' && (
-                        <div className="p-8 lg:p-12 w-full bg-white">
-                            <div className="max-w-5xl mx-auto">
-                                {initialLoading ? (
-                                    <div className="space-y-4 border-t border-gray-200 pt-10">
-                                        <div className="h-8 bg-gray-200 rounded w-48 animate-pulse" />
-                                        <div className="h-4 bg-gray-200 rounded w-full animate-pulse" />
-                                        <div className="h-4 bg-gray-200 rounded w-5/6 animate-pulse" />
-                                        <div className="h-4 bg-gray-200 rounded w-4/6 animate-pulse" />
-                                    </div>
-                                ) : hasRealContent(lesson?.description) && lesson?.description && (
-                                    <div>
-                                        <h3 className="text-2xl font-bold text-gray-900 mb-4">Nội dung bài học</h3>
-                                        <StaticContent content={lesson.description} />
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    )}
-                </div>
-
-                {/* Sidebar */}
-                <div className="w-96 bg-white border-l border-gray-200 flex flex-col shrink-0">
-                    <div className="p-4 border-b border-gray-200 font-bold text-sm tracking-wide text-gray-900">NỘI DUNG KHOÁ HỌC</div>
-                    <div className="flex-1 overflow-y-auto p-3 space-y-2 no-scrollbar">
-                        {chapters.map((chapter, index) => {
-                            if (!chapter._id) return null;
-                            const isExpanded = expandedChapters.has(chapter._id);
-                            const hasActiveLesson = chapter.lessons.some(l => l._id === lessonId);
-
-                            // Calculate metadata
-                            const totalLessons = chapter.lessons.length;
-                            const exerciseCount = chapter.lessons.filter(l => l.type === 'exercise').length;
-                            const totalDuration = chapter.lessons
-                                .filter(l => l.type === 'video' && l.duration)
-                                .reduce((sum, l) => sum + (l.duration || 0), 0);
-                            const durationMinutes = Math.floor(totalDuration / 60);
-                            const durationSeconds = totalDuration % 60;
-
-                            return (
-                                <div key={chapter._id} className="rounded-xl border border-gray-200 overflow-hidden bg-white">
-                                    <button
-                                        onClick={() => toggleChapter(chapter._id!)}
-                                        className={`w-full p-3 transition-colors ${hasActiveLesson ? 'bg-blue-50' : 'hover:bg-gray-50'}`}
-                                    >
-                                        <div className="flex items-center justify-between mb-2">
-                                            <div className="flex items-center gap-2">
-                                                <span className={`text-xs font-bold ${hasActiveLesson ? 'text-blue-600' : 'text-gray-500'}`}>
-                                                    {index + 1}
-                                                </span>
-                                                <h4 className={`text-xs font-bold ${hasActiveLesson ? 'text-blue-600' : 'text-gray-900'}`}>
-                                                    {chapter.title}
-                                                </h4>
+                                    ) : lesson ? (
+                                        <div>
+                                            <div className="mb-2 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                                                <h1 className="text-lg font-bold text-gray-900 sm:text-2xl">{lesson.title}</h1>
+                                                <CustomButton
+                                                    onClick={handleOpenNotePopup}
+                                                    variant="outline"
+                                                    size="medium"
+                                                    className="w-full whitespace-nowrap !border-blue-600 !text-blue-600 hover:!bg-blue-50 sm:w-auto"
+                                                >
+                                                    <FileText className="w-4 h-4 mr-1.5" />
+                                                    Ghi chú tại {(() => {
+                                                        const m = Math.floor(currentVideoTime / 60).toString().padStart(2, '0');
+                                                        const s = (currentVideoTime % 60).toString().padStart(2, '0');
+                                                        return `${m}:${s}`;
+                                                    })()}
+                                                </CustomButton>
                                             </div>
-                                            {isExpanded ? (
-                                                <ChevronUp className={`w-4 h-4 ${hasActiveLesson ? 'text-blue-600' : 'text-gray-500'}`} />
-                                            ) : (
-                                                <ChevronDown className={`w-4 h-4 ${hasActiveLesson ? 'text-blue-600' : 'text-gray-500'}`} />
-                                            )}
+                                            <p className="text-xs text-gray-500">
+                                                {(() => {
+                                                    const date = new Date(lesson.updatedAt || '');
+                                                    const day = date.getDate();
+                                                    const month = date.getMonth() + 1;
+                                                    const year = date.getFullYear();
+                                                    return `Cập nhật ngày ${day} tháng ${month} năm ${year}`;
+                                                })()}
+                                            </p>
                                         </div>
-                                        <div className="flex items-center gap-3 text-[10px] text-gray-500">
-                                            <span>{totalLessons} bài học</span>
-                                            {exerciseCount > 0 && (
-                                                <>
-                                                    <span>•</span>
-                                                    <span>{exerciseCount} bài tập</span>
-                                                </>
-                                            )}
-                                            {totalDuration > 0 && (
-                                                <>
-                                                    <span>•</span>
-                                                    <span>{durationMinutes}:{durationSeconds.toString().padStart(2, '0')}</span>
-                                                </>
-                                            )}
-                                        </div>
-                                    </button>
-                                    {isExpanded && (
-                                        <div className="border-t border-gray-200 p-2 space-y-1 bg-gray-50">
-                                            {chapter.lessons.map((les, lessonIndex) => {
-                                                const isActive = les._id === lessonId;
-                                                const duration = les.duration || 0;
-                                                const durationMin = Math.floor(duration / 60);
-                                                const durationSec = duration % 60;
-                                                const durationStr = `${durationMin.toString().padStart(2, '0')}:${durationSec.toString().padStart(2, '0')}`;
-
-                                                // Check if previous lesson is completed using the progress data from API
-                                                const prevLessonInChapter = lessonIndex > 0 ? chapter.lessons[lessonIndex - 1] : null;
-                                                // Use progress from lesson object (returned by API) instead of cache
-                                                const prevLessonProgress = prevLessonInChapter?.progress;
-                                                const isPrevCompleted = !prevLessonInChapter || prevLessonProgress?.isCompleted || false;
-                                                const isLocked = !isPrevCompleted && !isActive;
-
-                                                return (
-                                                    <button
-                                                        key={les._id}
-                                                        onClick={() => !isLocked && les._id && handleNavigateToLesson(les._id)}
-                                                        disabled={isLocked}
-                                                        className={`w-full flex items-center gap-3 p-2.5 rounded-lg transition-all text-left ${isActive
-                                                            ? 'bg-blue-600 text-white shadow-sm'
-                                                            : isLocked
-                                                                ? 'opacity-50 cursor-not-allowed bg-gray-100'
-                                                                : 'hover:bg-white text-gray-600'
-                                                            }`}
-                                                    >
-                                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${isActive ? 'bg-white/20' : 'bg-gray-200'}`}>
-                                                            {isLocked ? (
-                                                                <Lock className="w-3.5 h-3.5 text-gray-400" />
-                                                            ) : les.type === 'video' ? (
-                                                                <Play className={`w-3.5 h-3.5 ${isActive ? 'text-white' : 'text-gray-600'}`} />
-                                                            ) : (
-                                                                <HelpCircle className={`w-3.5 h-3.5 ${isActive ? 'text-white' : 'text-gray-600'}`} />
-                                                            )}
-                                                        </div>
-                                                        <div className="flex-1 min-w-0">
-                                                            <p className={`text-xs font-semibold truncate ${isActive ? 'text-white' : 'text-gray-900'}`}>{les.title}</p>
-                                                            <p className={`text-[10px] ${isActive ? 'text-white/70' : 'text-gray-500'}`}>
-                                                                {durationStr}
-                                                            </p>
-                                                        </div>
-                                                    </button>
-                                                );
-                                            })}
-                                        </div>
-                                    )}
+                                    ) : null}
                                 </div>
-                            );
-                        })}
-                    </div>
+                            </div>
+
+                            <div className="flex-1 p-4 sm:p-6 lg:p-12">
+                                <div className="mx-auto max-w-5xl">
+                                    {initialLoading ? (
+                                        <div className="space-y-4 border-t border-gray-200 pt-6 sm:pt-10">
+                                            <div className="h-8 w-48 animate-pulse rounded bg-gray-200" />
+                                            <div className="h-4 w-full animate-pulse rounded bg-gray-200" />
+                                            <div className="h-4 w-5/6 animate-pulse rounded bg-gray-200" />
+                                            <div className="h-4 w-4/6 animate-pulse rounded bg-gray-200" />
+                                        </div>
+                                    ) : hasRealContent(lesson?.description) && lesson?.description ? (
+                                        <div>
+                                            <h3 className="mb-4 text-xl font-bold text-gray-900 sm:text-2xl">Nội dung bài học</h3>
+                                            <StaticContent content={lesson.description} />
+                                        </div>
+                                    ) : null}
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
+
+                <LearnCourseSidebar
+                    open={sidebarOpen}
+                    onClose={() => setSidebarOpen(false)}
+                    chapters={chapters}
+                    lessonId={lessonId}
+                    expandedChapters={expandedChapters}
+                    onToggleChapter={toggleChapter}
+                    onNavigate={handleNavigateToLesson}
+                />
             </div>
 
             {/* Footer nav */}
-            <footer className="h-16 bg-white border-t border-gray-200 flex items-center justify-between px-6 shrink-0 shadow-sm">
+            <footer className="flex h-14 shrink-0 items-center justify-between gap-2 border-t border-gray-200 bg-white px-3 shadow-sm sm:h-16 sm:gap-4 sm:px-6">
                 <CustomButton
                     onClick={handlePrevLesson}
                     disabled={!prevLesson}
                     variant="outline"
                     size="medium"
+                    className="min-w-0 flex-1 text-xs sm:flex-none sm:text-sm"
                 >
-                    <ChevronLeft className="w-4 h-4" /> BÀI TRƯỚC
+                    <ChevronLeft className="h-4 w-4" />
+                    <span className="hidden sm:inline">BÀI TRƯỚC</span>
+                    <span className="sm:hidden">TRƯỚC</span>
                 </CustomButton>
                 <CustomButton
                     onClick={handleNextLesson}
-                    disabled={!nextLesson}
+                    disabled={!nextLesson || (lesson?.type === 'exercise' && exercise?.mustPassToNext && !exerciseCanProceed)}
                     variant="primary"
                     size="medium"
+                    className="min-w-0 flex-1 text-xs sm:flex-none sm:text-sm"
                 >
-                    BÀI TIẾP THEO <ChevronRight className="w-4 h-4" />
+                    <span className="hidden sm:inline">BÀI TIẾP THEO</span>
+                    <span className="sm:hidden">TIẾP</span>
+                    <ChevronRight className="h-4 w-4" />
                 </CustomButton>
             </footer>
 
@@ -1693,7 +1417,7 @@ export default function LearnPage() {
                         onClick={() => setShowCommentPopup(false)}
                     />
                     <div
-                        className={`fixed top-0 right-0 h-full w-[494px] bg-white shadow-2xl z-50 flex flex-col transform transition-transform duration-300 ${showCommentPopup ? 'translate-x-0' : 'translate-x-full'}`}
+                        className={`fixed top-0 right-0 z-50 flex h-full w-full max-w-[494px] flex-col bg-white shadow-2xl transition-transform duration-300 sm:w-[494px] ${showCommentPopup ? 'translate-x-0' : 'translate-x-full'}`}
                     >
                         {/* Header */}
                         <div className="flex items-center justify-between p-4">
@@ -1707,7 +1431,7 @@ export default function LearnPage() {
                         </div>
 
                         {/* Comment Section */}
-                        <div className="flex-1 overflow-hidden">
+                        <div className="flex-1 overflow-hidden px-4 pb-4">
                             <CommentSection
                                 targetType="lesson"
                                 targetId={lessonId}
@@ -1727,7 +1451,7 @@ export default function LearnPage() {
                         onClick={() => setShowNotePopup(false)}
                     />
                     <div
-                        className={`fixed top-0 right-0 h-full w-[600px] bg-white shadow-2xl z-50 flex flex-col transform transition-transform duration-300 ${showNotePopup ? 'translate-x-0' : 'translate-x-full'}`}
+                        className={`fixed top-0 right-0 z-50 flex h-full w-full max-w-[600px] flex-col bg-white shadow-2xl transition-transform duration-300 sm:w-[600px] ${showNotePopup ? 'translate-x-0' : 'translate-x-full'}`}
                     >
                         {/* Header */}
                         <div className="flex items-center justify-between p-4 border-b border-gray-200">
@@ -1788,7 +1512,7 @@ export default function LearnPage() {
                         onClick={() => setShowNotesInline(false)}
                     />
                     <div
-                        className={`fixed top-0 right-0 h-full w-[494px] bg-white shadow-2xl z-50 flex flex-col transform transition-transform duration-300 ${showNotesInline ? 'translate-x-0' : 'translate-x-full'}`}
+                        className={`fixed top-0 right-0 z-50 flex h-full w-full max-w-[494px] flex-col bg-white shadow-2xl transition-transform duration-300 sm:w-[494px] ${showNotesInline ? 'translate-x-0' : 'translate-x-full'}`}
                     >
                         {/* Header */}
                         <div className="flex items-center justify-between p-4 border-b border-gray-200">
@@ -1839,8 +1563,9 @@ export default function LearnPage() {
                     answer={quizAnswer}
                     answered={quizAnswered}
                     correct={quizCorrect}
+                    submitting={quizSubmitting}
                     onAnswerChange={setQuizAnswer}
-                    onSubmit={handleQuizSubmit}
+                    onSubmit={() => void handleQuizSubmit()}
                     onContinue={handleQuizContinue}
                 />
             )}

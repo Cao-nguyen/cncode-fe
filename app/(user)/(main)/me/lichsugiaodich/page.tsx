@@ -32,6 +32,7 @@ const STATUS_MAP = {
 const CATEGORY_LABELS: Record<PayOSTransactionRow['category'], string> = {
     course: 'Khóa học',
     luyentap: 'Luyện tập',
+    cuahangso: 'Cửa hàng số',
 };
 
 function fmtDate(s: string) {

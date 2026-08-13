@@ -31,6 +31,69 @@ export interface CourseQuery {
     limit?: number;
 }
 
+export interface CourseEnrollee {
+    _id: string;
+    fullName: string;
+    avatar?: string | null;
+}
+
+export interface CourseDetailBySlug {
+    course: Course;
+    chapters: ChapterWithLessons[];
+    recentEnrollees: CourseEnrollee[];
+}
+
+export interface AdminCourseOverview {
+    course: Course;
+    chapterCount: number;
+    lessonCount: number;
+    enrollCount: number;
+    recentEnrollees: CourseEnrollee[];
+}
+
+export interface CourseReviewUser {
+    _id: string;
+    fullName?: string;
+    avatar?: string | null;
+}
+
+export interface CourseReview {
+    _id: string;
+    rating: number;
+    content: string;
+    createdAt: string;
+    updatedAt: string;
+    user: CourseReviewUser | null;
+}
+
+export interface CourseReviewStats {
+    average: number;
+    total: number;
+    distribution: Record<1 | 2 | 3 | 4 | 5, number>;
+}
+
+export interface CourseReviewsResponse {
+    success: boolean;
+    data: CourseReview[];
+    stats: CourseReviewStats;
+    pagination?: {
+        page: number;
+        limit: number;
+        total: number;
+        pages: number;
+    };
+    message?: string;
+}
+
+export interface CourseMyReviewResponse {
+    success: boolean;
+    data: {
+        canReview: boolean;
+        myReview: Pick<CourseReview, '_id' | 'rating' | 'content' | 'createdAt' | 'updatedAt'> | null;
+    };
+    message?: string;
+}
+
 // ===== CHUONG (CHAPTER) =====
 
 export interface Chapter {
@@ -67,6 +130,7 @@ export interface Lesson {
     videoFileId?: string; // Telegram messageId
     duration?: number;
     description?: string;
+    quizMarkdown?: string;
     quizQuestions?: {
         time: number;
         question: string;
@@ -104,34 +168,45 @@ export interface ExerciseTestCase {
 
 export interface ExerciseQuestion {
     _id?: string;
-    type: 'quiz' | 'true-false' | 'short-answer' | 'ide';
+    type: 'quiz' | 'true-false' | 'short-answer' | 'ide' | 'multiple-choice' | 'multiple-select' | 'matching' | 'essay' | 'code';
     question: string;
-    // New format (matching QuizPopup)
-    // For multiple-choice: options = ["A. text", "B. text"], correctAnswers = ["A"]
-    // For true-false: options = ["a. text", "b. text"], correctAnswers = ["a:true", "b:false"]
-    // For short-answer: correctAnswers = ["answer"]
+    groupTitle?: string;
+    // New format (matching QuizPopup / contest editor)
     options?: (string | ExerciseOption)[];
     correctAnswers?: string[];
     score?: number;
     explanation?: string;
+    leftItems?: string[];
+    rightItems?: string[];
+    matchingPairs?: Array<{ left: string; right: string }>;
+    codeMode?: 'algorithm' | 'web';
+    webRequirements?: unknown[];
+    algoRequirement?: string;
+    algoInputDesc?: string;
+    algoOutputDesc?: string;
     // Legacy format (for backward compatibility)
-    // Quiz options
     legacyOptions?: ExerciseOption[];
-    // True/false options (each option has its own isCorrect)
     trueFalseOptions?: { text: string; isCorrect: boolean }[];
-    // Short answer
     correctAnswer?: string;
     maxLength?: number;
-    // IDE
     language?: string;
     starterCode?: string;
-    testCases?: ExerciseTestCase[];
+    testCases?: Array<ExerciseTestCase & { isSample?: boolean }>;
+}
+
+export interface TrueFalseScale {
+    correct1: number;
+    correct2: number;
+    correct3: number;
+    correct4: number;
 }
 
 export interface Exercise {
     _id: string;
     lessonId: string;
     courseId: string;
+    questionMarkdown?: string;
+    trueFalseScale?: TrueFalseScale;
     questions: ExerciseQuestion[];
     mustPassToNext: boolean;
 }
@@ -161,6 +236,7 @@ export interface MyCourse {
     completedLessons: number;
     progress: number; // 0-100
     lastAccessedLessonId?: string;
+    continueLessonId?: string;
     lastAccessedAt?: string;
     enrolledAt: string;
 }
@@ -269,10 +345,32 @@ export interface LessonWithExercise {
 
 // ===== EXERCISE ANSWER =====
 
+export interface ExerciseAnswerItem {
+    questionId: string;
+    answer: string;
+}
+
+export interface ExerciseQuestionResult {
+    questionId: string;
+    isCorrect: boolean;
+    points: number;
+    feedback?: string;
+    needsManualGrading?: boolean;
+}
+
+export interface ExerciseSubmitResult {
+    isCorrect: boolean;
+    canProceed: boolean;
+    results?: ExerciseQuestionResult[];
+    totalScore?: number;
+    maxScore?: number;
+}
+
+/** @deprecated Legacy single-answer shape */
 export type ExerciseAnswer =
-    | string // short-answer, ide
-    | number // quiz: option index
-    | Record<string, boolean>; // true-false: { [optionIndex]: boolean }
+    | string
+    | number
+    | Record<string, boolean>;
 
 // ===== PAYMENT =====
 

@@ -2,6 +2,12 @@ import axios from 'axios';
 import {
     Course,
     CourseQuery,
+    CourseDetailBySlug,
+    AdminCourseOverview,
+    CourseReview,
+    CourseReviewStats,
+    CourseReviewsResponse,
+    CourseMyReviewResponse,
     Chapter,
     ChapterCreate,
     ChapterWithLessons,
@@ -9,13 +15,15 @@ import {
     LessonCreate,
     Exercise,
     ExerciseQuestion,
+    TrueFalseScale,
     Enrollment,
     Progress,
     Certificate,
     Comment,
     CommentCreate,
     PayOSPaymentLink,
-    ExerciseAnswer,
+    ExerciseAnswerItem,
+    ExerciseSubmitResult,
     Note,
     MyCourse,
 } from '../../types/khoahoc.type';
@@ -99,9 +107,76 @@ export const khoahocApi = {
         return response.data.data;
     },
 
-    getCourseBySlug: async (slug: string): Promise<Course> => {
+    getCourseBySlug: async (slug: string): Promise<CourseDetailBySlug> => {
         const response = await apiClient.get(`/khoahoc/${slug}`);
         return response.data.data;
+    },
+
+    getCourseReviews: async (
+        courseId: string,
+        page = 1,
+        limit = 10,
+    ): Promise<CourseReviewsResponse> => {
+        const response = await apiClient.get(
+            `/khoahoc/course/${courseId}/reviews?page=${page}&limit=${limit}`,
+        );
+        return response.data;
+    },
+
+    getMyCourseReview: async (courseId: string): Promise<CourseMyReviewResponse> => {
+        const response = await apiClient.get(`/khoahoc/course/${courseId}/reviews/me`);
+        return response.data;
+    },
+
+    createCourseReview: async (
+        courseId: string,
+        payload: { rating: number; content: string },
+    ): Promise<{ success: boolean; data?: CourseReview; stats?: CourseReviewStats; message?: string }> => {
+        try {
+            const response = await apiClient.post(`/khoahoc/course/${courseId}/reviews`, payload);
+            return response.data;
+        } catch (error) {
+            const message = axios.isAxiosError(error)
+                ? error.response?.data?.message
+                : undefined;
+            return { success: false, message: message || 'Không thể gửi đánh giá' };
+        }
+    },
+
+    updateCourseReview: async (
+        courseId: string,
+        reviewId: string,
+        payload: { rating?: number; content?: string },
+    ): Promise<{ success: boolean; data?: CourseReview; stats?: CourseReviewStats; message?: string }> => {
+        try {
+            const response = await apiClient.put(
+                `/khoahoc/course/${courseId}/reviews/${reviewId}`,
+                payload,
+            );
+            return response.data;
+        } catch (error) {
+            const message = axios.isAxiosError(error)
+                ? error.response?.data?.message
+                : undefined;
+            return { success: false, message: message || 'Không thể cập nhật đánh giá' };
+        }
+    },
+
+    deleteCourseReview: async (
+        courseId: string,
+        reviewId: string,
+    ): Promise<{ success: boolean; stats?: CourseReviewStats; message?: string }> => {
+        try {
+            const response = await apiClient.delete(
+                `/khoahoc/course/${courseId}/reviews/${reviewId}`,
+            );
+            return response.data;
+        } catch (error) {
+            const message = axios.isAxiosError(error)
+                ? error.response?.data?.message
+                : undefined;
+            return { success: false, message: message || 'Không thể xóa đánh giá' };
+        }
     },
 
     getCourseLearnData: async (courseId: string): Promise<{ chapters: ChapterWithLessons[] }> => {
@@ -186,10 +261,38 @@ export const khoahocApi = {
     },
 
     // ===== ADMIN APIs =====
-    getAdminCourses: async (status?: string): Promise<Course[]> => {
-        const params = status ? `?status=${status}` : '';
-        const response = await apiClient.get(`/admin/khoahoc/khoahoc${params}`);
-        return response.data.data.courses;
+    getAdminCourses: async (params?: {
+        status?: string;
+        page?: number;
+        limit?: number;
+        search?: string;
+    }): Promise<{
+        courses: Course[];
+        pagination: { page: number; total: number; totalPages: number; limit: number };
+    }> => {
+        const query = new URLSearchParams();
+        if (params?.status) query.set('status', params.status);
+        if (params?.page) query.set('page', String(params.page));
+        if (params?.limit) query.set('limit', String(params.limit));
+        if (params?.search) query.set('search', params.search);
+        const qs = query.toString();
+        const response = await apiClient.get(`/admin/khoahoc/khoahoc${qs ? `?${qs}` : ''}`);
+        const data = response.data.data;
+        const limit = params?.limit ?? 20;
+        return {
+            courses: data.courses || [],
+            pagination: {
+                page: data.page ?? 1,
+                total: data.total ?? 0,
+                totalPages: data.totalPages ?? 1,
+                limit,
+            },
+        };
+    },
+
+    getAdminCourseOverview: async (courseId: string): Promise<AdminCourseOverview> => {
+        const response = await apiClient.get(`/admin/khoahoc/khoahoc/${courseId}/overview`);
+        return response.data.data;
     },
 
     getAdminStats: async (): Promise<{
@@ -198,6 +301,12 @@ export const khoahocApi = {
         monthlyRevenue: number;
         coursesByMonth: { month: string; count: number }[];
         revenueByMonth: { month: string; revenue: number }[];
+        statusCounts: {
+            all: number;
+            pending: number;
+            approved: number;
+            rejected: number;
+        };
     }> => {
         const response = await apiClient.get('/admin/khoahoc/khoahoc/stats');
         const data = response.data.data;
@@ -205,6 +314,12 @@ export const khoahocApi = {
             totalCourses: data.totalCourses,
             totalStudents: data.totalEnrollments,
             monthlyRevenue: data.thisMonthRevenue,
+            statusCounts: data.statusCounts || {
+                all: data.totalCourses || 0,
+                pending: 0,
+                approved: 0,
+                rejected: 0,
+            },
             coursesByMonth: (data.coursesByMonth || []).map((item: { _id: { year: number; month: number }; count: number }) => ({
                 month: `${item._id.month}/${item._id.year}`,
                 count: item.count,
@@ -292,14 +407,30 @@ export const khoahocApi = {
     },
 
     // Baitap module APIs (for new exercise system)
-    createBaitapExercise: async (lessonId: string, data: { courseId: string; questions: ExerciseQuestion[]; mustPassToNext?: boolean }): Promise<Exercise> => {
+    createBaitapExercise: async (
+        lessonId: string,
+        data: {
+            courseId: string;
+            questions: ExerciseQuestion[];
+            questionMarkdown?: string;
+            trueFalseScale?: TrueFalseScale;
+            mustPassToNext?: boolean;
+        },
+    ): Promise<Exercise> => {
         const response = await apiClient.post(`/baitap/lesson/${lessonId}`, data);
-        return response.data;
+        return response.data.data || response.data;
     },
 
-    updateBaitapExercise: async (exerciseId: string, data: { questions: ExerciseQuestion[] }): Promise<Exercise> => {
+    updateBaitapExercise: async (
+        exerciseId: string,
+        data: {
+            questions: ExerciseQuestion[];
+            questionMarkdown?: string;
+            trueFalseScale?: TrueFalseScale;
+        },
+    ): Promise<Exercise> => {
         const response = await apiClient.put(`/baitap/${exerciseId}`, data);
-        return response.data;
+        return response.data.data || response.data;
     },
 
     // ===== STUDENT APIs =====
@@ -339,7 +470,9 @@ export const khoahocApi = {
     getExerciseByLessonId: async (lessonId: string): Promise<Exercise | null> => {
         try {
             const response = await apiClient.get(`/baitap/lesson/${lessonId}`);
-            return response.data.data || response.data;
+            const data = response.data?.data ?? response.data;
+            if (!data || typeof data !== 'object') return null;
+            return data;
         } catch {
             return null;
         }
@@ -385,7 +518,10 @@ export const khoahocApi = {
         await apiClient.delete(`/notes/${noteId}`);
     },
 
-    submitExercise: async (exerciseId: string, payload: { answer: ExerciseAnswer }): Promise<{ isCorrect: boolean; canProceed: boolean }> => {
+    submitExercise: async (
+        exerciseId: string,
+        payload: { answers: ExerciseAnswerItem[] },
+    ): Promise<ExerciseSubmitResult> => {
         const response = await apiClient.post(`/baitap/${exerciseId}/submit`, payload);
         return response.data.data;
     },

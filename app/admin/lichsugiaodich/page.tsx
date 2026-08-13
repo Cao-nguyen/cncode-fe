@@ -31,6 +31,7 @@ const STATUS_MAP = {
 const CATEGORY_LABELS = {
     course: 'Khóa học',
     luyentap: 'Luyện tập',
+    cuahangso: 'Cửa hàng số',
 } as const;
 
 function fmtDate(value: string) {

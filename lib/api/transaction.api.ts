@@ -44,7 +44,7 @@ export type PayOSTransactionRow = {
     amount: number;
     orderCode: string;
     status: 'completed' | 'pending' | 'failed';
-    category: 'course' | 'luyentap';
+    category: 'course' | 'luyentap' | 'cuahangso';
     relatedId?: string;
     createdAt: string;
 };

@@ -75,6 +75,7 @@ interface CustomEditorProps {
     onImageUpload?: (base64Image: string) => Promise<string>;
     uploading?: boolean;
     compact?: boolean;
+    fillHeight?: boolean;
     placeholder?: string;
     onChange?: (content: string) => void;
     disabled?: boolean;
@@ -1096,6 +1097,7 @@ const CustomEditor = forwardRef<CustomEditorRef, CustomEditorProps>(({
     onImageUpload,
     uploading = false,
     compact = false,
+    fillHeight = false,
     placeholder = "Nội dung",
     onChange,
     disabled = false,
@@ -1951,12 +1953,12 @@ const CustomEditor = forwardRef<CustomEditorRef, CustomEditorProps>(({
     return (
         <>
             <style>{editorStyles}</style>
-            <div className="ed-shell">
+            <div className={`ed-shell${fillHeight ? ' ed-fill-height' : ''}`}>
                 <div className="ed-content-wrap">
                     <div
                         ref={editorRef}
                         id={editorId}
-                        className={isEmpty ? "ed-empty" : undefined}
+                        className={`ed-editor-area${isEmpty ? ' ed-empty' : ''}`}
                         data-placeholder={placeholder}
                         contentEditable={!disabled}
                         suppressContentEditableWarning
@@ -2160,6 +2162,26 @@ const editorStyles = `
     caret-color: #6366f1;
     box-sizing: border-box;
     position: relative;
+  }
+
+  .ed-shell.ed-fill-height {
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .ed-shell.ed-fill-height .ed-content-wrap {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .ed-shell.ed-fill-height #editor,
+  .ed-shell.ed-fill-height .ed-editor-area {
+    flex: 1;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow-y: auto;
   }
 
   #editor.no-scrollbar {

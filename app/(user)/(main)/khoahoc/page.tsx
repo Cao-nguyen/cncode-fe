@@ -69,39 +69,37 @@ export default function CoursesPage() {
                     </div>
                 </div>
 
-                {/* Filter Card */}
-                <div className="rounded-xl p-4 mb-6" style={{ backgroundColor: 'var(--cn-bg-card)', border: '1px solid var(--cn-border)' }}>
-                    <div className="flex flex-col md:flex-row gap-3">
-                        <div className="flex-1">
-                            <CustomInputSearch
-                                placeholder="Tìm kiếm khoá học..."
-                                value={searchQuery}
-                                onChange={setSearchQuery}
-                                size="medium"
-                            />
-                        </div>
-                        <div className="w-full md:w-36">
-                            <CustomSelect
-                                value={typeFilter}
-                                onChange={setTypeFilter}
-                                options={[
-                                    { value: 'all', label: 'Tất cả' },
-                                    { value: 'free', label: 'Miễn phí' },
-                                    { value: 'pro', label: 'Trả phí' },
-                                ]}
-                            />
-                        </div>
-                        <div className="w-full md:w-44">
-                            <CustomSelect
-                                value={sortFilter}
-                                onChange={setSortFilter}
-                                options={[
-                                    { value: 'newest', label: 'Mới nhất' },
-                                    { value: 'price-asc', label: 'Giá: Thấp đến cao' },
-                                    { value: 'price-desc', label: 'Giá: Cao đến thấp' },
-                                ]}
-                            />
-                        </div>
+                {/* Filters */}
+                <div className="mb-6 flex flex-col gap-3 md:flex-row">
+                    <div className="flex-1">
+                        <CustomInputSearch
+                            placeholder="Tìm kiếm khoá học..."
+                            value={searchQuery}
+                            onChange={setSearchQuery}
+                            size="medium"
+                        />
+                    </div>
+                    <div className="w-full md:w-36">
+                        <CustomSelect
+                            value={typeFilter}
+                            onChange={setTypeFilter}
+                            options={[
+                                { value: 'all', label: 'Tất cả' },
+                                { value: 'free', label: 'Miễn phí' },
+                                { value: 'pro', label: 'Trả phí' },
+                            ]}
+                        />
+                    </div>
+                    <div className="w-full md:w-44">
+                        <CustomSelect
+                            value={sortFilter}
+                            onChange={setSortFilter}
+                            options={[
+                                { value: 'newest', label: 'Mới nhất' },
+                                { value: 'price-asc', label: 'Giá: Thấp đến cao' },
+                                { value: 'price-desc', label: 'Giá: Cao đến thấp' },
+                            ]}
+                        />
                     </div>
                 </div>
 

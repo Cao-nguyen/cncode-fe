@@ -22,9 +22,15 @@ import {
     Undo2,
     Eye,
     EyeOff,
+    Clock,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import {
+    buildVideoQuizTime,
+    formatVideoQuizTime,
+    parseVideoQuizTimeParts,
+} from '@/lib/khoahoc/video-quiz.utils';
 import { luyentapApi } from '@/lib/api/luyentap.api';
 import {
     type WebRequirement,
@@ -70,6 +76,8 @@ interface Question {
     correctAnswers?: string[];
     score: number;
     explanation?: string;
+    /** Thời gian hiển thị câu hỏi trong video (giây) */
+    time?: number;
     codeMode?: 'algorithm' | 'web';
     language?: string;
     testCases?: Array<{ input: string; expectedOutput: string; isSample: boolean }>;
@@ -420,6 +428,7 @@ const parseQuestions = (text: string): Question[] => {
                 correctAnswers: [],
                 score: 1,
                 explanation: '',
+                time: 0,
             };
             currentOptions = [];
             currentCorrect = [];
@@ -574,6 +583,17 @@ const parseQuestions = (text: string): Question[] => {
         if (current && /^\{LG:/i.test(trimmed)) {
             const match = trimmed.match(/^\{LG:\s*(.*?)\s*\}$/i);
             if (match) current.explanation = match[1];
+            return;
+        }
+
+        if (current && /^\{TIME:/i.test(trimmed)) {
+            const match = trimmed.match(/^\{TIME:\s*(\d+)(?::(\d+))?(?::(\d+))?\s*\}/i);
+            if (match) {
+                const h = parseInt(match[1], 10) || 0;
+                const m = parseInt(match[2], 10) || 0;
+                const s = parseInt(match[3], 10) || 0;
+                current.time = h * 3600 + m * 60 + s;
+            }
             return;
         }
 
@@ -1172,10 +1192,32 @@ B. Phương án B
 C. Phương án C
 D. Phương án D`;
 
+const DEFAULT_VIDEO_QUIZ_CODE = `Câu 1. Nhập nội dung câu hỏi ở đây
+{TIME:0:0:0}
+A. Phương án A
+B. Phương án B
+C. Phương án C
+D. Phương án D`;
+
+const injectTimeIntoTemplate = (content: string): string => {
+    if (/\{TIME:/i.test(content)) return content;
+    const lines = content.split('\n');
+    const result: string[] = [];
+    for (const line of lines) {
+        result.push(line);
+        if (/^Câu\s*\d+\./.test(line.trim())) {
+            result.push('{TIME:0:0:0}');
+        }
+    }
+    return result.join('\n');
+};
+
 const CustomEditorContest: React.FC<{
     initialContent?: string;
     initialScoreOverrides?: Record<number, number>;
     initialTrueFalseScale?: TrueFalseScale;
+    variant?: 'contest' | 'video-quiz';
+    compactFrom?: 'lg' | 'xl';
     onContentChange?: (content: string, questions: Question[]) => void;
     onScoreConfigChange?: (config: { scoreOverrides: Record<number, number>; trueFalseScale: TrueFalseScale }) => void;
     saveStatus?: 'unsaved' | 'saving' | 'saved'
@@ -1183,13 +1225,22 @@ const CustomEditorContest: React.FC<{
     initialContent,
     initialScoreOverrides,
     initialTrueFalseScale,
+    variant = 'contest',
+    compactFrom,
     onContentChange,
     onScoreConfigChange,
     saveStatus = 'unsaved',
 }) => {
-    const [code, setCode] = useState<string>(initialContent !== undefined ? initialContent : DEFAULT_CODE);
-    const [scoreOverrides, setScoreOverrides] = useState<Record<number, number>>({});
+    const isVideoQuiz = variant === 'video-quiz';
+    const [code, setCode] = useState<string>(() => {
+        if (initialContent !== undefined) return initialContent;
+        return isVideoQuiz ? DEFAULT_VIDEO_QUIZ_CODE : DEFAULT_CODE;
+    });
+    const [scoreOverrides, setScoreOverrides] = useState<Record<number, number>>(
+        () => initialScoreOverrides ?? {},
+    );
     const [typeOverrides, setTypeOverrides] = useState<Record<number, QuestionType>>({});
+    const [timeOverrides, setTimeOverrides] = useState<Record<number, number>>({});
     const [showMathModal, setShowMathModal] = useState(false);
     const [showImageModal, setShowImageModal] = useState(false);
     const [imageTab, setImageTab] = useState<'url' | 'upload'>('url');
@@ -1274,13 +1325,14 @@ const CustomEditorContest: React.FC<{
                     ...q,
                     score: scoreOverrides[q.id] ?? q.score,
                     type,
+                    time: timeOverrides[q.id] ?? q.time ?? 0,
                     correctAnswers,
                     leftItems,
                     rightItems,
                     matchingPairs,
                 };
             }),
-        [parsedQuestions, scoreOverrides, typeOverrides, code]
+        [parsedQuestions, scoreOverrides, typeOverrides, timeOverrides, code]
     );
 
     // Track the previous initialContent to detect external changes
@@ -1314,19 +1366,15 @@ const CustomEditorContest: React.FC<{
         } else {
             setCode(initialContent);
         }
-    }, [initialContent]);
 
-    useEffect(() => {
         if (initialScoreOverrides && Object.keys(initialScoreOverrides).length > 0) {
             setScoreOverrides(initialScoreOverrides);
         }
-    }, [initialScoreOverrides]);
-
-    useEffect(() => {
         if (initialTrueFalseScale) {
             setTrueFalseScale(initialTrueFalseScale);
         }
-    }, [initialTrueFalseScale]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- score/tf scale hydrate together with external content load only
+    }, [initialContent]);
 
     const expandedQuestions = useMemo(() => {
         const expandedCode = expandImageRefsInMarkdown(code, imageDataMap);
@@ -1334,8 +1382,9 @@ const CustomEditorContest: React.FC<{
             ...q,
             score: scoreOverrides[q.id] ?? q.score,
             type: typeOverrides[q.id] ?? q.type,
+            time: timeOverrides[q.id] ?? q.time ?? 0,
         }));
-    }, [code, imageDataMap, scoreOverrides, typeOverrides]);
+    }, [code, imageDataMap, scoreOverrides, typeOverrides, timeOverrides]);
 
     // Notify parent when content changes (excluding onContentChange from deps to prevent infinite loop)
     useEffect(() => {
@@ -1480,7 +1529,7 @@ Mô tả kết quả cần in
             setDraftBeforeSample(code);
         }
         setActiveSampleLabel(label);
-        setCode(content);
+        setCode(isVideoQuiz ? injectTimeIntoTemplate(content) : content);
     };
 
     const handleRestoreDraft = () => {
@@ -1611,6 +1660,52 @@ Mô tả kết quả cần in
         setScoreOverrides((prev) => ({ ...prev, [id]: score }));
     };
 
+    const changeTime = (id: number, time: number) => {
+        setTimeOverrides((prev) => ({ ...prev, [id]: time }));
+        const target = questions.find((q) => q.id === id);
+        const targetNumber = target?.number ?? id;
+
+        let activeNumber: number | null = null;
+        let updatedTime = false;
+        const mapped = code.split('\n').map((line) => {
+            const trimmed = line.trim();
+            const qMatch = trimmed.match(/^Câu\s*(\d+)\./);
+            if (qMatch) {
+                activeNumber = parseInt(qMatch[1], 10);
+                return line;
+            }
+            if (activeNumber === targetNumber && /^\{TIME:/i.test(trimmed)) {
+                updatedTime = true;
+                const h = Math.floor(time / 3600);
+                const m = Math.floor((time % 3600) / 60);
+                const s = time % 60;
+                return `{TIME:${h}:${m}:${s}}`;
+            }
+            return line;
+        });
+
+        if (!updatedTime) {
+            const inserted: string[] = [];
+            let done = false;
+            for (const line of mapped) {
+                inserted.push(line);
+                const trimmed = line.trim();
+                const qMatch = trimmed.match(/^Câu\s*(\d+)\./);
+                if (!done && qMatch && parseInt(qMatch[1], 10) === targetNumber) {
+                    const h = Math.floor(time / 3600);
+                    const m = Math.floor((time % 3600) / 60);
+                    const s = time % 60;
+                    inserted.push(`{TIME:${h}:${m}:${s}}`);
+                    done = true;
+                }
+            }
+            setCode(inserted.join('\n'));
+            return;
+        }
+
+        setCode(mapped.join('\n'));
+    };
+
     useEffect(() => {
         if (openScoreQuestionId !== null) {
             scoreInputRef.current?.focus();
@@ -1629,7 +1724,11 @@ Mô tả kết quả cần in
         const draft = scoreDrafts[questionId]?.trim();
         if (draft) {
             const parsed = parseFloat(draft);
-            if (!Number.isNaN(parsed)) changeScore(questionId, parsed);
+            if (!Number.isNaN(parsed)) {
+                const nextOverrides = { ...scoreOverrides, [questionId]: parsed };
+                changeScore(questionId, parsed);
+                onScoreConfigChange?.({ scoreOverrides: nextOverrides, trueFalseScale });
+            }
         }
         setOpenScoreQuestionId((current) => (current === questionId ? null : current));
     };
@@ -1694,16 +1793,21 @@ Mô tả kết quả cần in
     // Render
     // --------------------------------------------------------------------
 
+    const questionTypeOptions = QUESTION_TYPE_OPTIONS;
+    const visibleSampleTemplates = SAMPLE_TEMPLATES;
+    const useLgSplit = (compactFrom ?? (isVideoQuiz ? 'lg' : 'xl')) === 'lg';
+
     return (
         <div className="flex flex-col h-full bg-white font-sans" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
             {/* Toolbar — Azota style */}
-            <div className="flex items-center justify-between gap-3 px-3 py-2.5 bg-white border-b border-gray-200 flex-wrap sm:px-4">
+            <div className="flex items-center justify-between gap-2 overflow-x-auto px-3 py-2.5 bg-white border-b border-gray-200 flex-wrap sm:gap-3 sm:px-4">
                 <div className="flex min-w-0 flex-1 items-center gap-2 flex-wrap">
                     <button
                         type="button"
                         onClick={() => setCompactView((v) => (v === 'editor' ? 'preview' : 'editor'))}
                         className={cn(
-                            'inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors xl:hidden',
+                            'inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors',
+                            useLgSplit ? 'lg:hidden' : 'xl:hidden',
                             compactView === 'preview'
                                 ? 'border-blue-600 bg-blue-600 text-white'
                                 : 'border-gray-200 text-gray-700 hover:bg-gray-50',
@@ -1713,18 +1817,22 @@ Mô tả kết quả cần in
                         {compactView === 'editor' ? <Eye size={14} /> : <EyeOff size={14} />}
                         {compactView === 'editor' ? 'Preview' : 'Soạn đề'}
                     </button>
-                    <button type="button" onClick={handleDividePoints} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#1e3a8a] text-white text-xs font-semibold hover:bg-[#1e40af]">
-                        <Grid3x3 size={14} /> Chia điểm
+                    {!isVideoQuiz && (
+                    <button type="button" onClick={handleDividePoints} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[#1e3a8a] text-white text-xs font-semibold hover:bg-[#1e40af] sm:px-3">
+                        <Grid3x3 size={14} /> <span className="hidden sm:inline">Chia điểm</span>
                     </button>
+                    )}
+                    {!isVideoQuiz && (
                     <button
                         type="button"
                         onClick={() => setShowExamInfoModal(true)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-gray-200 text-xs font-medium text-gray-700 hover:bg-gray-50 sm:px-3"
                     >
-                        <Info size={14} /> Thông tin đề
+                        <Info size={14} /> <span className="hidden sm:inline">Thông tin đề</span>
                     </button>
-                    <div className="flex items-center gap-1.5 text-xs text-gray-600">
-                        <span>Đi đến câu</span>
+                    )}
+                    <div className="flex items-center gap-1 text-xs text-gray-600 sm:gap-1.5">
+                        <span className="hidden sm:inline">Đi đến câu</span>
                         <input
                             type="number"
                             min={1}
@@ -1737,11 +1845,13 @@ Mô tả kết quả cần in
                     <span className={`text-xs px-2 py-1 rounded-full ${saveStatus === 'saved' ? 'bg-green-100 text-green-700' : saveStatus === 'saving' ? 'bg-yellow-100 text-yellow-700' : 'bg-orange-100 text-orange-700'}`}>
                         {saveStatus === 'saved' ? 'Đã lưu' : saveStatus === 'saving' ? 'Đang lưu...' : 'Chưa lưu'}
                     </span>
-                    <span className="text-xs text-gray-400 px-2">{stats.count} câu · {stats.totalScore} điểm</span>
+                    <span className="text-xs text-gray-400 px-2">
+                        {isVideoQuiz ? `${stats.count} câu` : `${stats.count} câu · ${stats.totalScore} điểm`}
+                    </span>
                 </div>
             </div>
 
-            <div className="flex min-h-0 flex-1 overflow-hidden flex-col xl:flex-row">
+            <div className="flex min-h-0 flex-1 overflow-hidden flex-col lg:flex-row">
                 {/* LEFT — Hiển thị câu hỏi (40%) */}
                 <div
                     ref={previewPanelRef}
@@ -1749,14 +1859,16 @@ Mô tả kết quả cần in
                         'custom-scroll min-h-0 space-y-3 overflow-y-auto border-gray-200 bg-white p-3 sm:p-4',
                         compactView === 'preview'
                             ? 'flex-1'
-                            : 'hidden xl:block xl:w-[40%] xl:shrink-0 xl:border-r',
+                            : useLgSplit
+                              ? 'hidden lg:block lg:w-[40%] lg:shrink-0 lg:border-r'
+                              : 'hidden xl:block xl:w-[40%] xl:shrink-0 xl:border-r',
                     )}
                 >
                     {questions.length === 0 && (
                         <div className="py-12 text-center text-sm text-gray-400">
                             Chưa có câu hỏi.
-                            <span className="xl:hidden"> Bấm &quot;Soạn đề&quot; để thêm.</span>
-                            <span className="hidden xl:inline"> Soạn ở khung bên phải.</span>
+                            <span className={useLgSplit ? 'lg:hidden' : 'xl:hidden'}> Bấm &quot;Soạn đề&quot; để thêm.</span>
+                            <span className={useLgSplit ? 'hidden lg:inline' : 'hidden xl:inline'}> Soạn ở khung bên phải.</span>
                         </div>
                     )}
 
@@ -1770,13 +1882,19 @@ Mô tả kết quả cần in
                                 </div>
                             )}
                         <div id={`azota-question-${q.id}`} className="rounded-xl border border-gray-200 bg-white shadow-sm">
-                            <div className="flex items-stretch border-b border-gray-200 text-sm">
-                                <div className="px-3 py-2.5 flex items-center justify-center shrink-0 border-r border-gray-200">
+                            <div
+                                className={cn(
+                                    'flex border-b border-gray-200 text-sm',
+                                    isVideoQuiz ? 'flex-col sm:flex-row sm:items-stretch' : 'items-stretch',
+                                )}
+                            >
+                                <div className="flex items-center justify-between gap-2 px-3 py-2.5 sm:justify-center sm:border-r sm:border-gray-200 shrink-0">
                                     <span className="inline-flex items-center px-2.5 py-1 border border-gray-300 rounded-md text-blue-600 font-semibold whitespace-nowrap">
                                         Câu {q.number}.
                                     </span>
                                 </div>
 
+                                {!isVideoQuiz && (
                                 <div className="flex-1 px-3 py-2.5 flex items-center justify-center border-r border-gray-200 min-w-[88px]">
                                     {openScoreQuestionId === q.id ? (
                                         <div className="flex items-center justify-center gap-1 text-blue-600">
@@ -1815,14 +1933,18 @@ Mô tả kết quả cần in
                                         </button>
                                     )}
                                 </div>
+                                )}
 
-                                <div className="px-3 py-2.5 flex items-center justify-center shrink-0 relative min-w-[130px]">
+                                <div className={cn(
+                                    'px-3 py-2.5 flex items-center justify-center shrink-0 relative min-w-0 sm:min-w-[130px]',
+                                    isVideoQuiz && 'flex-1 border-t border-gray-100 sm:border-t-0 sm:border-r-0',
+                                )}>
                                     <select
                                         value={q.type}
                                         onChange={(e) => changeQuestionType(q.id, e.target.value as QuestionType)}
                                         className="w-full appearance-none bg-transparent text-gray-600 text-sm text-center outline-none cursor-pointer pr-6 pl-6"
                                     >
-                                        {QUESTION_TYPE_OPTIONS.map((opt) => (
+                                        {questionTypeOptions.map((opt) => (
                                             <option key={opt.value} value={opt.value}>
                                                 {opt.label}
                                             </option>
@@ -1831,6 +1953,65 @@ Mô tả kết quả cần in
                                     <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                                 </div>
                             </div>
+
+                            {isVideoQuiz && (() => {
+                                const parts = parseVideoQuizTimeParts(q.time || 0);
+                                return (
+                                    <div className="flex flex-col gap-2 border-b border-gray-100 bg-blue-50/40 px-3 py-2.5 text-xs sm:flex-row sm:flex-wrap sm:items-center">
+                                        <div className="flex items-center gap-2">
+                                            <Clock size={14} className="shrink-0 text-blue-500" />
+                                            <span className="font-medium text-gray-700">Hiện câu hỏi lúc</span>
+                                        </div>
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            <div className="flex items-center gap-1">
+                                            <input
+                                                type="number"
+                                                value={parts.h}
+                                                onChange={(e) => {
+                                                    const h = parseInt(e.target.value.replace(/\D/g, ''), 10) || 0;
+                                                    changeTime(q.id, buildVideoQuizTime(h, parts.m, parts.s));
+                                                }}
+                                                className="w-12 rounded border border-gray-300 bg-white px-1.5 py-1 text-center text-sm outline-none focus:ring-2 focus:ring-blue-500/30"
+                                                min={0}
+                                                placeholder="0"
+                                                aria-label="Giờ"
+                                            />
+                                            <span className="text-gray-400">:</span>
+                                            <input
+                                                type="number"
+                                                value={String(parts.m).padStart(2, '0')}
+                                                onChange={(e) => {
+                                                    const m = parseInt(e.target.value.replace(/\D/g, ''), 10) || 0;
+                                                    changeTime(q.id, buildVideoQuizTime(parts.h, m, parts.s));
+                                                }}
+                                                className="w-12 rounded border border-gray-300 bg-white px-1.5 py-1 text-center text-sm outline-none focus:ring-2 focus:ring-blue-500/30"
+                                                min={0}
+                                                max={59}
+                                                placeholder="00"
+                                                aria-label="Phút"
+                                            />
+                                            <span className="text-gray-400">:</span>
+                                            <input
+                                                type="number"
+                                                value={String(parts.s).padStart(2, '0')}
+                                                onChange={(e) => {
+                                                    const s = parseInt(e.target.value.replace(/\D/g, ''), 10) || 0;
+                                                    changeTime(q.id, buildVideoQuizTime(parts.h, parts.m, s));
+                                                }}
+                                                className="w-12 rounded border border-gray-300 bg-white px-1.5 py-1 text-center text-sm outline-none focus:ring-2 focus:ring-blue-500/30"
+                                                min={0}
+                                                max={59}
+                                                placeholder="00"
+                                                aria-label="Giây"
+                                            />
+                                        </div>
+                                            <span className="text-gray-500">
+                                                ({formatVideoQuizTime(q.time || 0)})
+                                            </span>
+                                        </div>
+                                    </div>
+                                );
+                            })()}
 
                             <div className="p-4 space-y-3">
                                 <ContentBlock content={q.content} questionId={q.id} imageDataMap={imageDataMap} />
@@ -2060,7 +2241,9 @@ Mô tả kết quả cần in
                         'min-h-0 min-w-0 shrink-0 flex flex-col bg-white',
                         compactView === 'editor'
                             ? 'flex-1'
-                            : 'hidden xl:flex xl:w-[60%]',
+                            : useLgSplit
+                              ? 'hidden lg:flex lg:w-[60%]'
+                              : 'hidden xl:flex xl:w-[60%]',
                     )}
                 >
                     <div className="flex items-center gap-1 overflow-x-auto px-2 py-2 bg-gray-50 border-b border-gray-200 sm:px-3">
@@ -2137,7 +2320,10 @@ Mô tả kết quả cần in
                         <button
                             type="button"
                             onClick={() => setShowTemplatesHelp((v) => !v)}
-                            className="flex w-full items-center justify-between px-3 py-2.5 text-left font-medium text-gray-600 hover:bg-gray-100/80 xl:hidden"
+                            className={cn(
+                                'flex w-full items-center justify-between px-3 py-2.5 text-left font-medium text-gray-600 hover:bg-gray-100/80',
+                                useLgSplit ? 'lg:hidden' : 'xl:hidden',
+                            )}
                         >
                             <span>Mẫu & hướng dẫn</span>
                             <ChevronDown
@@ -2145,10 +2331,16 @@ Mô tả kết quả cần in
                                 className={cn('shrink-0 transition-transform', showTemplatesHelp && 'rotate-180')}
                             />
                         </button>
-                        <div className={cn('space-y-1 px-3 py-2 sm:px-4', 'hidden xl:block', showTemplatesHelp && 'block')}>
+                        <div
+                            className={cn(
+                                'space-y-1 px-3 py-2 sm:px-4',
+                                useLgSplit ? 'hidden lg:block' : 'hidden xl:block',
+                                showTemplatesHelp && 'block',
+                            )}
+                        >
                             <div className="flex flex-wrap items-center gap-2">
                                 <span className="font-medium">Mẫu:</span>
-                                {SAMPLE_TEMPLATES.map((tpl) => (
+                                {visibleSampleTemplates.map((tpl) => (
                                     <button
                                         key={tpl.label}
                                         type="button"
@@ -2422,5 +2614,8 @@ const ToolbarButton: React.FC<{ icon: React.ReactNode; title: string; onClick: (
     </button>
 ));
 ToolbarButton.displayName = 'ToolbarButton';
+
+export type { Question as ContestQuestion };
+export { parseQuestions as parseContestQuestions };
 
 export default CustomEditorContest;

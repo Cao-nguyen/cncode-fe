@@ -3,15 +3,17 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { getCourseBySlug, getEnrollmentStatus, enrollPayOS, enrollCoin } from '@/lib/api/khoahoc.api';
-import ReviewSection from '@/components/common/ReviewSection';
-import { Course, Enrollment, ChapterWithLessons } from '@/types/khoahoc.type';
+import { CourseReviews } from '@/components/khoahoc/CourseReviews';
+import { EnrolledStudentsStack } from '@/components/khoahoc/EnrolledStudentsStack';
+import { Course, CourseEnrollee, Enrollment, ChapterWithLessons } from '@/types/khoahoc.type';
 import { getCourseLastLesson, removeCourseLastLesson } from '@/lib/localProgress';
-import { Loader2, PlayCircle, BookOpen, Clock, Award, Shield, Check, Lock, ChevronDown, ChevronUp, Users } from 'lucide-react';
+import { Loader2, PlayCircle, BookOpen, Clock, Shield, Check, Lock, ChevronDown, ChevronUp, Users } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import StaticContent from '@/components/common/StaticContent';
 import axios from 'axios';
-import { getImageUrl } from '@/lib/utils/imageUrl';
+import { getAvatarUrl, avatarImageProps, getImageUrl } from '@/lib/utils/imageUrl';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 export default function CourseDetailPage() {
     const params = useParams();
@@ -20,12 +22,12 @@ export default function CourseDetailPage() {
 
     const [course, setCourse] = useState<Course | null>(null);
     const [chapters, setChapters] = useState<ChapterWithLessons[]>([]);
+    const [recentEnrollees, setRecentEnrollees] = useState<CourseEnrollee[]>([]);
     const [loading, setLoading] = useState(true);
     const [enrollment, setEnrollment] = useState<Enrollment | null>(null);
     const [openChapters, setOpenChapters] = useState<Record<string, boolean>>({});
     const [payingMethod, setPayingMethod] = useState<'free' | 'payos' | 'coin' | null>(null);
 
-    // Tự động kiểm tra trạng thái nếu đang chờ thanh toán (Polling)
     useEffect(() => {
         let interval: NodeJS.Timeout;
         if (enrollment && enrollment.paymentStatus === 'pending' && course?._id) {
@@ -38,8 +40,10 @@ export default function CourseDetailPage() {
                             toast.success('Thanh toán thành công! Chúc bạn học tốt.');
                         }
                     }
-                } catch (e) { /* Ignore errors during polling */ }
-            }, 3000); // Kiểm tra mỗi 3 giây
+                } catch {
+                    /* ignore polling errors */
+                }
+            }, 3000);
         }
         return () => { if (interval) clearInterval(interval); };
     }, [enrollment?.paymentStatus, course?._id]);
@@ -48,8 +52,9 @@ export default function CourseDetailPage() {
         const fetchDetail = async () => {
             try {
                 setLoading(true);
-                const data = await getCourseBySlug(slug) as unknown as { course: Course; chapters: ChapterWithLessons[] };
+                const data = await getCourseBySlug(slug);
                 setCourse(data.course);
+                setRecentEnrollees(data.recentEnrollees || []);
                 if (data.chapters?.length) {
                     setChapters(data.chapters);
                     const initialOpen: Record<string, boolean> = {};
@@ -62,8 +67,7 @@ export default function CourseDetailPage() {
                 try {
                     const enrollStatus = await getEnrollmentStatus(data.course._id);
                     setEnrollment(enrollStatus);
-
-                } catch (e) {
+                } catch {
                     // Not enrolled or not logged in
                 }
             } catch (error) {
@@ -122,7 +126,11 @@ export default function CourseDetailPage() {
     };
 
     if (loading) {
-        return <div className="min-h-[70vh] flex items-center justify-center"><Loader2 className="w-8 h-8 text-blue-500 animate-spin" /></div>;
+        return (
+            <div className="flex min-h-[70vh] items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+            </div>
+        );
     }
 
     if (!course) return null;
@@ -163,7 +171,6 @@ export default function CourseDetailPage() {
         setOpenChapters(prev => ({ ...prev, [id]: !prev[id] }));
     };
 
-    // Get last lesson from localStorage or first lesson
     const getStartLessonId = (): string => {
         if (!course?._id || !chapters.length) return '';
 
@@ -181,248 +188,280 @@ export default function CourseDetailPage() {
         return firstLesson?._id || '';
     };
 
-    return (
-        <div className="min-h-screen bg-gray-50 pb-20">
-            <div className="bg-gray-900 text-white py-12 px-6">
-                <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-12">
-                    <div className="lg:col-span-2">
-                        {/* Breadcrumb */}
-                        <div className="text-gray-400 text-sm mb-6">
-                            <Link href="/khoahoc" className="hover:text-white">Khoá học</Link>
-                            <span className="mx-2">/</span>
-                            <span className="text-white">{course.title}</span>
+    const sidebarCard = (
+        <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-xl sm:rounded-3xl lg:sticky lg:top-24">
+            <div className="relative aspect-video bg-gray-200">
+                {course.thumbnail ? (
+                    <img
+                        src={getImageUrl(course.thumbnail)}
+                        alt={course.title}
+                        className="h-full w-full object-cover"
+                    />
+                ) : (
+                    <div className="flex h-full w-full items-center justify-center text-gray-400">
+                        <BookOpen className="h-12 w-12" />
+                    </div>
+                )}
+                {!isEnrolled && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/30 backdrop-blur-md sm:h-16 sm:w-16">
+                            <PlayCircle className="h-7 w-7 text-white sm:h-8 sm:w-8" />
                         </div>
+                    </div>
+                )}
+            </div>
 
-                        <h1 className="text-3xl md:text-4xl font-bold mb-8 leading-tight">
-                            {course.title}
-                        </h1>
+            <div className="p-5 sm:p-6 lg:p-8">
+                {!isEnrolled && !isPending && (
+                    <div className="mb-5 sm:mb-6">
+                        {course.type === 'free' ? (
+                            <div className="text-2xl font-bold text-gray-900 sm:text-3xl">MIỄN PHÍ</div>
+                        ) : (
+                            <div className="flex flex-wrap items-end gap-2 sm:gap-3">
+                                <span className="text-2xl font-bold text-gray-900 sm:text-3xl">{formattedPrice}</span>
+                                {course.discountPercent > 0 && (
+                                    <span className="pb-1 text-base text-gray-400 line-through sm:text-lg">{originalPrice}</span>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                )}
 
-                        <div className="flex flex-wrap items-center gap-6 text-sm">
-                            <div className="flex items-center gap-2">
-                                <span className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold text-xs overflow-hidden shrink-0">
-                                    {teacherAvatar ? (
-                                        <img src={teacherAvatar} alt="" className="w-full h-full object-cover" />
-                                    ) : (
-                                        teacherName.charAt(0)
-                                    )}
+                {isEnrolled ? (
+                    <Link href={`/learn/${getStartLessonId()}`}>
+                        <button className="mb-5 w-full rounded-2xl bg-blue-600 py-3.5 text-base font-bold text-white shadow-lg shadow-blue-500/30 transition-colors hover:bg-blue-700 sm:mb-6 sm:py-4 sm:text-lg">
+                            VÀO HỌC NGAY
+                        </button>
+                    </Link>
+                ) : isPending ? (
+                    <div className="mb-5 space-y-3 sm:mb-6">
+                        <button
+                            onClick={() => window.location.reload()}
+                            className="w-full rounded-2xl bg-amber-500 py-3.5 text-base font-bold text-white shadow-lg shadow-amber-500/30 transition-colors hover:bg-amber-600 sm:py-4 sm:text-lg"
+                        >
+                            ĐANG XÁC NHẬN THANH TOÁN...
+                        </button>
+                        <p className="text-center text-xs italic text-gray-500">
+                            Nếu bạn đã thanh toán thành công, vui lòng đợi 1-2 phút hoặc nhấn làm mới trang.
+                        </p>
+                    </div>
+                ) : course.type === 'free' ? (
+                    <button
+                        onClick={() => handleEnroll('free')}
+                        disabled={isPaying}
+                        className="mb-5 w-full rounded-2xl bg-blue-600 py-3.5 text-base font-bold text-white shadow-lg shadow-blue-500/30 transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70 sm:mb-6 sm:py-4 sm:text-lg"
+                    >
+                        {payingMethod === 'free' ? (
+                            <span className="inline-flex items-center gap-2">
+                                <Loader2 className="h-5 w-5 animate-spin" />
+                                ĐANG ĐĂNG KÝ
+                            </span>
+                        ) : 'ĐĂNG KÝ HỌC'}
+                    </button>
+                ) : (
+                    <div className="mb-5 flex flex-col gap-3 sm:mb-6">
+                        <button
+                            onClick={() => handleEnroll('payos')}
+                            disabled={isPaying}
+                            className="w-full rounded-2xl bg-blue-600 py-3.5 text-base font-bold text-white shadow-lg shadow-blue-500/30 transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70 sm:py-4 sm:text-lg"
+                        >
+                            {payingMethod === 'payos' ? (
+                                <span className="inline-flex items-center gap-2">
+                                    <Loader2 className="h-5 w-5 animate-spin" />
+                                    ĐANG TẠO THANH TOÁN
                                 </span>
-                                <span>Bởi {teacherName}</span>
-                            </div>
-                            <div className="flex items-center gap-2 text-gray-300">
-                                <Users className="w-4 h-4" />
-                                {course.enrollCount} học viên
-                            </div>
+                            ) : 'MUA KHOÁ HỌC (PayOS)'}
+                        </button>
+                        {course.allowCoinPayment && (
+                            <button
+                                onClick={() => handleEnroll('coin')}
+                                disabled={isPaying}
+                                className="w-full rounded-2xl bg-yellow-500 py-3.5 text-base font-bold text-white shadow-lg shadow-yellow-500/30 transition-colors hover:bg-yellow-600 disabled:cursor-not-allowed disabled:opacity-70 sm:py-4 sm:text-lg"
+                            >
+                                {payingMethod === 'coin' ? (
+                                    <span className="inline-flex items-center gap-2">
+                                        <Loader2 className="h-5 w-5 animate-spin" />
+                                        ĐANG THANH TOÁN
+                                    </span>
+                                ) : 'MUA BẰNG COIN'}
+                            </button>
+                        )}
+                    </div>
+                )}
+
+                <ul className="space-y-3 text-sm text-gray-600 sm:space-y-4">
+                    <li className="flex items-center gap-3">
+                        <BookOpen className="h-5 w-5 shrink-0 text-gray-400" />
+                        <span>Tổng số <strong>{course.totalLessons}</strong> bài học</span>
+                    </li>
+                    <li className="flex items-center gap-3">
+                        <Clock className="h-5 w-5 shrink-0 text-gray-400" />
+                        <span>Thời lượng <strong>{formatDuration(course.totalDuration)}</strong></span>
+                    </li>
+                    <li className="flex items-center gap-3">
+                        <Shield className="h-5 w-5 shrink-0 text-gray-400" />
+                        <span>Học mọi lúc, mọi nơi</span>
+                    </li>
+                    <li className="flex items-center gap-3">
+                        <Check className="h-5 w-5 shrink-0 text-gray-400" />
+                        <span>Cấp chứng chỉ hoàn thành</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    );
+
+    return (
+        <div className="min-h-screen bg-gray-50 pb-16 sm:pb-20">
+            <div className="bg-gray-900 px-4 py-8 text-white sm:px-6 sm:py-10 lg:py-12">
+                <div className="mx-auto max-w-7xl">
+                    <div className="text-sm text-gray-400">
+                        <Link href="/khoahoc" className="hover:text-white">Khoá học</Link>
+                        <span className="mx-2">/</span>
+                        <span className="text-white">{course.title}</span>
+                    </div>
+
+                    <h1 className="mt-4 text-2xl font-bold leading-tight sm:mt-6 sm:text-3xl md:text-4xl">
+                        {course.title}
+                    </h1>
+
+                    <div className="mt-5 flex flex-wrap items-center gap-4 text-sm sm:mt-6 sm:gap-6">
+                        <div className="flex items-center gap-2.5">
+                            <Avatar className="h-9 w-9 shrink-0 border-2 border-white/20 sm:h-10 sm:w-10">
+                                <AvatarImage
+                                    {...avatarImageProps}
+                                    src={getAvatarUrl(teacherAvatar)}
+                                    alt={teacherName}
+                                />
+                                <AvatarFallback className="bg-blue-500 text-xs font-bold text-white">
+                                    {teacherName.charAt(0).toUpperCase()}
+                                </AvatarFallback>
+                            </Avatar>
+                            <span>Bởi {teacherName}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-gray-300">
+                            <Users className="h-4 w-4" />
+                            {course.enrollCount.toLocaleString('vi-VN')} học viên
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-3 gap-12 -mt-8">
-                {/* Left Column */}
-                <div className="lg:col-span-2 pt-16">
-                    {/* Course Introduction */}
-                    {course.description && (
-                        <div className="mb-12">
-                            <h2 className="text-2xl font-bold text-gray-900 mb-6">Giới thiệu khoá học</h2>
-                            <div className="bg-white border border-gray-200 rounded-2xl p-6">
-                                <StaticContent content={course.description} />
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Course Content */}
-                    <div className="mb-12">
-                        <h2 className="text-2xl font-bold text-gray-900 mb-6">Nội dung khoá học</h2>
-
-                        <div className="flex items-center justify-between text-sm text-gray-600 mb-4">
-                            <span>{chapters.length} chương • {course.totalLessons} bài học • Thời lượng {formatDuration(course.totalDuration)}</span>
-                            <button onClick={() => {
-                                const allOpen = Object.values(openChapters).every(v => v);
-                                const nextState: Record<string, boolean> = {};
-                                chapters.forEach(c => nextState[c._id as string] = !allOpen);
-                                setOpenChapters(nextState);
-                            }} className="text-blue-600 font-medium hover:underline">
-                                {Object.values(openChapters).every(v => v) ? 'Thu gọn tất cả' : 'Mở rộng tất cả'}
-                            </button>
-                        </div>
-
-                        <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
-                            {chapters.length > 0 ? chapters.map((chapter, index) => (
-                                <div key={chapter._id} className="border-b border-gray-100 last:border-0">
-                                    <button
-                                        onClick={() => toggleChapter(chapter._id as string)}
-                                        className="w-full px-6 py-4 flex items-center justify-between bg-gray-50/50 hover:bg-gray-50 transition-colors"
-                                    >
-                                        <div className="flex items-center gap-3">
-                                            {openChapters[chapter._id as string] ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
-                                            <span className="font-semibold text-gray-900 text-left">{index + 1}. {chapter.title}</span>
-                                        </div>
-                                        <span className="text-sm text-gray-500">{chapter.lessons?.length || 0} bài học</span>
-                                    </button>
-
-                                    {openChapters[chapter._id as string] && (
-                                        <div className="px-6 py-2">
-                                            {(chapter.lessons || []).map((lesson, lIdx) => (
-                                                <div key={lesson._id} className="flex items-center justify-between py-3 border-b border-gray-50 last:border-0">
-                                                    <div className="flex items-center gap-3">
-                                                        {(lesson.type === 'video' || lesson.type === 'exercise') ? (
-                                                            <PlayCircle className="w-5 h-5 text-blue-500 shrink-0" />
-                                                        ) : (
-                                                            <BookOpen className="w-5 h-5 text-green-500 shrink-0" />
-                                                        )}
-                                                        <span className="text-gray-700 text-sm">{index + 1}.{lIdx + 1} {lesson.title}</span>
-                                                    </div>
-                                                    <div className="flex items-center gap-4">
-                                                        {lesson.isPreview && !isEnrolled && (
-                                                            <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-1 rounded">Xem thử</span>
-                                                        )}
-                                                        {lesson.type === 'video' && lesson.duration && lesson.duration > 0 && (
-                                                            <span className="text-sm text-gray-500">{formatLessonDuration(lesson.duration)}</span>
-                                                        )}
-                                                        {!isEnrolled && !lesson.isPreview && (
-                                                            <Lock className="w-4 h-4 text-gray-400" />
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
+            <div className="mx-auto max-w-7xl px-4 sm:px-6">
+                <div className="-mt-6 grid grid-cols-1 gap-8 sm:-mt-8 lg:grid-cols-3 lg:gap-12">
+                    <div className="order-2 space-y-8 pt-4 sm:space-y-10 sm:pt-6 lg:order-1 lg:col-span-2 lg:pt-16">
+                        {course.description && (
+                            <section>
+                                <h2 className="mb-4 text-xl font-bold text-gray-900 sm:mb-6 sm:text-2xl">Giới thiệu khoá học</h2>
+                                <div className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-6">
+                                    <StaticContent content={course.description} />
                                 </div>
-                            )) : (
-                                <div className="p-6 text-center text-gray-500">Nội dung đang được cập nhật.</div>
-                            )}
-                        </div>
-                    </div>
+                            </section>
+                        )}
 
-                    {/* Reviews */}
-                    <div className="mb-12">
-                        <h2 className="text-2xl font-bold text-gray-900 mb-6">Đánh giá</h2>
-                        <ReviewSection targetType="course" targetId={course._id} canReview={!!isEnrolled} />
-                    </div>
-                </div>
+                        {course.enrollCount > 0 && (
+                            <section>
+                                <h2 className="mb-4 text-xl font-bold text-gray-900 sm:mb-6 sm:text-2xl">Học viên đã tham gia</h2>
+                                <div className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-5">
+                                    <EnrolledStudentsStack
+                                        students={recentEnrollees}
+                                        totalCount={course.enrollCount}
+                                        maxVisible={8}
+                                    />
+                                </div>
+                            </section>
+                        )}
 
-                {/* Right Column / Sidebar */}
-                <div className="lg:col-span-1">
-                    <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden sticky top-24">
-                        {/* Thumbnail */}
-                        <div className="aspect-video relative bg-gray-200">
-                            {course.thumbnail ? (
-                                <img
-                                    src={getImageUrl(course.thumbnail)}
-                                    alt={course.title}
-                                    className="w-full h-full object-cover"
-                                />
-                            ) : (
-                                <div className="w-full h-full flex items-center justify-center text-gray-400">
-                                    <BookOpen className="w-12 h-12" />
-                                </div>
-                            )}
-                            {!isEnrolled && (
-                                <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
-                                    <div className="w-16 h-16 rounded-full bg-white/30 backdrop-blur-md flex items-center justify-center">
-                                        <PlayCircle className="w-8 h-8 text-white" />
-                                    </div>
-                                </div>
-                            )}
-                        </div>
+                        <section>
+                            <h2 className="mb-4 text-xl font-bold text-gray-900 sm:mb-6 sm:text-2xl">Nội dung khoá học</h2>
 
-                        <div className="p-8">
-                            {!isEnrolled && !isPending && (
-                                <div className="mb-6">
-                                    {course.type === 'free' ? (
-                                        <div className="text-3xl font-bold text-gray-900">MIỄN PHÍ</div>
-                                    ) : (
-                                        <div className="flex items-end gap-3 flex-wrap">
-                                            <span className="text-3xl font-bold text-gray-900">{formattedPrice}</span>
-                                            {course.discountPercent > 0 && (
-                                                <span className="text-lg text-gray-400 line-through pb-1">{originalPrice}</span>
-                                            )}
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-
-                            {isEnrolled ? (
-                                <Link href={`/learn/${getStartLessonId()}`}>
-                                    <button className="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold text-lg hover:bg-blue-700 transition-colors mb-6 shadow-lg shadow-blue-500/30">
-                                        VÀO HỌC NGAY
-                                    </button>
-                                </Link>
-                            ) : isPending ? (
-                                <div className="space-y-3 mb-6">
-                                    <button
-                                        onClick={() => window.location.reload()}
-                                        className="w-full py-4 bg-amber-500 text-white rounded-2xl font-bold text-lg hover:bg-amber-600 transition-colors shadow-lg shadow-amber-500/30"
-                                    >
-                                        ĐANG XÁC NHẬN THANH TOÁN...
-                                    </button>
-                                    <p className="text-xs text-center text-gray-500 italic">
-                                        Nếu bạn đã thanh toán thành công, vui lòng đợi 1-2 phút hoặc nhấn làm mới trang.
-                                    </p>
-                                </div>
-                            ) : course.type === 'free' ? (
+                            <div className="mb-4 flex flex-col gap-2 text-sm text-gray-600 sm:flex-row sm:items-center sm:justify-between">
+                                <span>{chapters.length} chương • {course.totalLessons} bài học • Thời lượng {formatDuration(course.totalDuration)}</span>
                                 <button
-                                    onClick={() => handleEnroll('free')}
-                                    disabled={isPaying}
-                                    className="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold text-lg hover:bg-blue-700 transition-colors mb-6 shadow-lg shadow-blue-500/30 disabled:cursor-not-allowed disabled:opacity-70"
+                                    onClick={() => {
+                                        const allOpen = Object.values(openChapters).every(v => v);
+                                        const nextState: Record<string, boolean> = {};
+                                        chapters.forEach(c => nextState[c._id as string] = !allOpen);
+                                        setOpenChapters(nextState);
+                                    }}
+                                    className="self-start font-medium text-blue-600 hover:underline sm:self-auto"
                                 >
-                                    {payingMethod === 'free' ? (
-                                        <span className="inline-flex items-center gap-2">
-                                            <Loader2 className="w-5 h-5 animate-spin" />
-                                            ĐANG ĐĂNG KÝ
-                                        </span>
-                                    ) : 'ĐĂNG KÝ HỌC'}
+                                    {Object.values(openChapters).every(v => v) ? 'Thu gọn tất cả' : 'Mở rộng tất cả'}
                                 </button>
-                            ) : (
-                                <div className="flex flex-col gap-3 mb-6">
-                                    <button
-                                        onClick={() => handleEnroll('payos')}
-                                        disabled={isPaying}
-                                        className="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold text-lg hover:bg-blue-700 transition-colors shadow-lg shadow-blue-500/30 disabled:cursor-not-allowed disabled:opacity-70"
-                                    >
-                                        {payingMethod === 'payos' ? (
-                                            <span className="inline-flex items-center gap-2">
-                                                <Loader2 className="w-5 h-5 animate-spin" />
-                                                ĐANG TẠO THANH TOÁN
-                                            </span>
-                                        ) : 'MUA KHOÁ HỌC (PayOS)'}
-                                    </button>
-                                    {course.allowCoinPayment && (
-                                        <button
-                                            onClick={() => handleEnroll('coin')}
-                                            disabled={isPaying}
-                                            className="w-full py-4 bg-yellow-500 text-white rounded-2xl font-bold text-lg hover:bg-yellow-600 transition-colors shadow-lg shadow-yellow-500/30 disabled:cursor-not-allowed disabled:opacity-70"
-                                        >
-                                            {payingMethod === 'coin' ? (
-                                                <span className="inline-flex items-center gap-2">
-                                                    <Loader2 className="w-5 h-5 animate-spin" />
-                                                    ĐANG THANH TOÁN
-                                                </span>
-                                            ) : 'MUA BẰNG COIN'}
-                                        </button>
-                                    )}
-                                </div>
-                            )}
+                            </div>
 
-                            <ul className="space-y-4 text-sm text-gray-600">
-                                <li className="flex items-center gap-3">
-                                    <BookOpen className="w-5 h-5 text-gray-400 shrink-0" />
-                                    <span>Tổng số <strong>{course.totalLessons}</strong> bài học</span>
-                                </li>
-                                <li className="flex items-center gap-3">
-                                    <Clock className="w-5 h-5 text-gray-400 shrink-0" />
-                                    <span>Thời lượng <strong>{formatDuration(course.totalDuration)}</strong></span>
-                                </li>
-                                <li className="flex items-center gap-3">
-                                    <Shield className="w-5 h-5 text-gray-400 shrink-0" />
-                                    <span>Học mọi lúc, mọi nơi</span>
-                                </li>
-                                <li className="flex items-center gap-3">
-                                    <Check className="w-5 h-5 text-gray-400 shrink-0" />
-                                    <span>Cấp chứng chỉ hoàn thành</span>
-                                </li>
-                            </ul>
-                        </div>
+                            <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white">
+                                {chapters.length > 0 ? chapters.map((chapter, index) => (
+                                    <div key={chapter._id} className="border-b border-gray-100 last:border-0">
+                                        <button
+                                            onClick={() => toggleChapter(chapter._id as string)}
+                                            className="flex w-full items-center justify-between gap-3 bg-gray-50/50 px-4 py-3.5 transition-colors hover:bg-gray-50 sm:px-6 sm:py-4"
+                                        >
+                                            <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+                                                {openChapters[chapter._id as string] ? (
+                                                    <ChevronUp className="h-5 w-5 shrink-0 text-gray-400" />
+                                                ) : (
+                                                    <ChevronDown className="h-5 w-5 shrink-0 text-gray-400" />
+                                                )}
+                                                <span className="text-left text-sm font-semibold text-gray-900 sm:text-base">
+                                                    {index + 1}. {chapter.title}
+                                                </span>
+                                            </div>
+                                            <span className="shrink-0 text-xs text-gray-500 sm:text-sm">
+                                                {chapter.lessons?.length || 0} bài học
+                                            </span>
+                                        </button>
+
+                                        {openChapters[chapter._id as string] && (
+                                            <div className="px-4 py-1 sm:px-6 sm:py-2">
+                                                {(chapter.lessons || []).map((lesson, lIdx) => (
+                                                    <div
+                                                        key={lesson._id}
+                                                        className="flex flex-col gap-2 border-b border-gray-50 py-3 last:border-0 sm:flex-row sm:items-center sm:justify-between"
+                                                    >
+                                                        <div className="flex min-w-0 items-start gap-2.5 sm:items-center sm:gap-3">
+                                                            {(lesson.type === 'video' || lesson.type === 'exercise') ? (
+                                                                <PlayCircle className="h-5 w-5 shrink-0 text-blue-500" />
+                                                            ) : (
+                                                                <BookOpen className="h-5 w-5 shrink-0 text-green-500" />
+                                                            )}
+                                                            <span className="text-sm text-gray-700">
+                                                                {index + 1}.{lIdx + 1} {lesson.title}
+                                                            </span>
+                                                        </div>
+                                                        <div className="flex items-center gap-3 pl-7 sm:gap-4 sm:pl-0">
+                                                            {lesson.isPreview && !isEnrolled && (
+                                                                <span className="rounded bg-blue-50 px-2 py-1 text-xs font-semibold text-blue-600">
+                                                                    Xem thử
+                                                                </span>
+                                                            )}
+                                                            {lesson.type === 'video' && lesson.duration && lesson.duration > 0 && (
+                                                                <span className="text-xs text-gray-500 sm:text-sm">
+                                                                    {formatLessonDuration(lesson.duration)}
+                                                                </span>
+                                                            )}
+                                                            {!isEnrolled && !lesson.isPreview && (
+                                                                <Lock className="h-4 w-4 text-gray-400" />
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                )) : (
+                                    <div className="p-6 text-center text-gray-500">Nội dung đang được cập nhật.</div>
+                                )}
+                            </div>
+                        </section>
+
+                        <section>
+                            <CourseReviews courseId={course._id} />
+                        </section>
+                    </div>
+
+                    <div className="order-1 pt-4 sm:pt-6 lg:order-2 lg:col-span-1 lg:pt-16">
+                        {sidebarCard}
                     </div>
                 </div>
             </div>
