@@ -20,7 +20,10 @@ import {
     Sparkles,
     Loader2,
     Undo2,
+    Eye,
+    EyeOff,
 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { luyentapApi } from '@/lib/api/luyentap.api';
 import {
@@ -1201,6 +1204,8 @@ const CustomEditorContest: React.FC<{
     const [activeSampleLabel, setActiveSampleLabel] = useState<string | null>(null);
     const [showDivideModal, setShowDivideModal] = useState(false);
     const [showExamInfoModal, setShowExamInfoModal] = useState(false);
+    const [compactView, setCompactView] = useState<'editor' | 'preview'>('editor');
+    const [showTemplatesHelp, setShowTemplatesHelp] = useState(false);
     const [totalPointsDraft, setTotalPointsDraft] = useState<Record<string, string>>({});
     const [tfScaleDraft, setTfScaleDraft] = useState<TrueFalseScale>(DEFAULT_TRUE_FALSE_SCALE);
     const [trueFalseScale, setTrueFalseScale] = useState<TrueFalseScale>(
@@ -1702,8 +1707,22 @@ Mô tả kết quả cần in
     return (
         <div className="flex flex-col h-full bg-white font-sans" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
             {/* Toolbar — Azota style */}
-            <div className="flex items-center justify-between gap-3 px-4 py-2.5 bg-white border-b border-gray-200 flex-wrap">
-                <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center justify-between gap-3 px-3 py-2.5 bg-white border-b border-gray-200 flex-wrap sm:px-4">
+                <div className="flex min-w-0 flex-1 items-center gap-2 flex-wrap">
+                    <button
+                        type="button"
+                        onClick={() => setCompactView((v) => (v === 'editor' ? 'preview' : 'editor'))}
+                        className={cn(
+                            'inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors xl:hidden',
+                            compactView === 'preview'
+                                ? 'border-blue-600 bg-blue-600 text-white'
+                                : 'border-gray-200 text-gray-700 hover:bg-gray-50',
+                        )}
+                        title={compactView === 'editor' ? 'Xem preview' : 'Quay lại soạn đề'}
+                    >
+                        {compactView === 'editor' ? <Eye size={14} /> : <EyeOff size={14} />}
+                        {compactView === 'editor' ? 'Preview' : 'Soạn đề'}
+                    </button>
                     <button type="button" onClick={handleDividePoints} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#1e3a8a] text-white text-xs font-semibold hover:bg-[#1e40af]">
                         <Grid3x3 size={14} /> Chia điểm
                     </button>
@@ -1732,11 +1751,23 @@ Mô tả kết quả cần in
                 </div>
             </div>
 
-            <div className="flex flex-1 overflow-hidden">
+            <div className="flex min-h-0 flex-1 overflow-hidden flex-col xl:flex-row">
                 {/* LEFT — Hiển thị câu hỏi (40%) */}
-                <div className="w-[40%] shrink-0 overflow-y-auto bg-white p-4 space-y-3 border-r border-gray-200">
+                <div
+                    className={cn(
+                        'min-h-0 shrink-0 space-y-3 overflow-y-auto border-gray-200 bg-white p-3 sm:p-4',
+                        'xl:flex xl:w-[40%] xl:border-r',
+                        compactView === 'preview'
+                            ? 'flex flex-1 flex-col'
+                            : 'hidden xl:flex',
+                    )}
+                >
                     {questions.length === 0 && (
-                        <div className="text-center py-12 text-gray-400 text-sm">Chưa có câu hỏi. Soạn ở khung bên phải.</div>
+                        <div className="py-12 text-center text-sm text-gray-400">
+                            Chưa có câu hỏi.
+                            <span className="xl:hidden"> Bấm &quot;Soạn đề&quot; để thêm.</span>
+                            <span className="hidden xl:inline"> Soạn ở khung bên phải.</span>
+                        </div>
                     )}
 
                     {questions.map((q, index) => (
@@ -2034,8 +2065,16 @@ Mô tả kết quả cần in
                 </div>
 
                 {/* RIGHT — Soạn thảo (60%) */}
-                <div className="w-[60%] shrink-0 flex flex-col bg-white min-w-0">
-                    <div className="flex items-center gap-1 px-3 py-2 bg-gray-50 border-b border-gray-200">
+                <div
+                    className={cn(
+                        'min-h-0 min-w-0 shrink-0 flex-col bg-white',
+                        'xl:flex xl:w-[60%]',
+                        compactView === 'editor'
+                            ? 'flex flex-1'
+                            : 'hidden xl:flex',
+                    )}
+                >
+                    <div className="flex items-center gap-1 overflow-x-auto px-2 py-2 bg-gray-50 border-b border-gray-200 sm:px-3">
                         <ToolbarButton icon={<Bold size={15} />} title="In đậm (Ctrl+B)" onClick={() => applyWrap('**', '**', 'in đậm')} />
                         <ToolbarButton icon={<Italic size={15} />} title="In nghiêng (Ctrl+I)" onClick={() => applyWrap('*', '*', 'in nghiêng')} />
                         <ToolbarButton icon={<Underline size={15} />} title="Gạch chân (Ctrl+U)" onClick={() => applyWrap('__', '__', 'gạch chân')} />
@@ -2108,51 +2147,64 @@ Mô tả kết quả cần in
 
                     {/* Sample templates footer */}
                     {!(showDivideModal || showExamInfoModal || showImageModal || showMathModal) && (
-                    <div className="px-4 py-2 border-t border-gray-100 bg-gray-50 text-xs text-gray-500 space-y-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-medium">Mẫu:</span>
-                            {SAMPLE_TEMPLATES.map((tpl) => (
-                                <button
-                                    key={tpl.label}
-                                    type="button"
-                                    onClick={() => handleApplySample(tpl.label, tpl.content)}
-                                    className={`hover:underline ${
-                                        activeSampleLabel === tpl.label ? 'text-blue-800 font-semibold' : 'text-blue-600'
-                                    }`}
-                                >
-                                    {tpl.label}
-                                </button>
-                            ))}
-                            {draftBeforeSample !== null && (
-                                <button
-                                    type="button"
-                                    onClick={handleRestoreDraft}
-                                    className="inline-flex items-center gap-1 ml-1 px-2 py-0.5 rounded-md text-amber-700 bg-amber-50 border border-amber-200 hover:bg-amber-100 transition-colors"
-                                >
-                                    <Undo2 size={12} />
-                                    Quay lại nội dung đang soạn
-                                </button>
-                            )}
+                    <div className="shrink-0 border-t border-gray-100 bg-gray-50 text-xs text-gray-500">
+                        <button
+                            type="button"
+                            onClick={() => setShowTemplatesHelp((v) => !v)}
+                            className="flex w-full items-center justify-between px-3 py-2.5 text-left font-medium text-gray-600 hover:bg-gray-100/80 xl:hidden"
+                        >
+                            <span>Mẫu & hướng dẫn</span>
+                            <ChevronDown
+                                size={16}
+                                className={cn('shrink-0 transition-transform', showTemplatesHelp && 'rotate-180')}
+                            />
+                        </button>
+                        <div className={cn('space-y-1 px-3 py-2 sm:px-4', 'hidden xl:block', showTemplatesHelp && 'block')}>
+                            <div className="flex flex-wrap items-center gap-2">
+                                <span className="font-medium">Mẫu:</span>
+                                {SAMPLE_TEMPLATES.map((tpl) => (
+                                    <button
+                                        key={tpl.label}
+                                        type="button"
+                                        onClick={() => handleApplySample(tpl.label, tpl.content)}
+                                        className={`hover:underline ${
+                                            activeSampleLabel === tpl.label ? 'text-blue-800 font-semibold' : 'text-blue-600'
+                                        }`}
+                                    >
+                                        {tpl.label}
+                                    </button>
+                                ))}
+                                {draftBeforeSample !== null && (
+                                    <button
+                                        type="button"
+                                        onClick={handleRestoreDraft}
+                                        className="inline-flex items-center gap-1 ml-1 px-2 py-0.5 rounded-md text-amber-700 bg-amber-50 border border-amber-200 hover:bg-amber-100 transition-colors"
+                                    >
+                                        <Undo2 size={12} />
+                                        Quay lại nội dung đang soạn
+                                    </button>
+                                )}
+                            </div>
+                            <p className="leading-relaxed text-gray-400">
+                                <span className="font-medium text-gray-500">Gõ nhanh:</span>{' '}
+                                *đáp_án · A./a) · {`{ms}`} · {`{match}`} · *1-a · {`{lt}`} · {`{yêu cầu:}`} · {`{đầu vào:}`} · {`{đầu ra:}`} · + in=&gt;out · - in=&gt;out · {`{web}`} · {`{lg: ...}`}
+                            </p>
+                            <p className="leading-relaxed text-gray-400">
+                                <span className="font-medium text-emerald-600">LT thi đấu:</span>{' '}
+                                <span className="font-mono">{`{đầu vào:}`}</span> /{' '}
+                                <span className="font-mono">{`{đầu ra:}`}</span> mô tả đề · TC:{' '}
+                                <span className="font-mono">+ 5 10 =&gt; 15</span> (mẫu) ·{' '}
+                                <span className="font-mono">- 5 \\n 2 =&gt; 10</span> (ẩn, xuống dòng)
+                            </p>
+                            <p className="leading-relaxed text-gray-400">
+                                <span className="font-medium text-indigo-600">Web chấm:</span>{' '}
+                                <span className="font-mono">? div</span> (có thẻ) ·{' '}
+                                <span className="font-mono">? p</span> ·{' '}
+                                <span className="font-mono">? style background red</span> (CSS) ·{' '}
+                                <span className="font-mono">? text Xin chào</span> ·{' '}
+                                <span className="font-mono">? contains flex</span>
+                            </p>
                         </div>
-                        <p className="text-gray-400 leading-relaxed">
-                            <span className="font-medium text-gray-500">Gõ nhanh:</span>{' '}
-                            *đáp_án · A./a) · {`{ms}`} · {`{match}`} · *1-a · {`{lt}`} · {`{yêu cầu:}`} · {`{đầu vào:}`} · {`{đầu ra:}`} · + in=&gt;out · - in=&gt;out · {`{web}`} · {`{lg: ...}`}
-                        </p>
-                        <p className="text-gray-400 leading-relaxed">
-                            <span className="font-medium text-emerald-600">LT thi đấu:</span>{' '}
-                            <span className="font-mono">{`{đầu vào:}`}</span> /{' '}
-                            <span className="font-mono">{`{đầu ra:}`}</span> mô tả đề · TC:{' '}
-                            <span className="font-mono">+ 5 10 =&gt; 15</span> (mẫu) ·{' '}
-                            <span className="font-mono">- 5 \\n 2 =&gt; 10</span> (ẩn, xuống dòng)
-                        </p>
-                        <p className="text-gray-400 leading-relaxed">
-                            <span className="font-medium text-indigo-600">Web chấm:</span>{' '}
-                            <span className="font-mono">? div</span> (có thẻ) ·{' '}
-                            <span className="font-mono">? p</span> ·{' '}
-                            <span className="font-mono">? style background red</span> (CSS) ·{' '}
-                            <span className="font-mono">? text Xin chào</span> ·{' '}
-                            <span className="font-mono">? contains flex</span>
-                        </p>
                     </div>
                     )}
                 </div>

@@ -10,6 +10,7 @@ import {
 import { toast } from 'sonner';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ConfirmModalDelete } from '@/components/custom/ConfirmationModal';
+import { CustomButton } from '@/components/custom/CustomButton';
 import LuyentapEssayGradingModal from '@/components/luyentap/LuyentapEssayGradingModal';
 import LuyentapAdminSubmissionDetailModal from '@/components/luyentap/LuyentapAdminSubmissionDetailModal';
 import LuyentapAdminBasicStats from '@/components/luyentap/LuyentapAdminBasicStats';
@@ -178,6 +179,7 @@ export default function LuyentapAdminOverviewClient({ exerciseId, onClose }: Luy
     const [detailTarget, setDetailTarget] = useState<AdminSubmissionItem | null>(null);
     const [deleteOpen, setDeleteOpen] = useState(false);
     const [deleting, setDeleting] = useState(false);
+    const [togglingPublish, setTogglingPublish] = useState(false);
     const [statsRefreshKey, setStatsRefreshKey] = useState(0);
 
     const exercise = overview?.exercise;
@@ -220,6 +222,25 @@ export default function LuyentapAdminOverviewClient({ exerciseId, onClose }: Luy
         await navigator.clipboard.writeText(url);
         toast.success('Đã copy link bài tập');
     };
+
+    const handleTogglePublish = async () => {
+        if (!exercise || togglingPublish) return;
+        if (exercise.status !== 'published' && exercise.status !== 'draft') return;
+
+        const nextStatus = exercise.status === 'published' ? 'draft' : 'published';
+        setTogglingPublish(true);
+        try {
+            await luyentapApi.adminUpdate(exerciseId, { status: nextStatus });
+            await loadOverview();
+            toast.success(nextStatus === 'published' ? 'Đã xuất bản' : 'Đã chuyển thành bản nháp');
+        } catch (err: unknown) {
+            toast.error(err instanceof Error ? err.message : 'Không thể đổi trạng thái');
+        } finally {
+            setTogglingPublish(false);
+        }
+    };
+
+    const canTogglePublish = exercise?.status === 'published' || exercise?.status === 'draft';
 
     const handleDelete = async () => {
         setDeleting(true);
@@ -302,6 +323,18 @@ export default function LuyentapAdminOverviewClient({ exerciseId, onClose }: Luy
                                 {statusLabel(exercise.status)}
                             </span>
                         </section>
+
+                        {canTogglePublish && (
+                            <CustomButton
+                                size="small"
+                                variant={exercise.status === 'published' ? 'secondary' : 'primary'}
+                                onClick={handleTogglePublish}
+                                loading={togglingPublish}
+                                className="mt-4 w-full"
+                            >
+                                {exercise.status === 'published' ? 'Chuyển thành bản nháp' : 'Xuất bản'}
+                            </CustomButton>
+                        )}
 
                         <button
                             type="button"
@@ -460,6 +493,27 @@ export default function LuyentapAdminOverviewClient({ exerciseId, onClose }: Luy
                                 <Link2 className="h-3.5 w-3.5 shrink-0" />
                                 Link đề thi
                             </button>
+                            {canTogglePublish && (
+                                <button
+                                    type="button"
+                                    onClick={handleTogglePublish}
+                                    disabled={togglingPublish}
+                                    className={cn(
+                                        'inline-flex shrink-0 items-center justify-center rounded-xl border px-3 py-2 text-xs font-medium transition-colors disabled:opacity-50',
+                                        exercise.status === 'published'
+                                            ? 'border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100'
+                                            : 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100',
+                                    )}
+                                >
+                                    {togglingPublish ? (
+                                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                    ) : exercise.status === 'published' ? (
+                                        'Nháp'
+                                    ) : (
+                                        'Xuất bản'
+                                    )}
+                                </button>
+                            )}
                             <button
                                 type="button"
                                 onClick={() => setDeleteOpen(true)}

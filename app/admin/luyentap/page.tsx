@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import {
     Plus, Edit2, Trash2, Loader2, CheckCircle, XCircle, FileText, Upload,
     Folder, FolderPlus, FileQuestion, Pencil, ChevronLeft, MoreVertical, FolderInput,
+    Globe, FilePenLine,
 } from 'lucide-react';
 import { luyentapApi } from '@/lib/api/luyentap.api';
 import { PracticeSet, STATUS_LABELS, LuyentapFolder } from '@/types/luyentap.type';
@@ -124,17 +125,34 @@ function RowActions({
     onApprove,
     onReject,
     onDelete,
+    onTogglePublish,
     showApprove,
+    isPublished,
 }: {
     onEdit?: () => void;
     onMove?: () => void;
     onApprove?: () => void;
     onReject?: () => void;
     onDelete?: () => void;
+    onTogglePublish?: () => void;
     showApprove?: boolean;
+    isPublished?: boolean;
 }) {
     return (
         <div className="flex items-center justify-end gap-0.5">
+            {onTogglePublish && (
+                <button
+                    type="button"
+                    onClick={onTogglePublish}
+                    className={cn(
+                        'rounded-lg p-1.5 hover:bg-[var(--cn-hover)]',
+                        isPublished ? 'text-amber-600 hover:bg-amber-50' : 'text-emerald-600 hover:bg-emerald-50',
+                    )}
+                    title={isPublished ? 'Chuyển thành bản nháp' : 'Xuất bản'}
+                >
+                    {isPublished ? <FilePenLine className="h-4 w-4" /> : <Globe className="h-4 w-4" />}
+                </button>
+            )}
             {onMove && (
                 <button type="button" onClick={onMove} className="rounded-lg p-1.5 text-[var(--cn-text-muted)] hover:bg-[var(--cn-hover)]" title="Chuyển vào thư mục">
                     <FolderInput className="h-4 w-4" />
@@ -573,6 +591,21 @@ export default function AdminLuyenTapPage() {
         setRejectReason('');
     };
 
+    const handleTogglePublish = async (item: PracticeSet) => {
+        const nextStatus = item.status === 'approved' ? 'draft' : 'published';
+        try {
+            const res = await luyentapApi.adminUpdate(item._id, { status: nextStatus });
+            const updated = extractExerciseFromResponse(res);
+            if (updated) upsertItem(updated);
+            else patchItemStatus(item._id, nextStatus === 'published' ? 'approved' : 'draft');
+            toast.success(nextStatus === 'published' ? 'Đã xuất bản' : 'Đã chuyển thành bản nháp');
+        } catch {
+            toast.error('Không thể đổi trạng thái bài tập');
+        }
+    };
+
+    const canTogglePublish = (status: PracticeSet['status']) => status === 'approved' || status === 'draft';
+
     const openMoveModal = (item: PracticeSet) => {
         setMoveTarget(item);
         setMoveFolderId(item.folderId || '');
@@ -753,6 +786,8 @@ export default function AdminLuyenTapPage() {
                                             <RowActions
                                                 onMove={() => openMoveModal(item)}
                                                 onEdit={() => openEditor(item._id)}
+                                                onTogglePublish={canTogglePublish(item.status) ? () => handleTogglePublish(item) : undefined}
+                                                isPublished={item.status === 'approved'}
                                                 onApprove={() => handleApprove(item)}
                                                 onReject={() => setRejectTarget(item)}
                                                 onDelete={() => setDeleteTarget(item)}
