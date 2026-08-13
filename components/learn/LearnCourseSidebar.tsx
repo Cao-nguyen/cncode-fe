@@ -112,15 +112,16 @@ export function LearnCourseSidebar({
 
                 <div className="flex-1 space-y-3 overflow-y-auto p-3 no-scrollbar">
                     {chapters.map((chapter, chapterIndex) => {
-                        if (!chapter._id) return null;
+                        const chapterId = chapter._id;
+                        if (!chapterId) return null;
 
-                        const isExpanded = expandedChapters.has(chapter._id);
+                        const isExpanded = expandedChapters.has(chapterId);
                         const hasActiveLesson = chapter.lessons.some((l) => l._id === lessonId);
                         const completedInChapter = chapter.lessons.filter((l) => l.progress?.isCompleted).length;
 
                         return (
                             <section
-                                key={chapter._id}
+                                key={chapterId}
                                 className={cn(
                                     'overflow-hidden rounded-2xl border transition-shadow',
                                     hasActiveLesson
@@ -129,7 +130,7 @@ export function LearnCourseSidebar({
                                 )}
                             >
                                 <button
-                                    onClick={() => onToggleChapter(chapter._id)}
+                                    onClick={() => onToggleChapter(chapterId)}
                                     className="flex w-full items-start justify-between gap-3 p-3 text-left transition hover:bg-white/60"
                                 >
                                     <div className="min-w-0 flex-1">
