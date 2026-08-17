@@ -72,7 +72,7 @@ export default function ChatPage() {
         const fetchConversations = async () => {
             try {
                 const data = await simpleChatApi.getConversations();
-                const conversations = Array.isArray(data) ? data : (data?.data || []);
+                const conversations = Array.isArray(data) ? data : (data as any)?.data || [];
                 console.log('[CHAT] Initial conversations loaded:', conversations.map((c: SimpleConversation) => ({
                     id: c._id,
                     unreadCount: c.unreadCount
