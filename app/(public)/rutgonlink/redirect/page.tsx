@@ -54,6 +54,10 @@ export default function RedirectPage() {
         };
     }, [shortCode, originalUrl]);
 
+    const handleImageClick = () => {
+        window.location.href = 'https://education-plan.lovable.app';
+    };
+
     const handleContinue = () => {
         if (originalUrl) {
             window.location.href = originalUrl;
@@ -92,7 +96,7 @@ export default function RedirectPage() {
                 src="/b.jpg" 
                 alt="Banner CNcode" 
                 className="w-full h-full object-contain cursor-pointer lg:w-[calc(100vw-20px)] lg:object-cover lg:h-auto"
-                onClick={handleContinue}
+                onClick={handleImageClick}
             />
 
             {/* Progress Bar and Button - Mobile/MD Only */}
