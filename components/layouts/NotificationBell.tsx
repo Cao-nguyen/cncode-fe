@@ -304,7 +304,11 @@ function NotificationItem({ notification, onMarkAsRead, onClose }: NotificationI
 
 
 
-export default function NotificationBell() {
+interface NotificationBellProps {
+    onOpen?: () => void;
+}
+
+export default function NotificationBell({ onOpen }: NotificationBellProps = {}) {
     const { user, token } = useAuthStore();
     const { socket, isConnected } = useSocket();
     const [open, setOpen] = useState(false);
@@ -473,6 +477,7 @@ export default function NotificationBell() {
     };
 
     const handleButtonClick = () => {
+        if (onOpen) onOpen();
         setOpen(!open);
     };
 

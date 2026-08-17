@@ -30,7 +30,7 @@ export default function RedirectPage() {
             setCountdown((prev) => {
                 if (prev <= 1) {
                     clearInterval(timer);
-                    window.location.href = originalUrl;
+                    // window.location.href = originalUrl; // Disabled auto-redirect
                     return 0;
                 }
                 return prev - 1;
@@ -86,136 +86,75 @@ export default function RedirectPage() {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center px-4">
-            <div className="max-w-4xl w-full">
-                    {/* Header */}
-                    <div className="text-center mb-6 sm:mb-8">
-                        <div className="flex items-center justify-center mb-2">
-                            <img 
-                                src="/images/logo.png" 
-                                alt="CNcode Logo" 
-                                className="h-12 sm:h-16 w-auto"
-                            />
-                        </div>
-                        <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
-                            Nền tảng học công nghệ và đổi mới sáng tạo
-                        </p>
+        <div className="min-h-screen w-screen overflow-hidden bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex flex-col lg:flex items-center justify-center p-0 lg:px-10 relative">
+            {/* Banner - Full Screen */}
+            <img 
+                src="/b.jpg" 
+                alt="Banner CNcode" 
+                className="w-full h-full object-contain cursor-pointer lg:w-[calc(100vw-20px)] lg:object-cover lg:h-auto"
+                onClick={handleContinue}
+            />
+
+            {/* Progress Bar and Button - Mobile/MD Only */}
+            <div className="lg:hidden bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 space-y-3 z-10 w-full">
+                {/* Progress Bar */}
+                <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Tự động chuyển hướng sau
+                        </span>
+                        <span className="text-sm font-bold text-blue-600 dark:text-blue-400">
+                            {countdown}s
+                        </span>
                     </div>
-
-                    {/* Info Card */}
-                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 sm:p-6 mb-8">
-                        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-                            <div className="flex-shrink-0 relative mx-auto sm:mx-0">
-                                {/* Decorative stars */}
-                                <div className="absolute -top-1 -left-1">
-                                    <Star className="w-3 h-3 text-yellow-400 fill-yellow-400 animate-pulse" />
-                                </div>
-                                <div className="absolute -top-2 -right-2">
-                                    <Sparkles className="w-3 h-3 text-yellow-300 fill-yellow-300 animate-pulse" style={{ animationDelay: '0.5s' }} />
-                                </div>
-                                <div className="absolute -bottom-1 -left-2">
-                                    <Star className="w-2 h-2 text-yellow-400 fill-yellow-400 animate-pulse" style={{ animationDelay: '1s' }} />
-                                </div>
-                                
-                                {/* Book icon */}
-                                <div className="w-12 h-12 bg-gradient-to-br from-blue-100 to-blue-200 dark:from-blue-900 dark:to-blue-800 rounded-lg flex items-center justify-center shadow-lg relative z-10">
-                                    <Book className="w-6 h-6 text-blue-600 dark:text-blue-300" />
-                                </div>
-                            </div>
-                            <div className="flex-1 text-center sm:text-left">
-                                <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-1">
-                                    CNcode - Kết nối tri thức
-                                </h3>
-                                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
-                                    CNcode là nền tảng học công nghệ và đổi mới sáng tạo dành cho học sinh và nhiều người học khác với nhiều tính năng và cách giảng dạy hiện đại.
-                                </p>
-                            </div>
-                            <div className="flex-shrink-0 flex justify-center sm:justify-end">
-                                <CustomButton
-                                    onClick={() => router.push('/')}
-                                    variant="primary"
-                                    className="px-3 py-2 text-sm"
-                                >
-                                    Khám phá CNcode
-                                    <ArrowRight size={16} />
-                                </CustomButton>
-                            </div>
-                        </div>
+                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
+                        <div 
+                            className="bg-gradient-to-r from-blue-500 to-blue-600 h-full transition-all duration-100 ease-linear"
+                            style={{ width: `${progress}%` }}
+                        />
                     </div>
+                </div>
 
-                    {/* Redirect Card */}
-                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 sm:p-6">
-                        <div className="flex flex-col sm:flex-row sm:items-start gap-4 sm:gap-6">
-                            <div className="flex-shrink-0 w-24 sm:w-32 mx-auto sm:mx-0">
-                                <img 
-                                    src="/images/redirect.png" 
-                                    alt="Redirect" 
-                                    className="w-20 h-20 sm:w-28 sm:h-28 object-contain"
-                                />
-                            </div>
-                            <div className="flex-1 min-w-0 text-center sm:text-left">
-                                <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-3">
-                                    <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white flex-1">
-                                        Bạn đang được chuyển đến link đích
-                                    </h2>
-                                    <div className="relative w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center flex-shrink-0 mx-auto sm:ml-4">
-                                        <svg className="absolute inset-0 transform -rotate-90" width="40" height="40" viewBox="0 0 40 40">
-                                            <circle
-                                                cx="20"
-                                                cy="20"
-                                                r="16"
-                                                stroke="currentColor"
-                                                strokeWidth="4"
-                                                fill="none"
-                                                className="text-gray-200 dark:text-gray-700"
-                                            />
-                                            <circle
-                                                cx="20"
-                                                cy="20"
-                                                r="16"
-                                                stroke="url(#gradient)"
-                                                strokeWidth="4"
-                                                fill="none"
-                                                strokeLinecap="round"
-                                                strokeDasharray={`${2 * Math.PI * 16}`}
-                                                strokeDashoffset={`${2 * Math.PI * 16 * (1 - progress / 100)}`}
-                                                className="transition-all duration-100 ease-linear"
-                                            />
-                                            <defs>
-                                                <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                                                    <stop offset="0%" stopColor="#3B82F6" />
-                                                    <stop offset="100%" stopColor="#93C5FD" />
-                                                </linearGradient>
-                                            </defs>
-                                        </svg>
-                                        <span className="relative z-10 text-xs sm:text-sm font-bold text-blue-600 dark:text-blue-300">
-                                            {countdown}s
-                                        </span>
-                                    </div>
-                                </div>
+                {/* Button */}
+                <CustomButton
+                    onClick={handleContinue}
+                    variant="primary"
+                    className="w-full"
+                    size="medium"
+                >
+                    Chuyển hướng đến link gốc
+                </CustomButton>
+            </div>
 
-                                <CustomButton
-                                    onClick={handleContinue}
-                                    variant="primary"
-                                    className="w-full"
-                                    size="medium"
-                                >
-                                    <ExternalLink size={16} />
-                                    Tiếp tục đến link đích
-                                    <ArrowRight size={16} />
-                                </CustomButton>
-
-                                <p className="text-xs text-gray-500 dark:text-gray-400 text-center mt-3 sm:mt-4">
-                                    Nếu không tự động chuyển, hãy bấm nút ở trên
-                                </p>
-                            </div>
-                        </div>
+            {/* Fixed Progress Bar and Button - Laptop Only */}
+            <div className="hidden lg:flex flex-col gap-3 fixed top-[30px] left-[30px] bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 space-y-3 z-10 w-[280px]">
+                {/* Progress Bar */}
+                <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Tự động chuyển hướng sau
+                        </span>
+                        <span className="text-sm font-bold text-blue-600 dark:text-blue-400">
+                            {countdown}s
+                        </span>
                     </div>
-
-                    {/* Footer */}
-                    <div className="text-center mt-8 text-sm text-gray-600 dark:text-gray-400">
-                        <p>© 2026 CNcode. Tất cả quyền được bảo lưu.</p>
+                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
+                        <div 
+                            className="bg-gradient-to-r from-blue-500 to-blue-600 h-full transition-all duration-100 ease-linear"
+                            style={{ width: `${progress}%` }}
+                        />
                     </div>
+                </div>
+
+                {/* Button */}
+                <CustomButton
+                    onClick={handleContinue}
+                    variant="primary"
+                    className="w-full"
+                    size="medium"
+                >
+                    Chuyển hướng đến link gốc
+                </CustomButton>
             </div>
         </div>
     );

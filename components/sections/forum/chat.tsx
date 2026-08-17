@@ -72,11 +72,12 @@ export default function ChatPage() {
         const fetchConversations = async () => {
             try {
                 const data = await simpleChatApi.getConversations();
-                console.log('[CHAT] Initial conversations loaded:', data.map((c) => ({
+                const conversations = Array.isArray(data) ? data : (data?.data || []);
+                console.log('[CHAT] Initial conversations loaded:', conversations.map((c: SimpleConversation) => ({
                     id: c._id,
                     unreadCount: c.unreadCount
                 })));
-                setConversations(data);
+                setConversations(conversations);
                 setLoading(false);
             } catch (error) {
                 console.error('Error fetching conversations:', error);
@@ -365,7 +366,7 @@ export default function ChatPage() {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center h-[calc(100dvh-130px)] md:h-[calc(100dvh-90px)]">
+            <div className="flex items-center justify-center h-full">
                 <div className="text-center">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
                     <p className="mt-4">Đang tải...</p>
@@ -375,7 +376,7 @@ export default function ChatPage() {
     }
 
     return (
-        <div className="flex h-[calc(100dvh-130px)] md:h-[calc(100dvh-90px)] bg-background">
+        <div className="flex h-full bg-background">
             <div
                 className={cn(
                     "flex flex-col border-r",

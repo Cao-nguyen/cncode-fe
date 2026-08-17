@@ -8,7 +8,6 @@ import TrainingTopics from "@/components/home/TrainingTopics";
 import LatestPosts from "@/components/home/LatestPosts";
 import Review from "@/components/home/Review";
 import Analytics from "@/components/common/Analytics";
-import MarqueeBanner from "@/components/common/MarqueeBanner";
 import Link from "next/link";
 import { MessageCircleMore } from "lucide-react";
 import { useSocket } from "@/providers/socket.provider";
@@ -68,7 +67,6 @@ export default function Home() {
 
     return (
         <div className="pt-5 lg:pt-0 pt-[40px] relative">
-            <MarqueeBanner />
             {/* Hero Slideshow */}
             <div className="container mx-auto px-4 sm:px-6 lg:px-8 pb-8">
                 <HeroSlideshow />

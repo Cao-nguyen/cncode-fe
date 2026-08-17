@@ -66,6 +66,12 @@ export default function FeatureShowcase() {
                     );
                 })}
             </div>
+
+            <div className="mt-6 text-center">
+                <p className="text-sm sm:text-base" style={{ color: 'var(--cn-text-muted)' }}>
+                    Sản phẩm phục vụ mục đích hỗ trợ học tập công nghệ trong thời đại số và tham gia Cuộc thi Sáng tạo thanh thiếu niên nhi đồng năm 2026
+                </p>
+            </div>
         </div>
     );
 }

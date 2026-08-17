@@ -27,9 +27,38 @@ authApi.interceptors.request.use((config) => {
     return config;
 });
 
+authApi.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        if (axios.isAxiosError(error)) {
+            // Handle JWT expired or unauthorized
+            if (error.response?.status === 401 || error.response?.data?.message?.includes('jwt expired')) {
+                const { logout } = useAuthStore.getState();
+                logout();
+                if (typeof window !== 'undefined') {
+                    window.location.href = '/login';
+                }
+                return Promise.reject(new Error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.'));
+            }
+        }
+        return Promise.reject(error);
+    }
+);
+
 const handleApiError = (error: unknown): never => {
-    if (axios.isAxiosError(error) && error.response?.data?.message) {
-        throw new Error(error.response.data.message);
+    if (axios.isAxiosError(error)) {
+        // Handle JWT expired or unauthorized
+        if (error.response?.status === 401 || error.response?.data?.message?.includes('jwt expired')) {
+            const { logout } = useAuthStore.getState();
+            logout();
+            if (typeof window !== 'undefined') {
+                window.location.href = '/login';
+            }
+            throw new Error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+        }
+        if (error.response?.data?.message) {
+            throw new Error(error.response.data.message);
+        }
     }
     if (error instanceof Error) {
         throw error;

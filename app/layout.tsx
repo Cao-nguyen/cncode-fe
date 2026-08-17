@@ -50,7 +50,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className={`${inter.className} antialiased`}>
+      <body className={`${inter.className} antialiased m-0 p-0`}>
         <AuthProvider>
           <SocketProvider>
             <SessionProvider>
