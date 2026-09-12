@@ -359,19 +359,25 @@ export const userApi = {
 };
 
 // Search users by username or email
-export const searchUsers = async (query: string): Promise<IUser[]> => {
+export const searchUsers = async (query: string, token?: string): Promise<IUser[]> => {
+    const headers: Record<string, string> = {
+        'Content-Type': 'application/json'
+    };
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    }
+    
     const response = await fetch(
-        `${API_URL}/api/users/search?q=${encodeURIComponent(query)}`,
+        `${API_URL}/api/users/search?username=${encodeURIComponent(query)}`,
         {
             credentials: 'include',
-            headers: {
-                'Content-Type': 'application/json'
-            }
+            headers
         }
     );
 
     if (!response.ok) {
-        throw new Error('Failed to search users');
+        const errorText = await response.text();
+        throw new Error(`Failed to search users: ${response.status} ${errorText}`);
     }
 
     const data = await response.json();
