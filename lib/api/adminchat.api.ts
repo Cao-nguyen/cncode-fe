@@ -34,13 +34,15 @@ export const adminChatApi = {
     },
 
     // Send message (user)
-    sendMessage: async (token: string, data: AdminChatSendMessageDto): Promise<{ success: boolean; data: AdminChatMessage }> => {
+    sendMessage: async (token: string, data: AdminChatSendMessageDto): Promise<{ success: boolean; data: AdminChatMessage; message?: string }> => {
         const res = await fetch(`${API_URL}/api/adminchat/send`, {
             method: 'POST',
             headers: getAuthHeaders(token),
             body: JSON.stringify(data)
         });
-        return res.json();
+        const responseData = await res.json();
+        console.log('📤 adminchat.sendMessage response:', { status: res.status, data: responseData });
+        return responseData;
     },
 
     // Send image (user)

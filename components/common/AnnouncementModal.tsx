@@ -10,33 +10,52 @@ import {
 import { Button } from "@/components/ui/button";
 import { Info } from "lucide-react";
 
+// Version để force reset khi có bản mới
+const MODAL_VERSION = "1.0";
+
 export default function AnnouncementModal() {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
+    // Chỉ chạy trên client
+    if (typeof window === 'undefined') return;
+
+    console.log('📢 AnnouncementModal: Initializing...');
+
     // Kiểm tra localStorage
     const closedData = localStorage.getItem("announcementClosed");
+    const storedVersion = localStorage.getItem("announcementVersion");
     const now = new Date().getTime();
 
-    if (!closedData) {
-      // Chưa từng đóng modal
+    console.log('📢 Modal check:', { closedData, storedVersion, MODAL_VERSION });
+
+    // Nếu version khác hoặc chưa từng đóng modal, luôn hiển thị
+    if (storedVersion !== MODAL_VERSION || !closedData) {
+      console.log('📢 Opening modal (version mismatch or first time)');
+      const timer = setTimeout(() => setOpen(true), 1000);
+      return () => clearTimeout(timer);
+    }
+
+    // Kiểm tra đã quá 24h chưa
+    const closedTime = parseInt(closedData);
+    const hoursPassed = (now - closedTime) / (1000 * 60 * 60);
+
+    console.log('📢 Hours passed since closed:', hoursPassed);
+
+    if (hoursPassed >= 24) {
+      console.log('📢 Opening modal (24h passed)');
       const timer = setTimeout(() => setOpen(true), 1000);
       return () => clearTimeout(timer);
     } else {
-      // Kiểm tra đã quá 24h chưa
-      const closedTime = parseInt(closedData);
-      const hoursPassed = (now - closedTime) / (1000 * 60 * 60);
-
-      if (hoursPassed >= 24) {
-        const timer = setTimeout(() => setOpen(true), 1000);
-        return () => clearTimeout(timer);
-      }
+      console.log('📢 Not opening modal (within 24h)');
     }
   }, []);
 
   const handleClose = () => {
     setOpen(false);
     localStorage.setItem("announcementClosed", new Date().getTime().toString());
+    localStorage.setItem("announcementVersion", MODAL_VERSION);
+    console.log('📢 Modal closed, stored time and version');
   };
 
   return (

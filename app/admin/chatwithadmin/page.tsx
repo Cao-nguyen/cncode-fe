@@ -574,11 +574,11 @@ export default function AdminChatPage() {
                 title="Chat với người dùng"
                 description="Quản lý tin nhắn hỗ trợ từ người dùng"
             />
-            <div className="-mx-3 -mb-3 flex min-h-0 flex-1 flex-col overflow-hidden bg-white md:flex-row sm:-mx-4 sm:-mb-4 lg:-mx-6 lg:-mb-6">
+            <div className="-mx-3 -mb-3 flex h-[calc(100vh-140px)] flex-1 flex-col overflow-hidden bg-white md:flex-row sm:-mx-4 sm:-mb-4 lg:-mx-6 lg:-mb-6">
             <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageSelect} className="hidden" />
 
             {/* Sidebar - Conversations */}
-            <aside className={`w-full md:w-80 border-r border-slate-200 flex flex-col bg-slate-50 min-h-0 ${selectedConv ? 'hidden md:flex' : 'flex'}`}>
+            <aside className={`w-full md:w-80 border-r border-slate-200 flex flex-col bg-slate-50 h-full ${selectedConv ? 'hidden md:flex' : 'flex'}`}>
                 <div className="p-4 border-b border-slate-200 bg-white">
                     <div className="flex items-center justify-between mb-3">
                         <h2 className="text-lg font-bold text-slate-800">Tin nhắn hỗ trợ</h2>
@@ -683,7 +683,7 @@ export default function AdminChatPage() {
             </aside>
 
             {/* Main Chat Area */}
-            <main className={`flex min-h-0 flex-1 flex-col ${selectedConv ? 'flex' : 'hidden md:flex'}`}>
+            <main className={`flex h-full flex-1 flex-col ${selectedConv ? 'flex' : 'hidden md:flex'}`}>
                 {!selectedConv ? (
                     <div className="flex-1 flex items-center justify-center bg-slate-50">
                         <div className="text-center">

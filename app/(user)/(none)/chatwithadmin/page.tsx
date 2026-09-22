@@ -12,6 +12,17 @@ import { ImagePreviewModal } from '@/components/custom/ImagePreviewModal';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
+// Helper to convert file ID to URL
+const getFileUrl = (fileId: string | null | undefined): string | null => {
+    if (!fileId) return null;
+    // If it's already a full URL, return as is
+    if (fileId.startsWith('http://') || fileId.startsWith('https://')) {
+        return fileId;
+    }
+    // Otherwise treat as file ID and use proxy
+    return `${API_URL}/api/upload/proxy/file/${fileId}`;
+};
+
 export default function ChatWithAdminPage() {
     const router = useRouter();
     const { token, user } = useAuthStore();
@@ -313,10 +324,20 @@ export default function ChatWithAdminPage() {
         setMessages(prev => [...prev, optimisticMsg]);
         setSending(true);
 
+        // Timeout to reset sending state if callback doesn't fire
+        const timeoutId = setTimeout(() => {
+            console.warn('⚠️ Socket callback timeout, resetting sending state');
+            setSending(false);
+            setMessages(prev => prev.filter(m => m._id !== tempId));
+        }, 5000);
+
         if (socketRef.current?.connected) {
+            console.log('📤 Sending via socket');
             // Realtime via socket
             socketRef.current.emit('user_send_message', { content: text, type: 'text' }, (res: { success: boolean; data?: AdminChatMessage; message?: string }) => {
+                clearTimeout(timeoutId);
                 setSending(false);
+                console.log('📤 Socket callback received:', res);
                 if (res?.success && res.data) {
                     const responseData = res.data;
                     setMessages(prev => {
@@ -337,8 +358,11 @@ export default function ChatWithAdminPage() {
             });
         } else {
             // Fallback to API
+            console.log('📤 Socket not connected, using API fallback');
+            clearTimeout(timeoutId);
             try {
                 const res = await adminChatApi.sendMessage(token, { content: text, type: 'text' });
+                console.log('📤 API response:', res);
                 if (res.success) {
                     setMessages(prev => {
                         const exists = prev.some(m => m._id === res.data._id);
@@ -350,10 +374,23 @@ export default function ChatWithAdminPage() {
                     if (!conversationId && res.data.conversationId) {
                         setConversationId(res.data.conversationId);
                     }
+                } else {
+                    setMessages(prev => prev.filter(m => m._id !== tempId));
+                    console.error('❌ API returned error:', res);
+
+                    // Handle token expired
+                    if (res.message?.includes('jwt expired') || res.message?.includes('Invalid token')) {
+                        alert('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+                        useAuthStore.getState().forceLogout();
+                        router.push('/login');
+                    } else {
+                        alert(`Gửi tin nhắn thất bại: ${res.message || 'Lỗi không xác định'}`);
+                    }
                 }
             } catch (error) {
                 console.error('❌ Error sending message:', error);
                 setMessages(prev => prev.filter(m => m._id !== tempId));
+                alert('Lỗi kết nối: Không thể gửi tin nhắn. Vui lòng kiểm tra kết nối mạng.');
             } finally {
                 setSending(false);
             }
@@ -475,13 +512,23 @@ export default function ChatWithAdminPage() {
                                         )}
                                         <div className={`flex items-start gap-2 ${isMe ? 'justify-end' : 'justify-start'}`}>
                                             {!isMe && (
-                                                msg.senderId?.avatar ? (
-                                                    <img src={msg.senderId.avatar} alt="" className="w-8 h-8 rounded-full object-cover shrink-0" />
-                                                ) : (
-                                                    <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-sm shrink-0">
+                                                <div className="relative shrink-0">
+                                                    {msg.senderId?.avatar ? (
+                                                        <img
+                                                            src={getFileUrl(msg.senderId.avatar) || ''}
+                                                            alt=""
+                                                            className="w-8 h-8 rounded-full object-cover"
+                                                            onError={(e) => {
+                                                                console.error('❌ Avatar load error:', msg.senderId.avatar, '→ URL:', getFileUrl(msg.senderId.avatar));
+                                                                (e.target as HTMLImageElement).style.display = 'none';
+                                                                (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
+                                                            }}
+                                                        />
+                                                    ) : null}
+                                                    <div className={`w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-sm ${msg.senderId?.avatar ? 'hidden' : ''}`}>
                                                         {msg.senderId?.fullName?.charAt(0).toUpperCase() || 'A'}
                                                     </div>
-                                                )
+                                                </div>
                                             )}
                                             <div className={`max-w-[70%] ${isMe ? 'items-end' : 'items-start'} flex flex-col gap-1`}>
                                                 <div className="relative group">
