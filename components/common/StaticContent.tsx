@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { ImagePreviewModal } from '@/components/custom/ImagePreviewModal';
-import { sanitizeCommentHtml } from '@/lib/comment-content';
+import { sanitizeCommentHtml, markdownToHtml } from '@/lib/comment-content';
 
 interface StaticContentProps {
   content: string;
@@ -295,7 +295,11 @@ const editorStyles = `
 export default function StaticContent({ content, className, compact = false }: StaticContentProps) {
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
-  const safeContent = sanitizeCommentHtml(content);
+
+  // Convert markdown to HTML if content is not HTML
+  const isHtml = /<[a-z][\s\S]*>/i.test(content?.trim() || '');
+  const processedContent = isHtml ? content : markdownToHtml(content || '');
+  const safeContent = sanitizeCommentHtml(processedContent);
 
   const handleClick = (e: React.MouseEvent) => {
     const target = e.target as HTMLElement;

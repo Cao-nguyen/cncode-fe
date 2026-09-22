@@ -439,6 +439,8 @@ export default function AITutorPage() {
   };
 
   const uploadImageAttachment = async (file: File) => {
+    console.log('🔍 Upload started:', { file: file.name, type: file.type, size: file.size });
+
     if (!file.type.startsWith('image/')) {
       toast.error('Vui lòng chọn file ảnh');
       return;
@@ -449,14 +451,20 @@ export default function AITutorPage() {
       return;
     }
 
+    // Check limit BEFORE state update (use current state)
+    const currentCount = pendingAttachments.length;
+    console.log('🔍 Current pendingAttachments:', currentCount, MAX_IMAGE_ATTACHMENTS);
+
+    if (currentCount >= MAX_IMAGE_ATTACHMENTS) {
+      console.log('🔍 Upload blocked: max attachments reached');
+      toast.error(`Chỉ được đính kèm tối đa ${MAX_IMAGE_ATTACHMENTS} ảnh mỗi lần gửi`);
+      return;
+    }
+
     const pendingId = `${Date.now()}-${Math.random()}`;
-    let previewUrl: string | undefined;
-    let canUpload = false;
+    const previewUrl = URL.createObjectURL(file);
 
     setPendingAttachments((prev) => {
-      if (prev.length >= MAX_IMAGE_ATTACHMENTS) return prev;
-      canUpload = true;
-      previewUrl = URL.createObjectURL(file);
       return [...prev, {
         id: pendingId,
         name: file.name,
@@ -464,11 +472,6 @@ export default function AITutorPage() {
         uploading: true,
       }];
     });
-
-    if (!canUpload) {
-      toast.error(`Chỉ được đính kèm tối đa ${MAX_IMAGE_ATTACHMENTS} ảnh mỗi lần gửi`);
-      return;
-    }
 
     setUploadingAttachment(true);
 
@@ -509,6 +512,12 @@ export default function AITutorPage() {
         messageId: item.messageId ? String(item.messageId) : undefined,
         dataUrl: item.dataUrl,
       }));
+
+    console.log('🔍 Debug frontend:', {
+      pendingAttachments: pendingAttachments.length,
+      readyAttachments: readyAttachments.length,
+      readyAttachmentsData: readyAttachments
+    });
 
     if ((!message.trim() && readyAttachments.length === 0) || !token || sending || uploadingAttachment) return;
 

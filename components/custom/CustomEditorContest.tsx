@@ -961,10 +961,10 @@ const formatGroupTitleDisplay = (title: string): string => {
     return t;
 };
 
-/** Renders **bold**, __underline__, *italic* and $formula$ within a line of text. */
+/** Renders **bold**, __underline__, -italic- and $formula$ within a line of text. */
 const renderInline = (text: string, keyPrefix: string): React.ReactNode[] => {
     const nodes: React.ReactNode[] = [];
-    const regex = /(\*\*(.+?)\*\*)|(__(.+?)__)|(\*(.+?)\*)|(\$(.+?)\$)/g;
+    const regex = /(\*\*(.+?)\*\*)|(__(.+?)__)|(\-(.+?)\-)|(\$(.+?)\$)/g;
     let lastIndex = 0;
     let match: RegExpExecArray | null;
     let key = 0;
@@ -1449,7 +1449,7 @@ const CustomEditorContest: React.FC<{
             applyWrap('**', '**', 'in đậm');
         } else if (e.key === 'i') {
             e.preventDefault();
-            applyWrap('*', '*', 'in nghiêng');
+            applyWrap('-', '-', 'in nghiêng');
         } else if (e.key === 'u') {
             e.preventDefault();
             applyWrap('__', '__', 'gạch chân');
@@ -1507,7 +1507,14 @@ Mô tả kết quả cần in
             toast.success(`Đã thêm lời giải cho ${explanations.length} câu`);
         } catch (err: unknown) {
             const axiosErr = err as { response?: { data?: { message?: string } } };
-            toast.error(axiosErr.response?.data?.message || 'Không thể quét AI');
+            const errorMessage = axiosErr.response?.data?.message || 'Không thể quét AI';
+            console.error('AI Scan error:', err);
+            // Kiểm tra nếu là lỗi model không tồn tại
+            if (errorMessage.includes('does not exist') || errorMessage.includes('model_not_found')) {
+                toast.error('Tính năng AI hiện không khả dụng. Vui lòng viết lời giải thủ công.');
+            } else {
+                toast.error(errorMessage);
+            }
         } finally {
             setAiScanning(false);
         }
@@ -2241,7 +2248,7 @@ Mô tả kết quả cần in
                 >
                     <div className="flex items-center gap-1 overflow-x-auto px-2 py-2 bg-gray-50 border-b border-gray-200 sm:px-3">
                         <ToolbarButton icon={<Bold size={15} />} title="In đậm (Ctrl+B)" onClick={() => applyWrap('**', '**', 'in đậm')} />
-                        <ToolbarButton icon={<Italic size={15} />} title="In nghiêng (Ctrl+I)" onClick={() => applyWrap('*', '*', 'in nghiêng')} />
+                        <ToolbarButton icon={<Italic size={15} />} title="In nghiêng (Ctrl+I)" onClick={() => applyWrap('-', '-', 'in nghiêng')} />
                         <ToolbarButton icon={<Underline size={15} />} title="Gạch chân (Ctrl+U)" onClick={() => applyWrap('__', '__', 'gạch chân')} />
                         <div className="w-px h-5 bg-gray-300 mx-1" />
                         <ToolbarButton icon={<Sigma size={15} />} title="Chèn công thức" onClick={() => setShowMathModal(true)} />

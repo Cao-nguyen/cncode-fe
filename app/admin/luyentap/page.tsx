@@ -493,7 +493,10 @@ export default function AdminLuyenTapPage() {
         if (!validateCreateForm()) return;
         setCreating(true);
         try {
-            const res = await luyentapApi.adminCreate(buildCreatePayload(method));
+            const payload = buildCreatePayload(method);
+            console.log('📝 Creating exercise with payload:', payload);
+            const res = await luyentapApi.adminCreate(payload);
+            console.log('📝 Create response:', res);
             if (res.success !== false) {
                 toast.success('Đã tạo bài tập');
                 const created = extractExerciseFromResponse(res);
@@ -502,8 +505,11 @@ export default function AdminLuyenTapPage() {
                 closeCreateModal();
                 const exerciseId = created?._id || res.data?.exercise?._id || res.data?._id;
                 if (exerciseId) openEditor(exerciseId);
+            } else {
+                toast.error(res.message || 'Lỗi khi tạo bài tập');
             }
-        } catch {
+        } catch (error) {
+            console.error('Create exercise error:', error);
             toast.error('Lỗi khi tạo bài tập');
         } finally {
             setCreating(false);
@@ -599,7 +605,8 @@ export default function AdminLuyenTapPage() {
             if (updated) upsertItem(updated);
             else patchItemStatus(item._id, nextStatus === 'published' ? 'approved' : 'draft');
             toast.success(nextStatus === 'published' ? 'Đã xuất bản' : 'Đã chuyển thành bản nháp');
-        } catch {
+        } catch (error) {
+            console.error('Toggle publish error:', error);
             toast.error('Không thể đổi trạng thái bài tập');
         }
     };
@@ -625,7 +632,7 @@ export default function AdminLuyenTapPage() {
         }
         setMoving(true);
         try {
-            const res = await luyentapApi.adminUpdate(moveTarget._id, { folderId: nextFolderId });
+            const res = await luyentapApi.adminUpdate(moveTarget._id, { folderId: nextFolderId || null });
             const updated = extractExerciseFromResponse(res);
             if (updated) {
                 upsertItem(updated);
@@ -635,7 +642,8 @@ export default function AdminLuyenTapPage() {
             }
             toast.success(nextFolderId ? 'Đã chuyển vào thư mục' : 'Đã chuyển ra ngoài thư mục');
             closeMoveModal();
-        } catch {
+        } catch (error) {
+            console.error('Move to folder error:', error);
             toast.error('Không chuyển được đề');
         } finally {
             setMoving(false);

@@ -323,13 +323,16 @@ export default function LuyentapExerciseEditorOverlay({
                 duration: exercise.duration || 60,
             };
 
-            await luyentapApi.adminUpdate(exerciseId, {
-                ...exercise,
+            // Chỉ gửi các field cần thiết, không spread toàn bộ exercise object
+            const updatePayload = {
                 ...settingsPayload,
                 questions: backendQuestions,
                 trueFalseScale,
                 ...(options?.status ? { status: options.status } : {}),
-            });
+            };
+
+            console.log('📝 Updating exercise with payload:', updatePayload);
+            await luyentapApi.adminUpdate(exerciseId, updatePayload);
             setExercise((prev) => (prev ? {
                 ...prev,
                 ...settingsPayload,
