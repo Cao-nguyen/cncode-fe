@@ -128,7 +128,7 @@ const menuItems = [
         categoryId: "forum",
         listLink: [
             {
-                title: "Quản lý Chat",
+                title: "Cộng đồng",
                 link: "/admin/congdong",
                 icon: <Message size={18} variant="Outline" />,
             },
