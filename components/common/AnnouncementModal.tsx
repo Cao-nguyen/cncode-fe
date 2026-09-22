@@ -58,6 +58,18 @@ export default function AnnouncementModal() {
     console.log('📢 Modal closed, stored time and version');
   };
 
+  // Debug function - gọi từ console: window.resetAnnouncementModal()
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      (window as any).resetAnnouncementModal = () => {
+        localStorage.removeItem('announcementClosed');
+        localStorage.removeItem('announcementVersion');
+        console.log('📢 Modal reset! Refreshing...');
+        location.reload();
+      };
+    }
+  }, []);
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent className="max-w-md mx-auto p-6 border-2 border-blue-200 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl">

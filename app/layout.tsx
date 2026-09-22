@@ -1,7 +1,6 @@
 
 import { Inter } from "next/font/google";
 import type { Metadata } from "next";
-import { GoogleOAuthProvider } from "@react-oauth/google";
 import "aos/dist/aos.css";
 import "./globals.css";
 
@@ -10,6 +9,13 @@ import AOSProvider from "@/providers/aos.provider";
 import AuthProvider from "@/providers/auth.provider";
 import { SocketProvider } from "@/providers/socket.provider";
 import SessionProvider from "@/providers/session.provider";
+import GoogleProvider from "@/providers/google.provider";
+import dynamic from "next/dynamic";
+
+const AnnouncementModal = dynamic(() => import("@/components/common/AnnouncementModal"), {
+  ssr: false,
+  loading: () => null,
+});
 
 const inter = Inter({
   subsets: ["latin"],
@@ -54,11 +60,14 @@ export default function RootLayout({
         <AuthProvider>
           <SocketProvider>
             <SessionProvider>
-              <GoogleOAuthProvider clientId={googleClientId}>
+              <GoogleProvider clientId={googleClientId}>
                 <ToasterProvider>
-                  <AOSProvider>{children}</AOSProvider>
+                  <AOSProvider>
+                    {children}
+                    <AnnouncementModal />
+                  </AOSProvider>
                 </ToasterProvider>
-              </GoogleOAuthProvider>
+              </GoogleProvider>
             </SessionProvider>
           </SocketProvider>
         </AuthProvider>
