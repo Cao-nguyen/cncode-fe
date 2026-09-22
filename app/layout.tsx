@@ -59,7 +59,7 @@ export default function RootLayout({
                 <ToasterProvider>
                   <AOSProvider>
                     {children}
-                    <AnnouncementModal />
+                    <AnnouncementModalWrapper />
                   </AOSProvider>
                 </ToasterProvider>
               </GoogleProvider>
