@@ -15,20 +15,35 @@ export default function AnnouncementModal() {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    // Kiểm tra xem người dùng đã đóng modal chưa trong phiên này
-    const hasClosedModal = sessionStorage.getItem("announcementClosed");
-    if (!hasClosedModal) {
-      // Đợi 1 giây để modal mở mượt mà hơn
+    // Kiểm tra xem người dùng đã đóng modal chưa trong 24h qua
+    const closedData = localStorage.getItem("announcementClosed");
+    const now = new Date().getTime();
+
+    if (!closedData) {
+      // Chưa từng đóng modal
       const timer = setTimeout(() => {
         setOpen(true);
       }, 1000);
       return () => clearTimeout(timer);
+    } else {
+      // Kiểm tra xem đã hết 24h chưa
+      const closedTime = parseInt(closedData);
+      const hoursPassed = (now - closedTime) / (1000 * 60 * 60);
+
+      if (hoursPassed >= 24) {
+        // Đã quá 24h, mở lại modal
+        const timer = setTimeout(() => {
+          setOpen(true);
+        }, 1000);
+        return () => clearTimeout(timer);
+      }
     }
   }, []);
 
   const handleClose = () => {
     setOpen(false);
-    sessionStorage.setItem("announcementClosed", "true");
+    // Lưu thời gian đóng modal (timestamp)
+    localStorage.setItem("announcementClosed", new Date().getTime().toString());
   };
 
   return (
