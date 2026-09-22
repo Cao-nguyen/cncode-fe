@@ -10,12 +10,7 @@ import AuthProvider from "@/providers/auth.provider";
 import { SocketProvider } from "@/providers/socket.provider";
 import SessionProvider from "@/providers/session.provider";
 import GoogleProvider from "@/providers/google.provider";
-import dynamic from "next/dynamic";
-
-const AnnouncementModal = dynamic(() => import("@/components/common/AnnouncementModal"), {
-  ssr: false,
-  loading: () => null,
-});
+import AnnouncementModalWrapper from "@/components/common/AnnouncementModalWrapper";
 
 const inter = Inter({
   subsets: ["latin"],
